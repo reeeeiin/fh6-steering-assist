@@ -84,6 +84,17 @@ TELEMETRY_PORT = 20777
 BRAKE_SUPPRESS = 0.5        # 0..1: насколько тормоз глушит контрруль
 TRANSITION_SPEED = 1.0      # ослабление демпфера при быстрой перекладке
 RUMBLE_FORWARD = True       # пересылать вибрацию игры в физический пад
+VIRTUAL_NO_BUTTONS = True   # виртуальный пад шлёт ВСЕ ОСИ (руль с ассистом,
+                            # газ, тормоз, камеру), но НОЛЬ кнопок: оси есть на
+                            # обоих устройствах (кого бы игра ни слушала - газ
+                            # работает), а кнопки только на физическом - дубль
+                            # нажатия невозможен
+                            # кнопки/триггеры/камера идут с физического пада -
+                            # игра видит одно устройство на кнопку, дубли невозможны
+MENU_NEUTRAL = True         # пока телеметрия молчит (меню/пауза) - виртуальный пад
+                            # полностью нейтрален: меню слушает только физический
+                            # пад, двойные нажатия исчезают. Телеметрия пошла
+                            # (заезд) - виртуальный пад включается.
 BUTTON_DEBOUNCE_MS = 30     # антидребезг кнопок: после смены состояния кнопка
                             # "заморожена" на столько мс (0 = выкл). Человеческий
                             # даблтап ~60-80 мс, так что живой ввод не страдает.
@@ -116,6 +127,146 @@ def _config_path() -> str:
 
 
 CONFIG_FILE = _config_path()
+
+# ----------------------------------------------------------------------------
+# SDL/pygame (чтение пада через HID, когда XUSB отключён) - опционально
+# ----------------------------------------------------------------------------
+os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+try:
+    import pygame
+    from pygame._sdl2 import controller as sdl_controller
+    HAVE_PYGAME = True
+except Exception:
+    HAVE_PYGAME = False
+
+# SDL2 GameController: стабильные числовые константы
+SDL_AX_LX, SDL_AX_LY, SDL_AX_RX, SDL_AX_RY, SDL_AX_LT, SDL_AX_RT = 0, 1, 2, 3, 4, 5
+SDL_BTN_TO_XINPUT = {
+    0: 0x1000,   # A
+    1: 0x2000,   # B
+    2: 0x4000,   # X
+    3: 0x8000,   # Y
+    4: 0x0020,   # BACK
+    6: 0x0010,   # START
+    7: 0x0040,   # LEFT_THUMB
+    8: 0x0080,   # RIGHT_THUMB
+    9: 0x0100,   # LB
+    10: 0x0200,  # RB
+    11: 0x0001,  # DPAD_UP
+    12: 0x0002,  # DPAD_DOWN
+    13: 0x0004,  # DPAD_LEFT
+    14: 0x0008,  # DPAD_RIGHT
+}
+
+
+class HidPadState:
+    """Тот же набор полей, что у XINPUT_GAMEPAD."""
+    __slots__ = ("wButtons", "bLeftTrigger", "bRightTrigger",
+                 "sThumbLX", "sThumbLY", "sThumbRX", "sThumbRY")
+
+
+def is_admin() -> bool:
+    try:
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except Exception:
+        return False
+
+
+class XusbDisabler:
+    """Системное отключение XUSB-интерфейсов физических падов на время
+    работы (pnputil, нужны права администратора). XUSB нельзя спрятать
+    HidHide-ом - зато можно выключить целиком; игра его не увидит.
+    При выходе включаем обратно; на случай падения - файл-страховка."""
+
+    CREATE_NO_WINDOW = 0x08000000
+
+    def __init__(self):
+        self.state_file = os.path.join(os.path.dirname(CONFIG_FILE),
+                                       "disabled_xusb.json")
+        self.disabled = []
+
+    def _pnputil(self, verb, dev_id):
+        return subprocess.run(
+            ["pnputil", verb, dev_id],
+            capture_output=True, text=True,
+            creationflags=self.CREATE_NO_WINDOW, timeout=20)
+
+    # что отключаем: XUSB-узлы физических падов + сторонние виртуальные
+    # геймпады-клонировщики (GeniTech ставится софтом маппинга и дублирует ввод)
+    TARGET_PATTERNS = (r"USB\\VID_045E&PID_028E\\(?!.*VIGEM)",
+                       r"GENITECH_VIRTUAL_GAMEPAD",
+                       r"IG_\d\d")
+
+    def list_xusb(self):
+        """Физические XInput-узлы и посторонние виртуальные пады.
+        Перечисление напрямую через pnputil - надёжнее WMI.
+        Вызывать ДО создания нашего виртуального пада."""
+        import re
+        cp = subprocess.run(
+            ["pnputil", "/enum-devices", "/connected"],
+            capture_output=True, text=True,
+            creationflags=self.CREATE_NO_WINDOW, timeout=30)
+        ids = []
+        for line in (cp.stdout or "").splitlines():
+            line = line.strip()
+            # строки вида "Instance ID: USB\VID_..." (локаль-независимо: по значению)
+            if ":" not in line:
+                continue
+            value = line.split(":", 1)[1].strip()
+            if not value:
+                continue
+            for pat in self.TARGET_PATTERNS:
+                if re.search(pat, value, re.IGNORECASE):
+                    ids.append(value)
+                    break
+        # дедуп, сохраняя порядок
+        seen = set()
+        out = []
+        for i in ids:
+            if i not in seen:
+                seen.add(i)
+                out.append(i)
+        return out
+
+    def restore_leftovers(self):
+        """Если прошлый запуск упал, не включив пад - включаем сейчас."""
+        try:
+            with open(self.state_file, encoding="utf-8") as f:
+                ids = json.load(f)
+            for dev in ids:
+                self._pnputil("/enable-device", dev)
+            os.remove(self.state_file)
+        except (OSError, ValueError):
+            pass
+
+    def disable_all(self) -> int:
+        ids = self.list_xusb()
+        done = []
+        for dev in ids:
+            cp = self._pnputil("/disable-device", dev)
+            if cp.returncode == 0:
+                done.append(dev)
+        if done:
+            try:
+                with open(self.state_file, "w", encoding="utf-8") as f:
+                    json.dump(done, f)
+            except OSError:
+                pass
+        self.disabled = done
+        return len(done)
+
+    def enable_all(self):
+        for dev in self.disabled:
+            try:
+                self._pnputil("/enable-device", dev)
+            except Exception:
+                pass
+        self.disabled = []
+        try:
+            os.remove(self.state_file)
+        except OSError:
+            pass
+
 
 # ----------------------------------------------------------------------------
 # XInput (чтение физического пада)
@@ -436,6 +587,9 @@ class HidHide:
         self.info = "не запускался"
         self.code = "idle"     # idle|hidden|install|disabled|error - переводится в UI
         self.arg = 0
+        self.hidden = set()    # instance paths, которые мы скрыли
+        self.allowed = set()   # instance paths, которые скрывать НЕЛЬЗЯ (наш виртуальный пад)
+        self._apps = set()     # exe, уже добавленные в белый список
 
     def _run(self, *args) -> str:
         cp = subprocess.run([self.cli, *args], capture_output=True, text=True,
@@ -479,26 +633,85 @@ class HidHide:
         try:
             # 1) мы сами должны видеть пад сквозь маскировку
             self._run("--app-reg", sys.executable)
+            self._apps.add(sys.executable.lower())
+            # 1b) фирменный софт пада (Flydigi Space и т.п.) тоже должен
+            #     видеть свой контроллер - иначе он "теряет" устройство
+            self.whitelist_companions()
             # 2) спрятать все подключённые игровые устройства
-            data = json.loads(self._run("--dev-gaming") or "[]")
-            hidden = 0
-            for group in data:
-                for dev in group.get("devices", []):
-                    path = dev.get("deviceInstancePath")
-                    if path and dev.get("present"):
-                        self._run("--dev-hide", path)
-                        hidden += 1
+            for path in self._present_paths():
+                self._run("--dev-hide", path)
+                self.hidden.add(path)
             # 3) включить маскировку
             self._run("--cloak-on")
             self.active = True
-            self.code, self.arg = "hidden", hidden
-            self.info = f"пад скрыт от игры ({hidden} устр.)"
+            self.code, self.arg = "hidden", len(self.hidden)
+            self.info = f"пад скрыт от игры ({len(self.hidden)} устр.)"
             return True
         except Exception as e:
             self.code = "error"
             self.info = (f"ошибка: {e}. Если 'доступ запрещён' — "
                          "запусти ассист от администратора")
             return False
+
+    def _present_paths(self) -> set:
+        data = json.loads(self._run("--dev-gaming") or "[]")
+        paths = set()
+        for group in data:
+            for dev in group.get("devices", []):
+                p = dev.get("deviceInstancePath")
+                if p and dev.get("present"):
+                    paths.add(p)
+        return paths
+
+    def snapshot_allowed(self):
+        """Вызывать сразу ПОСЛЕ создания виртуального пада: всё, что появилось
+        и не скрыто нами - наш виртуальный пад, его прятать нельзя."""
+        if not (self.cli and self.active):
+            return
+        try:
+            self.allowed = self._present_paths() - self.hidden
+        except Exception:
+            pass
+
+    COMPANION_PATTERNS = ("flydigi", "ds4windows", "8bitdo", "gamesir")
+
+    def whitelist_companions(self):
+        """Найти запущенный фирменный софт геймпадов и пустить его сквозь
+        маскировку - ему нужен доступ к физическому устройству."""
+        if not self.cli:
+            return
+        try:
+            pattern = "|".join(self.COMPANION_PATTERNS)
+            cp = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 f"Get-Process | Where-Object {{$_.Path -and ($_.Name -match '{pattern}')}} "
+                 "| Select-Object -ExpandProperty Path -Unique"],
+                capture_output=True, text=True,
+                creationflags=self.CREATE_NO_WINDOW, timeout=10)
+            for line in (cp.stdout or "").splitlines():
+                path = line.strip()
+                if path and path.lower() not in self._apps and os.path.isfile(path):
+                    self._run("--app-reg", path)
+                    self._apps.add(path.lower())
+        except Exception:
+            pass
+
+    def sweep(self):
+        """Периодический досмотр: интерфейсы пада, появившиеся ПОСЛЕ старта
+        (Flydigi Space, смена режима, реконнект), тоже прячем - иначе игра
+        видит второй контроллер и каждое нажатие дублируется."""
+        if not (self.cli and self.active):
+            return
+        try:
+            self.whitelist_companions()
+            for path in self._present_paths() - self.hidden - self.allowed:
+                self._run("--dev-hide", path)
+                self.hidden.add(path)
+            if len(self.hidden) != self.arg:
+                self.arg = len(self.hidden)
+                self.info = f"пад скрыт от игры ({self.arg} устр.)"
+        except Exception:
+            pass
 
     def disengage(self):
         """Вернуть пад системе (вызывается при выходе)."""
@@ -531,6 +744,11 @@ class Bridge:
         from collections import deque
         self.log = deque(maxlen=240 * 180)   # ~3 минуты внутренностей контура
         self.last_raw = 0.0                  # для UI: сырой стик
+        self.xusb = XusbDisabler()
+        self.hid_ctrl = None                 # pygame controller (HID-режим)
+        self.hid_joy = None                  # pygame joystick (вибрация)
+        self.hid_mode = False
+        self.mode_info = "starting"
         self.hz = 0.0                        # для UI: реальная частота цикла
         self._hz_frames = 0
         self._hz_t0 = 0.0
@@ -557,6 +775,15 @@ class Bridge:
         self._run.set()
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
+        threading.Thread(target=self._sweep_loop, daemon=True).start()
+
+    def _sweep_loop(self):
+        """Отдельный поток: досмотр HidHide вне контура руления,
+        чтобы вызовы CLI не подвешивали руль."""
+        while self._run.is_set():
+            time.sleep(5.0)
+            if self.cfg.get("auto_hide"):
+                self.hidhide.sweep()
 
     def stop(self):
         self._run.clear()
@@ -564,6 +791,60 @@ class Bridge:
         if th is not None:
             th.join(timeout=3.0)   # дать циклу дописать лог
         self._dump_log()           # страховка: идемпотентно
+
+    def _try_hid_mode(self) -> bool:
+        """Отключить XUSB физических падов и открыть пад через HID (SDL).
+        Возвращает True, если получилось; иначе всё откатывает."""
+        if not HAVE_PYGAME:
+            self.mode_info = "fallback: pygame not installed (pip install pygame)"
+            return False
+        # XUSB-узлы отключаем, только если они есть (проводной Xbox-режим).
+        # Пад в HID-режиме (например, "нинтендо" через донгл) отключений
+        # не требует - и прав администратора тогда тоже.
+        xusb_ids = self.xusb.list_xusb()
+        if xusb_ids:
+            if not is_admin():
+                self.mode_info = "fallback: no admin rights (use run.bat)"
+                return False
+            self.xusb.disable_all()
+            time.sleep(0.8)                   # дать системе перечислиться
+        try:
+            pygame.init()
+            sdl_controller.init()
+            pygame.joystick.init()
+            for i in range(pygame.joystick.get_count()):
+                if not sdl_controller.is_controller(i):
+                    continue                  # нет раскладки в базе SDL
+                joy = pygame.joystick.Joystick(i)
+                name = (joy.get_name() or "").lower()
+                if "xbox" in name or "x360" in name or "xinput" in name:
+                    continue                  # это чьё-то XUSB, не наш HID
+                self.hid_ctrl = sdl_controller.Controller(i)
+                self.hid_joy = joy
+                self.mode_info = f"clean HID mode: {joy.get_name()}"
+                return True
+            self.mode_info = "fallback: pad HID has no SDL mapping"
+        except Exception as e:
+            self.mode_info = f"fallback: SDL error {type(e).__name__}"
+        self.xusb.enable_all()                # не вышло - вернуть как было
+        return False
+
+    def _read_hid(self):
+        pygame.event.pump()
+        c = self.hid_ctrl
+        st = HidPadState()
+        btn = 0
+        for sdl_b, mask in SDL_BTN_TO_XINPUT.items():
+            if c.get_button(sdl_b):
+                btn |= mask
+        st.wButtons = btn
+        st.bLeftTrigger = int(clamp(c.get_axis(SDL_AX_LT) / 32767.0, 0, 1) * 255)
+        st.bRightTrigger = int(clamp(c.get_axis(SDL_AX_RT) / 32767.0, 0, 1) * 255)
+        st.sThumbLX = c.get_axis(SDL_AX_LX)
+        st.sThumbLY = -c.get_axis(SDL_AX_LY)      # SDL: вниз = плюс
+        st.sThumbRX = c.get_axis(SDL_AX_RX)
+        st.sThumbRY = -c.get_axis(SDL_AX_RY)
+        return st
 
     def _loop(self):
         ctypes.windll.winmm.timeBeginPeriod(1)
@@ -575,6 +856,14 @@ class Bridge:
             else:
                 self.hidhide.code = "disabled"
                 self.hidhide.info = "авто-режим выключен галкой"
+
+            # Страховка: если прошлый запуск был убит, не включив пад - чиним.
+            self.xusb.restore_leftovers()
+            # Чистый HID-режим отключён: для XUSB-падов (Direwolf по проводу)
+            # он доказанно не работает - игровой HID умирает вместе с XUSB.
+            # Схема по умолчанию: оси зеркалятся, кнопки только с физического.
+            self.hid_mode = False
+            self.mode_info = "wired mode: axes mirrored, buttons physical-only"
 
             # Физический пад = слот, существовавший ДО создания виртуального.
             # Так исключается петля "скрипт читает собственный виртуальный пад".
@@ -596,15 +885,16 @@ class Bridge:
                     self.status_detail = str(e)[:60]
                 return
             time.sleep(1.0)
+            self.hidhide.snapshot_allowed()
             virtual = xinput_connected_slots() - before
 
-            while self._run.is_set() and not before:
+            while self._run.is_set() and not before and not self.hid_mode:
                 self.status_code = "no_pad"
                 time.sleep(0.5)
                 before = xinput_connected_slots() - virtual
             if not self._run.is_set():
                 return
-            self.physical_slot = min(before)
+            self.physical_slot = min(before) if before else None
             self.status_code = "ok"
 
             if RUMBLE_FORWARD:
@@ -622,7 +912,13 @@ class Bridge:
                 dt = clamp(now - prev, 0.001, 0.1)
                 prev = now
 
-                gp = xinput_read(self.physical_slot)
+                if self.hid_mode:
+                    try:
+                        gp = self._read_hid()
+                    except Exception:
+                        gp = None
+                else:
+                    gp = xinput_read(self.physical_slot)
                 if gp is None:
                     self.status_code = "pad_lost"
                     time.sleep(0.5)
@@ -644,21 +940,49 @@ class Bridge:
                 if alive:
                     self.log.append((now,) + self.assist.dbg)
 
-                # проброс: всё как есть, кроме левого стика X
-                pad.report.wButtons = self._debounce(gp.wButtons, now)
-                pad.report.bLeftTrigger = gp.bLeftTrigger
-                pad.report.bRightTrigger = gp.bRightTrigger
-                pad.report.sThumbLX = int(clamp(out_x, -1.0, 1.0) * 32767)
-                pad.report.sThumbLY = gp.sThumbLY
-                pad.report.sThumbRX = gp.sThumbRX
-                pad.report.sThumbRY = gp.sThumbRY
+                if MENU_NEUTRAL and not alive and not self.hid_mode:
+                    # меню/пауза: виртуальный пад нем, меню управляет
+                    # физический пад - без дублей
+                    pad.report.wButtons = 0
+                    pad.report.bLeftTrigger = 0
+                    pad.report.bRightTrigger = 0
+                    pad.report.sThumbLX = 0
+                    pad.report.sThumbLY = 0
+                    pad.report.sThumbRX = 0
+                    pad.report.sThumbRY = 0
+                elif VIRTUAL_NO_BUTTONS and not self.hid_mode:
+                    # заезд: все оси зеркалятся (руль - с ассистом), кнопки НЕ
+                    # шлются - их игра получает только с видимого физического
+                    # пада, поэтому передачи и прочее не дублируются
+                    pad.report.wButtons = 0
+                    pad.report.bLeftTrigger = gp.bLeftTrigger
+                    pad.report.bRightTrigger = gp.bRightTrigger
+                    pad.report.sThumbLX = int(clamp(out_x, -1.0, 1.0) * 32767)
+                    pad.report.sThumbLY = gp.sThumbLY
+                    pad.report.sThumbRX = gp.sThumbRX
+                    pad.report.sThumbRY = gp.sThumbRY
+                else:
+                    # полный проброс (для скрываемых падов)
+                    pad.report.wButtons = self._debounce(gp.wButtons, now)
+                    pad.report.bLeftTrigger = gp.bLeftTrigger
+                    pad.report.bRightTrigger = gp.bRightTrigger
+                    pad.report.sThumbLX = int(clamp(out_x, -1.0, 1.0) * 32767)
+                    pad.report.sThumbLY = gp.sThumbLY
+                    pad.report.sThumbRX = gp.sThumbRX
+                    pad.report.sThumbRY = gp.sThumbRY
                 pad.update()
 
                 # вибрация: от игры, а при её молчании — синтетика по сносу
                 gl, gs = self._game_rumble
                 if gl < 0.01 and gs < 0.01:
                     gl, gs = self.assist.rumble_power * 0.3, self.assist.rumble_power
-                xinput_rumble(self.physical_slot, gl, gs)
+                if self.hid_mode:
+                    try:
+                        self.hid_joy.rumble(gl, gs, 100)
+                    except Exception:
+                        pass
+                elif self.physical_slot is not None:
+                    xinput_rumble(self.physical_slot, gl, gs)
 
                 rest = prev + frame - time.perf_counter()
                 if rest > 0.002:
@@ -671,6 +995,7 @@ class Bridge:
         finally:
             self.telemetry.stop()
             self.hidhide.disengage()
+            self.xusb.enable_all()            # вернуть XUSB пада системе
             ctypes.windll.winmm.timeEndPeriod(1)
             self._dump_log()
 
@@ -1134,9 +1459,7 @@ header .logo svg{width:100%;height:100%}
      height:24px;padding:0 10px;border-radius:1px;background:#fff;
      margin-bottom:3px}
 .row .lbl{font-weight:500;font-size:12px;letter-spacing:-.02em;color:#000}
-.lbl,.tval,.sval,.stats span,.stats b,.hhrow span,.panel .setup div,
-.panel > div > div:first-child,#hint .in{
-  text-box: trim-both cap alphabetic}
+.lbl,.tval,.sval{text-box: trim-both cap alphabetic}
 .sec{background:#CEFE0D}
 .zone{width:180px;display:flex;justify-content:space-between;
       align-items:center;height:100%}
@@ -1210,7 +1533,7 @@ function arrowEl(dir, cls){
 function build(){
   let h = '';
   h += `<div class="row sec"><span class="lbl">${t('assist_sec')}</span></div>`;
-  for (const key of ['helper','hide','lang']){
+  for (const key of ['helper','lang']){
     h += `<div class="row" data-hint="${key}_hint">
       <span class="lbl">${t(key)}</span>
       <span class="zone" data-toggle="${key}">
@@ -1405,7 +1728,7 @@ async function poll(){
     };
     $('#hh').textContent = (hhMap[state.hh_code]||hhMap.idle)();
     let st = '';
-    if (state.code === 'ok') st = state.alive ? '' : t('no_telemetry');
+    if (state.code === 'ok') st = state.mode + (state.alive ? '' : ' | ' + t('no_telemetry'));
     else if (state.code === 'error') st = 'ERROR: ' + (state.detail||'');
     else st = t('st_' + state.code);
     $('#status').textContent = st;
@@ -1447,6 +1770,7 @@ class Api:
             "hh_arg": b.hidhide.arg,
             "code": b.status_code,
             "detail": b.status_detail,
+            "mode": b.mode_info,
         }
 
     def set(self, key, value):
@@ -1456,7 +1780,46 @@ class Api:
         return True
 
 
+_instance_mutex = None
+
+
+def _kill_stale_instances():
+    """Перед стартом добиваем все прошлые копии ассиста (в т.ч. упавшие
+    консоли, зависшие на 'Нажми Enter') - каждая лишняя копия держит свой
+    виртуальный пад и дублирует ввод. Чужие python-процессы не трогаем:
+    фильтр по командной строке."""
+    me = os.getpid()
+    try:
+        subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_Process | Where-Object { "
+             "($_.CommandLine -match 'forza_assist_lite|SteeringAssist') -and "
+             f"($_.ProcessId -ne {me}) -and "
+             "($_.Name -match 'python|SteeringAssist') } | "
+             "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"],
+            capture_output=True, text=True,
+            creationflags=0x08000000, timeout=20)
+        time.sleep(0.3)   # дать умершим копиям отпустить виртуальные пады
+    except Exception:
+        pass
+
+
+def _ensure_single_instance():
+    """Второй запущенный экземпляр = второй виртуальный пад = двойные
+    нажатия. Запрещаем жёстко."""
+    global _instance_mutex
+    _instance_mutex = ctypes.windll.kernel32.CreateMutexW(
+        None, False, "Global\\SteeringAssistSingleton")
+    if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+        _fatal("Steering Assist уже запущен!\n"
+               "Второй экземпляр создал бы второй виртуальный пад\n"
+               "и каждое нажатие дублировалось бы.\n"
+               "Если окна не видно - закрой процесс: taskkill /F /IM python.exe")
+
+
 def main():
+    _kill_stale_instances()
+    _ensure_single_instance()
     bridge = Bridge()
     bridge.start()
     api = Api(bridge)

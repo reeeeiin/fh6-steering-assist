@@ -80,6 +80,23 @@ direct function of your own steering — feeding it back creates an
 oscillation loop). Yaw damping uses a separate fast filter so the damper
 never lags the rotation it must damp.
 
+The virtual pad carries **axes only** (assisted steering, throttle, brake,
+camera); buttons stay on your physical pad. This keeps every button a
+single-source event — no double presses — even though Windows cannot hide
+XUSB (Xbox-class) controllers from the game. The app also enforces a
+single running instance: a second copy would create a second virtual pad
+and duplicate inputs.
+
+## Troubleshooting
+
+- **Window doesn't open / opens blank** — install the
+  [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
+  (preinstalled on Windows 11 and most Windows 10 systems).
+- **Controller not found** — make sure the pad is in XInput mode and connected
+  before starting the app.
+- **Game doesn't react** — start the assist *before* the game; the game
+  enumerates controllers only at launch.
+
 ## Disclaimer
 
 Fan-made tool, not affiliated with or endorsed by Microsoft, Playground
