@@ -1,0 +1,2 @@
+vgamepad>=0.1.0
+pywebview>=5.0

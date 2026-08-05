@@ -1,0 +1,13 @@
+# сборка
+dist/
+build/
+*.spec
+__pycache__/
+
+# локальное состояние
+assist_log*.csv
+assist_lite_config.json
+
+# локальные dev-помощники (ссылки на localhost Figma этой машины)
+get_assets*.bat
+app-icon*.jpg
