@@ -3,21 +3,27 @@ cd /d "%~dp0"
 echo === Building Forza Assist Lite (single exe) ===
 echo.
 
-python -m pip install pyinstaller vgamepad pywebview
+python -m pip install pyinstaller vgamepad pywebview pygame
 if errorlevel 1 goto fail
+
+rem Version is read from APP_VERSION in the script - single source of truth
+set VER=
+for /f tokens^=2^ delims^=^" %%v in ('findstr /b /c:"APP_VERSION" forza_assist_lite.py') do set VER=%%v
+if "%VER%"=="" set VER=0.0.0
+echo Building version %VER%
 
 set EXTRA=
 if exist Oswald-Medium.ttf set EXTRA=%EXTRA% --add-data "Oswald-Medium.ttf;."
 if exist Oswald-Regular.ttf set EXTRA=%EXTRA% --add-data "Oswald-Regular.ttf;."
 if exist assets set EXTRA=%EXTRA% --add-data "assets;assets"
-if exist app.ico set EXTRA=%EXTRA% --icon app.ico
+if exist steering.ico set EXTRA=%EXTRA% --icon steering.ico
 
-python -m PyInstaller --onefile --noconsole --uac-admin --name SteeringAssist --collect-all vgamepad --collect-all webview %EXTRA% forza_assist_lite.py
+python -m PyInstaller --onefile --noconsole --uac-admin --name SteeringAssist-%VER% --collect-all vgamepad --collect-all webview --collect-all pygame %EXTRA% forza_assist_lite.py
 if errorlevel 1 goto fail
 
 echo.
 echo === DONE ===
-echo Result: dist\SteeringAssist.exe
+echo Result: dist\SteeringAssist-%VER%.exe
 pause
 exit /b 0
 

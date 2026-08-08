@@ -4,19 +4,26 @@
 
 Custom Figma-designed UI, original artwork.
 
-Reads the game's official telemetry (Data Out) 60 times a second, computes
-countersteer and yaw damping the way a real driver's hands would, and feeds
-the corrected steering into a virtual Xbox 360 controller. The game sees a
-normal gamepad — no memory access, no game file modification, no injection.
+Reads the game's official telemetry (Data Out) 60 times a second, measures
+how far the car travels sideways versus where its nose points — the way real
+caster geometry feels a slide — and feeds countersteer and yaw damping into
+a virtual Xbox 360 controller. The game sees a normal gamepad — no memory
+access, no game file modification, no injection.
 
 ![status](https://img.shields.io/badge/status-playable-brightgreen) ![python](https://img.shields.io/badge/python-3.10+-blue)
 
 ## Features
 
-- **Slide-only assistance** — fully transparent in grip driving; wakes up
-  proportionally when the rear axle starts sliding (soft-saturating
-  proportional controller, no relay flapping)
-- **Predictive countersteer** — compensates telemetry + filter latency
+- **Body-slip based** — reacts to the car's true slide (velocity vector vs
+  heading), so it keeps working with the handbrake locked, on ice, anywhere
+- **Progressive engagement** — help starts from the very first degree of
+  slide, tiny at first and growing with angle; no activation threshold
+- **BeamNG-style strength** — linear countersteer in %, up to full lock
+  (100% = wheels follow the car's real direction of travel)
+- **Predictive countersteer** — ~60 ms lookahead compensates telemetry and
+  filter latency, catching the slide as it is born
+- **Steering response** — choose whether the assist follows your own
+  corrections instantly or smooths twitchy micro-steering mid-drift
 - **Driver-intent yield** — flick the stick against the assist (transition,
   drift entry) and it backs off automatically
 - **Slide-only expo steering curve** — fine micro-corrections while drifting,
@@ -25,8 +32,9 @@ normal gamepad — no memory access, no game file modification, no injection.
 - **Auto HidHide** — hides your physical pad from the game while running,
   returns it on exit; whitelist managed automatically
 - **Driver bootstrap** — offers to install ViGEmBus / HidHide on first run
-- Forza Horizon styled UI (Figma-designed), 10 languages, live telemetry
-  panel with raw/assisted input bars
+- Custom frameless window (Figma-designed), **4 colour themes**
+  (FH6 / FH4 / Matter / Aqua), 10 languages, live telemetry panel with
+  raw/assisted input bars
 
 ## Requirements
 
@@ -42,7 +50,7 @@ Both drivers are offered for installation automatically on first run.
 ## Run from source
 
 ```
-pip install vgamepad pywebview
+pip install vgamepad pywebview pygame
 python forza_assist_lite.py
 ```
 
@@ -54,8 +62,9 @@ python forza_assist_lite.py
 build.bat
 ```
 
-Result: `dist\SteeringAssist.exe`. Requests admin rights at launch
-(needed for HidHide control).
+Result: `dist\SteeringAssist-<version>.exe` (version is read from
+`APP_VERSION` in the script). Requests admin rights at launch (needed for
+HidHide control).
 
 ## Usage
 
@@ -75,13 +84,17 @@ physical pad ──XInput──> assist ──ViGEmBus──> virtual Xbox pad �
                            └──UDP 20777── game telemetry (rear slip, yaw)
 ```
 
-The controller acts only on the **rear axle** slip signal (front slip is a
-direct function of your own steering — feeding it back creates an
-oscillation loop). Yaw damping uses a separate fast filter so the damper
-never lags the rotation it must damp.
+The drift signal is the **body slip angle** — the angle between where the
+car points and where it actually travels (`atan2` of the local velocity
+vector). Unlike tyre-slip signals it survives locked wheels, so the assist
+keeps countersteering through handbrake turns. Yaw damping uses a separate
+fast filter so the damper never lags the rotation it must damp.
 
-The virtual pad carries **axes only** (assisted steering, throttle, brake,
-camera); buttons stay on your physical pad. This keeps every button a
+The virtual pad carries **axes plus hold-type buttons only** (assisted
+steering, throttle, brake, camera, and mirrors of handbrake/clutch —
+mirroring a *hold* can't double-fire); event buttons stay on your physical
+pad. Without the mirrored handbrake the game would switch its axis source
+to the physical pad on every press, dropping the countersteer mid-drift. This keeps every button a
 single-source event — no double presses — even though Windows cannot hide
 XUSB (Xbox-class) controllers from the game. The app also enforces a
 single running instance: a second copy would create a second virtual pad

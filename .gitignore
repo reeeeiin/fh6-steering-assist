@@ -6,8 +6,17 @@ __pycache__/
 
 # локальное состояние
 assist_log*.csv
+debug.log
 assist_lite_config.json
 
-# локальные dev-помощники (ссылки на localhost Figma этой машины)
+# локальные dev-помощники (диагностика этой машины, не для репозитория)
 get_assets*.bat
 app-icon*.jpg
+check.bat
+probe.bat
+probe_velocity.py
+disable_genitech.bat
+fix_icon_cache.bat
+icon - Copy.png
+log*.csv
+RELEASE_NOTES*.md
