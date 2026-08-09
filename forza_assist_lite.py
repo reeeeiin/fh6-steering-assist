@@ -5,9 +5,18 @@ Steering Assist
 
 Цепь:  физический геймпад (XInput) -> этот скрипт -> виртуальный Xbox-пад (ViGEmBus)
 
-Игра видит обычный Xbox-контроллер. Скрипт корректирует ТОЛЬКО ось руления
-(левый стик X) по телеметрии; всё остальное — правый стик, триггеры, кнопки —
-пробрасывается без изменений. Вибрация игры пересылается в физический пад.
+Игра видит обычный Xbox-контроллер. Скрипт корректирует по телеметрии ось
+руления (левый стик X), остальные оси зеркалит как есть.
+
+С кнопками сложнее: HidHide не умеет прятать XUSB, поэтому игра видит ДВА
+устройства и читает кнопки только с одного за раз. На виртуальный пад уходят
+лишь кнопки-удержания (ручник, сцепление) - они держат за ним оси; на время
+любой событийной кнопки зеркало уступает, иначе игра не увидит нажатие вообще.
+Подробности и результаты измерений - у констант ниже и в _mirror_buttons.
+
+Ассист работает только когда идёт заезд (IsRaceOn): в меню виртуальный пад
+полностью нем, иначе каждое подтверждение приходило бы с двух падов сразу.
+Вибрация игры пересылается в физический пад, но редко и только при изменении.
 
 Установка (один раз):
     pip install vgamepad     <- сам поставит драйвер ViGEmBus, согласись в инсталляторе
@@ -66,7 +75,7 @@ except Exception as e:
 # ----------------------------------------------------------------------------
 # Константы (правятся здесь, в UI не вынесены — чтобы окно оставалось простым)
 # ----------------------------------------------------------------------------
-APP_VERSION = "1.2.2"       # показывается в футере окна и в имени exe
+APP_VERSION = "1.3.0"       # показывается в футере окна и в имени exe
 UPDATE_HZ = 60.0            # частота цикла = частоте телеметрии Forza
 PREDICT_EXTRA = 0.02        # сек поверх задержки фильтра: предикция смотрит
                             # на ~60мс вперёд - контрруль стартует в момент
@@ -78,10 +87,6 @@ STEER_PER_SLIP = 0.234      # доля полного хода руля на е�
                             # ровно за вектором движения (полный лок ~35 град
                             # сноса). Схема BeamNG: коррекция линейна по углу,
                             # ограничена только физическим локом руля
-SLIP_SPAN = 4.0             # рабочий диапазон сноса задней оси в дрифте:
-                            # характеристика линейна внутри и мягко (tanh)
-                            # выходит на потолок, НИКОГДА не превращаясь в реле            # сек: предикция сноса — компенсирует запаздывание
-                            # телеметрии и фильтра (главное лекарство от воблинга)
 SMOOTH_TAU_MAX = 0.05       # сек: макс. постоянная времени фильтра (ползунок = доля)
 YIELD_TAU = 0.05            # сек: сглаживание уступчивости - когда водитель
                             # отпускает стик после скидки, контрруль ассиста
@@ -105,25 +110,51 @@ BRAKE_SUPPRESS = 0.5        # 0..1: насколько тормоз глушит
 # прямую "снос минус предел". "Предел сцепления" задаёт придушенность старта.
 TRANSITION_SPEED = 1.0      # ослабление демпфера при быстрой перекладке
 RUMBLE_FORWARD = True       # пересылать вибрацию игры в физический пад
-MIRROR_HOLD_BUTTONS = 0x1000 | 0x0100
-                            # Кнопки-УДЕРЖАНИЯ, зеркалимые на виртуальный пад:
-                            # A (ручник) + LB (сцепление). Зеркало удерживает
-                            # оси (руль с ассистом) на виртуальном паде.
-                            # ВАЖНО (выяснено экспериментально): игра читает
-                            # кнопки только с ОДНОГО пада за раз. Пока зеркало
-                            # зажато, физические нажатия ей не видны - поэтому
-                            # на время любой событийной кнопки зеркало
-                            # УСТУПАЕТ (см. цикл): игра уходит на физический
-                            # пад, видит там и ручник, и передачу, а после
-                            # отпускания зеркало возвращает оси ассисту.
-                            # Событийные кнопки зеркалить нельзя - дубли.
-                            # Для удержаний "нажато на обоих падах" = просто
-                            # нажато, дубля-события не существует. Зато при
-                            # нажатии активность есть и на виртуальном паде -
-                            # игра не переключает источник осей на физический,
-                            # и контрруль не пропадает в момент ручника.
-                            # Кнопки-СОБЫТИЯ (передачи, камера) зеркалить
-                            # НЕЛЬЗЯ - действие сработает дважды.
+RUMBLE_HZ = 12.0            # Максимальная частота отправки вибрации.
+                            # XInputSetState - БЛОКИРУЮЩИЙ USB control transfer
+                            # к тому же паду, с которого мы читаем кнопки.
+                            # Вызов каждый кадр (60 Гц) забивает control-эндпоинт,
+                            # и input-репорты пада начинают опаздывать и
+                            # теряться: нажатие приходится повторять по 3-4 раза.
+                            # Шлём реже и только при реальном изменении.
+RUMBLE_EPS = 0.06           # порог "значение изменилось": вибрация - ощущение
+                            # низкочастотное, мелкие шаги всё равно не
+                            # различимы, а каждый из них стоил USB-запроса
+RUMBLE_STEPS = 16           # квантование силы: в затяжном заносе синтетика
+                            # ползёт непрерывно и без округления давала бы
+                            # "изменение" на каждом кадре
+RUMBLE_FLOOR = 0.05         # ниже — считаем нулём (пад всё равно не крутит)
+SWEEP_SEC = 20.0            # период досмотра HidHide. Каждый досмотр - запуск
+                            # внешнего процесса; на 5 секундах это давало
+                            # регулярный системный хич прямо во время заезда,
+                            # и нажатия, попавшие в него, игра теряла.
+YIELD_FRAMES = 5            # Длина уступки в режиме "pulse" (~83 мс). Режим
+                            # диагностический: измерение показало, что этого
+                            # мало - реальное нажатие длится ~150 мс, и игра
+                            # успевает опросить пад мимо окна. Рабочий режим -
+                            # "hold" (уступка на всё нажатие).
+BUTTON_NAMES = {            # XInput-биты -> подписи для назначения в UI
+    0x1000: "A", 0x2000: "B", 0x4000: "X", 0x8000: "Y",
+    0x0100: "LB", 0x0200: "RB", 0x0040: "LS", 0x0080: "RS",
+    0x0001: "D-Up", 0x0002: "D-Down", 0x0004: "D-Left", 0x0008: "D-Right",
+    0x0010: "Start", 0x0020: "Back",
+}
+# Кнопки-УДЕРЖАНИЯ (ручник, сцепление) зеркалятся на виртуальный пад; какие
+# именно - берётся из конфига, потому что раскладка у всех своя. Зачем вообще
+# зеркалить: пока на виртуальном паде есть активность, игра не уводит источник
+# осей на физический, и контрруль не пропадает в момент ручника. Дубля при этом
+# не возникает - для удержания "нажато на обоих падах" это просто "нажато".
+#
+# ИЗМЕРЕНО ЛОГОМ (см. tools/analyze_log.py): игра читает кнопки только с ОДНОГО
+# пада за раз, и пока зеркало держит ручник, физических нажатий она не видит
+# ВООБЩЕ - 0 из 10 переключений передачи. Поэтому на время любой событийной
+# кнопки зеркало обязано уступить: игра уходит на физический пад, видит там и
+# ручник, и передачу, а после отпускания зеркало забирает оси обратно.
+# Плата за это - оси на ~150 мс уходят физическому паду, то есть руль слегка
+# дёргается при переключении в заносе. Убрать нельзя: выбор источника осей
+# целиком на стороне игры.
+#
+# Сами событийные кнопки (передачи, камера) зеркалить НЕЛЬЗЯ - сработают дважды.
 VIRTUAL_NO_BUTTONS = True   # виртуальный пад шлёт ВСЕ ОСИ (руль с ассистом,
                             # газ, тормоз, камеру), но НОЛЬ кнопок: оси есть на
                             # обоих устройствах (кого бы игра ни слушала - газ
@@ -138,6 +169,13 @@ MENU_NEUTRAL = True         # пока телеметрия молчит (мен
 BUTTON_DEBOUNCE_MS = 30     # антидребезг кнопок: после смены состояния кнопка
                             # "заморожена" на столько мс (0 = выкл). Человеческий
                             # даблтап ~60-80 мс, так что живой ввод не страдает.
+DEBUG_LOG = os.environ.get("ASSIST_DEBUG_LOG") == "1"
+                            # Покадровый CSV внутренностей контура - инструмент
+                            # разбора воблинга, не для релиза: он ест память и
+                            # роняет многомегабайтный файл при каждом выходе.
+                            # Включается только явно:  set ASSIST_DEBUG_LOG=1
+
+
 def _app_dir() -> str:
     """Папка приложения: рядом с exe при сборке PyInstaller, иначе рядом со скриптом."""
     if getattr(sys, "frozen", False):
@@ -377,6 +415,12 @@ class Telemetry:
 
 class TelemetryListener:
     PACKET_SIZE = 324
+    OFF_RACE_ON = 0   # s32: 1 = идёт заезд, 0 = меню/пауза/загрузка.
+                      # Forza шлёт пакеты НЕПРЕРЫВНО, в том числе в меню -
+                      # там просто всё обнулено. Судить о заезде по одному
+                      # факту прихода пакета нельзя: в меню ассист остался бы
+                      # включённым, а виртуальный пад - зеркалил бы кнопки,
+                      # давая двойное подтверждение на каждом A.
     OFF_VEL_X = 32    # локальная скорость машины: X = вправо
     OFF_VEL_Z = 40    # Z = вперёд
     OFF_YAW = 48
@@ -386,12 +430,15 @@ class TelemetryListener:
     OFF_SLIP_RR = 176
     OFF_SPEED = 256
     F32 = struct.Struct("<f")
+    S32 = struct.Struct("<i")
 
     def __init__(self, port: int = TELEMETRY_PORT, stale_sec: float = 0.5):
         self.port, self.stale_sec = port, stale_sec
         self._lock = threading.Lock()
         self._latest = Telemetry(0.0, 0.0, 0.0, 0.0, 0.0)
-        self._t_last = 0.0
+        self._t_last = 0.0        # последний пакет ЛЮБОГО вида (в т.ч. меню)
+        self._t_race = 0.0        # последний пакет С ИДУЩИМ ЗАЕЗДОМ
+        self.error = ""           # причина, по которой слушатель не работает
         self._run = threading.Event()
 
     def start(self):
@@ -403,6 +450,12 @@ class TelemetryListener:
 
     @property
     def alive(self) -> bool:
+        """Идёт заезд: пакеты свежие И игра не в меню/на паузе."""
+        return time.monotonic() - self._t_race < self.stale_sec
+
+    @property
+    def receiving(self) -> bool:
+        """Пакеты приходят вообще (Data Out настроен). В меню True, а alive - нет."""
         return time.monotonic() - self._t_last < self.stale_sec
 
     @property
@@ -417,7 +470,15 @@ class TelemetryListener:
     def _loop(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            sock.bind(("0.0.0.0", self.port))
+            try:
+                sock.bind(("0.0.0.0", self.port))
+            except OSError as e:
+                # Порт занят (другой телеметрийный тул, недобитая копия) или
+                # закрыт политикой. Без этой ветки поток умирал с трейсбеком,
+                # которого в сборке --noconsole никто не видит: панель просто
+                # не оживала, а статус продолжал показывать "ok".
+                self.error = (e.strerror or str(e))[:60]
+                return
             sock.settimeout(0.2)
             while self._run.is_set():
                 try:
@@ -426,6 +487,10 @@ class TelemetryListener:
                     continue
                 if len(pkt) < self.PACKET_SIZE:
                     continue
+                now = time.monotonic()
+                self._t_last = now
+                if not self.S32.unpack_from(pkt, self.OFF_RACE_ON)[0]:
+                    continue          # меню/пауза: пакет есть, заезда нет
                 fl = self.F32.unpack_from(pkt, self.OFF_SLIP_FL)[0]
                 fr = self.F32.unpack_from(pkt, self.OFF_SLIP_FR)[0]
                 rl = self.F32.unpack_from(pkt, self.OFF_SLIP_RL)[0]
@@ -446,7 +511,7 @@ class TelemetryListener:
                         self._latest = Telemetry(max(0.0, spd),
                                                  (fl + fr) * 0.5,
                                                  (rl + rr) * 0.5, yaw, beta)
-                        self._t_last = time.monotonic()
+                        self._t_race = now
 
 
 # ----------------------------------------------------------------------------
@@ -622,7 +687,7 @@ class Assist:
 # ----------------------------------------------------------------------------
 # Конфиг
 # ----------------------------------------------------------------------------
-CONFIG_VERSION = 4
+CONFIG_VERSION = 5
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
@@ -638,28 +703,102 @@ DEFAULTS = {
     "min_speed": 15.0,     # 0..60   км/ч: ниже — ассист выключен (пончики!)
     "speed_sens": 20.0,    # 0..100  доп. сужение руля на скорости
     "smoothing": 0.8,      # 0..0.99 сглаживание телеметрии
+    # Кнопки-удержания: назначаются в UI под свою раскладку. Зеркалятся на
+    # виртуальный пад, чтобы игра не уводила оси на физический в момент
+    # ручника. Всё остальное - событийные кнопки, их зеркалить нельзя (дубль).
+    "btn_handbrake": 0x1000,   # A по умолчанию (стандартная раскладка FH)
+    "btn_clutch": 0x0100,      # LB по умолчанию
+    # Как зеркало ведёт себя при событийной кнопке (передача, камера). В UI не
+    # вынесено - значение выяснено измерением и менять его игроку незачем;
+    # ключ оставлен в конфиге для диагностики (как steer_lag и speed_sens).
+    #   hold  - уступать всё нажатие  <- рабочее значение
+    #   pulse - уступить на YIELD_FRAMES кадров (только фронт нажатия)
+    #   off   - не уступать никогда (зеркало всегда держит оси)
+    # Измерено логом: пока зеркало держит ручник, игра читает кнопки ТОЛЬКО с
+    # виртуального пада и физических нажатий не видит вообще (0 из 10). Стоит
+    # зеркалу уступить - нажатия проходят. "pulse" (83 мс) короче реального
+    # нажатия (~150 мс) и потому срабатывает не всегда: 8 из 10.
+    "yield_mode": "hold",
+    # Вибрация всегда включена; в UI ручки нет. Ключ оставлен для диагностики:
+    # если у чьего-то пада кнопки теряются, отключение вибрации это покажет
+    # (см. RUMBLE_HZ - отправка идёт редко и только при изменении).
+    "rumble": True,
     "lang": "en",          # язык интерфейса
     "theme": "fh6",        # тема оформления: fh6 / fh4 / matter / aqua
     "telemetry_seen": False,  # телеметрия хоть раз приходила (для онбординга)
 }
+
+THEMES = ("fh6", "fh4", "matter", "aqua")
+YIELD_MODES = ("pulse", "hold", "off")
+
+# Допустимые диапазоны числовых настроек. Конфиг — обычный JSON в APPDATA, его
+# правят руками и он переживает смену версий; без проверки, например,
+# steer_curve = 0 превращает `abs(stick) ** 0` в единицу, то есть даёт полный
+# лок руля от любого касания стика в скольжении.
+CONFIG_RANGES = {
+    "counter_gain": (0.0, 200.0),
+    "gyro":         (0.0, 3.0),
+    "reaction":     (0.0, 1.0),
+    "steer_lag":    (0.0, 0.25),
+    "steer_curve":  (1.0, 3.0),
+    "deadband":     (0.0, 2.0),
+    "min_speed":    (0.0, 60.0),
+    "speed_sens":   (0.0, 100.0),
+    "smoothing":    (0.0, 0.99),
+}
+
+
+def sanitize_config(cfg: dict) -> dict:
+    """Привести значения к типам и диапазонам. Битый ключ = значение по
+    умолчанию, а не падение и не опасная физика."""
+    for key, (lo, hi) in CONFIG_RANGES.items():
+        try:
+            v = float(cfg[key])
+        except (KeyError, TypeError, ValueError):
+            v = float(DEFAULTS[key])
+        cfg[key] = clamp(v, lo, hi) if math.isfinite(v) else float(DEFAULTS[key])
+    for key in ("enabled", "auto_hide", "telemetry_seen", "rumble"):
+        cfg[key] = bool(cfg.get(key, DEFAULTS[key]))
+    for key in ("btn_handbrake", "btn_clutch"):
+        try:                       # только известные одиночные XInput-биты
+            v = int(cfg[key])
+        except (KeyError, TypeError, ValueError):
+            v = DEFAULTS[key]
+        cfg[key] = v if v in BUTTON_NAMES or v == 0 else DEFAULTS[key]
+    if cfg.get("yield_mode") not in YIELD_MODES:
+        cfg["yield_mode"] = DEFAULTS["yield_mode"]
+    if cfg.get("lang") not in LANG_ORDER:
+        cfg["lang"] = DEFAULTS["lang"]
+    if cfg.get("theme") not in THEMES:
+        cfg["theme"] = DEFAULTS["theme"]
+    return cfg
 
 
 def load_config() -> dict:
     try:
         with open(CONFIG_FILE, encoding="utf-8") as f:
             data = json.load(f)
-        if data.get("version", 1) < 3:
+        if not isinstance(data, dict) or data.get("version", 1) < 3:
             return dict(DEFAULTS)  # до v3 менялась семантика ползунков — сброс
         cfg = {**DEFAULTS, **{k: data[k] for k in DEFAULTS
                               if k in data and k != "version"}}
+        if data.get("version", 1) < 5:
+            # v5: режим уступки и тумблер вибрации убраны из UI. Значения,
+            # оставшиеся от отладочных прогонов, надо вернуть к рабочим -
+            # иначе игрок застрянет на них без единой ручки, чтобы починить.
+            for key in ("yield_mode", "rumble"):
+                cfg[key] = DEFAULTS[key]
         cfg["version"] = CONFIG_VERSION
-        v = cfg.get("counter_gain", 100.0)
+        try:
+            v = float(cfg.get("counter_gain", 100.0))
+        except (TypeError, ValueError):
+            v = float(DEFAULTS["counter_gain"])
         if v <= 6.001:
             # старые шкалы "силы" (0..6 и 0..1) -> проценты BeamNG-схемы
             if v > 1.001:
                 v = 0.6 * v / 2.0          # 0..6 -> доля хода
             cfg["counter_gain"] = float(round(min(200.0, v * 150.0)))
-        return cfg
+        return sanitize_config(cfg)
     except (OSError, ValueError):
         return dict(DEFAULTS)
 
@@ -670,6 +809,32 @@ def save_config(cfg: dict) -> None:
             json.dump(cfg, f, indent=2)
     except OSError:
         pass
+
+
+_save_lock = threading.Lock()
+_save_timer: threading.Timer | None = None
+
+
+def save_config_soon(cfg: dict, delay: float = 0.4) -> None:
+    """Отложенное сохранение с коалесингом. Перетаскивание ползунка шлёт
+    десятки set() в секунду, и каждый переписывал весь JSON в APPDATA."""
+    global _save_timer
+    with _save_lock:
+        if _save_timer is not None:
+            _save_timer.cancel()
+        _save_timer = threading.Timer(delay, save_config, args=(dict(cfg),))
+        _save_timer.daemon = True
+        _save_timer.start()
+
+
+def flush_config(cfg: dict) -> None:
+    """Дописать отложенное сохранение немедленно (выход из приложения)."""
+    global _save_timer
+    with _save_lock:
+        if _save_timer is not None:
+            _save_timer.cancel()
+            _save_timer = None
+    save_config(cfg)
 
 
 # ----------------------------------------------------------------------------
@@ -804,10 +969,17 @@ class HidHide:
         if not (self.cli and self.active):
             return
         try:
-            self.whitelist_companions()
-            for path in self._present_paths() - self.hidden - self.allowed:
-                self._run("--dev-hide", path)
-                self.hidden.add(path)
+            new = self._present_paths() - self.hidden - self.allowed
+            if new:
+                # Фирменный софт пада ищем ТОЛЬКО когда в системе реально
+                # появилось устройство. Раньше этот поиск шёл каждый досмотр и
+                # каждый раз поднимал PowerShell: спавн процесса раз в
+                # несколько секунд даёт периодический хич, и нажатие,
+                # попавшее в него, игра теряет.
+                self.whitelist_companions()
+                for path in new:
+                    self._run("--dev-hide", path)
+                    self.hidden.add(path)
             if len(self.hidden) != self.arg:
                 self.arg = len(self.hidden)
                 self.info = f"пад скрыт от игры ({self.arg} устр.)"
@@ -842,8 +1014,22 @@ class Bridge:
         self._run = threading.Event()
         self._btn_state = 0                  # принятое состояние кнопок
         self._btn_lock_until = [0.0] * 16    # антидребезг: до какого момента бит заморожен
+        self._prev_events = 0                # событийные кнопки прошлого кадра
+        self._prev_all = 0                   # все кнопки прошлого кадра
+        self._rumble_target = (0.0, 0.0)     # что хочет контур руления
+        self._rumble_last = (0.0, 0.0)       # последняя ОТПРАВЛЕННАЯ вибрация
+        self._rumble_t = float("-inf")       # когда её отправили: ещё никогда.
+                                             # Не 0.0 - иначе первая отправка
+                                             # зависела бы от абсолютного
+                                             # значения часов цикла
+        self._yield_until = 0.0              # до какого момента зеркало уступает
+        self.buttons = 0                     # для UI: живое состояние кнопок
+        self.capture = False                 # режим назначения кнопки в UI
+        self.captured = 0                    # что поймали в режиме назначения
         from collections import deque
-        self.log = deque(maxlen=240 * 180)   # ~3 минуты внутренностей контура
+        # 60 Гц * 60 с * 10 = последние 10 минут контура (только с DEBUG_LOG)
+        self.log = deque(maxlen=int(UPDATE_HZ) * 600 if DEBUG_LOG else 0)
+        self._dumped = False
         self.last_raw = 0.0                  # для UI: сырой стик
         self.xusb = XusbDisabler()
         self.hid_ctrl = None                 # pygame controller (HID-режим)
@@ -853,6 +1039,105 @@ class Bridge:
         self.hz = 0.0                        # для UI: реальная частота цикла
         self._hz_frames = 0
         self._hz_t0 = 0.0
+
+    @staticmethod
+    def _neutral(pad) -> None:
+        """Обнулить отчёт виртуального пада (вызывающий делает pad.update())."""
+        r = pad.report
+        r.wButtons = 0
+        r.bLeftTrigger = r.bRightTrigger = 0
+        r.sThumbLX = r.sThumbLY = r.sThumbRX = r.sThumbRY = 0
+
+    @staticmethod
+    def _quantize_rumble(v: float) -> float:
+        """Округлить силу до ступеньки и придавить шум у нуля: без этого
+        синтетическая вибрация ползёт непрерывно и каждый кадр выглядит
+        как «значение изменилось»."""
+        v = clamp(v, 0.0, 1.0)
+        if v < RUMBLE_FLOOR:
+            return 0.0
+        return round(v * RUMBLE_STEPS) / RUMBLE_STEPS
+
+    def _rumble_loop(self):
+        """Отдельный поток для вибрации.
+
+        XInputSetState — блокирующий USB-запрос: в контуре руления он давал бы
+        джиттер частоты, а на паде отъедал бы у его же input-репортов. Здесь он
+        никому не мешает и идёт не чаще RUMBLE_HZ.
+        """
+        while self._run.is_set():
+            gl, gs = self._rumble_target
+            if self._rumble_due(gl, gs, time.perf_counter()):
+                try:
+                    if self.hid_mode and self.hid_joy is not None:
+                        self.hid_joy.rumble(gl, gs, 200)
+                    elif self.physical_slot is not None:
+                        xinput_rumble(self.physical_slot, gl, gs)
+                except Exception:
+                    pass
+            time.sleep(1.0 / RUMBLE_HZ)
+        self._stop_rumble()
+
+    def _stop_rumble(self):
+        """Погасить моторы на выходе — иначе пад продолжает жужжать."""
+        try:
+            if self.hid_mode and self.hid_joy is not None:
+                self.hid_joy.rumble(0, 0, 0)
+            elif self.physical_slot is not None:
+                xinput_rumble(self.physical_slot, 0.0, 0.0)
+        except Exception:
+            pass
+
+    def _rumble_due(self, gl: float, gs: float, now: float) -> bool:
+        """Пора ли отправлять вибрацию на физический пад.
+
+        XInputSetState — блокирующий USB-запрос к тому же устройству, с
+        которого мы читаем кнопки. Отправка каждый кадр забивает его
+        control-эндпоинт, и НАЖАТИЯ доходят с задержкой или пропадают.
+        Поэтому: не чаще RUMBLE_HZ и только когда значение изменилось.
+        Остановка моторов проходит без задержки — иначе пад "залипает".
+        """
+        pl, ps = self._rumble_last
+        stopping = gl <= 0.0 and gs <= 0.0 and (pl > 0.0 or ps > 0.0)
+        changed = abs(gl - pl) > RUMBLE_EPS or abs(gs - ps) > RUMBLE_EPS
+        if not stopping:
+            if not changed or now - self._rumble_t < 1.0 / RUMBLE_HZ:
+                return False
+        self._rumble_last = (gl, gs)
+        self._rumble_t = now
+        return True
+
+    def _mirror_buttons(self, buttons: int, now: float) -> int:
+        """Какие кнопки физического пада отдать виртуальному.
+
+        Зеркалятся только кнопки-УДЕРЖАНИЯ (ручник, сцепление): для них
+        "нажато на обоих падах" = просто нажато, дубля-события не существует,
+        зато активность на виртуальном паде не даёт игре увести оси на
+        физический в момент ручника. Маска берётся из конфига - раскладка у
+        всех своя, и захардкоженный A ломал тех, у кого на A передача.
+
+        Событийные кнопки (передачи, камера) зеркалить нельзя - сработают
+        дважды. Чтобы игра всё-таки увидела такое нажатие, зеркало на время
+        уступает; чем именно уступать, решает yield_mode.
+        """
+        mask = (self.cfg["btn_handbrake"] | self.cfg["btn_clutch"]) & 0xFFFF
+        events = buttons & ~mask & 0xFFFF
+        press = events & ~self._prev_events      # только фронт нажатия
+        self._prev_events = events
+
+        mode = self.cfg["yield_mode"]
+        if mode == "pulse":
+            # Игре нужен только ФРОНТ нажатия: отдаём оси на YIELD_FRAMES
+            # кадров и сразу забираем обратно. В v1.2.2 уступка держалась
+            # всё нажатие, и контрруль пропадал до отпускания кнопки.
+            if press:
+                self._yield_until = now + YIELD_FRAMES / UPDATE_HZ
+            yielding = now < self._yield_until
+        elif mode == "hold":
+            yielding = bool(events)              # поведение v1.2.2
+        else:
+            yielding = False                     # зеркало не уступает никогда
+        return 0 if yielding else buttons & mask
 
     def _debounce(self, raw_buttons: int, now: float) -> int:
         """Смена состояния кнопки принимается, затем бит замораживается
@@ -877,12 +1162,19 @@ class Bridge:
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
         threading.Thread(target=self._sweep_loop, daemon=True).start()
+        threading.Thread(target=self._rumble_loop, daemon=True).start()
 
     def _sweep_loop(self):
-        """Отдельный поток: досмотр HidHide вне контура руления,
-        чтобы вызовы CLI не подвешивали руль."""
+        """Отдельный поток: досмотр HidHide вне контура руления, чтобы вызовы
+        CLI не подвешивали руль. Реже, чем раньше: каждый досмотр - это запуск
+        внешнего процесса, а он тормозит всю систему на сотни миллисекунд.
+        Новые интерфейсы пада появляются при реконнекте и смене режима, то есть
+        считанные разы за сессию - раз в 5 секунд их искать незачем."""
         while self._run.is_set():
-            time.sleep(5.0)
+            for _ in range(int(SWEEP_SEC)):          # чтобы выход не ждал досмотра
+                if not self._run.is_set():
+                    return
+                time.sleep(1.0)
             if self.cfg.get("auto_hide"):
                 self.hidhide.sweep()
 
@@ -891,7 +1183,7 @@ class Bridge:
         th = getattr(self, "_thread", None)
         if th is not None:
             th.join(timeout=3.0)   # дать циклу дописать лог
-        self._dump_log()           # страховка: идемпотентно
+        self._dump_log()           # страховка, если цикл не дошёл до finally
 
     def _try_hid_mode(self) -> bool:
         """Отключить XUSB физических падов и открыть пад через HID (SDL).
@@ -1029,10 +1321,28 @@ class Bridge:
                 else:
                     gp = xinput_read(self.physical_slot)
                 if gp is None:
+                    # Пад отвалился (батарейка, кабель, смена режима). ViGEm
+                    # продолжает отдавать игре ПОСЛЕДНИЙ отчёт, поэтому без
+                    # обнуления в игре остаются зажатый газ и вывернутый руль -
+                    # до самого закрытия ассиста.
                     self.status_code = "pad_lost"
+                    self._neutral(pad)
+                    pad.update()
                     time.sleep(0.5)
                     continue
                 self.status_code = "ok"
+
+                # Живое состояние кнопок для UI + режим назначения: ловим
+                # ФРОНТ нажатия, чтобы зажатая кнопка не назначалась повторно.
+                self.buttons = gp.wButtons
+                pressed_now = gp.wButtons & ~self._prev_all
+                self._prev_all = gp.wButtons
+                if self.capture and pressed_now:
+                    for bit in BUTTON_NAMES:
+                        if pressed_now & bit:
+                            self.captured = bit
+                            self.capture = False
+                            break
 
                 stick_x = gp.sThumbLX / (32768.0 if gp.sThumbLX < 0 else 32767.0)
                 self.last_raw = stick_x
@@ -1046,33 +1356,20 @@ class Bridge:
                 tm = self.telemetry.get()
 
                 out_x = self.assist.update(stick_x, tm, dt, brake, alive)
-                if alive:
-                    self.log.append((now,) + self.assist.dbg)
 
+                virt_out = 0                 # что реально ушло на виртуальный пад
                 if MENU_NEUTRAL and not alive and not self.hid_mode:
-                    # меню/пауза: виртуальный пад нем, меню управляет
-                    # физический пад - без дублей
-                    pad.report.wButtons = 0
-                    pad.report.bLeftTrigger = 0
-                    pad.report.bRightTrigger = 0
-                    pad.report.sThumbLX = 0
-                    pad.report.sThumbLY = 0
-                    pad.report.sThumbRX = 0
-                    pad.report.sThumbRY = 0
+                    # Меню/пауза (IsRaceOn = 0): виртуальный пад нем, меню
+                    # целиком за физическим падом - без двойных подтверждений.
+                    self._neutral(pad)
                 elif VIRTUAL_NO_BUTTONS and not self.hid_mode:
                     # заезд: все оси зеркалятся (руль - с ассистом), кнопки НЕ
                     # шлются - их игра получает только с видимого физического
                     # пада, поэтому передачи и прочее не дублируются.
-                    # Исключение: кнопки-удержания (ручник/сцепление) - см.
-                    # MIRROR_HOLD_BUTTONS.
-                    virt = gp.wButtons & MIRROR_HOLD_BUTTONS
-                    if gp.wButtons & ~MIRROR_HOLD_BUTTONS:
-                        # нажата событийная кнопка (передача и т.п.):
-                        # уступаем - иначе игра, прилипшая к виртуальному
-                        # паду, не увидит нажатие. Физический ручник держит
-                        # сам игрок, так что ручник не прерывается.
-                        virt = 0
-                    pad.report.wButtons = virt
+                    # Исключение: кнопки-удержания (ручник/сцепление), см.
+                    # _mirror_buttons.
+                    virt_out = self._mirror_buttons(gp.wButtons, now)
+                    pad.report.wButtons = virt_out
                     pad.report.bLeftTrigger = gp.bLeftTrigger
                     pad.report.bRightTrigger = gp.bRightTrigger
                     pad.report.sThumbLX = int(clamp(out_x, -1.0, 1.0) * 32767)
@@ -1081,7 +1378,8 @@ class Bridge:
                     pad.report.sThumbRY = gp.sThumbRY
                 else:
                     # полный проброс (для скрываемых падов)
-                    pad.report.wButtons = self._debounce(gp.wButtons, now)
+                    virt_out = self._debounce(gp.wButtons, now)
+                    pad.report.wButtons = virt_out
                     pad.report.bLeftTrigger = gp.bLeftTrigger
                     pad.report.bRightTrigger = gp.bRightTrigger
                     pad.report.sThumbLX = int(clamp(out_x, -1.0, 1.0) * 32767)
@@ -1090,17 +1388,23 @@ class Bridge:
                     pad.report.sThumbRY = gp.sThumbRY
                 pad.update()
 
-                # вибрация: от игры, а при её молчании — синтетика по сносу
+                if DEBUG_LOG and alive:
+                    # btn_phys/btn_virt — главные колонки для разбора
+                    # "передача не защёлкнулась": видно, дошло ли нажатие
+                    # вообще до нас и что мы отдали игре в этот кадр.
+                    self.log.append((now,) + self.assist.dbg +
+                                    (gp.wButtons, virt_out))
+
+                # вибрация: от игры, а при её молчании — синтетика по сносу.
+                # Здесь только СЧИТАЕМ цель; отправкой занят отдельный поток,
+                # чтобы блокирующий USB-запрос не стоял в контуре руления.
                 gl, gs = self._game_rumble
                 if gl < 0.01 and gs < 0.01:
                     gl, gs = self.assist.rumble_power * 0.3, self.assist.rumble_power
-                if self.hid_mode:
-                    try:
-                        self.hid_joy.rumble(gl, gs, 100)
-                    except Exception:
-                        pass
-                elif self.physical_slot is not None:
-                    xinput_rumble(self.physical_slot, gl, gs)
+                if not self.cfg["rumble"]:
+                    gl = gs = 0.0
+                self._rumble_target = (self._quantize_rumble(gl),
+                                       self._quantize_rumble(gs))
 
                 rest = prev + frame - time.perf_counter()
                 if rest > 0.002:
@@ -1118,18 +1422,23 @@ class Bridge:
             self._dump_log()
 
     def _dump_log(self):
-        """CSV с внутренностями контура — для анализа воблинга."""
-        if not self.log:
+        """CSV с внутренностями контура — для анализа воблинга.
+        Пишется рядом с конфигом: папка exe может быть недоступна на запись
+        (Program Files), и тогда лог молча терялся."""
+        if self._dumped or not self.log:
             return
+        self._dumped = True
         try:
-            path = os.path.join(_app_dir(), "assist_log.csv")
+            path = os.path.join(os.path.dirname(CONFIG_FILE), "assist_log.csv")
             with open(path, "w", encoding="utf-8") as f:
                 f.write("t,slip_tires,beta_f,slip_pred,yaw_raw,yaw_f,"
-                        "gyro_force,counter,slide,stick,out\n")
+                        "gyro_force,counter,slide,stick,out,"
+                        "btn_phys,btn_virt\n")
                 t0 = self.log[0][0]
                 for row in self.log:
                     f.write(f"{row[0] - t0:.4f}," +
-                            ",".join(f"{v:.4f}" for v in row[1:]) + "\n")
+                            ",".join(f"{v:.4f}" for v in row[1:-2]) +
+                            f",{row[-2]},{row[-1]}\n")
         except OSError:
             pass
 
@@ -1177,29 +1486,32 @@ TR = {
         "reaction_hint": "How the assist treats YOUR corrections mid-slide: 1 = passes them through instantly, 0 = smooths twitchy micro-steering",
         "assist_sec": "Assistant", "settings_sec": "Settings",
         "telemetry_sec": "Telemetry",
-        "helper": "Assistant", "hide": "Hide controller", "lang": "Language",
+        "helper": "Assistant", "lang": "Language",
         "on": "Enabled", "off": "Disabled", "lang_name": "English",
         "helper_hint": "Toggle steering correction (buttons always pass through)",
-        "hide_hint": "Auto-HidHide: hides the pad from the game. Applies on launch",
         "lang_hint": "UI language",
         "counter_gain": "Assist strength",
         "counter_gain_hint": "Countersteer strength, %. 100 = wheels follow the car's real direction (BeamNG-style); higher = sharper recovery, up to full lock",
         "gyro": "Alignment",
         "gyro_hint": "Damps car rotation like a shock absorber",
-        "steer_lag": "Steering lag (sec)",
-        "steer_lag_hint": "Steering delay, smooths jitter. 0 = instant",
         "deadband": "Grip limit",
         "deadband_hint": "Soft engagement: help starts from the very first degree of slide, stays tiny below this level and grows with angle",
         "min_speed": "Min speed (km/h)",
         "min_speed_hint": "Assist fully off below this speed — donuts!",
-        "speed_sens": "Sensitivity",
-        "speed_sens_hint": "Extra steering reduction at speed",
         "smoothing": "Smoothing",
         "smoothing_hint": "Telemetry filter: higher = smoother but laggier",
         "steer_curve": "Steering curve",
         "steer_curve_hint": "In a slide only: widens the stick centre for finer corrections while drifting",
-        "speed": "Speed", "slip": "Slip", "assist_pow": "Assist",
-        "no_telemetry": "no telemetry",
+        "speed": "Speed", "slip": "Slip", "no_telemetry": "no telemetry",
+        "paused": "in menu / paused",
+        "buttons_sec": "Buttons",
+        "btn_handbrake": "Handbrake",
+        "btn_handbrake_hint": "Which pad button is your handbrake. Hold-type buttons are mirrored to the virtual pad so the game keeps taking the steering from it. Click, then press the button",
+        "btn_clutch": "Clutch",
+        "btn_clutch_hint": "Which pad button is your clutch. Like the handbrake it is a hold, so mirroring it is safe",
+        "press_button": "press…",
+        "btn_none": "none",
+        "tele_port": "port {p} busy",
         "st_starting": "starting…", "st_no_pad": "controller not found (XInput)", "st_pad_lost": "controller disconnected — waiting…", "st_vigem": "ViGEmBus driver missing — installer opened, install it and restart", "hh_hidden": "pad hidden from the game", "hh_install": "installer opened — install it and restart the app", "hh_disabled": "auto-hide is off", "hh_error": "HidHide error — try running as administrator",
         "setup_title": "First run — enable telemetry in the game:",
         "setup_1": "Game Settings → HUD & Gameplay → Data Out: ON",
@@ -1214,29 +1526,32 @@ TR = {
         "reaction_hint": "Как ассист воспринимает ТВОИ коррекции в заносе: 1 = мгновенно, 0 = максимально сглаживает подруливания",
         "assist_sec": "Ассистент", "settings_sec": "Настройки",
         "telemetry_sec": "Телеметрия",
-        "helper": "Помощник", "hide": "Скрывать контроллер", "lang": "Язык",
+        "helper": "Помощник", "lang": "Язык",
         "on": "Включен", "off": "Выключен", "lang_name": "Русский",
         "helper_hint": "Вкл/выкл коррекцию руления (кнопки пробрасываются всегда)",
-        "hide_hint": "Авто-HidHide: прячет пад от игры. Вступает в силу при запуске",
         "lang_hint": "Язык интерфейса",
         "counter_gain": "Сила помошника",
         "counter_gain_hint": "Сила контрруления, %. 100 = колёса идут за вектором движения (как в BeamNG); больше = резче возврат, вплоть до полного лока",
         "gyro": "Выравнивание",
         "gyro_hint": "Гасит вращение машины, как амортизатор",
-        "steer_lag": "Лаг руля (сек)",
-        "steer_lag_hint": "Задержка руля, сглаживает дёрганья. 0 — мгновенно",
         "deadband": "Предел сцепления",
         "deadband_hint": "Мягкий порог: помощь есть с первого градуса заноса, ниже этого уровня она придушена и нарастает с углом",
         "min_speed": "Мин. скорость (км/ч)",
         "min_speed_hint": "Ниже этой скорости ассист выключен — пончики!",
-        "speed_sens": "Чувствительность",
-        "speed_sens_hint": "Доп. сужение руля на скорости. Игра уже сужает сама",
         "smoothing": "Сглаживание",
         "smoothing_hint": "Фильтр телеметрии: больше — плавнее, но с запаздыванием",
         "steer_curve": "Кривая руля",
         "steer_curve_hint": "Только в заносе: растягивает центр стика для тонких коррекций в дрифте",
-        "speed": "Скорость", "slip": "Снос", "assist_pow": "Ассист",
-        "no_telemetry": "нет телеметрии",
+        "speed": "Скорость", "slip": "Снос", "no_telemetry": "нет телеметрии",
+        "paused": "в меню / на паузе",
+        "buttons_sec": "Кнопки",
+        "btn_handbrake": "Ручник",
+        "btn_handbrake_hint": "Какая кнопка пада у тебя ручник. Кнопки-удержания зеркалятся на виртуальный пад, чтобы игра продолжала брать с него руль. Нажми сюда, потом кнопку на паде",
+        "btn_clutch": "Сцепление",
+        "btn_clutch_hint": "Какая кнопка пада у тебя сцепление. Как и ручник — удержание, зеркалить безопасно",
+        "press_button": "нажми…",
+        "btn_none": "нет",
+        "tele_port": "порт {p} занят",
         "st_starting": "запуск…", "st_no_pad": "контроллер не найден (XInput)", "st_pad_lost": "контроллер отключился — жду…", "st_vigem": "нет драйвера ViGEmBus — открыл установщик, поставь и перезапусти", "hh_hidden": "пад скрыт от игры", "hh_install": "открыл установщик — поставь и перезапусти", "hh_disabled": "авто-скрытие выключено", "hh_error": "ошибка HidHide — попробуй запуск от администратора",
         "setup_title": "Первый запуск — включи телеметрию в игре:",
         "setup_1": "Настройки игры → HUD и геймплей → Data Out: ВКЛ",
@@ -1251,29 +1566,32 @@ TR = {
         "reaction_hint": "Як асист сприймає ТВОЇ корекції в заносі: 1 = миттєво, 0 = максимально згладжує підрулювання",
         "assist_sec": "Асистент", "settings_sec": "Налаштування",
         "telemetry_sec": "Телеметрія",
-        "helper": "Помічник", "hide": "Приховувати контролер", "lang": "Мова",
+        "helper": "Помічник", "lang": "Мова",
         "on": "Увімкнено", "off": "Вимкнено", "lang_name": "Українська",
         "helper_hint": "Увімк/вимк корекцію керма (кнопки завжди проходять)",
-        "hide_hint": "Авто-HidHide: ховає ґеймпад від гри. Діє з наступного запуску",
         "lang_hint": "Мова інтерфейсу",
         "counter_gain": "Сила помічника",
         "counter_gain_hint": "Сила контркерма, %. 100 = колеса йдуть за вектором руху (як у BeamNG); більше = різкіше повернення, аж до повного лока",
         "gyro": "Вирівнювання",
         "gyro_hint": "Гасить обертання авто, як амортизатор",
-        "steer_lag": "Лаг керма (сек)",
-        "steer_lag_hint": "Затримка керма, згладжує смикання. 0 — миттєво",
         "deadband": "Межа зчеплення",
         "deadband_hint": "М'який поріг: допомога є з першого градуса заносу, нижче цього рівня вона приглушена і наростає з кутом",
         "min_speed": "Мін. швидкість (км/г)",
         "min_speed_hint": "Нижче цієї швидкості асистент вимкнено — пончики!",
-        "speed_sens": "Чутливість",
-        "speed_sens_hint": "Додаткове звуження керма на швидкості",
         "smoothing": "Згладжування",
         "smoothing_hint": "Фільтр телеметрії: більше — плавніше, але із запізненням",
         "steer_curve": "Крива керма",
         "steer_curve_hint": "Лише в заносі: розтягує центр стика для тонких корекцій у дрифті",
-        "speed": "Швидкість", "slip": "Занос", "assist_pow": "Асистент",
-        "no_telemetry": "немає телеметрії",
+        "speed": "Швидкість", "slip": "Занос", "no_telemetry": "немає телеметрії",
+        "paused": "у меню / на паузі",
+        "buttons_sec": "Кнопки",
+        "btn_handbrake": "Ручник",
+        "btn_handbrake_hint": "Яка кнопка пада у тебе ручник. Кнопки-утримання дзеркаляться на віртуальний пад, щоб гра й далі брала з нього кермо. Натисни сюди, потім кнопку на паді",
+        "btn_clutch": "Зчеплення",
+        "btn_clutch_hint": "Яка кнопка пада у тебе зчеплення. Як і ручник — утримання, дзеркалити безпечно",
+        "press_button": "натисни…",
+        "btn_none": "немає",
+        "tele_port": "порт {p} зайнято",
         "st_starting": "запуск…", "st_no_pad": "контролер не знайдено (XInput)", "st_pad_lost": "контролер від\u2019єднано — чекаю…", "st_vigem": "немає драйвера ViGEmBus — відкрив інсталятор, встанови і перезапусти", "hh_hidden": "ґеймпад приховано від гри", "hh_install": "відкрив інсталятор — встанови і перезапусти", "hh_disabled": "авто-приховування вимкнено", "hh_error": "помилка HidHide — спробуй запуск від адміністратора",
         "setup_title": "Перший запуск — увімкни телеметрію у грі:",
         "setup_1": "Налаштування гри → HUD → Data Out: УВІМК",
@@ -1288,29 +1606,32 @@ TR = {
         "reaction_hint": "Wie der Assistent DEINE Korrekturen im Drift behandelt: 1 = sofort, 0 = glättet nervöses Nachlenken",
         "assist_sec": "Assistent", "settings_sec": "Einstellungen",
         "telemetry_sec": "Telemetrie",
-        "helper": "Assistent", "hide": "Controller verbergen", "lang": "Sprache",
+        "helper": "Assistent", "lang": "Sprache",
         "on": "Aktiviert", "off": "Deaktiviert", "lang_name": "Deutsch",
         "helper_hint": "Lenkkorrektur ein/aus (Tasten werden immer durchgereicht)",
-        "hide_hint": "Auto-HidHide: verbirgt das Pad vor dem Spiel. Gilt ab Start",
         "lang_hint": "Sprache der Oberfläche",
         "counter_gain": "Assistenzstärke",
         "counter_gain_hint": "Gegenlenk-Stärke in %. 100 = Räder folgen der Fahrtrichtung (wie BeamNG); mehr = schärfer, bis zum Volleinschlag",
         "gyro": "Ausrichtung",
         "gyro_hint": "Dämpft die Fahrzeugrotation wie ein Stoßdämpfer",
-        "steer_lag": "Lenkverzögerung (Sek)",
-        "steer_lag_hint": "Glättet Zittern. 0 = sofortige Reaktion",
         "deadband": "Gripgrenze",
         "deadband_hint": "Weiche Schwelle: Hilfe ab dem ersten Grad Drift, unterhalb dieses Werts stark gedrosselt, mit dem Winkel wachsend",
         "min_speed": "Min. Tempo (km/h)",
         "min_speed_hint": "Darunter ist der Assistent ganz aus — Donuts!",
-        "speed_sens": "Empfindlichkeit",
-        "speed_sens_hint": "Zusätzliche Lenkreduktion bei Tempo",
         "smoothing": "Glättung",
         "smoothing_hint": "Telemetriefilter: mehr = weicher, aber träger",
         "steer_curve": "Lenkkurve",
         "steer_curve_hint": "Nur im Drift: weitet die Stickmitte für feinere Korrekturen",
-        "speed": "Tempo", "slip": "Schlupf", "assist_pow": "Assistent",
-        "no_telemetry": "keine Telemetrie",
+        "speed": "Tempo", "slip": "Schlupf", "no_telemetry": "keine Telemetrie",
+        "paused": "im Menü / pausiert",
+        "buttons_sec": "Tasten",
+        "btn_handbrake": "Handbremse",
+        "btn_handbrake_hint": "Welche Taste deine Handbremse ist. Halte-Tasten werden auf das virtuelle Pad gespiegelt, damit das Spiel die Lenkung von dort nimmt. Hier klicken, dann Taste drücken",
+        "btn_clutch": "Kupplung",
+        "btn_clutch_hint": "Welche Taste deine Kupplung ist. Wie die Handbremse ein Halten — gefahrlos spiegelbar",
+        "press_button": "drücken…",
+        "btn_none": "keine",
+        "tele_port": "Port {p} belegt",
         "st_starting": "Start…", "st_no_pad": "Controller nicht gefunden (XInput)", "st_pad_lost": "Controller getrennt — warte…", "st_vigem": "ViGEmBus-Treiber fehlt — Installer geöffnet, installieren und neu starten", "hh_hidden": "Pad vor dem Spiel verborgen", "hh_install": "Installer geöffnet — installieren und neu starten", "hh_disabled": "Auto-Verbergen ist aus", "hh_error": "HidHide-Fehler — als Administrator starten",
         "setup_title": "Erster Start — Telemetrie im Spiel aktivieren:",
         "setup_1": "Spieleinstellungen → HUD → Data Out: AN",
@@ -1325,29 +1646,32 @@ TR = {
         "reaction_hint": "Réaction de l'assistant à TES corrections en glisse : 1 = immédiate, 0 = lisse les à-coups",
         "assist_sec": "Assistant", "settings_sec": "Réglages",
         "telemetry_sec": "Télémétrie",
-        "helper": "Assistant", "hide": "Masquer la manette", "lang": "Langue",
+        "helper": "Assistant", "lang": "Langue",
         "on": "Activé", "off": "Désactivé", "lang_name": "Français",
         "helper_hint": "Correction de direction on/off (boutons toujours transmis)",
-        "hide_hint": "Auto-HidHide : cache la manette au jeu. Effectif au lancement",
         "lang_hint": "Langue de l'interface",
         "counter_gain": "Force de l'assistant",
         "counter_gain_hint": "Force de contre-braquage, %. 100 = les roues suivent la trajectoire (façon BeamNG) ; plus = plus vif, jusqu'à la butée",
         "gyro": "Alignement",
         "gyro_hint": "Amortit la rotation de la voiture, tel un amortisseur",
-        "steer_lag": "Latence volant (sec)",
-        "steer_lag_hint": "Retard du volant, lisse les à-coups. 0 = instantané",
         "deadband": "Limite de grip",
         "deadband_hint": "Seuil doux : l'aide agit dès le premier degré de glisse, infime sous ce niveau et croissante avec l'angle",
         "min_speed": "Vitesse min (km/h)",
         "min_speed_hint": "En dessous, assistant coupé — donuts !",
-        "speed_sens": "Sensibilité",
-        "speed_sens_hint": "Réduction de braquage supplémentaire à vitesse élevée",
         "smoothing": "Lissage",
         "smoothing_hint": "Filtre télémétrie : plus = plus doux mais plus lent",
         "steer_curve": "Courbe de direction",
         "steer_curve_hint": "En glisse uniquement : centre du stick élargi pour des corrections fines",
-        "speed": "Vitesse", "slip": "Glisse", "assist_pow": "Assistant",
-        "no_telemetry": "pas de télémétrie",
+        "speed": "Vitesse", "slip": "Glisse", "no_telemetry": "pas de télémétrie",
+        "paused": "dans le menu / en pause",
+        "buttons_sec": "Boutons",
+        "btn_handbrake": "Frein à main",
+        "btn_handbrake_hint": "Quel bouton est ton frein à main. Les boutons maintenus sont copiés vers la manette virtuelle pour que le jeu y prenne la direction. Clique ici, puis appuie sur le bouton",
+        "btn_clutch": "Embrayage",
+        "btn_clutch_hint": "Quel bouton est ton embrayage. Comme le frein à main, un maintien : copie sans risque",
+        "press_button": "appuie…",
+        "btn_none": "aucun",
+        "tele_port": "port {p} occupé",
         "st_starting": "démarrage…", "st_no_pad": "manette introuvable (XInput)", "st_pad_lost": "manette déconnectée — attente…", "st_vigem": "pilote ViGEmBus manquant — installeur ouvert, installez et relancez", "hh_hidden": "manette masquée au jeu", "hh_install": "installeur ouvert — installez et relancez", "hh_disabled": "masquage auto désactivé", "hh_error": "erreur HidHide — lancez en administrateur",
         "setup_title": "Premier lancement — activez la télémétrie en jeu :",
         "setup_1": "Réglages du jeu → HUD → Data Out : ON",
@@ -1362,29 +1686,32 @@ TR = {
         "reaction_hint": "Cómo trata el asistente TUS correcciones en derrape: 1 = inmediata, 0 = suaviza los toques nerviosos",
         "assist_sec": "Asistente", "settings_sec": "Ajustes",
         "telemetry_sec": "Telemetría",
-        "helper": "Asistente", "hide": "Ocultar mando", "lang": "Idioma",
+        "helper": "Asistente", "lang": "Idioma",
         "on": "Activado", "off": "Desactivado", "lang_name": "Español",
         "helper_hint": "Corrección de dirección on/off (los botones siempre pasan)",
-        "hide_hint": "Auto-HidHide: oculta el mando al juego. Se aplica al iniciar",
         "lang_hint": "Idioma de la interfaz",
         "counter_gain": "Fuerza del asistente",
         "counter_gain_hint": "Fuerza de contravolante, %. 100 = las ruedas siguen la trayectoria (estilo BeamNG); más = más agresivo, hasta el tope",
         "gyro": "Alineación",
         "gyro_hint": "Amortigua la rotación del coche, como un amortiguador",
-        "steer_lag": "Retardo (seg)",
-        "steer_lag_hint": "Retardo del volante, suaviza tirones. 0 = instantáneo",
         "deadband": "Límite de agarre",
         "deadband_hint": "Umbral suave: la ayuda actúa desde el primer grado de derrape, mínima bajo este nivel y creciente con el ángulo",
         "min_speed": "Vel. mínima (km/h)",
         "min_speed_hint": "Por debajo, asistente apagado — ¡trompos!",
-        "speed_sens": "Sensibilidad",
-        "speed_sens_hint": "Reducción extra de giro a alta velocidad",
         "smoothing": "Suavizado",
         "smoothing_hint": "Filtro de telemetría: más = más suave pero lento",
         "steer_curve": "Curva de dirección",
         "steer_curve_hint": "Solo en derrape: ensancha el centro del stick para correcciones finas",
-        "speed": "Velocidad", "slip": "Derrape", "assist_pow": "Asistente",
-        "no_telemetry": "sin telemetría",
+        "speed": "Velocidad", "slip": "Derrape", "no_telemetry": "sin telemetría",
+        "paused": "en menú / en pausa",
+        "buttons_sec": "Botones",
+        "btn_handbrake": "Freno de mano",
+        "btn_handbrake_hint": "Qué botón es tu freno de mano. Los botones de mantener se copian al mando virtual para que el juego siga tomando de ahí la dirección. Pulsa aquí y luego el botón",
+        "btn_clutch": "Embrague",
+        "btn_clutch_hint": "Qué botón es tu embrague. Como el freno de mano, es un mantener: se puede copiar sin riesgo",
+        "press_button": "pulsa…",
+        "btn_none": "ninguno",
+        "tele_port": "puerto {p} ocupado",
         "st_starting": "iniciando…", "st_no_pad": "mando no encontrado (XInput)", "st_pad_lost": "mando desconectado — esperando…", "st_vigem": "falta el driver ViGEmBus — instalador abierto, instala y reinicia", "hh_hidden": "mando oculto al juego", "hh_install": "instalador abierto — instala y reinicia", "hh_disabled": "ocultado automático desactivado", "hh_error": "error de HidHide — ejecuta como administrador",
         "setup_title": "Primer inicio — activa la telemetría en el juego:",
         "setup_1": "Ajustes del juego → HUD → Data Out: ON",
@@ -1399,29 +1726,32 @@ TR = {
         "reaction_hint": "Come l'assistente tratta le TUE correzioni in derapata: 1 = immediata, 0 = leviga i colpetti",
         "assist_sec": "Assistente", "settings_sec": "Impostazioni",
         "telemetry_sec": "Telemetria",
-        "helper": "Assistente", "hide": "Nascondi controller", "lang": "Lingua",
+        "helper": "Assistente", "lang": "Lingua",
         "on": "Attivo", "off": "Disattivo", "lang_name": "Italiano",
         "helper_hint": "Correzione sterzo on/off (i tasti passano sempre)",
-        "hide_hint": "Auto-HidHide: nasconde il pad al gioco. Attivo dal prossimo avvio",
         "lang_hint": "Lingua dell'interfaccia",
         "counter_gain": "Forza assistente",
         "counter_gain_hint": "Forza di controsterzo, %. 100 = le ruote seguono la traiettoria (stile BeamNG); di più = più aggressivo, fino al fine corsa",
         "gyro": "Allineamento",
         "gyro_hint": "Smorza la rotazione dell'auto, come un ammortizzatore",
-        "steer_lag": "Ritardo sterzo (sec)",
-        "steer_lag_hint": "Ritardo dello sterzo, leviga gli scatti. 0 = istantaneo",
         "deadband": "Limite di grip",
         "deadband_hint": "Soglia morbida: l'aiuto parte dal primo grado di derapata, minimo sotto questo livello e crescente con l'angolo",
         "min_speed": "Velocità min (km/h)",
         "min_speed_hint": "Sotto questa velocità assistente spento — donut!",
-        "speed_sens": "Sensibilità",
-        "speed_sens_hint": "Riduzione extra dello sterzo in velocità",
         "smoothing": "Levigatura",
         "smoothing_hint": "Filtro telemetria: più = più morbido ma più lento",
         "steer_curve": "Curva di sterzo",
         "steer_curve_hint": "Solo in derapata: allarga il centro dello stick per correzioni fini",
-        "speed": "Velocità", "slip": "Derapata", "assist_pow": "Assistente",
-        "no_telemetry": "niente telemetria",
+        "speed": "Velocità", "slip": "Derapata", "no_telemetry": "niente telemetria",
+        "paused": "nel menu / in pausa",
+        "buttons_sec": "Pulsanti",
+        "btn_handbrake": "Freno a mano",
+        "btn_handbrake_hint": "Quale pulsante è il tuo freno a mano. I pulsanti tenuti premuti vengono copiati sul pad virtuale così il gioco continua a prenderne lo sterzo. Clicca qui e premi il pulsante",
+        "btn_clutch": "Frizione",
+        "btn_clutch_hint": "Quale pulsante è la tua frizione. Come il freno a mano è una pressione tenuta: si può copiare",
+        "press_button": "premi…",
+        "btn_none": "nessuno",
+        "tele_port": "porta {p} occupata",
         "st_starting": "avvio…", "st_no_pad": "controller non trovato (XInput)", "st_pad_lost": "controller scollegato — attendo…", "st_vigem": "driver ViGEmBus mancante — installer aperto, installa e riavvia", "hh_hidden": "pad nascosto al gioco", "hh_install": "installer aperto — installa e riavvia", "hh_disabled": "nascondi automatico disattivato", "hh_error": "errore HidHide — esegui come amministratore",
         "setup_title": "Primo avvio — attiva la telemetria nel gioco:",
         "setup_1": "Impostazioni di gioco → HUD → Data Out: ON",
@@ -1436,29 +1766,32 @@ TR = {
         "reaction_hint": "Jak asysta traktuje TWOJE korekty w poślizgu: 1 = natychmiast, 0 = wygładza szarpanie",
         "assist_sec": "Asystent", "settings_sec": "Ustawienia",
         "telemetry_sec": "Telemetria",
-        "helper": "Asystent", "hide": "Ukryj kontroler", "lang": "Język",
+        "helper": "Asystent", "lang": "Język",
         "on": "Włączony", "off": "Wyłączony", "lang_name": "Polski",
         "helper_hint": "Korekcja kierownicy wł/wył (przyciski zawsze przechodzą)",
-        "hide_hint": "Auto-HidHide: ukrywa pada przed grą. Działa od uruchomienia",
         "lang_hint": "Język interfejsu",
         "counter_gain": "Siła asystenta",
         "counter_gain_hint": "Siła kontrskrętu, %. 100 = koła podążają za wektorem ruchu (jak w BeamNG); więcej = ostrzej, aż do pełnego skrętu",
         "gyro": "Wyrównanie",
         "gyro_hint": "Tłumi obrót auta jak amortyzator",
-        "steer_lag": "Opóźnienie (sek)",
-        "steer_lag_hint": "Opóźnienie kierownicy, wygładza szarpanie. 0 = natychmiast",
         "deadband": "Granica przyczepności",
         "deadband_hint": "Miękki próg: pomoc działa od pierwszego stopnia poślizgu, znikoma poniżej tego poziomu i rosnąca z kątem",
         "min_speed": "Min. prędkość (km/h)",
         "min_speed_hint": "Poniżej asystent wyłączony — bączki!",
-        "speed_sens": "Czułość",
-        "speed_sens_hint": "Dodatkowe zwężenie skrętu przy prędkości",
         "smoothing": "Wygładzanie",
         "smoothing_hint": "Filtr telemetrii: więcej = płynniej, ale wolniej",
         "steer_curve": "Krzywa skrętu",
         "steer_curve_hint": "Tylko w poślizgu: poszerza środek gałki dla drobnych korekt",
-        "speed": "Prędkość", "slip": "Poślizg", "assist_pow": "Asystent",
-        "no_telemetry": "brak telemetrii",
+        "speed": "Prędkość", "slip": "Poślizg", "no_telemetry": "brak telemetrii",
+        "paused": "w menu / pauza",
+        "buttons_sec": "Przyciski",
+        "btn_handbrake": "Hamulec ręczny",
+        "btn_handbrake_hint": "Który przycisk to twój hamulec ręczny. Przyciski przytrzymywane są kopiowane na wirtualnego pada, żeby gra dalej brała z niego kierownicę. Kliknij tutaj i naciśnij przycisk",
+        "btn_clutch": "Sprzęgło",
+        "btn_clutch_hint": "Który przycisk to twoje sprzęgło. Jak hamulec — przytrzymanie, można bezpiecznie kopiować",
+        "press_button": "naciśnij…",
+        "btn_none": "brak",
+        "tele_port": "port {p} zajęty",
         "st_starting": "start…", "st_no_pad": "kontroler nie znaleziony (XInput)", "st_pad_lost": "kontroler odłączony — czekam…", "st_vigem": "brak sterownika ViGEmBus — otwarto instalator, zainstaluj i uruchom ponownie", "hh_hidden": "pad ukryty przed grą", "hh_install": "otwarto instalator — zainstaluj i uruchom ponownie", "hh_disabled": "auto-ukrywanie wyłączone", "hh_error": "błąd HidHide — uruchom jako administrator",
         "setup_title": "Pierwsze uruchomienie — włącz telemetrię w grze:",
         "setup_1": "Ustawienia gry → HUD → Data Out: WŁ",
@@ -1473,29 +1806,32 @@ TR = {
         "reaction_hint": "Como o assistente trata as SUAS correções no drift: 1 = imediata, 0 = suaviza os toques",
         "assist_sec": "Assistente", "settings_sec": "Configurações",
         "telemetry_sec": "Telemetria",
-        "helper": "Assistente", "hide": "Ocultar controle", "lang": "Idioma",
+        "helper": "Assistente", "lang": "Idioma",
         "on": "Ativado", "off": "Desativado", "lang_name": "Português",
         "helper_hint": "Correção de direção lig/desl (botões sempre passam)",
-        "hide_hint": "Auto-HidHide: esconde o controle do jogo. Vale ao iniciar",
         "lang_hint": "Idioma da interface",
         "counter_gain": "Força do assistente",
         "counter_gain_hint": "Força de contraesterço, %. 100 = as rodas seguem a trajetória (estilo BeamNG); mais = mais agressivo, até o batente",
         "gyro": "Alinhamento",
         "gyro_hint": "Amortece a rotação do carro, como um amortecedor",
-        "steer_lag": "Atraso (seg)",
-        "steer_lag_hint": "Atraso da direção, suaviza trancos. 0 = instantâneo",
         "deadband": "Limite de aderência",
         "deadband_hint": "Limiar suave: a ajuda atua desde o primeiro grau de derrapagem, mínima abaixo deste nível e crescente com o ângulo",
         "min_speed": "Vel. mínima (km/h)",
         "min_speed_hint": "Abaixo disso o assistente desliga — cavalos de pau!",
-        "speed_sens": "Sensibilidade",
-        "speed_sens_hint": "Redução extra de esterço em velocidade",
         "smoothing": "Suavização",
         "smoothing_hint": "Filtro de telemetria: mais = mais suave porém lento",
         "steer_curve": "Curva de direção",
         "steer_curve_hint": "Só na derrapagem: alarga o centro do analógico para correções finas",
-        "speed": "Velocidade", "slip": "Derrapagem", "assist_pow": "Assistente",
-        "no_telemetry": "sem telemetria",
+        "speed": "Velocidade", "slip": "Derrapagem", "no_telemetry": "sem telemetria",
+        "paused": "no menu / em pausa",
+        "buttons_sec": "Botões",
+        "btn_handbrake": "Freio de mão",
+        "btn_handbrake_hint": "Qual botão é o seu freio de mão. Botões de segurar são espelhados no controle virtual para o jogo continuar pegando a direção dele. Clique aqui e aperte o botão",
+        "btn_clutch": "Embreagem",
+        "btn_clutch_hint": "Qual botão é a sua embreagem. Como o freio de mão, é um segurar: dá para espelhar",
+        "press_button": "aperte…",
+        "btn_none": "nenhum",
+        "tele_port": "porta {p} ocupada",
         "st_starting": "iniciando…", "st_no_pad": "controle não encontrado (XInput)", "st_pad_lost": "controle desconectado — aguardando…", "st_vigem": "driver ViGEmBus ausente — instalador aberto, instale e reinicie", "hh_hidden": "controle oculto do jogo", "hh_install": "instalador aberto — instale e reinicie", "hh_disabled": "ocultação automática desligada", "hh_error": "erro do HidHide — execute como administrador",
         "setup_title": "Primeira execução — ative a telemetria no jogo:",
         "setup_1": "Configurações do jogo → HUD → Data Out: ON",
@@ -1510,29 +1846,32 @@ TR = {
         "reaction_hint": "Asistanın kaymada SENİN düzeltmelerine tepkisi: 1 = anında, 0 = ufak oynatmaları yumuşatır",
         "assist_sec": "Asistan", "settings_sec": "Ayarlar",
         "telemetry_sec": "Telemetri",
-        "helper": "Asistan", "hide": "Kolu gizle", "lang": "Dil",
+        "helper": "Asistan", "lang": "Dil",
         "on": "Açık", "off": "Kapalı", "lang_name": "Türkçe",
         "helper_hint": "Direksiyon düzeltmesi açık/kapalı (tuşlar her zaman geçer)",
-        "hide_hint": "Oto-HidHide: kolu oyundan gizler. Başlangıçta uygulanır",
         "lang_hint": "Arayüz dili",
         "counter_gain": "Asistan gücü",
         "counter_gain_hint": "Karşı direksiyon gücü, %. 100 = tekerlekler hareket yönünü izler (BeamNG tarzı); fazlası = tam kilide kadar daha sert",
         "gyro": "Hizalama",
         "gyro_hint": "Aracın dönüşünü amortisör gibi söndürür",
-        "steer_lag": "Gecikme (sn)",
-        "steer_lag_hint": "Direksiyon gecikmesi, titremeyi yumuşatır. 0 = anında",
         "deadband": "Tutunma sınırı",
         "deadband_hint": "Yumuşak eşik: yardım kaymanın ilk derecesinden devreye girer, bu seviyenin altında çok zayıftır ve açıyla artar",
         "min_speed": "Min. hız (km/s)",
         "min_speed_hint": "Bu hızın altında asistan tamamen kapalı — donut!",
-        "speed_sens": "Hassasiyet",
-        "speed_sens_hint": "Hızda ekstra direksiyon daralması",
         "smoothing": "Yumuşatma",
         "smoothing_hint": "Telemetri filtresi: fazlası = yumuşak ama gecikmeli",
         "steer_curve": "Direksiyon eğrisi",
         "steer_curve_hint": "Yalnızca kayışta: ince düzeltmeler için çubuk merkezi genişler",
-        "speed": "Hız", "slip": "Kayma", "assist_pow": "Asistan",
-        "no_telemetry": "telemetri yok",
+        "speed": "Hız", "slip": "Kayma", "no_telemetry": "telemetri yok",
+        "paused": "menüde / duraklatıldı",
+        "buttons_sec": "Tuşlar",
+        "btn_handbrake": "El freni",
+        "btn_handbrake_hint": "Hangi tuş senin el frenin. Basılı tutulan tuşlar sanal kola yansıtılır, böylece oyun direksiyonu oradan almaya devam eder. Buraya tıkla, sonra tuşa bas",
+        "btn_clutch": "Debriyaj",
+        "btn_clutch_hint": "Hangi tuş senin debriyajın. El freni gibi bir tutuş: yansıtmak güvenli",
+        "press_button": "bas…",
+        "btn_none": "yok",
+        "tele_port": "{p} portu meşgul",
         "st_starting": "başlatılıyor…", "st_no_pad": "kumanda bulunamadı (XInput)", "st_pad_lost": "kumanda bağlantısı kesildi — bekleniyor…", "st_vigem": "ViGEmBus sürücüsü yok — kurulum açıldı, kur ve yeniden başlat", "hh_hidden": "kol oyundan gizli", "hh_install": "kurulum açıldı — kur ve yeniden başlat", "hh_disabled": "otomatik gizleme kapalı", "hh_error": "HidHide hatası — yönetici olarak çalıştır",
         "setup_title": "İlk çalıştırma — oyunda telemetriyi aç:",
         "setup_1": "Oyun Ayarları → HUD → Data Out: AÇIK",
@@ -1723,6 +2062,10 @@ body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
 .ar .ar-ring{fill:none;stroke:var(--ar-ring);stroke-width:.5}
 .ar.r{transform:rotate(180deg)}
 .tval{font-weight:500;font-size:12px;letter-spacing:-.02em;color:var(--row-fg)}
+.btnpick{font-weight:500;font-size:12px;letter-spacing:-.02em;color:var(--row-fg);
+         cursor:pointer;min-width:52px;text-align:center;padding:1px 6px;
+         border:1px solid var(--track);border-radius:2px}
+.btnpick.wait{color:var(--accent);border-color:var(--accent)}
 .slider{width:144px;height:24px;position:relative;flex:none}
 .track,.fill{position:absolute;top:50%;height:2.5px;border-radius:1.25px;
              transform:translateY(-50%)}
@@ -1799,6 +2142,7 @@ const DEF = __DEFAULTS__;
 const LANGS = __LANGS__;
 const VER = "__VER__";
 let cfg = null, state = null;
+let capturing = null;      // какая кнопка сейчас назначается ('btn_handbrake'…)
 
 const t = k => { const L = TR[(cfg&&cfg.lang)||'en']||TR.en; return L[k]||TR.en[k]||k; };
 const $ = s => document.querySelector(s);
@@ -1825,6 +2169,12 @@ function toggleRow(key){
     </span></div>`;
 }
 
+function btnRow(key){
+  return `<div class="row" data-hint="${key}_hint">
+    <span class="lbl">${t(key)}</span>
+    <span class="zone"><span class="btnpick" data-btn="${key}"></span></span></div>`;
+}
+
 function build(){
   let h = '';
   h += `<div class="grp"><div class="row sec"><span class="lbl">${t('assist_sec')}</span></div>`;
@@ -1843,6 +2193,10 @@ function build(){
         <span class="sval"></span>
       </span></div>`;
   }
+  h += `</div>`;
+  h += `<div class="grp"><div class="row sec"><span class="lbl">${t('buttons_sec')}</span></div>`;
+  h += btnRow('btn_handbrake');
+  h += btnRow('btn_clutch');
   h += `</div>`;
   h += `<div class="grp"><div class="row sec"><span class="lbl">${t('interface_sec')}</span></div>`;
   h += toggleRow('lang');
@@ -1891,11 +2245,15 @@ function reportHeight(){
   });
 }
 
+const BOOL_FIELD = {helper:'enabled'};
+
 function toggleIdx(key){
-  if (key==='helper') return cfg.enabled ? 1 : 0;
-  if (key==='hide') return cfg.auto_hide ? 1 : 0;
-  return 0;  // язык кольцевой, серых стрелок нет
+  const f = BOOL_FIELD[key];
+  if (f) return cfg[f] ? 1 : 0;
+  return 0;  // язык/тема/уступка кольцевые, серых стрелок нет
 }
+
+const CYCLIC = ['lang','theme'];
 
 function refreshControls(){
   document.querySelectorAll('[data-toggle]').forEach(z=>{
@@ -1906,8 +2264,15 @@ function refreshControls(){
               : (idx ? t('on') : t('off'));
     z.querySelector('.tval').textContent = val;
     const [la, ra] = z.querySelectorAll('.ar');
-    if (key==='lang'||key==='theme'){ la.classList.remove('off'); ra.classList.remove('off'); }
+    if (CYCLIC.includes(key)){ la.classList.remove('off'); ra.classList.remove('off'); }
     else { la.classList.toggle('off', idx===0); ra.classList.toggle('off', idx===1); }
+  });
+  document.querySelectorAll('[data-btn]').forEach(el=>{
+    const key = el.dataset.btn;
+    const names = (state && state.btn_names) || {};
+    el.textContent = (capturing===key) ? t('press_button')
+                                       : (names[cfg[key]] || t('btn_none'));
+    el.classList.toggle('wait', capturing===key);
   });
   document.querySelectorAll('[data-slider]').forEach(s=>{
     const key = s.dataset.slider;
@@ -1938,11 +2303,21 @@ function bindEvents(){
           applyTheme(); refreshControls(); return;
         }
         const idx = Math.max(0, Math.min(1, toggleIdx(key)+dir));
-        const field = key==='helper' ? 'enabled' : 'auto_hide';
+        const field = BOOL_FIELD[key];
+        if (!field) return;
         cfg[field] = !!idx;
         await pywebview.api.set(field, cfg[field]);
         refreshControls();
       });
+    });
+  });
+  document.querySelectorAll('[data-btn]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      // клик -> "нажми кнопку на паде"; повторный клик отменяет назначение
+      const key = el.dataset.btn;
+      capturing = (capturing===key) ? null : key;
+      try{ pywebview.api.capture_button(capturing!==null); }catch(e){}
+      refreshControls();
     });
   });
   document.querySelectorAll('[data-slider]').forEach(s=>{
@@ -2018,7 +2393,7 @@ function setBar(id, v){
 
 function panelMode(){
   const setup = $('#telem-setup'), live = $('#telem-live');
-  const showSetup = !cfg.telemetry_seen && !(state && state.alive);
+  const showSetup = !cfg.telemetry_seen && !(state && (state.alive || state.recv));
   setup.style.display = showSetup ? '' : 'none';
   live.style.display = showSetup ? 'none' : '';
 }
@@ -2027,13 +2402,24 @@ async function poll(){
   try{
     state = await pywebview.api.state();
     if (!cfg){ cfg = state.cfg; applyTheme(); build(); panelMode(); }
-    if (state.alive && !cfg.telemetry_seen){
+    // онбординг снимаем по ФАКТУ пакетов (Data Out настроен), а не по заезду:
+    // в меню alive уже false, но настройка телеметрии явно верная
+    if (state.recv && !cfg.telemetry_seen){
       cfg.telemetry_seen = true;
       pywebview.api.set('telemetry_seen', true);
       panelMode();
     }
+    if (capturing && state.captured){
+      // пад отдал нажатую кнопку - записываем её в назначаемый слот
+      cfg[capturing] = state.captured;
+      pywebview.api.set(capturing, state.captured);
+      capturing = null;
+      refreshControls();
+    } else if (capturing && !state.capture){
+      capturing = null; refreshControls();   // режим сняли на стороне питона
+    }
     $('#hz').textContent = state.hz;
-    $('#age').textContent = state.alive ? state.age : '—';
+    $('#age').textContent = state.recv ? state.age : '—';
     $('#spd').textContent = state.alive ? state.speed : '—';
     $('#slip').textContent = state.alive ? state.slip.toFixed(2) : '—';
     const hhMap = {
@@ -2045,7 +2431,15 @@ async function poll(){
     };
     $('#hh').textContent = (hhMap[state.hh_code]||hhMap.idle)();
     let st = '';
-    if (state.code === 'ok') st = state.mode + (state.alive ? '' : ' | ' + t('no_telemetry'));
+    if (state.tele_err){
+      // слушатель телеметрии не поднялся - раньше это было видно только
+      // по мёртвой панели, без единого намёка на причину
+      st = t('tele_port').replace('{p}', state.port) + ': ' + state.tele_err;
+    }
+    else if (state.code === 'ok'){
+      st = state.mode;
+      if (!state.alive) st += ' | ' + t(state.recv ? 'paused' : 'no_telemetry');
+    }
     else if (state.code === 'error') st = 'ERROR: ' + (state.detail||'');
     else st = t('st_' + state.code);
     $('#status').textContent = st;
@@ -2203,11 +2597,18 @@ class Api:
             "cfg": b.cfg,
             "hz": round(b.hz),
             "age": round(min(999.0, b.telemetry.age_ms)),
-            "alive": b.telemetry.alive,
+            "alive": b.telemetry.alive,        # идёт заезд (IsRaceOn = 1)
+            "recv": b.telemetry.receiving,     # пакеты идут (в меню тоже)
+            "tele_err": b.telemetry.error,
+            "port": b.telemetry.port,
             "speed": round(tm.speed_mps * 3.6),
             "slip": round(abs(b.assist.slip_now), 2),
             "raw": round(b.last_raw, 3),
             "out": round(b.assist.angle, 3),
+            "btn_names": BUTTON_NAMES,
+            "capture": b.capture,
+            "captured": b.captured,
+            "buttons": b.buttons,
             "hh_code": b.hidhide.code,
             "hh_arg": b.hidhide.arg,
             "code": b.status_code,
@@ -2215,10 +2616,18 @@ class Api:
             "mode": b.mode_info,
         }
 
+    def capture_button(self, on=True):
+        """Включить режим 'нажми кнопку на паде' — следующая нажатая кнопка
+        вернётся через state().captured."""
+        self._b.captured = 0
+        self._b.capture = bool(on)
+        return True
+
     def set(self, key, value):
-        if key in DEFAULTS:
+        if key in DEFAULTS and key != "version":
             self._b.cfg[key] = value
-            save_config(self._b.cfg)
+            sanitize_config(self._b.cfg)
+            save_config_soon(self._b.cfg)
         return True
 
 
@@ -2346,6 +2755,7 @@ def main():
                                  ctypes.cast(proc, ctypes.c_void_p))
 
     webview.start(func=lock_aspect)
+    flush_config(bridge.cfg)     # дописать отложенное сохранение настроек
     bridge.stop()
     time.sleep(0.2)
 

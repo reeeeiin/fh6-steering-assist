@@ -29,6 +29,8 @@ access, no game file modification, no injection.
 - **Slide-only expo steering curve** — fine micro-corrections while drifting,
   linear steering in grip
 - **Speed gate** — assist fully off below a set speed (donuts welcome)
+- **Assignable hold buttons** — tell the assist which buttons are your
+  handbrake and clutch by pressing them; the rest stay single-source
 - **Auto HidHide** — hides your physical pad from the game while running,
   returns it on exit; whitelist managed automatically
 - **Driver bootstrap** — offers to install ViGEmBus / HidHide on first run
@@ -90,15 +92,30 @@ vector). Unlike tyre-slip signals it survives locked wheels, so the assist
 keeps countersteering through handbrake turns. Yaw damping uses a separate
 fast filter so the damper never lags the rotation it must damp.
 
-The virtual pad carries **axes plus hold-type buttons only** (assisted
-steering, throttle, brake, camera, and mirrors of handbrake/clutch —
-mirroring a *hold* can't double-fire); event buttons stay on your physical
-pad. Without the mirrored handbrake the game would switch its axis source
-to the physical pad on every press, dropping the countersteer mid-drift. This keeps every button a
-single-source event — no double presses — even though Windows cannot hide
-XUSB (Xbox-class) controllers from the game. The app also enforces a
-single running instance: a second copy would create a second virtual pad
-and duplicate inputs.
+Windows cannot hide XUSB (Xbox-class) controllers from a game, so the game
+sees **two** pads and reads buttons from only one of them at a time. The
+virtual pad therefore carries **axes plus hold-type buttons only** —
+assisted steering, throttle, brake, camera, and mirrors of your handbrake
+and clutch. Mirroring a *hold* cannot double-fire, and it keeps the game
+taking the axes from the virtual pad, so the countersteer survives the
+handbrake. Event buttons (gears, camera) are never mirrored: they would
+fire twice.
+
+Which buttons count as holds is **yours to set** — pick them in the
+*Buttons* section by pressing them on the pad. They used to be hardcoded to
+A and LB, which silently broke every layout with a gear on A.
+
+While an event button is held the mirror **yields**: the virtual pad drops
+its buttons so the game falls back to the physical one and actually sees
+the press. This is measured, not assumed — with the mirror held, 0 shifts
+out of 10 registered. The cost is that the game also takes the axes back
+for those ~150 ms, so the wheel twitches slightly when you shift mid-drift.
+That choice belongs to the game and cannot be overridden.
+
+Telemetry is gated on the game's `IsRaceOn` flag, not merely on packets
+arriving — Forza keeps streaming in menus, and a mirrored button there would
+double every confirmation. The app also enforces a single running instance:
+a second copy would create a second virtual pad and duplicate inputs.
 
 ## Troubleshooting
 
@@ -109,6 +126,30 @@ and duplicate inputs.
   before starting the app.
 - **Game doesn't react** — start the assist *before* the game; the game
   enumerates controllers only at launch.
+- **Telemetry panel stays dead** — check the status line: if port 20777 is
+  taken by another telemetry tool, it says so now.
+- **Gear shifts get eaten while the handbrake is held** — make sure the
+  handbrake and clutch in the *Buttons* section really match your layout.
+  Anything listed there is mirrored and must be a hold, never a gear.
+- **Buttons feel laggy or get dropped** — sending vibration is a blocking USB
+  request to the same pad the buttons come from, so it is rate-limited and kept
+  off the steering loop. If your pad still misbehaves, set `"rumble": false` in
+  `%APPDATA%\ForzaAssistLite\assist_lite_config.json` and compare.
+
+## Diagnostics
+
+If something is off, record a frame-by-frame log of the input loop:
+
+```
+run_debug.bat
+python tools\analyze_log.py
+```
+
+It reports how many presses actually reached the assist, so "the game lost
+it" and "the pad lost it" stop being guesswork. The log lands in
+`%APPDATA%\ForzaAssistLite\assist_log.csv` when the app closes.
+
+Tests: `python tests\test_assist.py` (no pytest needed).
 
 ## Disclaimer
 

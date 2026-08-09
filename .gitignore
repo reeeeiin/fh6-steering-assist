@@ -19,4 +19,8 @@ disable_genitech.bat
 fix_icon_cache.bat
 icon - Copy.png
 log*.csv
-RELEASE_NOTES*.md
+
+# Чейнджлог (CHANGELOG.md) в репозитории НУЖЕН — раньше он сюда не попадал
+# из-за правила RELEASE_NOTES*.md, и у выпущенного проекта не было истории.
+# Черновики релизных заметок по-прежнему локальные:
+RELEASE_NOTES_v*.md
