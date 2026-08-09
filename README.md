@@ -29,8 +29,8 @@ access, no game file modification, no injection.
 - **Slide-only expo steering curve** — fine micro-corrections while drifting,
   linear steering in grip
 - **Speed gate** — assist fully off below a set speed (donuts welcome)
-- **Assignable hold buttons** — tell the assist which buttons are your
-  handbrake and clutch by pressing them; the rest stay single-source
+- **Configurable hold buttons** — handbrake and clutch are no longer hardcoded,
+  so layouts that put a gear on A keep working
 - **Auto HidHide** — hides your physical pad from the game while running,
   returns it on exit; whitelist managed automatically
 - **Driver bootstrap** — offers to install ViGEmBus / HidHide on first run
@@ -101,9 +101,12 @@ taking the axes from the virtual pad, so the countersteer survives the
 handbrake. Event buttons (gears, camera) are never mirrored: they would
 fire twice.
 
-Which buttons count as holds is **yours to set** — pick them in the
-*Buttons* section by pressing them on the pad. They used to be hardcoded to
-A and LB, which silently broke every layout with a gear on A.
+Which buttons count as holds defaults to **A + LB** — the stock Forza layout.
+If yours differs, set `btn_handbrake` / `btn_clutch` in
+`%APPDATA%\ForzaAssistLite\assist_lite_config.json` (values are XInput button
+bits). Anything listed there is mirrored and must be a hold, never a gear:
+the previous version hardcoded A, which silently broke every layout with a
+gear on that button.
 
 While an event button is held the mirror **yields**: the virtual pad drops
 its buttons so the game falls back to the physical one and actually sees
@@ -128,9 +131,9 @@ a second copy would create a second virtual pad and duplicate inputs.
   enumerates controllers only at launch.
 - **Telemetry panel stays dead** — check the status line: if port 20777 is
   taken by another telemetry tool, it says so now.
-- **Gear shifts get eaten while the handbrake is held** — make sure the
-  handbrake and clutch in the *Buttons* section really match your layout.
-  Anything listed there is mirrored and must be a hold, never a gear.
+- **Gear shifts get eaten while the handbrake is held** — check that
+  `btn_handbrake` / `btn_clutch` in the config match your layout. Anything
+  listed there is mirrored and must be a hold, never a gear.
 - **Buttons feel laggy or get dropped** — sending vibration is a blocking USB
   request to the same pad the buttons come from, so it is rate-limited and kept
   off the steering loop. If your pad still misbehaves, set `"rumble": false` in

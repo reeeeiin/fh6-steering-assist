@@ -40,9 +40,9 @@ findings come from it.
 
 ### Added
 
-- **Assignable hold buttons.** Handbrake and clutch are picked by pressing them
-  on the pad, in the new *Buttons* section. They used to be hardcoded to A and
-  LB, which silently broke every layout that puts a gear on A.
+- **Configurable hold buttons.** Handbrake and clutch used to be hardcoded to A
+  and LB, which silently broke every layout that puts a gear on A. They are now
+  `btn_handbrake` / `btn_clutch` in the config, defaulting to the stock layout.
 - `tools/analyze_log.py` — tells you whether a button press reached the assist
   at all, so "the game lost it" and "the pad lost it" stop being guesswork.
 - `run_debug.bat` — runs with the frame log enabled.
