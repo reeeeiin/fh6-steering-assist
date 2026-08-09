@@ -308,6 +308,52 @@ def test_rumble_stop_is_never_delayed():
     assert b._rumble_due(0.0, 0.0, 0.001) is True, "стоп идёт мимо ограничителя"
 
 
+# ------------------------------------------------------------------ драйверы
+def test_version_compare_ignores_component_count():
+    """'1.5.230' из имени файла и '1.5.230.0' из реестра — одна версия.
+    Без выравнивания длины приложение переустанавливало бы драйвер вечно."""
+    assert fa._version_tuple("1.5.230") == fa._version_tuple("1.5.230.0")
+    assert fa._version_tuple("1.6") > fa._version_tuple("1.5.230.0")
+    assert fa._version_tuple("1.17.333.0") > fa._version_tuple("1.17.332.9")
+    assert fa._version_tuple("") == (0, 0, 0, 0)
+    # теги вида "v1.5.230.0" тоже должны разбираться, а не терять первое число
+    assert fa._version_tuple("v1.5-beta") == (1, 5, 0, 0)
+    assert fa._version_tuple("v1.5.230.0") == fa._version_tuple("1.5.230")
+
+
+def test_installed_drivers_are_not_reinstalled():
+    """Главное требование: повторный запуск ничего не ставит заново."""
+    d = fa.DriverSetup()
+    for label, reg, svc, _key in fa.DriverSetup.ITEMS:
+        have = d._current(reg, svc)
+        assert have is not None, (
+            f"{label} установлен на этой машине, но детект его не видит — "
+            f"значит установка пошла бы на каждом запуске")
+    d.ensure()
+    assert d.code == "done", f"{d.code}: {d.info}"
+    assert d.installed == [], f"ничего ставить не требовалось, а поставили {d.installed}"
+
+
+def test_silent_switches_match_installer_format():
+    """У ViGEmBus .msi, у HidHide с 1.5 — WiX-бандл .exe; ключи разные."""
+    msi = fa.DriverSetup._silent_cmd(r"C:\x\ViGEmBusSetup_x64.msi")
+    exe = fa.DriverSetup._silent_cmd(r"C:\x\HidHide_1.5.230_x64.exe")
+    assert msi[0] == "msiexec" and "/qn" in msi
+    assert exe[0].endswith(".exe") and "/quiet" in exe
+    assert "/norestart" in msi and "/norestart" in exe
+
+
+def test_game_detection_does_not_spawn_processes():
+    """Снимок Toolhelp вместо PowerShell: спавн процесса стоит хича, на
+    котором мы уже теряли нажатия в игре."""
+    names = fa.running_process_names()
+    assert isinstance(names, set) and names, "список процессов пуст"
+    assert all(n == n.lower() for n in names), "имена должны быть в нижнем регистре"
+    # сам питон, в котором крутится тест, обязан там быть
+    assert any("python" in n for n in names), sorted(names)[:10]
+    assert isinstance(fa.game_running(), bool)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

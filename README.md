@@ -47,7 +47,11 @@ access, no game file modification, no injection.
 - Forza Horizon with telemetry: **Data Out = ON, IP 127.0.0.1, port 20777**,
   Steering: **Simulation**
 
-Both drivers are offered for installation automatically on first run.
+**Both drivers ship inside the exe and install themselves, silently, on first
+run.** Nothing is downloaded on your machine. On later runs the app compares
+the bundled version against what is installed and stays out of the way unless
+something is missing or older. Administrator rights are required — the app
+asks for them at launch.
 
 ## Run from source
 
@@ -66,12 +70,19 @@ build.bat
 
 Result: `dist\SteeringAssist-<version>.exe` (version is read from
 `APP_VERSION` in the script). Requests admin rights at launch (needed for
-HidHide control).
+HidHide control and for installing the drivers).
+
+The build first runs `tools\fetch_drivers.py`, which fills `drivers\` with the
+ViGEmBus installer (taken from the installed `vgamepad` package) and the latest
+HidHide installer from GitHub, plus a `manifest.json` recording their versions.
+That folder is bundled into the exe and is not kept in git — so building needs
+network access once, running does not.
 
 ## Usage
 
 1. Start the assist **before** the game (the game enumerates controllers at
-   startup).
+   startup). If Forza is already running, the window blurs itself and says so —
+   close the game, launch it again, and leave the assist open.
 2. Move the left stick — the *Raw Input* / *Assisted* bars should follow.
 3. Start Forza. Drive. The telemetry panel comes alive once data flows.
 

@@ -4,6 +4,10 @@ build/
 *.spec
 __pycache__/
 
+# Установщики драйверов: ~9 МБ бинарников, в репозитории им не место.
+# Наполняются командой  python tools\fetch_drivers.py  (её зовёт build.bat).
+drivers/
+
 # локальное состояние
 assist_log*.csv
 debug.log

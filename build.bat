@@ -12,7 +12,13 @@ for /f tokens^=2^ delims^=^" %%v in ('findstr /b /c:"APP_VERSION" forza_assist_l
 if "%VER%"=="" set VER=0.0.0
 echo Building version %VER%
 
+rem Установщики драйверов кладутся ВНУТРЬ exe, чтобы приложение не ходило
+rem в сеть на машине пользователя. Скачиваются один раз, при сборке.
+python tools\fetch_drivers.py
+if errorlevel 1 goto fail
+
 set EXTRA=
+if exist drivers set EXTRA=%EXTRA% --add-data "drivers;drivers"
 if exist Oswald-Medium.ttf set EXTRA=%EXTRA% --add-data "Oswald-Medium.ttf;."
 if exist Oswald-Regular.ttf set EXTRA=%EXTRA% --add-data "Oswald-Regular.ttf;."
 if exist assets set EXTRA=%EXTRA% --add-data "assets;assets"

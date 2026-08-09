@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Drivers ship inside the app and install silently on first run.** ViGEmBus
+  and HidHide are bundled into the exe; nothing is downloaded on the user's
+  machine. Later runs compare the bundled version against what is installed and
+  do nothing unless something is missing or older.
+- **Launch-order guard.** Forza only enumerates controllers while it starts, so
+  an assist launched after the game is invisible to it and silently does
+  nothing. If the game is already running, the window blurs its content and
+  explains what to do; the block clears by itself once the game is closed. The
+  title bar stays live, so the window can still be moved, minimized or closed.
+
+### Fixed
+
+- **ViGEmBus was never installed automatically.** The bundled installer was
+  looked up one directory above where it actually lives, so on a machine
+  without the driver the app just stopped with a `vigem` status instead of
+  installing it — exactly the case the code was written for.
+- **HidHide auto-install had quietly rotted.** It fetched the GitHub release and
+  filtered for a `.msi`, but Nefarius ships a `.exe` bundle since 1.5, so the
+  lookup always failed and it degraded to opening a download page in a browser.
+- **ViGEmBus was not detected as installed.** It registers as *Nefarius Virtual
+  Gamepad Emulation Bus Driver*, so a lookup for "ViGEmBus" missed it — which
+  would have meant reinstalling the driver on every single launch. Detection now
+  also falls back to the driver's service key.
+- Process lookups use a Toolhelp snapshot instead of spawning PowerShell.
+
 ## v1.3.0
 
 Bug-fix release. Everything below was measured, not guessed — the app can now

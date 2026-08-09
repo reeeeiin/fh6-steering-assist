@@ -36,6 +36,7 @@ import ctypes
 import json
 import math
 import os
+import re
 import socket
 import struct
 import subprocess
@@ -241,6 +242,58 @@ class HidPadState:
     """Тот же набор полей, что у XINPUT_GAMEPAD."""
     __slots__ = ("wButtons", "bLeftTrigger", "bRightTrigger",
                  "sThumbLX", "sThumbLY", "sThumbRX", "sThumbRY")
+
+
+TH32CS_SNAPPROCESS = 0x00000002
+GAME_PROCESSES = ("forzahorizon", "forzamotorsport")
+
+
+class PROCESSENTRY32W(ctypes.Structure):
+    _fields_ = [("dwSize", wintypes.DWORD),
+                ("cntUsage", wintypes.DWORD),
+                ("th32ProcessID", wintypes.DWORD),
+                ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)),
+                ("th32ModuleID", wintypes.DWORD),
+                ("cntThreads", wintypes.DWORD),
+                ("th32ParentProcessID", wintypes.DWORD),
+                ("pcPriClassBase", ctypes.c_long),
+                ("dwFlags", wintypes.DWORD),
+                ("szExeFile", ctypes.c_wchar * 260)]
+
+
+def running_process_names() -> set[str]:
+    """Имена запущенных процессов в нижнем регистре.
+
+    Через снимок Toolhelp, а не через PowerShell: запуск внешнего процесса
+    стоит сотен миллисекунд системного хича, и мы уже ловили на этом потерю
+    нажатий в игре (см. SWEEP_SEC). Снимок стоит единицы миллисекунд.
+    """
+    k32 = ctypes.windll.kernel32
+    snap = k32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
+    if snap == -1:
+        return set()
+    names = set()
+    try:
+        entry = PROCESSENTRY32W()
+        entry.dwSize = ctypes.sizeof(PROCESSENTRY32W)
+        ok = k32.Process32FirstW(snap, ctypes.byref(entry))
+        while ok:
+            names.add(entry.szExeFile.lower())
+            ok = k32.Process32NextW(snap, ctypes.byref(entry))
+    finally:
+        k32.CloseHandle(snap)
+    return names
+
+
+def game_running() -> bool:
+    """Идёт ли уже Forza. Игра перечисляет контроллеры ТОЛЬКО при своём
+    запуске, поэтому виртуальный пад, созданный позже, ей не виден - ассист
+    будет молчать, и пользователь не поймёт почему."""
+    try:
+        names = running_process_names()
+    except Exception:
+        return False
+    return any(p in n for n in names for p in GAME_PROCESSES)
 
 
 def is_admin() -> bool:
@@ -841,6 +894,203 @@ def flush_config(cfg: dict) -> None:
 
 
 # ----------------------------------------------------------------------------
+# Драйверы: ViGEmBus и HidHide лежат ВНУТРИ приложения и ставятся молча
+# ----------------------------------------------------------------------------
+def _version_tuple(v) -> tuple:
+    """'1.5.230' -> (1, 5, 230, 0). Нечисловые куски считаем нулём.
+
+    Длина всегда 4: иначе '1.5.230' из имени файла оказывалось бы МЕНЬШЕ
+    установленного '1.5.230.0' просто из-за числа компонентов, и сравнение
+    версий врало бы на ровном месте."""
+    nums = [int(n) for n in re.findall(r"\d+", str(v or ""))]
+    return tuple((nums + [0, 0, 0, 0])[:4])
+
+
+def service_exists(name: str) -> bool:
+    """Есть ли служба драйвера. Запасной признак установки: у ViGEmBus запись
+    в списке программ называется совсем не так, как сам драйвер, и промах по
+    ней означал бы переустановку драйвера при каждом запуске."""
+    import winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                            r"SYSTEM\CurrentControlSet\Services" + "\\" + name):
+            return True
+    except OSError:
+        return False
+
+
+def installed_version(name_part: str) -> str | None:
+    """DisplayVersion из списка установленных программ, или None.
+    Проверяем обе ветки реестра: инсталляторы драйверов бывают и 32-битные."""
+    import winreg
+    branches = (r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+                r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall")
+    for branch in branches:
+        try:
+            root = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, branch)
+        except OSError:
+            continue
+        with root:
+            count = winreg.QueryInfoKey(root)[0]
+            for i in range(count):
+                try:
+                    with winreg.OpenKey(root, winreg.EnumKey(root, i)) as sub:
+                        name = winreg.QueryValueEx(sub, "DisplayName")[0]
+                        if name_part.lower() not in str(name).lower():
+                            continue
+                        try:
+                            return str(winreg.QueryValueEx(sub, "DisplayVersion")[0])
+                        except OSError:
+                            return "0"
+                except OSError:
+                    continue
+    return None
+
+
+class DriverSetup:
+    """Тихая доустановка драйверов при первом запуске.
+
+    Оба установщика упакованы в приложение, ничего не качается на лету:
+    раньше HidHide тянулся из GitHub прямо при старте, что требовало сети,
+    и всё равно заканчивалось ручным прокликиванием мастера установки.
+
+    Повторный запуск ничего не переустанавливает: сверяем версию из
+    манифеста сборки с DisplayVersion в реестре и ставим только если
+    драйвера нет вовсе или упакованный новее.
+    """
+
+    # (подпись, подстрока в списке программ, имя службы, ключ в манифесте).
+    # ViGEmBus значится в списке программ как "Nefarius Virtual Gamepad
+    # Emulation Bus Driver" - искать по слову "ViGEmBus" бесполезно.
+    ITEMS = (("ViGEmBus", "Virtual Gamepad Emulation", "ViGEmBus", "vigembus"),
+             ("HidHide", "HidHide", "HidHide", "hidhide"))
+
+    @staticmethod
+    def _current(reg_name: str, service: str) -> str | None:
+        """Версия установленного драйвера, "0" если стоит но версия неясна,
+        None если не установлен вовсе."""
+        found = installed_version(reg_name)
+        if found is not None:
+            return found
+        return "0" if service_exists(service) else None
+
+    def __init__(self):
+        self.code = "idle"      # idle|installing|done|reboot|failed|noadmin
+        self.info = ""
+        self.installed = []     # что поставили в этот запуск
+
+    # ---- где лежат упакованные msi ----
+    @staticmethod
+    def _manifest() -> dict:
+        for base in (_res_dir(), _app_dir()):
+            p = os.path.join(base, "drivers", "manifest.json")
+            if os.path.isfile(p):
+                try:
+                    with open(p, encoding="utf-8") as f:
+                        return json.load(f)
+                except (OSError, ValueError):
+                    return {}
+        return {}
+
+    @staticmethod
+    def _bundled(filename: str) -> str | None:
+        for base in (_res_dir(), _app_dir()):
+            p = os.path.join(base, "drivers", filename)
+            if os.path.isfile(p):
+                return p
+        return None
+
+    @staticmethod
+    def _vigem_fallback() -> str | None:
+        """Установщик ViGEmBus едет и внутри пакета vgamepad. Путь с
+        подпапкой x64 - без неё файл не находился, и на машине без драйвера
+        приложение молча вставало вместо того, чтобы его поставить."""
+        try:
+            base = os.path.join(os.path.dirname(vg.__file__),
+                                "win", "vigem", "install")
+        except Exception:
+            return None
+        for rel in (os.path.join("x64", "ViGEmBusSetup_x64.msi"),
+                    "ViGEmBusSetup_x64.msi"):
+            p = os.path.join(base, rel)
+            if os.path.isfile(p):
+                return p
+        return None
+
+    @staticmethod
+    def _silent_cmd(path: str) -> list:
+        """Ключи тихой установки зависят от формата: ViGEmBus приходит
+        обычным .msi, а HidHide с версии 1.5 - WiX-бандлом .exe."""
+        if path.lower().endswith(".msi"):
+            return ["msiexec", "/i", path, "/qn", "/norestart"]
+        return [path, "/quiet", "/norestart"]
+
+    def _install(self, path: str) -> int:
+        """Тихая установка. 0 - готово, 3010 - нужна перезагрузка."""
+        cp = subprocess.run(self._silent_cmd(path),
+                            capture_output=True, text=True,
+                            creationflags=0x08000000, timeout=600)
+        return cp.returncode
+
+    def ensure(self) -> None:
+        """Поставить недостающее. Вызывать ДО создания виртуального пада."""
+        manifest = self._manifest()
+        need = []
+        for label, reg_name, service, key in self.ITEMS:
+            have = self._current(reg_name, service)
+            want = str(manifest.get(key, {}).get("version", "") or "")
+            if have is None:
+                need.append((label, key, "нет"))
+            elif want and _version_tuple(want) > _version_tuple(have):
+                need.append((label, key, f"{have} -> {want}"))
+
+        if not need:
+            self.code = "done"
+            self.info = "драйверы на месте"
+            return
+
+        if not is_admin():
+            self.code = "noadmin"
+            self.info = "нужны права администратора: " + \
+                        ", ".join(n for n, _, _ in need)
+            return
+
+        self.code = "installing"
+        self.info = "ставлю " + ", ".join(n for n, _, _ in need)
+        reboot = False
+        failed = []
+        for label, key, why in need:
+            msi = self._bundled(str(manifest.get(key, {}).get("file", "")))
+            if not msi and key == "vigembus":
+                msi = self._vigem_fallback()
+            if not msi:
+                failed.append(label)
+                continue
+            try:
+                rc = self._install(msi)
+            except (OSError, subprocess.SubprocessError):
+                failed.append(label)
+                continue
+            if rc == 0:
+                self.installed.append(label)
+            elif rc == 3010:
+                self.installed.append(label)
+                reboot = True
+            else:
+                failed.append(label)
+
+        if failed:
+            self.code = "failed"
+            self.info = "не удалось поставить: " + ", ".join(failed)
+        elif reboot:
+            self.code = "reboot"
+            self.info = "драйверы поставлены, нужна перезагрузка"
+        else:
+            self.code = "done"
+            self.info = "драйверы поставлены: " + ", ".join(self.installed)
+
+
+# ----------------------------------------------------------------------------
 # HidHide: автоматическое скрытие физического пада на время работы ассиста
 # ----------------------------------------------------------------------------
 class HidHide:
@@ -867,37 +1117,20 @@ class HidHide:
             raise RuntimeError((cp.stderr or cp.stdout or " ".join(args)).strip())
         return cp.stdout
 
-    def bootstrap_install(self):
-        """Первый запуск: скачать официальный установщик HidHide и запустить."""
-        import tempfile
-        import urllib.request
-        import webbrowser
-        api = "https://api.github.com/repos/nefarius/HidHide/releases/latest"
-        try:
-            with urllib.request.urlopen(api, timeout=15) as r:
-                release = json.load(r)
-            url = next(a["browser_download_url"] for a in release.get("assets", [])
-                       if a["name"].lower().endswith(".msi"))
-            dst = os.path.join(tempfile.gettempdir(), os.path.basename(url))
-            urllib.request.urlretrieve(url, dst)
-            os.startfile(dst)
-            self.code = "install"
-            self.info = ("скачал и открыл установщик HidHide — "
-                         "поставь его и перезапусти ассист")
-        except Exception:
-            try:
-                webbrowser.open("https://github.com/nefarius/HidHide/releases")
-            except Exception:
-                pass
-            self.code = "install"
-            self.info = ("не установлен — открыл страницу загрузки. "
-                         "Поставь и перезапусти ассист (пад пока НЕ скрыт)")
+    def rescan(self):
+        """Перечитать путь к CLI: после тихой установки он появляется."""
+        self.cli = next((p for p in self.CLI_PATHS if os.path.isfile(p)), None)
+        return self.cli
 
     def engage(self) -> bool:
         """Спрятать все игровые устройства от системы, кроме нас самих.
         Вызывать ДО создания виртуального пада, чтобы не спрятать его."""
-        if not self.cli:
-            self.bootstrap_install()
+        if not self.rescan():
+            # Установщик упакован в приложение и отрабатывает раньше нас
+            # (DriverSetup.ensure). Сюда попадаем, только если установка
+            # не удалась или требуется перезагрузка.
+            self.code = "install"
+            self.info = "HidHide не установлен — пад НЕ скрыт от игры"
             return False
         try:
             # 1) мы сами должны видеть пад сквозь маскировку
@@ -1008,7 +1241,14 @@ class Bridge:
         self.cfg = load_config()
         self.assist = Assist(self.cfg)
         self.telemetry = TelemetryListener()
+        self.drivers = DriverSetup()
         self.hidhide = HidHide()
+        # Игра перечисляет контроллеры только при СВОЁМ запуске: если Forza
+        # была открыта РАНЬШЕ нас, наш виртуальный пад ей не виден и ассист
+        # молчит без единого признака поломки. Флаг ставится один раз на
+        # старте и снимается, когда игру закрыли - запускать её после нас
+        # штатно, и оверлей на это реагировать не должен.
+        self.bad_order = False
         self.status = "запуск..."
         self.status_code = "starting"
         self.status_detail = ""
@@ -1177,6 +1417,11 @@ class Bridge:
             for _ in range(int(SWEEP_SEC)):          # чтобы выход не ждал досмотра
                 if not self._run.is_set():
                     return
+                # Пока висит неверный порядок запуска - ждём, когда игру
+                # закроют, и снимаем блокировку. Обратно флаг не встаёт:
+                # запуск игры ПОСЛЕ нас и есть правильный порядок.
+                if self.bad_order and not game_running():
+                    self.bad_order = False
                 time.sleep(1.0)
             if self.cfg.get("auto_hide"):
                 self.hidhide.sweep()
@@ -1245,6 +1490,17 @@ class Bridge:
     def _loop(self):
         ctypes.windll.winmm.timeBeginPeriod(1)
         try:
+            # Порядок запуска: игра должна стартовать ПОСЛЕ нас, иначе она
+            # никогда не увидит виртуальный пад. Фиксируем один раз здесь.
+            self.bad_order = game_running()
+
+            # Драйверы — самое первое: ViGEmBus нужен, чтобы вообще создать
+            # виртуальный пад, HidHide — чтобы спрятать физический. Оба
+            # установщика внутри приложения, ставятся молча и только если
+            # их нет или упакованный новее (см. DriverSetup.ensure).
+            self.status_code = "drivers"
+            self.drivers.ensure()
+
             # HidHide — строго ДО создания виртуального пада,
             # иначе спрячем и его.
             if self.cfg["auto_hide"]:
@@ -1507,6 +1763,10 @@ TR = {
         "steer_curve_hint": "In a slide only: widens the stick centre for finer corrections while drifting",
         "speed": "Speed", "slip": "Slip", "no_telemetry": "no telemetry",
         "paused": "in menu / paused",
+        "order_title": "Wrong launch order",
+        "order_text": "Forza is already running. The game looks for controllers only while it starts, so it cannot see the assist's virtual pad.",
+        "order_hint": "Close the game and start it again — leave the assist running.",
+        "st_drivers": "installing drivers…",
         "buttons_sec": "Buttons",
         "btn_handbrake": "Handbrake",
         "btn_handbrake_hint": "Which pad button is your handbrake. Hold-type buttons are mirrored to the virtual pad so the game keeps taking the steering from it. Click, then press the button",
@@ -1547,6 +1807,10 @@ TR = {
         "steer_curve_hint": "Только в заносе: растягивает центр стика для тонких коррекций в дрифте",
         "speed": "Скорость", "slip": "Снос", "no_telemetry": "нет телеметрии",
         "paused": "в меню / на паузе",
+        "order_title": "Неверный порядок запуска",
+        "order_text": "Forza уже запущена. Игра ищет контроллеры только в момент своего старта, поэтому виртуальный пад ассиста ей не виден.",
+        "order_hint": "Закрой игру и запусти её заново — ассист оставь открытым.",
+        "st_drivers": "ставлю драйверы…",
         "buttons_sec": "Кнопки",
         "btn_handbrake": "Ручник",
         "btn_handbrake_hint": "Какая кнопка пада у тебя ручник. Кнопки-удержания зеркалятся на виртуальный пад, чтобы игра продолжала брать с него руль. Нажми сюда, потом кнопку на паде",
@@ -1587,6 +1851,10 @@ TR = {
         "steer_curve_hint": "Лише в заносі: розтягує центр стика для тонких корекцій у дрифті",
         "speed": "Швидкість", "slip": "Занос", "no_telemetry": "немає телеметрії",
         "paused": "у меню / на паузі",
+        "order_title": "Невірний порядок запуску",
+        "order_text": "Forza вже запущена. Гра шукає контролери лише під час свого старту, тому віртуальний пад асиста їй не видно.",
+        "order_hint": "Закрий гру і запусти її знову — асист залиш відкритим.",
+        "st_drivers": "встановлюю драйвери…",
         "buttons_sec": "Кнопки",
         "btn_handbrake": "Ручник",
         "btn_handbrake_hint": "Яка кнопка пада у тебе ручник. Кнопки-утримання дзеркаляться на віртуальний пад, щоб гра й далі брала з нього кермо. Натисни сюди, потім кнопку на паді",
@@ -1627,6 +1895,10 @@ TR = {
         "steer_curve_hint": "Nur im Drift: weitet die Stickmitte für feinere Korrekturen",
         "speed": "Tempo", "slip": "Schlupf", "no_telemetry": "keine Telemetrie",
         "paused": "im Menü / pausiert",
+        "order_title": "Falsche Startreihenfolge",
+        "order_text": "Forza läuft bereits. Das Spiel sucht Controller nur beim Start, das virtuelle Pad des Assistenten sieht es daher nicht.",
+        "order_hint": "Schließe das Spiel und starte es erneut — Assistent laufen lassen.",
+        "st_drivers": "installiere Treiber…",
         "buttons_sec": "Tasten",
         "btn_handbrake": "Handbremse",
         "btn_handbrake_hint": "Welche Taste deine Handbremse ist. Halte-Tasten werden auf das virtuelle Pad gespiegelt, damit das Spiel die Lenkung von dort nimmt. Hier klicken, dann Taste drücken",
@@ -1667,6 +1939,10 @@ TR = {
         "steer_curve_hint": "En glisse uniquement : centre du stick élargi pour des corrections fines",
         "speed": "Vitesse", "slip": "Glisse", "no_telemetry": "pas de télémétrie",
         "paused": "dans le menu / en pause",
+        "order_title": "Mauvais ordre de lancement",
+        "order_text": "Forza est déjà lancé. Le jeu ne cherche les manettes qu'à son démarrage : il ne voit donc pas la manette virtuelle.",
+        "order_hint": "Ferme le jeu et relance-le — laisse l'assistant ouvert.",
+        "st_drivers": "installation des pilotes…",
         "buttons_sec": "Boutons",
         "btn_handbrake": "Frein à main",
         "btn_handbrake_hint": "Quel bouton est ton frein à main. Les boutons maintenus sont copiés vers la manette virtuelle pour que le jeu y prenne la direction. Clique ici, puis appuie sur le bouton",
@@ -1707,6 +1983,10 @@ TR = {
         "steer_curve_hint": "Solo en derrape: ensancha el centro del stick para correcciones finas",
         "speed": "Velocidad", "slip": "Derrape", "no_telemetry": "sin telemetría",
         "paused": "en menú / en pausa",
+        "order_title": "Orden de inicio incorrecto",
+        "order_text": "Forza ya está abierto. El juego busca mandos solo al arrancar, así que no ve el mando virtual del asistente.",
+        "order_hint": "Cierra el juego y ábrelo de nuevo — deja el asistente abierto.",
+        "st_drivers": "instalando controladores…",
         "buttons_sec": "Botones",
         "btn_handbrake": "Freno de mano",
         "btn_handbrake_hint": "Qué botón es tu freno de mano. Los botones de mantener se copian al mando virtual para que el juego siga tomando de ahí la dirección. Pulsa aquí y luego el botón",
@@ -1747,6 +2027,10 @@ TR = {
         "steer_curve_hint": "Solo in derapata: allarga il centro dello stick per correzioni fini",
         "speed": "Velocità", "slip": "Derapata", "no_telemetry": "niente telemetria",
         "paused": "nel menu / in pausa",
+        "order_title": "Ordine di avvio sbagliato",
+        "order_text": "Forza è già in esecuzione. Il gioco cerca i controller solo all'avvio, quindi non vede il pad virtuale dell'assistente.",
+        "order_hint": "Chiudi il gioco e riavvialo — lascia aperto l'assistente.",
+        "st_drivers": "installazione driver…",
         "buttons_sec": "Pulsanti",
         "btn_handbrake": "Freno a mano",
         "btn_handbrake_hint": "Quale pulsante è il tuo freno a mano. I pulsanti tenuti premuti vengono copiati sul pad virtuale così il gioco continua a prenderne lo sterzo. Clicca qui e premi il pulsante",
@@ -1787,6 +2071,10 @@ TR = {
         "steer_curve_hint": "Tylko w poślizgu: poszerza środek gałki dla drobnych korekt",
         "speed": "Prędkość", "slip": "Poślizg", "no_telemetry": "brak telemetrii",
         "paused": "w menu / pauza",
+        "order_title": "Zła kolejność uruchomienia",
+        "order_text": "Forza już działa. Gra szuka kontrolerów tylko przy swoim starcie, więc nie widzi wirtualnego pada asystenta.",
+        "order_hint": "Zamknij grę i uruchom ją ponownie — asystenta zostaw włączonego.",
+        "st_drivers": "instaluję sterowniki…",
         "buttons_sec": "Przyciski",
         "btn_handbrake": "Hamulec ręczny",
         "btn_handbrake_hint": "Który przycisk to twój hamulec ręczny. Przyciski przytrzymywane są kopiowane na wirtualnego pada, żeby gra dalej brała z niego kierownicę. Kliknij tutaj i naciśnij przycisk",
@@ -1827,6 +2115,10 @@ TR = {
         "steer_curve_hint": "Só na derrapagem: alarga o centro do analógico para correções finas",
         "speed": "Velocidade", "slip": "Derrapagem", "no_telemetry": "sem telemetria",
         "paused": "no menu / em pausa",
+        "order_title": "Ordem de inicialização errada",
+        "order_text": "O Forza já está aberto. O jogo procura controles apenas ao iniciar, por isso não enxerga o controle virtual do assistente.",
+        "order_hint": "Feche o jogo e abra de novo — deixe o assistente rodando.",
+        "st_drivers": "instalando drivers…",
         "buttons_sec": "Botões",
         "btn_handbrake": "Freio de mão",
         "btn_handbrake_hint": "Qual botão é o seu freio de mão. Botões de segurar são espelhados no controle virtual para o jogo continuar pegando a direção dele. Clique aqui e aperte o botão",
@@ -1867,6 +2159,10 @@ TR = {
         "steer_curve_hint": "Yalnızca kayışta: ince düzeltmeler için çubuk merkezi genişler",
         "speed": "Hız", "slip": "Kayma", "no_telemetry": "telemetri yok",
         "paused": "menüde / duraklatıldı",
+        "order_title": "Yanlış başlatma sırası",
+        "order_text": "Forza zaten açık. Oyun kumandaları yalnızca açılışta arar, bu yüzden asistanın sanal kolunu göremez.",
+        "order_hint": "Oyunu kapat ve yeniden başlat — asistan açık kalsın.",
+        "st_drivers": "sürücüler kuruluyor…",
         "buttons_sec": "Tuşlar",
         "btn_handbrake": "El freni",
         "btn_handbrake_hint": "Hangi tuş senin el frenin. Basılı tutulan tuşlar sanal kola yansıtılır, böylece oyun direksiyonu oradan almaya devam eder. Buraya tıkla, sonra tuşa bas",
@@ -2045,6 +2341,19 @@ body.t-fh6 .bg6{display:block;left:0;top:0;width:395px;height:597px}
 body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
 .bgvec svg{width:100%;height:100%}
 .wrap{position:relative;z-index:1;padding:40px 30px}
+/* Замок неверного порядка запуска: размывает содержимое и перехватывает
+   клики, шапку окна не трогает. */
+#gate{position:absolute;inset:0;z-index:40;display:none;
+      align-items:center;justify-content:center;padding:24px;
+      backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+      background:rgba(0,0,0,.5)}
+#gate.show{display:flex}
+.gcard{background:var(--panel-bg);color:var(--panel-fg);border-radius:3px;
+       padding:14px;display:flex;flex-direction:column;gap:7px;max-width:300px;
+       border:1px solid var(--accent)}
+.gt{color:var(--accent);font-weight:500;font-size:12px;letter-spacing:-.02em}
+.gb{font-weight:400;font-size:10px;line-height:1.35;letter-spacing:-.02em}
+.gdim{opacity:.7}
 #app{position:relative;display:flex;flex-direction:column;gap:10px}
 .grp .row:last-child{margin-bottom:0}
 .row{display:flex;justify-content:space-between;align-items:center;
@@ -2133,6 +2442,14 @@ body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
 <div class="bgvec bg6"><!--BG6--></div>
 <div class="bgvec bgm"><!--BGM--></div>
 <div class="wrap"><div id="app"></div></div>
+<!-- Блокировка неверного порядка запуска. Сидит внутри .appbox, а не поверх
+     всего окна: шапка с кнопками свернуть/закрыть обязана остаться живой,
+     иначе замороженный интерфейс превращается в ловушку. -->
+<div id="gate"><div class="gcard">
+  <div class="gt" id="gate-title"></div>
+  <div class="gb" id="gate-text"></div>
+  <div class="gb gdim" id="gate-hint"></div>
+</div></div>
 </div>
 </div>
 <div class="rz" data-e="t"></div><div class="rz" data-e="b"></div><div class="rz" data-e="l"></div><div class="rz" data-e="r"></div><div class="rz" data-e="tl"></div><div class="rz" data-e="tr"></div><div class="rz" data-e="bl"></div><div class="rz" data-e="br"></div>
@@ -2393,6 +2710,20 @@ function setBar(id, v){
   else { el.style.left = (50+v*half)+'%'; el.style.width = (-v*half)+'%'; }
 }
 
+function gateMode(){
+  // Forza была открыта раньше нас: она перечисляет контроллеры только при
+  // своём запуске, поэтому виртуальный пад ей не виден и ассист молчит.
+  // Замораживаем содержимое, пока игру не закроют.
+  const on = !!(state && state.bad_order);
+  const gate = $('#gate');
+  if (on){
+    $('#gate-title').textContent = t('order_title');
+    $('#gate-text').textContent = t('order_text');
+    $('#gate-hint').textContent = t('order_hint');
+  }
+  gate.classList.toggle('show', on);
+}
+
 function panelMode(){
   const setup = $('#telem-setup'), live = $('#telem-live');
   const showSetup = !cfg.telemetry_seen && !(state && (state.alive || state.recv));
@@ -2420,6 +2751,7 @@ async function poll(){
     } else if (capturing && !state.capture){
       capturing = null; refreshControls();   // режим сняли на стороне питона
     }
+    gateMode();
     $('#hz').textContent = state.hz;
     $('#age').textContent = state.recv ? state.age : '—';
     $('#spd').textContent = state.alive ? state.speed : '—';
@@ -2611,6 +2943,9 @@ class Api:
             "capture": b.capture,
             "captured": b.captured,
             "buttons": b.buttons,
+            "bad_order": b.bad_order,
+            "drv_code": b.drivers.code,
+            "drv_info": b.drivers.info,
             "hh_code": b.hidhide.code,
             "hh_arg": b.hidhide.arg,
             "code": b.status_code,
