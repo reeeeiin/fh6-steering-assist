@@ -1,8 +1,6 @@
-<p align="center"><b>Steering Assist</b></p>
+## Telemetry-based drift steering assist for Forza Horizon on gamepad.
 
-**Telemetry-based drift steering assist for Forza Horizon on gamepad.**
-
-Custom Figma-designed UI, original artwork.
+<img width="1920" height="1080" alt="frame38" src="https://github.com/user-attachments/assets/7a5bb2da-235d-4cfa-bfcd-97b26e13ba2b" />
 
 Reads the game's official telemetry (Data Out) 60 times a second, measures
 how far the car travels sideways versus where its nose points — the way real
