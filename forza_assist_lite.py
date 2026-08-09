@@ -1350,6 +1350,42 @@ class Bridge:
         self._rumble_t = now
         return True
 
+    def _virtual_buttons(self, buttons: int, alive: bool, now: float) -> int:
+        """Какие кнопки уходят на виртуальный пад."""
+        if self.hid_mode:
+            return self._debounce(buttons, now)     # физического пада игра не видит
+        if MENU_NEUTRAL and not alive:
+            # Заезда нет: меню, пауза, редактор трасс. Кнопки не шлём совсем -
+            # иначе зеркало ручника дублирует подтверждение в меню (A - это
+            # ещё и "принять"). Игра в таком состоянии читает кнопки с
+            # физического пада, это измерено.
+            return 0
+        return self._mirror_buttons(buttons, now)
+
+    def _write_report(self, pad, gp, out_x: float, alive: bool,
+                      now: float) -> int:
+        """Собрать отчёт виртуального пада. Возвращает отправленные кнопки.
+
+        ОСИ ИДУТ ВСЕГДА, даже когда заезда нет. Раньше вне заезда пад
+        обнулялся целиком, и это ломало режимы, где игра ведёт себя как в
+        заезде, а IsRaceOn держит нулём - например стадию edit road в Event
+        Lab: игра остаётся привязанной к виртуальному паду, а для неё
+        обнулённые стики означают не "ввода нет", а "ввод в нуле", то есть
+        управление пропадает целиком. Кнопки в таком случае продолжают
+        работать с физического пада, оси - нет: гейпад всегда сообщает
+        какое-то положение осей, и "промолчать" ими невозможно.
+        """
+        virt = self._virtual_buttons(gp.wButtons, alive, now)
+        r = pad.report
+        r.wButtons = virt
+        r.bLeftTrigger = gp.bLeftTrigger
+        r.bRightTrigger = gp.bRightTrigger
+        r.sThumbLX = int(clamp(out_x, -1.0, 1.0) * 32767)
+        r.sThumbLY = gp.sThumbLY
+        r.sThumbRX = gp.sThumbRX
+        r.sThumbRY = gp.sThumbRY
+        return virt
+
     def _mirror_buttons(self, buttons: int, now: float) -> int:
         """Какие кнопки физического пада отдать виртуальному.
 
@@ -1617,34 +1653,7 @@ class Bridge:
                 out_x = self.assist.update(stick_x, tm, dt, brake, alive)
 
                 virt_out = 0                 # что реально ушло на виртуальный пад
-                if MENU_NEUTRAL and not alive and not self.hid_mode:
-                    # Меню/пауза (IsRaceOn = 0): виртуальный пад нем, меню
-                    # целиком за физическим падом - без двойных подтверждений.
-                    self._neutral(pad)
-                elif VIRTUAL_NO_BUTTONS and not self.hid_mode:
-                    # заезд: все оси зеркалятся (руль - с ассистом), кнопки НЕ
-                    # шлются - их игра получает только с видимого физического
-                    # пада, поэтому передачи и прочее не дублируются.
-                    # Исключение: кнопки-удержания (ручник/сцепление), см.
-                    # _mirror_buttons.
-                    virt_out = self._mirror_buttons(gp.wButtons, now)
-                    pad.report.wButtons = virt_out
-                    pad.report.bLeftTrigger = gp.bLeftTrigger
-                    pad.report.bRightTrigger = gp.bRightTrigger
-                    pad.report.sThumbLX = int(clamp(out_x, -1.0, 1.0) * 32767)
-                    pad.report.sThumbLY = gp.sThumbLY
-                    pad.report.sThumbRX = gp.sThumbRX
-                    pad.report.sThumbRY = gp.sThumbRY
-                else:
-                    # полный проброс (для скрываемых падов)
-                    virt_out = self._debounce(gp.wButtons, now)
-                    pad.report.wButtons = virt_out
-                    pad.report.bLeftTrigger = gp.bLeftTrigger
-                    pad.report.bRightTrigger = gp.bRightTrigger
-                    pad.report.sThumbLX = int(clamp(out_x, -1.0, 1.0) * 32767)
-                    pad.report.sThumbLY = gp.sThumbLY
-                    pad.report.sThumbRX = gp.sThumbRX
-                    pad.report.sThumbRY = gp.sThumbRY
+                virt_out = self._write_report(pad, gp, out_x, alive, now)
                 pad.update()
 
                 if DEBUG_LOG and alive:

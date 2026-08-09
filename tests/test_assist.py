@@ -354,6 +354,41 @@ def test_game_detection_does_not_spawn_processes():
     assert isinstance(fa.game_running(), bool)
 
 
+# ------------------------------------------------- отчёт вне заезда (Event Lab)
+def test_axes_keep_flowing_when_no_race():
+    """Баг Event Lab, стадия edit road: игра ведёт себя как в заезде, но
+    IsRaceOn держит нулём. Раньше виртуальный пад обнулялся целиком, и
+    управление пропадало полностью — для игры это не «ввода нет», а «ввод
+    в нуле»."""
+    b = _bridge()
+    b.hid_mode = False
+    b._btn_state = 0
+    b._btn_lock_until = [0.0] * 16
+    pad = _FakePad()
+    gp = _FakeReport()
+    gp.wButtons = A
+    gp.sThumbLY, gp.sThumbRX, gp.sThumbRY = 111, 222, 333
+    gp.bLeftTrigger, gp.bRightTrigger = 44, 55
+
+    virt = b._write_report(pad, gp, out_x=-0.5, alive=False, now=1.0)
+
+    assert virt == 0, "вне заезда кнопки слать нельзя - дублируют подтверждение"
+    assert pad.report.sThumbLX == int(-0.5 * 32767), pad.report.sThumbLX
+    assert pad.report.sThumbLY == 111 and pad.report.sThumbRX == 222
+    assert pad.report.sThumbRY == 333
+    assert pad.report.bLeftTrigger == 44 and pad.report.bRightTrigger == 55
+
+
+def test_hold_buttons_still_mirrored_during_race():
+    b = _bridge()
+    b.hid_mode = False
+    pad, gp = _FakePad(), _FakeReport()
+    gp.wButtons = A
+    virt = b._write_report(pad, gp, out_x=0.25, alive=True, now=1.0)
+    assert virt == A, "в заезде ручник обязан зеркалиться"
+    assert pad.report.sThumbLX == int(0.25 * 32767)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

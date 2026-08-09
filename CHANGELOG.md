@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## v1.3.0
+
+Bug-fix release. Everything below was measured, not guessed — the app can now
+record a frame-by-frame log of the input loop (`tools/analyze_log.py`), and the
+findings come from it.
 
 ### Added
 
@@ -28,15 +32,12 @@
   would have meant reinstalling the driver on every single launch. Detection now
   also falls back to the driver's service key.
 - Process lookups use a Toolhelp snapshot instead of spawning PowerShell.
-
-## v1.3.0
-
-Bug-fix release. Everything below was measured, not guessed — the app can now
-record a frame-by-frame log of the input loop (`tools/analyze_log.py`), and the
-findings come from it.
-
-### Fixed
-
+- **Controls died in the Event Lab road editor.** The game behaves like a race
+  there but reports `IsRaceOn = 0`, and the virtual pad used to go fully silent
+  outside a race. Buttons survive that (the game falls back to the physical pad)
+  but axes do not — a gamepad always reports *some* stick position, so zeroed
+  sticks read as "input is centred", not "no input". Axes are now always sent;
+  only buttons are held back outside a race.
 - **Double presses in menus.** The assist treated any incoming telemetry packet
   as "a race is on", but Forza keeps streaming packets in menus and on pause —
   they are just zeroed. So the virtual pad kept mirroring the handbrake button
