@@ -1,12 +1,14 @@
 ## Telemetry-based drift steering assist for Forza Horizon on gamepad.
 
-<img width="1920" height="1080" alt="frame38" src="https://github.com/user-attachments/assets/7a5bb2da-235d-4cfa-bfcd-97b26e13ba2b" />
+<iframe width="2330" height="1041" src="https://www.youtube.com/embed/5dLwkWKjpCU" title="FH6 STEERING ASSIST" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Reads the game's official telemetry (Data Out) 60 times a second, measures
 how far the car travels sideways versus where its nose points — the way real
 caster geometry feels a slide — and feeds countersteer and yaw damping into
 a virtual Xbox 360 controller. The game sees a normal gamepad — no memory
 access, no game file modification, no injection.
+
+<img width="1920" height="1080" alt="frame38" src="https://github.com/user-attachments/assets/7a5bb2da-235d-4cfa-bfcd-97b26e13ba2b" />
 
 ![status](https://img.shields.io/badge/status-playable-brightgreen) ![python](https://img.shields.io/badge/python-3.10+-blue)
 
