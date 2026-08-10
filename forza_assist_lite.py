@@ -448,6 +448,21 @@ def xinput_read(slot: int) -> XINPUT_GAMEPAD | None:
     return None
 
 
+def xinput_read_state(slot: int) -> tuple:
+    """Состояние пада + dwPacketNumber.
+
+    Счётчик растёт ТОЛЬКО когда состояние реально изменилось, поэтому по нему
+    видно настоящую частоту отчётов устройства, а не частоту наших опросов.
+    Провод и донгл дают порядка 125 Гц, Bluetooth заметно меньше и с
+    джиттером - без этого числа "плохо работает по воздуху" остаётся
+    ощущением, которое нечем проверить.
+    """
+    st = XINPUT_STATE()
+    if _xinput.XInputGetState(slot, ctypes.byref(st)) == 0:
+        return st.Gamepad, st.dwPacketNumber
+    return None, 0
+
+
 def xinput_rumble(slot: int, left: float, right: float) -> None:
     vib = XINPUT_VIBRATION(int(max(0.0, min(1.0, left)) * 65535),
                            int(max(0.0, min(1.0, right)) * 65535))
@@ -1280,6 +1295,10 @@ class Bridge:
         self.hid_mode = False
         self.mode_info = "starting"
         self.hz = 0.0                        # для UI: реальная частота цикла
+        self.pad_hz = 0                      # реальная частота отчётов пада
+        self._pad_packet = -1                # последний dwPacketNumber
+        self._pad_packets = 0
+        self._pad_t0 = 0.0
         self._hz_frames = 0
         self._hz_t0 = 0.0
 
@@ -1349,6 +1368,29 @@ class Bridge:
         self._rumble_last = (gl, gs)
         self._rumble_t = now
         return True
+
+    def _count_pad_packet(self, packet: int, now: float) -> None:
+        """Считать РЕАЛЬНУЮ частоту отчётов физического пада.
+
+        dwPacketNumber растёт только при изменении состояния, поэтому счёт
+        ведётся по его приросту, а не по числу наших опросов. Считаем в окне
+        в секунду и придерживаем спад: в покое пад молчит и частота честно
+        падает до нуля, а нам нужна та, что бывает при работе стиком.
+
+        ВАЖНО: величина упирается в частоту нашего цикла - опрашивая 60 раз в
+        секунду, больше 60 изменений мы не увидим, и пад на 125 Гц покажет 60.
+        Это не мешает: вопрос не в максимуме пада, а в том, успевает ли он за
+        нашими 60. Значение заметно ниже 60 и означает недобор данных - часть
+        кадров ассист считает по устаревшему положению стика.
+        """
+        if packet != self._pad_packet:
+            self._pad_packet = packet
+            self._pad_packets += 1
+        if now - self._pad_t0 >= 1.0:
+            rate = self._pad_packets / max(1e-6, now - self._pad_t0)
+            self.pad_hz = round(max(rate, self.pad_hz * 0.6))
+            self._pad_packets = 0
+            self._pad_t0 = now
 
     def _virtual_buttons(self, buttons: int, alive: bool, now: float) -> int:
         """Какие кнопки уходят на виртуальный пад."""
@@ -1614,7 +1656,8 @@ class Bridge:
                     except Exception:
                         gp = None
                 else:
-                    gp = xinput_read(self.physical_slot)
+                    gp, packet = xinput_read_state(self.physical_slot)
+                    self._count_pad_packet(packet, now)
                 if gp is None:
                     # Пад отвалился (батарейка, кабель, смена режима). ViGEm
                     # продолжает отдавать игре ПОСЛЕДНИЙ отчёт, поэтому без
@@ -2541,7 +2584,7 @@ function build(){
     </div>
     <div id="telem-live">
     <div class="stats">
-      <div class="stat"><span>Latency</span><b><span id="hz">—</span> Hz</b></div>
+      <div class="stat"><span>Loop / Pad</span><b><span id="hz">—</span> / <span id="padhz">—</span> Hz</b></div>
       <div class="stat"><span>Callback</span><b><span id="age">—</span> ms</b></div>
       <div class="stat"><span>${t('speed')}</span><b><span id="spd">—</span> km/h</b></div>
       <div class="stat"><span>${t('slip')}</span><b><span id="slip">—</span></b></div>
@@ -2762,6 +2805,9 @@ async function poll(){
     }
     gateMode();
     $('#hz').textContent = state.hz;
+    // частота отчётов ФИЗИЧЕСКОГО пада: провод и донгл дают ~125 Гц,
+    // Bluetooth заметно меньше - по этому числу видно, в канале ли дело
+    $('#padhz').textContent = state.pad_hz || '—';
     $('#age').textContent = state.recv ? state.age : '—';
     $('#spd').textContent = state.alive ? state.speed : '—';
     $('#slip').textContent = state.alive ? state.slip.toFixed(2) : '—';
@@ -2939,6 +2985,7 @@ class Api:
         return {
             "cfg": b.cfg,
             "hz": round(b.hz),
+            "pad_hz": b.pad_hz,
             "age": round(min(999.0, b.telemetry.age_ms)),
             "alive": b.telemetry.alive,        # идёт заезд (IsRaceOn = 1)
             "recv": b.telemetry.receiving,     # пакеты идут (в меню тоже)
