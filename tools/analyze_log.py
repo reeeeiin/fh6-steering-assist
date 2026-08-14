@@ -12,6 +12,57 @@ BUTTON_NAMES = {
 }
 
 
+def jerk_report(rows, top=4, window=6):
+    """Find the sharpest jumps in what the game received and split each one
+    into the driver's own stick, our reshaping of it, and the assist term."""
+    f = lambda r, k: float(r[k])
+    steps = []
+    for i in range(1, len(rows)):
+        if f(rows[i], "kmh") < 20:
+            continue
+        steps.append((abs(f(rows[i], "out") - f(rows[i - 1], "out")), i))
+    if not steps:
+        return "No moving frames in this log."
+    steps.sort(reverse=True)
+
+    lines = ["Sharpest jumps in the signal the game received:", ""]
+    used = []
+    for size, i in steps:
+        if any(abs(i - j) < window * 2 for j in used):
+            continue
+        used.append(i)
+        if len(used) > top:
+            break
+        a, b = rows[i - 1], rows[i]
+        d_out = f(b, "out") - f(a, "out")
+        d_raw = f(b, "raw") - f(a, "raw")
+        d_shaped = f(b, "stick") - f(a, "stick")
+        d_corr = f(b, "corr") - f(a, "corr")
+        d_reshape = d_shaped - d_raw
+        lines.append(f"  t={f(b, 't'):7.2f}s  {f(b, 'kmh'):3.0f} km/h   "
+                     f"output jumped {d_out:+.4f} in one frame")
+        lines.append(f"      driver moved the stick   {d_raw:+.4f}")
+        lines.append(f"      our reshaping of it      {d_reshape:+.4f}")
+        lines.append(f"      assist correction        {d_corr:+.4f}")
+        biggest = max((abs(d_raw), "the driver"),
+                      (abs(d_reshape), "our reshaping"),
+                      (abs(d_corr), "the assist"))[1]
+        lines.append(f"      -> dominated by {biggest}")
+        lines.append("")
+
+        lo, hi = max(0, i - window), min(len(rows), i + window + 1)
+        lines.append("      frame    raw   shaped    corr     out   slide  shape")
+        for k in range(lo, hi):
+            r = rows[k]
+            mark = "  <<<" if k == i else ""
+            lines.append(f"      {k - i:+5d} {f(r,'raw'):+6.3f} "
+                         f"{f(r,'stick'):+7.3f} {f(r,'corr'):+7.3f} "
+                         f"{f(r,'out'):+7.3f} {f(r,'slide'):6.3f} "
+                         f"{f(r,'shape'):6.3f}{mark}")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def default_path():
     base = os.environ.get("APPDATA", "")
     return os.path.join(base, "ForzaAssistLite", "assist_log.csv")
@@ -49,6 +100,9 @@ def main(path):
     elif motion["slide"] < 1e-3:
         print("Note: no sliding in this log, the assist stayed at zero.")
         print("    Buttons can be checked, countersteer behaviour cannot.\n")
+
+    if "raw" in rows[0] and "corr" in rows[0]:
+        print(jerk_report(rows))
 
     prev = 0
     presses = {}

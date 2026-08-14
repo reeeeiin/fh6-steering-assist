@@ -444,7 +444,8 @@ class Assist:
             self._corr = 0.0
             self._corr_lag = 0.0
             self.dbg = (tm.rear_slip, self._beta_f, 0.0, tm.yaw_rate,
-                        self._yaw_f, 0.0, 0.0, 0.0, stick_x, stick_x)
+                        self._yaw_f, 0.0, 0.0, 0.0, 0.0,
+                        stick_x, 0.0, stick_x)
             return stick_x
 
         spd_kmh = tm.speed_mps * 3.6
@@ -532,7 +533,7 @@ class Assist:
             max(0.0, abs(self._slip_f) - abs(self._front_f)), self._slip_f)
         self.dbg = (slip_tires, sig, slip_pred, tm.yaw_rate,
                     self._yaw_f, gyro_force, counter, self._slide,
-                    stick_x, self.angle)
+                    self._shape, stick_x, self._corr, self.angle)
         return self.angle
 
 
@@ -1261,7 +1262,8 @@ class Bridge:
 
                 if DEBUG_LOG and alive:
                     self.log.append((now,) + self.assist.dbg +
-                                    (gp.wButtons, virt_out))
+                                    (stick_x, tm.speed_mps * 3.6,
+                                     gp.wButtons, virt_out))
 
                 gl, gs = self._game_rumble
                 if gl < 0.01 and gs < 0.01:
@@ -1294,8 +1296,8 @@ class Bridge:
             path = os.path.join(os.path.dirname(CONFIG_FILE), "assist_log.csv")
             with open(path, "w", encoding="utf-8") as f:
                 f.write("t,slip_tires,beta_f,slip_pred,yaw_raw,yaw_f,"
-                        "gyro_force,counter,slide,stick,out,"
-                        "btn_phys,btn_virt\n")
+                        "gyro_force,counter,slide,shape,stick,corr,out,"
+                        "raw,kmh,btn_phys,btn_virt\n")
                 t0 = self.log[0][0]
                 for row in self.log:
                     f.write(f"{row[0] - t0:.4f}," +
