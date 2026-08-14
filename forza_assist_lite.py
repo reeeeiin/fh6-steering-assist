@@ -1,34 +1,3 @@
-"""
-Steering Assist
-===============
-Упрощённый ассист руления для Forza Horizon.
-
-Цепь:  физический геймпад (XInput) -> этот скрипт -> виртуальный Xbox-пад (ViGEmBus)
-
-Игра видит обычный Xbox-контроллер. Скрипт корректирует по телеметрии ось
-руления (левый стик X), остальные оси зеркалит как есть.
-
-С кнопками сложнее: HidHide не умеет прятать XUSB, поэтому игра видит ДВА
-устройства и читает кнопки только с одного за раз. На виртуальный пад уходят
-лишь кнопки-удержания (ручник, сцепление) - они держат за ним оси; на время
-любой событийной кнопки зеркало уступает, иначе игра не увидит нажатие вообще.
-Подробности и результаты измерений - у констант ниже и в _mirror_buttons.
-
-Ассист работает только когда идёт заезд (IsRaceOn): в меню виртуальный пад
-полностью нем, иначе каждое подтверждение приходило бы с двух падов сразу.
-Вибрация игры пересылается в физический пад, но редко и только при изменении.
-
-Установка (один раз):
-    pip install vgamepad     <- сам поставит драйвер ViGEmBus, согласись в инсталляторе
-
-Требуется, как и раньше:
-    - HidHide: физический пад скрыт от игры, python.exe в белом списке
-    - В игре: Data Out = ON, 127.0.0.1, порт 20777
-    - В игре: Steering = Simulation (иначе игра дорулит поверх ассиста)
-
-Запуск:
-    python forza_assist_lite.py
-"""
 
 from __future__ import annotations
 
@@ -47,12 +16,11 @@ from ctypes import wintypes
 from dataclasses import dataclass
 
 def _fatal(msg: str):
-    """Показать ошибку и НЕ дать консоли закрыться мгновенно."""
     print("=" * 60)
     print(msg)
     print("=" * 60)
     try:
-        input("Нажми Enter, чтобы закрыть...")
+        input("Press Enter to close...")
     except EOFError:
         pass
     raise SystemExit(1)
@@ -61,132 +29,55 @@ def _fatal(msg: str):
 try:
     import vgamepad as vg
 except ImportError:
-    _fatal("vgamepad не установлен В ЭТОМ Python.\n"
-           "Запускай через run.bat (или собери exe через build.bat).\nДвойной клик по .py уходит в другой интерпретатор:\n"
-           "интерпретатор (например, из Microsoft Store).\n"
-           "Запусти из PowerShell:\n"
+    _fatal("vgamepad is not installed in THIS Python.\n"
+           "Use run.bat, or build the exe with build.bat.\n"
+           "Double-clicking the .py may pick another interpreter.\n"
+           "From PowerShell:\n"
            "    cd $HOME\\Documents\\ForzaAssistLite\n"
            "    pip install vgamepad\n"
            "    python forza_assist_lite.py")
 except Exception as e:
-    _fatal(f"vgamepad есть, но не запустился: {type(e).__name__}: {e}\n"
-           "Обычно это значит, что драйвер ViGEmBus не установлен.\n"
-           "Переустанови:  pip install --force-reinstall vgamepad")
+    _fatal(f"vgamepad is present but failed to start: {type(e).__name__}: {e}\n"
+           "Usually this means the ViGEmBus driver is missing.\n"
+           "Reinstall with:  pip install --force-reinstall vgamepad")
 
-# ----------------------------------------------------------------------------
-# Константы (правятся здесь, в UI не вынесены — чтобы окно оставалось простым)
-# ----------------------------------------------------------------------------
-APP_VERSION = "1.3.0"       # показывается в футере окна и в имени exe
-UPDATE_HZ = 60.0            # частота цикла = частоте телеметрии Forza
-PREDICT_EXTRA = 0.02        # сек поверх задержки фильтра: предикция смотрит
-                            # на ~60мс вперёд - контрруль стартует в момент
-                            # ЗАРОЖДЕНИЯ заноса, а не когда угол уже вырос
-INPUT_TAU_MAX = 0.25        # сек: макс. сглаживание СОБСТВЕННЫХ коррекций
-                            # водителя в заносе (ползунок "реакция на руль" = 0)
-STEER_PER_SLIP = 0.234      # доля полного хода руля на единицу сноса при
-                            # силе 100% - откалибровано так, что колёса идут
-                            # ровно за вектором движения (полный лок ~35 град
-                            # сноса). Схема BeamNG: коррекция линейна по углу,
-                            # ограничена только физическим локом руля
-SMOOTH_TAU_MAX = 0.05       # сек: макс. постоянная времени фильтра (ползунок = доля)
-YIELD_TAU = 0.05            # сек: сглаживание уступчивости - когда водитель
-                            # отпускает стик после скидки, контрруль ассиста
-                            # нарастает плавно, а не появляется скачком
-YIELD_STRENGTH = 0.85       # насколько ассист уступает, когда стик направлен
-                            # ПРОТИВ его коррекции (перекладка, выход из заноса):
-                            # при полном противоходе остаётся 15% коррекции
-YAW_TAU = 0.012             # сек: отдельный БЫСТРЫЙ фильтр рыскания — демпфер
-                            # обязан получать свежий сигнал, иначе он не гасит
-                            # колебания, а раскачивает их
+APP_VERSION = "1.3.1"
+UPDATE_HZ = 60.0
+PREDICT_EXTRA = 0.02
+INPUT_TAU_MAX = 0.25
+STEER_PER_SLIP = 0.234
+SMOOTH_TAU_MAX = 0.05
+YIELD_TAU = 0.05
+YIELD_STRENGTH = 0.85
+YAW_TAU = 0.012
 TELEMETRY_PORT = 20777
-BETA_GAIN = 7.0             # рад -> условные "единицы сноса": пик сцепления шины
-                            # ~8 град, значит бета 8 град ~ старой единице слипа.
-                            # Сигнал = угол между НОСОМ машины и вектором её
-                            # ДВИЖЕНИЯ (как кастер в реальном рулевом): работает
-                            # и с заблокированными ручником колёсами
-BRAKE_SUPPRESS = 0.5        # 0..1: насколько тормоз глушит контрруль
-# Порога срабатывания больше нет: характеристика прогрессивная с НУЛЕВОГО
-# угла (снос^2/(снос+предел)) - помощь есть с первого градуса, на малых углах
-# исчезающе слабая, прирост растёт с углом, на глубине выходит на линейную
-# прямую "снос минус предел". "Предел сцепления" задаёт придушенность старта.
-TRANSITION_SPEED = 1.0      # ослабление демпфера при быстрой перекладке
-RUMBLE_FORWARD = True       # пересылать вибрацию игры в физический пад
-RUMBLE_HZ = 12.0            # Максимальная частота отправки вибрации.
-                            # XInputSetState - БЛОКИРУЮЩИЙ USB control transfer
-                            # к тому же паду, с которого мы читаем кнопки.
-                            # Вызов каждый кадр (60 Гц) забивает control-эндпоинт,
-                            # и input-репорты пада начинают опаздывать и
-                            # теряться: нажатие приходится повторять по 3-4 раза.
-                            # Шлём реже и только при реальном изменении.
-RUMBLE_EPS = 0.06           # порог "значение изменилось": вибрация - ощущение
-                            # низкочастотное, мелкие шаги всё равно не
-                            # различимы, а каждый из них стоил USB-запроса
-RUMBLE_STEPS = 16           # квантование силы: в затяжном заносе синтетика
-                            # ползёт непрерывно и без округления давала бы
-                            # "изменение" на каждом кадре
-RUMBLE_FLOOR = 0.05         # ниже — считаем нулём (пад всё равно не крутит)
-SWEEP_SEC = 20.0            # период досмотра HidHide. Каждый досмотр - запуск
-                            # внешнего процесса; на 5 секундах это давало
-                            # регулярный системный хич прямо во время заезда,
-                            # и нажатия, попавшие в него, игра теряла.
-YIELD_FRAMES = 5            # Длина уступки в режиме "pulse" (~83 мс). Режим
-                            # диагностический: измерение показало, что этого
-                            # мало - реальное нажатие длится ~150 мс, и игра
-                            # успевает опросить пад мимо окна. Рабочий режим -
-                            # "hold" (уступка на всё нажатие).
-BUTTON_NAMES = {            # XInput-биты -> подписи для назначения в UI
+BETA_GAIN = 7.0
+BRAKE_SUPPRESS = 0.5
+TRANSITION_SPEED = 1.0
+RUMBLE_FORWARD = True
+RUMBLE_HZ = 12.0
+RUMBLE_EPS = 0.06
+RUMBLE_STEPS = 16
+RUMBLE_FLOOR = 0.05
+SWEEP_SEC = 20.0
+YIELD_FRAMES = 5
+BUTTON_NAMES = {
     0x1000: "A", 0x2000: "B", 0x4000: "X", 0x8000: "Y",
     0x0100: "LB", 0x0200: "RB", 0x0040: "LS", 0x0080: "RS",
     0x0001: "D-Up", 0x0002: "D-Down", 0x0004: "D-Left", 0x0008: "D-Right",
     0x0010: "Start", 0x0020: "Back",
 }
-# Кнопки-УДЕРЖАНИЯ (ручник, сцепление) зеркалятся на виртуальный пад; какие
-# именно - берётся из конфига, потому что раскладка у всех своя. Зачем вообще
-# зеркалить: пока на виртуальном паде есть активность, игра не уводит источник
-# осей на физический, и контрруль не пропадает в момент ручника. Дубля при этом
-# не возникает - для удержания "нажато на обоих падах" это просто "нажато".
-#
-# ИЗМЕРЕНО ЛОГОМ (см. tools/analyze_log.py): игра читает кнопки только с ОДНОГО
-# пада за раз, и пока зеркало держит ручник, физических нажатий она не видит
-# ВООБЩЕ - 0 из 10 переключений передачи. Поэтому на время любой событийной
-# кнопки зеркало обязано уступить: игра уходит на физический пад, видит там и
-# ручник, и передачу, а после отпускания зеркало забирает оси обратно.
-# Плата за это - оси на ~150 мс уходят физическому паду, то есть руль слегка
-# дёргается при переключении в заносе. Убрать нельзя: выбор источника осей
-# целиком на стороне игры.
-#
-# Сами событийные кнопки (передачи, камера) зеркалить НЕЛЬЗЯ - сработают дважды.
-VIRTUAL_NO_BUTTONS = True   # виртуальный пад шлёт ВСЕ ОСИ (руль с ассистом,
-                            # газ, тормоз, камеру), но НОЛЬ кнопок: оси есть на
-                            # обоих устройствах (кого бы игра ни слушала - газ
-                            # работает), а кнопки только на физическом - дубль
-                            # нажатия невозможен
-                            # кнопки/триггеры/камера идут с физического пада -
-                            # игра видит одно устройство на кнопку, дубли невозможны
-MENU_NEUTRAL = True         # пока телеметрия молчит (меню/пауза) - виртуальный пад
-                            # полностью нейтрален: меню слушает только физический
-                            # пад, двойные нажатия исчезают. Телеметрия пошла
-                            # (заезд) - виртуальный пад включается.
-BUTTON_DEBOUNCE_MS = 30     # антидребезг кнопок: после смены состояния кнопка
-                            # "заморожена" на столько мс (0 = выкл). Человеческий
-                            # даблтап ~60-80 мс, так что живой ввод не страдает.
+VIRTUAL_NO_BUTTONS = True
+MENU_NEUTRAL = True
+BUTTON_DEBOUNCE_MS = 30
 DEBUG_LOG = os.environ.get("ASSIST_DEBUG_LOG") == "1"
-                            # Покадровый CSV внутренностей контура - инструмент
-                            # разбора воблинга, не для релиза: он ест память и
-                            # роняет многомегабайтный файл при каждом выходе.
-                            # Включается только явно:  set ASSIST_DEBUG_LOG=1
-
 
 def _app_dir() -> str:
-    """Папка приложения: рядом с exe при сборке PyInstaller, иначе рядом со скриптом."""
     if getattr(sys, "frozen", False):
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
 
-
 def _config_path() -> str:
-    """Настройки живут в профиле пользователя — один файл и для скрипта,
-    и для exe, переживает переезды папки приложения."""
     base = os.path.join(os.environ.get("APPDATA", _app_dir()),
                         "ForzaAssistLite")
     try:
@@ -196,7 +87,7 @@ def _config_path() -> str:
     p = os.path.join(base, "assist_lite_config.json")
     legacy = os.path.join(_app_dir(), "assist_lite_config.json")
     if not os.path.isfile(p) and os.path.isfile(legacy):
-        try:                                   # перенос старых настроек
+        try:
             with open(legacy, "r", encoding="utf-8") as fsrc, \
                  open(p, "w", encoding="utf-8") as fdst:
                 fdst.write(fsrc.read())
@@ -207,9 +98,6 @@ def _config_path() -> str:
 
 CONFIG_FILE = _config_path()
 
-# ----------------------------------------------------------------------------
-# SDL/pygame (чтение пада через HID, когда XUSB отключён) - опционально
-# ----------------------------------------------------------------------------
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 try:
     import pygame
@@ -218,35 +106,31 @@ try:
 except Exception:
     HAVE_PYGAME = False
 
-# SDL2 GameController: стабильные числовые константы
 SDL_AX_LX, SDL_AX_LY, SDL_AX_RX, SDL_AX_RY, SDL_AX_LT, SDL_AX_RT = 0, 1, 2, 3, 4, 5
 SDL_BTN_TO_XINPUT = {
-    0: 0x1000,   # A
-    1: 0x2000,   # B
-    2: 0x4000,   # X
-    3: 0x8000,   # Y
-    4: 0x0020,   # BACK
-    6: 0x0010,   # START
-    7: 0x0040,   # LEFT_THUMB
-    8: 0x0080,   # RIGHT_THUMB
-    9: 0x0100,   # LB
-    10: 0x0200,  # RB
-    11: 0x0001,  # DPAD_UP
-    12: 0x0002,  # DPAD_DOWN
-    13: 0x0004,  # DPAD_LEFT
-    14: 0x0008,  # DPAD_RIGHT
+    0: 0x1000,
+    1: 0x2000,
+    2: 0x4000,
+    3: 0x8000,
+    4: 0x0020,
+    6: 0x0010,
+    7: 0x0040,
+    8: 0x0080,
+    9: 0x0100,
+    10: 0x0200,
+    11: 0x0001,
+    12: 0x0002,
+    13: 0x0004,
+    14: 0x0008,
 }
 
-
 class HidPadState:
-    """Тот же набор полей, что у XINPUT_GAMEPAD."""
     __slots__ = ("wButtons", "bLeftTrigger", "bRightTrigger",
                  "sThumbLX", "sThumbLY", "sThumbRX", "sThumbRY")
 
 
 TH32CS_SNAPPROCESS = 0x00000002
 GAME_PROCESSES = ("forzahorizon", "forzamotorsport")
-
 
 class PROCESSENTRY32W(ctypes.Structure):
     _fields_ = [("dwSize", wintypes.DWORD),
@@ -260,14 +144,7 @@ class PROCESSENTRY32W(ctypes.Structure):
                 ("dwFlags", wintypes.DWORD),
                 ("szExeFile", ctypes.c_wchar * 260)]
 
-
 def running_process_names() -> set[str]:
-    """Имена запущенных процессов в нижнем регистре.
-
-    Через снимок Toolhelp, а не через PowerShell: запуск внешнего процесса
-    стоит сотен миллисекунд системного хича, и мы уже ловили на этом потерю
-    нажатий в игре (см. SWEEP_SEC). Снимок стоит единицы миллисекунд.
-    """
     k32 = ctypes.windll.kernel32
     snap = k32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
     if snap == -1:
@@ -284,17 +161,12 @@ def running_process_names() -> set[str]:
         k32.CloseHandle(snap)
     return names
 
-
 def game_running() -> bool:
-    """Идёт ли уже Forza. Игра перечисляет контроллеры ТОЛЬКО при своём
-    запуске, поэтому виртуальный пад, созданный позже, ей не виден - ассист
-    будет молчать, и пользователь не поймёт почему."""
     try:
         names = running_process_names()
     except Exception:
         return False
     return any(p in n for n in names for p in GAME_PROCESSES)
-
 
 def is_admin() -> bool:
     try:
@@ -302,12 +174,7 @@ def is_admin() -> bool:
     except Exception:
         return False
 
-
 class XusbDisabler:
-    """Системное отключение XUSB-интерфейсов физических падов на время
-    работы (pnputil, нужны права администратора). XUSB нельзя спрятать
-    HidHide-ом - зато можно выключить целиком; игра его не увидит.
-    При выходе включаем обратно; на случай падения - файл-страховка."""
 
     CREATE_NO_WINDOW = 0x08000000
 
@@ -322,16 +189,11 @@ class XusbDisabler:
             capture_output=True, text=True,
             creationflags=self.CREATE_NO_WINDOW, timeout=20)
 
-    # что отключаем: XUSB-узлы физических падов + сторонние виртуальные
-    # геймпады-клонировщики (GeniTech ставится софтом маппинга и дублирует ввод)
     TARGET_PATTERNS = (r"USB\\VID_045E&PID_028E\\(?!.*VIGEM)",
                        r"GENITECH_VIRTUAL_GAMEPAD",
                        r"IG_\d\d")
 
     def list_xusb(self):
-        """Физические XInput-узлы и посторонние виртуальные пады.
-        Перечисление напрямую через pnputil - надёжнее WMI.
-        Вызывать ДО создания нашего виртуального пада."""
         import re
         cp = subprocess.run(
             ["pnputil", "/enum-devices", "/connected"],
@@ -340,7 +202,6 @@ class XusbDisabler:
         ids = []
         for line in (cp.stdout or "").splitlines():
             line = line.strip()
-            # строки вида "Instance ID: USB\VID_..." (локаль-независимо: по значению)
             if ":" not in line:
                 continue
             value = line.split(":", 1)[1].strip()
@@ -350,7 +211,6 @@ class XusbDisabler:
                 if re.search(pat, value, re.IGNORECASE):
                     ids.append(value)
                     break
-        # дедуп, сохраняя порядок
         seen = set()
         out = []
         for i in ids:
@@ -360,7 +220,6 @@ class XusbDisabler:
         return out
 
     def restore_leftovers(self):
-        """Если прошлый запуск упал, не включив пад - включаем сейчас."""
         try:
             with open(self.state_file, encoding="utf-8") as f:
                 ids = json.load(f)
@@ -399,9 +258,6 @@ class XusbDisabler:
             pass
 
 
-# ----------------------------------------------------------------------------
-# XInput (чтение физического пада)
-# ----------------------------------------------------------------------------
 for _dll in ("xinput1_4", "xinput1_3", "xinput9_1_0"):
     try:
         _xinput = getattr(ctypes.windll, _dll)
@@ -409,8 +265,7 @@ for _dll in ("xinput1_4", "xinput1_3", "xinput9_1_0"):
     except OSError:
         continue
 else:
-    raise SystemExit("XInput dll не найдена")
-
+    raise SystemExit("XInput DLL not found")
 
 class XINPUT_GAMEPAD(ctypes.Structure):
     _fields_ = [("wButtons", wintypes.WORD),
@@ -421,16 +276,13 @@ class XINPUT_GAMEPAD(ctypes.Structure):
                 ("sThumbRX", ctypes.c_short),
                 ("sThumbRY", ctypes.c_short)]
 
-
 class XINPUT_STATE(ctypes.Structure):
     _fields_ = [("dwPacketNumber", wintypes.DWORD),
                 ("Gamepad", XINPUT_GAMEPAD)]
 
-
 class XINPUT_VIBRATION(ctypes.Structure):
     _fields_ = [("wLeftMotorSpeed", wintypes.WORD),
                 ("wRightMotorSpeed", wintypes.WORD)]
-
 
 def xinput_connected_slots() -> set[int]:
     slots = set()
@@ -440,28 +292,17 @@ def xinput_connected_slots() -> set[int]:
             slots.add(i)
     return slots
 
-
 def xinput_read(slot: int) -> XINPUT_GAMEPAD | None:
     st = XINPUT_STATE()
     if _xinput.XInputGetState(slot, ctypes.byref(st)) == 0:
         return st.Gamepad
     return None
 
-
 def xinput_read_state(slot: int) -> tuple:
-    """Состояние пада + dwPacketNumber.
-
-    Счётчик растёт ТОЛЬКО когда состояние реально изменилось, поэтому по нему
-    видно настоящую частоту отчётов устройства, а не частоту наших опросов.
-    Провод и донгл дают порядка 125 Гц, Bluetooth заметно меньше и с
-    джиттером - без этого числа "плохо работает по воздуху" остаётся
-    ощущением, которое нечем проверить.
-    """
     st = XINPUT_STATE()
     if _xinput.XInputGetState(slot, ctypes.byref(st)) == 0:
         return st.Gamepad, st.dwPacketNumber
     return None, 0
-
 
 def xinput_rumble(slot: int, left: float, right: float) -> None:
     vib = XINPUT_VIBRATION(int(max(0.0, min(1.0, left)) * 65535),
@@ -469,32 +310,23 @@ def xinput_rumble(slot: int, left: float, right: float) -> None:
     _xinput.XInputSetState(slot, ctypes.byref(vib))
 
 
-# ----------------------------------------------------------------------------
-# Телеметрия (формат FH Dash, 324 байта — тот же, что в оригинальном ассисте)
-# ----------------------------------------------------------------------------
 @dataclass
 class Telemetry:
     speed_mps: float
     front_slip: float
     rear_slip: float
     yaw_rate: float
-    sideslip: float   # рад: угол между носом и вектором скорости корпуса
-
+    sideslip: float
 
 class TelemetryListener:
     PACKET_SIZE = 324
-    OFF_RACE_ON = 0   # s32: 1 = идёт заезд, 0 = меню/пауза/загрузка.
-                      # Forza шлёт пакеты НЕПРЕРЫВНО, в том числе в меню -
-                      # там просто всё обнулено. Судить о заезде по одному
-                      # факту прихода пакета нельзя: в меню ассист остался бы
-                      # включённым, а виртуальный пад - зеркалил бы кнопки,
-                      # давая двойное подтверждение на каждом A.
-    OFF_VEL_X = 32    # локальная скорость машины: X = вправо
-    OFF_VEL_Z = 40    # Z = вперёд
+    OFF_RACE_ON = 0
+    OFF_VEL_X = 32
+    OFF_VEL_Z = 40
     OFF_YAW = 48
     OFF_SLIP_FL = 164
     OFF_SLIP_FR = 168
-    OFF_SLIP_RL = 172   # задняя ось: скольжение МАШИНЫ, а не нашего же руля
+    OFF_SLIP_RL = 172
     OFF_SLIP_RR = 176
     OFF_SPEED = 256
     F32 = struct.Struct("<f")
@@ -504,9 +336,9 @@ class TelemetryListener:
         self.port, self.stale_sec = port, stale_sec
         self._lock = threading.Lock()
         self._latest = Telemetry(0.0, 0.0, 0.0, 0.0, 0.0)
-        self._t_last = 0.0        # последний пакет ЛЮБОГО вида (в т.ч. меню)
-        self._t_race = 0.0        # последний пакет С ИДУЩИМ ЗАЕЗДОМ
-        self.error = ""           # причина, по которой слушатель не работает
+        self._t_last = 0.0
+        self._t_race = 0.0
+        self.error = ""
         self._run = threading.Event()
 
     def start(self):
@@ -518,17 +350,14 @@ class TelemetryListener:
 
     @property
     def alive(self) -> bool:
-        """Идёт заезд: пакеты свежие И игра не в меню/на паузе."""
         return time.monotonic() - self._t_race < self.stale_sec
 
     @property
     def receiving(self) -> bool:
-        """Пакеты приходят вообще (Data Out настроен). В меню True, а alive - нет."""
         return time.monotonic() - self._t_last < self.stale_sec
 
     @property
     def age_ms(self) -> float:
-        """Мс с момента последнего пакета телеметрии."""
         return (time.monotonic() - self._t_last) * 1000.0
 
     def get(self) -> Telemetry:
@@ -541,10 +370,6 @@ class TelemetryListener:
             try:
                 sock.bind(("0.0.0.0", self.port))
             except OSError as e:
-                # Порт занят (другой телеметрийный тул, недобитая копия) или
-                # закрыт политикой. Без этой ветки поток умирал с трейсбеком,
-                # которого в сборке --noconsole никто не видит: панель просто
-                # не оживала, а статус продолжал показывать "ok".
                 self.error = (e.strerror or str(e))[:60]
                 return
             sock.settimeout(0.2)
@@ -558,7 +383,7 @@ class TelemetryListener:
                 now = time.monotonic()
                 self._t_last = now
                 if not self.S32.unpack_from(pkt, self.OFF_RACE_ON)[0]:
-                    continue          # меню/пауза: пакет есть, заезда нет
+                    continue
                 fl = self.F32.unpack_from(pkt, self.OFF_SLIP_FL)[0]
                 fr = self.F32.unpack_from(pkt, self.OFF_SLIP_FR)[0]
                 rl = self.F32.unpack_from(pkt, self.OFF_SLIP_RL)[0]
@@ -568,12 +393,6 @@ class TelemetryListener:
                 vx = self.F32.unpack_from(pkt, self.OFF_VEL_X)[0]
                 vz = self.F32.unpack_from(pkt, self.OFF_VEL_Z)[0]
                 if all(map(math.isfinite, (fl, fr, rl, rr, yaw, spd, vx, vz))):
-                    # Боковое скольжение КОРПУСА: куда машина едет vs куда
-                    # смотрит нос. Не зависит от состояния шин - ручник,
-                    # блокировка, лёд. Ниже 1 м/с вперёд угол не определён.
-                    # Знак -vx: конвенция TireSlipAngle в Forza противоположна
-                    # геометрической atan2(vx,vz) - проверено зондом по
-                    # корреляции со старым шинным сигналом (-0.47 до флипа).
                     beta = math.atan2(-vx, vz) if vz > 1.0 else 0.0
                     with self._lock:
                         self._latest = Telemetry(max(0.0, spd),
@@ -581,45 +400,36 @@ class TelemetryListener:
                                                  (rl + rr) * 0.5, yaw, beta)
                         self._t_race = now
 
-
-# ----------------------------------------------------------------------------
-# Ассист (математика портирована из kimonowka/forza-assist v0.9)
-# ----------------------------------------------------------------------------
 def clamp(v, lo, hi):
     return lo if v < lo else hi if v > hi else v
 
 
-SLIDE_RAMP = 1.2      # насколько выше deadband снос должен уйти для полной силы
-                      # ассиста (шире = вход в занос подхватывается плавнее:
-                      # демпфер вплывает на протяжении ~10 град, а не 4)
-SLIDE_RELEASE = 0.25  # сек: как плавно ассист "отпускает" после окончания скольжения
-
+SLIDE_RAMP = 1.2
+SLIDE_RELEASE = 0.25
 
 class Assist:
     def __init__(self, cfg: dict):
         self.cfg = cfg
         self.angle = 0.0
         self._slip_f = 0.0
-        self._beta_f = 0.0       # фильтрованный снос корпуса (главный сигнал)
+        self._beta_f = 0.0
         self._yaw_f = 0.0
-        self._dslip_f = 0.0      # сглаженная производная сноса (для предикции)
-        self.dbg = (0.0,) * 10   # внутренности последнего тика (для лога)
-        self._slide = 0.0        # 0 = едем в сцеплении, 1 = развитое скольжение
-        self._front_f = 0.0      # фильтрованный снос передней оси
-        self._stick_f = 0.0      # сглаженный стик водителя (реакция на руль)
-        self._oppose_f = 0.0     # сглаженная уступчивость (без скачка при отпускании)
-        self.rumble_power = 0.0  # синтетическая вибрация по сносу (если игра молчит)
+        self._dslip_f = 0.0
+        self.dbg = (0.0,) * 10
+        self._slide = 0.0
+        self._front_f = 0.0
+        self._stick_f = 0.0
+        self._oppose_f = 0.0
+        self.rumble_power = 0.0
 
     @property
     def slip_now(self) -> float:
-        # снос корпуса: куда едет машина относительно того, куда смотрит нос
         return self._beta_f
 
     def update(self, stick_x: float, tm: Telemetry, dt: float,
                brake: float, telemetry_alive: bool) -> float:
         c = self.cfg
         if not c["enabled"] or not telemetry_alive:
-            # телеметрии нет или ассист выключен — чистый проброс
             self.angle = stick_x
             self.rumble_power = 0.0
             self._slide = 0.0
@@ -629,24 +439,14 @@ class Assist:
                         self._yaw_f, 0.0, 0.0, 0.0, stick_x, stick_x)
             return stick_x
 
-        # 0. Скоростные ворота (идея из BeamNG: lowSpeedCoef).
-        #    Ниже min_speed ассист выключен полностью — пончики на месте
-        #    крутятся без сопротивления; к min_speed+25 км/ч сила растёт до 1.
         spd_kmh = tm.speed_mps * 3.6
         speed_gate = clamp((spd_kmh - c["min_speed"]) / 25.0, 0.0, 1.0)
 
-        # 1b. Экспо-кривая стика — ТОЛЬКО в заносе: показатель подмешивается
-        #     фактором скольжения (прошлый тик). В сцеплении руль линейный,
-        #     в развитом заносе центр растянут до выставленной кривой.
         curve = c.get("steer_curve", 1.0)
         if curve > 1.001 and self._slide > 0.001:
             k = 1.0 + (curve - 1.0) * self._slide
             stick_x = math.copysign(abs(stick_x) ** k, stick_x)
 
-        # 1c. Реакция на руль: временной фильтр СОБСТВЕННЫХ коррекций
-        #     водителя, только в меру скольжения (в грип-езде выключен).
-        #     1.0 = ассист мгновенно видит каждое движение стика,
-        #     0.0 = дёрганые подруливания в заносе максимально сглажены.
         tau_in = (1.0 - c.get("reaction", 1.0)) * INPUT_TAU_MAX * self._slide
         if tau_in > 1e-4:
             a_in = 1.0 - math.exp(-dt / tau_in)
@@ -655,64 +455,36 @@ class Assist:
         else:
             self._stick_f = stick_x
 
-        # 2. Сглаживание телеметрии. Фильтр задан постоянной ВРЕМЕНИ,
-        #    а не долей за тик — поведение не зависит от частоты цикла.
         tau = c["smoothing"] * SMOOTH_TAU_MAX
         alpha = 1.0 - math.exp(-dt / tau) if tau > 1e-4 else 1.0
         a_yaw = 1.0 - math.exp(-dt / YAW_TAU)
         self._front_f += alpha * (tm.front_slip - self._front_f)
-        self._slip_f += alpha * (tm.rear_slip - self._slip_f)   # для лога
+        self._slip_f += alpha * (tm.rear_slip - self._slip_f)
         self._yaw_f += a_yaw * (tm.yaw_rate - self._yaw_f)
 
-        # Сигнал заноса = скольжение КОРПУСА (как в BeamNG и в реальной
-        # физике кастера): угол между направлением движения машины и её
-        # носом. Шины тут ни при чём - сигнал живёт и при заблокированных
-        # ручником колёсах, и на льду. Занос есть, пока корпус едет боком.
         prev_sig = self._beta_f
         self._beta_f += alpha * (tm.sideslip * BETA_GAIN - self._beta_f)
         sig = self._beta_f
 
-        # 2b. Предикция: контрим снос, каким он будет через PREDICT_S сек,
-        #     а не каким он был 2-3 кадра назад. Производную дополнительно
-        #     сглаживаем (телеметрия 60 Гц даёт ступеньки).
-        d_alpha = 1.0 - math.exp(-dt / 0.015)   # свежая производная: ранний
-                                                # подхват важнее гладкости, шум
-                                                # доглаживает основной фильтр
+        d_alpha = 1.0 - math.exp(-dt / 0.015)
         raw_d = (sig - prev_sig) / dt
         self._dslip_f += d_alpha * (raw_d - self._dslip_f)
         slip_pred = sig + self._dslip_f * (tau + PREDICT_EXTRA)
         slip_abs = abs(slip_pred)
 
-        # Прогрессивный вход с нулевого угла: на малых сносах ~квадратично
-        # (очень слабо, но СРАЗУ), на больших стремится к линейному
-        # "снос - предел" - глубина дрифта отрабатывается как раньше.
         D = max(0.05, c["deadband"])
         excess = slip_abs * slip_abs / (slip_abs + D)
 
-        # 3. Фактор скольжения: в обычном повороте у шин ВСЕГДА есть угол
-        #    скольжения, поэтому ассист ниже порога не вмешивается вообще.
-        #    Срабатывание быстрое, отпускание плавное (SLIDE_RELEASE).
         raw_slide = clamp(excess / SLIDE_RAMP, 0.0, 1.0) * speed_gate
         self._slide = max(raw_slide, self._slide * math.exp(-dt / SLIDE_RELEASE))
 
-        # 1. Speed sensitivity (по умолчанию 0: Forza сама сужает руль на скорости).
-        #    В скольжении не применяется (идея из BeamNG: "don't apply while
-        #    oversteering") — при ловле машины нужен полный ход руля.
         if c["speed_sens"] > 0:
             sf = 1.0 - (c["speed_sens"] / 100.0) * (spd_kmh / 300.0)
             stick_x *= max(max(0.15, sf), self._slide)
 
-        # 4. Коррекции — только в меру скольжения. Добавка угасает, когда стик
-        #    уже сильно отклонён (идея из BeamNG: max(0, 1 - st^2)) — если ты
-        #    контришь сам, ассист не доливает сверху и не перекручивает.
         authority = max(0.0, 1.0 - stick_x * stick_x)
         gyro_force = -self._yaw_f * c["gyro"] * self._slide
 
-        # Схема BeamNG Oversteer reduction: коррекция ПРОПОРЦИОНАЛЬНА углу
-        # заноса, ползунок - линейный процент силы. 100% = колёса следуют за
-        # вектором движения машины (идеальный кастер), больше - агрессивнее
-        # возврат, меньше - мягче. Упирается только в полный лок руля, так
-        # что большие углы отрабатываются до упора, а не до "середины".
         magnitude = min(1.0, (c["counter_gain"] / 100.0)
                         * excess * STEER_PER_SLIP)
         counter = magnitude * -math.copysign(1.0, slip_pred) if slip_pred else 0.0
@@ -720,10 +492,6 @@ class Assist:
         self.rumble_power = clamp(excess / SLIDE_RAMP,
                                   0.0, 1.0) * speed_gate
 
-        # 5. Целевой угол и лаг руля (0 = мгновенный отклик).
-        #    При быстрой перекладке (высокое рыскание) лаг сокращается.
-        # Уступчивость: стик против коррекции = намеренное действие водителя
-        # (перекладка, углубление, выход) — ассист пропорционально отпускает.
         corr = gyro_force + counter
         oppose = (clamp(-stick_x * math.copysign(1.0, corr), 0.0, 1.0)
                   if abs(corr) > 1e-6 else 0.0)
@@ -742,8 +510,6 @@ class Assist:
         self.angle = clamp(self.angle, -1.0, 1.0)
         if not math.isfinite(self.angle):
             self.angle = 0.0
-        # Колонка 1 лога - старый шинный сигнал (зад минус перед): нужен,
-        # чтобы по логу сверить знак нового сигнала со старым проверенным.
         slip_tires = math.copysign(
             max(0.0, abs(self._slip_f) - abs(self._front_f)), self._slip_f)
         self.dbg = (slip_tires, sig, slip_pred, tm.yaw_rate,
@@ -752,60 +518,33 @@ class Assist:
         return self.angle
 
 
-# ----------------------------------------------------------------------------
-# Конфиг
-# ----------------------------------------------------------------------------
 CONFIG_VERSION = 5
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
     "enabled": True,
-    "auto_hide": True,     # управлять HidHide автоматически (скрыть пад на старте,
-                           # вернуть при выходе)
-    "counter_gain": 60.0,  # 0..200  сила контрруления, % (как в BeamNG)
-    "gyro": 0.4,           # 0..3    выравнивание в скольжении
-    "reaction": 0.2,       # 0..1    реакция на коррекции водителя (1 = мгновенно)
-    "steer_lag": 0.04,     # 0..0.25 лаг руля, сек (0 = мгновенно)
-    "steer_curve": 2.0,    # 1..3 экспо-кривая стика в заносе (1 = линейно)
-    "deadband": 0.2,       # 0..2    мягкий порог: придушенность ранней помощи
-    "min_speed": 15.0,     # 0..60   км/ч: ниже — ассист выключен (пончики!)
-    "speed_sens": 20.0,    # 0..100  доп. сужение руля на скорости
-    "smoothing": 0.8,      # 0..0.99 сглаживание телеметрии
-    # Кнопки-удержания. Зеркалятся на виртуальный пад, чтобы игра не уводила
-    # оси на физический в момент ручника; всё остальное - событийные кнопки,
-    # их зеркалить нельзя (дубль). Из окна убраны: дефолты A + LB совпадают со
-    # стандартной раскладкой FH. Кому нужна своя - правит эти ключи руками
-    # (значения - биты XInput, см. BUTTON_NAMES); механика назначения кнопки
-    # нажатием в коде цела, вернуть ряды в UI - одна строка в build().
-    "btn_handbrake": 0x1000,   # A
-    "btn_clutch": 0x0100,      # LB
-    # Как зеркало ведёт себя при событийной кнопке (передача, камера). В UI не
-    # вынесено - значение выяснено измерением и менять его игроку незачем;
-    # ключ оставлен в конфиге для диагностики (как steer_lag и speed_sens).
-    #   hold  - уступать всё нажатие  <- рабочее значение
-    #   pulse - уступить на YIELD_FRAMES кадров (только фронт нажатия)
-    #   off   - не уступать никогда (зеркало всегда держит оси)
-    # Измерено логом: пока зеркало держит ручник, игра читает кнопки ТОЛЬКО с
-    # виртуального пада и физических нажатий не видит вообще (0 из 10). Стоит
-    # зеркалу уступить - нажатия проходят. "pulse" (83 мс) короче реального
-    # нажатия (~150 мс) и потому срабатывает не всегда: 8 из 10.
+    "auto_hide": True,
+    "counter_gain": 60.0,
+    "gyro": 0.4,
+    "reaction": 0.2,
+    "steer_lag": 0.04,
+    "steer_curve": 2.0,
+    "deadband": 0.2,
+    "min_speed": 15.0,
+    "speed_sens": 20.0,
+    "smoothing": 0.8,
+    "btn_handbrake": 0x1000,
+    "btn_clutch": 0x0100,
     "yield_mode": "hold",
-    # Вибрация всегда включена; в UI ручки нет. Ключ оставлен для диагностики:
-    # если у чьего-то пада кнопки теряются, отключение вибрации это покажет
-    # (см. RUMBLE_HZ - отправка идёт редко и только при изменении).
     "rumble": True,
-    "lang": "en",          # язык интерфейса
-    "theme": "fh6",        # тема оформления: fh6 / fh4 / matter / aqua
-    "telemetry_seen": False,  # телеметрия хоть раз приходила (для онбординга)
+    "lang": "en",
+    "theme": "fh6",
+    "telemetry_seen": False,
 }
 
 THEMES = ("fh6", "fh4", "matter", "aqua")
 YIELD_MODES = ("pulse", "hold", "off")
 
-# Допустимые диапазоны числовых настроек. Конфиг — обычный JSON в APPDATA, его
-# правят руками и он переживает смену версий; без проверки, например,
-# steer_curve = 0 превращает `abs(stick) ** 0` в единицу, то есть даёт полный
-# лок руля от любого касания стика в скольжении.
 CONFIG_RANGES = {
     "counter_gain": (0.0, 200.0),
     "gyro":         (0.0, 3.0),
@@ -818,10 +557,7 @@ CONFIG_RANGES = {
     "smoothing":    (0.0, 0.99),
 }
 
-
 def sanitize_config(cfg: dict) -> dict:
-    """Привести значения к типам и диапазонам. Битый ключ = значение по
-    умолчанию, а не падение и не опасная физика."""
     for key, (lo, hi) in CONFIG_RANGES.items():
         try:
             v = float(cfg[key])
@@ -831,7 +567,7 @@ def sanitize_config(cfg: dict) -> dict:
     for key in ("enabled", "auto_hide", "telemetry_seen", "rumble"):
         cfg[key] = bool(cfg.get(key, DEFAULTS[key]))
     for key in ("btn_handbrake", "btn_clutch"):
-        try:                       # только известные одиночные XInput-биты
+        try:
             v = int(cfg[key])
         except (KeyError, TypeError, ValueError):
             v = DEFAULTS[key]
@@ -844,19 +580,15 @@ def sanitize_config(cfg: dict) -> dict:
         cfg["theme"] = DEFAULTS["theme"]
     return cfg
 
-
 def load_config() -> dict:
     try:
         with open(CONFIG_FILE, encoding="utf-8") as f:
             data = json.load(f)
         if not isinstance(data, dict) or data.get("version", 1) < 3:
-            return dict(DEFAULTS)  # до v3 менялась семантика ползунков — сброс
+            return dict(DEFAULTS)
         cfg = {**DEFAULTS, **{k: data[k] for k in DEFAULTS
                               if k in data and k != "version"}}
         if data.get("version", 1) < 5:
-            # v5: режим уступки и тумблер вибрации убраны из UI. Значения,
-            # оставшиеся от отладочных прогонов, надо вернуть к рабочим -
-            # иначе игрок застрянет на них без единой ручки, чтобы починить.
             for key in ("yield_mode", "rumble"):
                 cfg[key] = DEFAULTS[key]
         cfg["version"] = CONFIG_VERSION
@@ -865,14 +597,12 @@ def load_config() -> dict:
         except (TypeError, ValueError):
             v = float(DEFAULTS["counter_gain"])
         if v <= 6.001:
-            # старые шкалы "силы" (0..6 и 0..1) -> проценты BeamNG-схемы
             if v > 1.001:
-                v = 0.6 * v / 2.0          # 0..6 -> доля хода
+                v = 0.6 * v / 2.0
             cfg["counter_gain"] = float(round(min(200.0, v * 150.0)))
         return sanitize_config(cfg)
     except (OSError, ValueError):
         return dict(DEFAULTS)
-
 
 def save_config(cfg: dict) -> None:
     try:
@@ -885,10 +615,7 @@ def save_config(cfg: dict) -> None:
 _save_lock = threading.Lock()
 _save_timer: threading.Timer | None = None
 
-
 def save_config_soon(cfg: dict, delay: float = 0.4) -> None:
-    """Отложенное сохранение с коалесингом. Перетаскивание ползунка шлёт
-    десятки set() в секунду, и каждый переписывал весь JSON в APPDATA."""
     global _save_timer
     with _save_lock:
         if _save_timer is not None:
@@ -897,9 +624,7 @@ def save_config_soon(cfg: dict, delay: float = 0.4) -> None:
         _save_timer.daemon = True
         _save_timer.start()
 
-
 def flush_config(cfg: dict) -> None:
-    """Дописать отложенное сохранение немедленно (выход из приложения)."""
     global _save_timer
     with _save_lock:
         if _save_timer is not None:
@@ -907,24 +632,11 @@ def flush_config(cfg: dict) -> None:
             _save_timer = None
     save_config(cfg)
 
-
-# ----------------------------------------------------------------------------
-# Драйверы: ViGEmBus и HidHide лежат ВНУТРИ приложения и ставятся молча
-# ----------------------------------------------------------------------------
 def _version_tuple(v) -> tuple:
-    """'1.5.230' -> (1, 5, 230, 0). Нечисловые куски считаем нулём.
-
-    Длина всегда 4: иначе '1.5.230' из имени файла оказывалось бы МЕНЬШЕ
-    установленного '1.5.230.0' просто из-за числа компонентов, и сравнение
-    версий врало бы на ровном месте."""
     nums = [int(n) for n in re.findall(r"\d+", str(v or ""))]
     return tuple((nums + [0, 0, 0, 0])[:4])
 
-
 def service_exists(name: str) -> bool:
-    """Есть ли служба драйвера. Запасной признак установки: у ViGEmBus запись
-    в списке программ называется совсем не так, как сам драйвер, и промах по
-    ней означал бы переустановку драйвера при каждом запуске."""
     import winreg
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
@@ -933,10 +645,7 @@ def service_exists(name: str) -> bool:
     except OSError:
         return False
 
-
 def installed_version(name_part: str) -> str | None:
-    """DisplayVersion из списка установленных программ, или None.
-    Проверяем обе ветки реестра: инсталляторы драйверов бывают и 32-битные."""
     import winreg
     branches = (r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
                 r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall")
@@ -961,40 +670,23 @@ def installed_version(name_part: str) -> str | None:
                     continue
     return None
 
-
 class DriverSetup:
-    """Тихая доустановка драйверов при первом запуске.
 
-    Оба установщика упакованы в приложение, ничего не качается на лету:
-    раньше HidHide тянулся из GitHub прямо при старте, что требовало сети,
-    и всё равно заканчивалось ручным прокликиванием мастера установки.
-
-    Повторный запуск ничего не переустанавливает: сверяем версию из
-    манифеста сборки с DisplayVersion в реестре и ставим только если
-    драйвера нет вовсе или упакованный новее.
-    """
-
-    # (подпись, подстрока в списке программ, имя службы, ключ в манифесте).
-    # ViGEmBus значится в списке программ как "Nefarius Virtual Gamepad
-    # Emulation Bus Driver" - искать по слову "ViGEmBus" бесполезно.
     ITEMS = (("ViGEmBus", "Virtual Gamepad Emulation", "ViGEmBus", "vigembus"),
              ("HidHide", "HidHide", "HidHide", "hidhide"))
 
     @staticmethod
     def _current(reg_name: str, service: str) -> str | None:
-        """Версия установленного драйвера, "0" если стоит но версия неясна,
-        None если не установлен вовсе."""
         found = installed_version(reg_name)
         if found is not None:
             return found
         return "0" if service_exists(service) else None
 
     def __init__(self):
-        self.code = "idle"      # idle|installing|done|reboot|failed|noadmin
+        self.code = "idle"
         self.info = ""
-        self.installed = []     # что поставили в этот запуск
+        self.installed = []
 
-    # ---- где лежат упакованные msi ----
     @staticmethod
     def _manifest() -> dict:
         for base in (_res_dir(), _app_dir()):
@@ -1017,9 +709,6 @@ class DriverSetup:
 
     @staticmethod
     def _vigem_fallback() -> str | None:
-        """Установщик ViGEmBus едет и внутри пакета vgamepad. Путь с
-        подпапкой x64 - без неё файл не находился, и на машине без драйвера
-        приложение молча вставало вместо того, чтобы его поставить."""
         try:
             base = os.path.join(os.path.dirname(vg.__file__),
                                 "win", "vigem", "install")
@@ -1034,44 +723,40 @@ class DriverSetup:
 
     @staticmethod
     def _silent_cmd(path: str) -> list:
-        """Ключи тихой установки зависят от формата: ViGEmBus приходит
-        обычным .msi, а HidHide с версии 1.5 - WiX-бандлом .exe."""
         if path.lower().endswith(".msi"):
             return ["msiexec", "/i", path, "/qn", "/norestart"]
         return [path, "/quiet", "/norestart"]
 
     def _install(self, path: str) -> int:
-        """Тихая установка. 0 - готово, 3010 - нужна перезагрузка."""
         cp = subprocess.run(self._silent_cmd(path),
                             capture_output=True, text=True,
                             creationflags=0x08000000, timeout=600)
         return cp.returncode
 
     def ensure(self) -> None:
-        """Поставить недостающее. Вызывать ДО создания виртуального пада."""
         manifest = self._manifest()
         need = []
         for label, reg_name, service, key in self.ITEMS:
             have = self._current(reg_name, service)
             want = str(manifest.get(key, {}).get("version", "") or "")
             if have is None:
-                need.append((label, key, "нет"))
+                need.append((label, key, "missing"))
             elif want and _version_tuple(want) > _version_tuple(have):
                 need.append((label, key, f"{have} -> {want}"))
 
         if not need:
             self.code = "done"
-            self.info = "драйверы на месте"
+            self.info = "drivers already present"
             return
 
         if not is_admin():
             self.code = "noadmin"
-            self.info = "нужны права администратора: " + \
+            self.info = "administrator rights required: " + \
                         ", ".join(n for n, _, _ in need)
             return
 
         self.code = "installing"
-        self.info = "ставлю " + ", ".join(n for n, _, _ in need)
+        self.info = "installing " + ", ".join(n for n, _, _ in need)
         reboot = False
         failed = []
         for label, key, why in need:
@@ -1096,18 +781,14 @@ class DriverSetup:
 
         if failed:
             self.code = "failed"
-            self.info = "не удалось поставить: " + ", ".join(failed)
+            self.info = "failed to install: " + ", ".join(failed)
         elif reboot:
             self.code = "reboot"
-            self.info = "драйверы поставлены, нужна перезагрузка"
+            self.info = "drivers installed, reboot required"
         else:
             self.code = "done"
-            self.info = "драйверы поставлены: " + ", ".join(self.installed)
+            self.info = "drivers installed: " + ", ".join(self.installed)
 
-
-# ----------------------------------------------------------------------------
-# HidHide: автоматическое скрытие физического пада на время работы ассиста
-# ----------------------------------------------------------------------------
 class HidHide:
     CLI_PATHS = [
         r"C:\Program Files\Nefarius Software Solutions\HidHide\x64\HidHideCLI.exe",
@@ -1118,12 +799,12 @@ class HidHide:
     def __init__(self):
         self.cli = next((p for p in self.CLI_PATHS if os.path.isfile(p)), None)
         self.active = False
-        self.info = "не запускался"
-        self.code = "idle"     # idle|hidden|install|disabled|error - переводится в UI
+        self.info = "not started"
+        self.code = "idle"
         self.arg = 0
-        self.hidden = set()    # instance paths, которые мы скрыли
-        self.allowed = set()   # instance paths, которые скрывать НЕЛЬЗЯ (наш виртуальный пад)
-        self._apps = set()     # exe, уже добавленные в белый список
+        self.hidden = set()
+        self.allowed = set()
+        self._apps = set()
 
     def _run(self, *args) -> str:
         cp = subprocess.run([self.cli, *args], capture_output=True, text=True,
@@ -1133,41 +814,30 @@ class HidHide:
         return cp.stdout
 
     def rescan(self):
-        """Перечитать путь к CLI: после тихой установки он появляется."""
         self.cli = next((p for p in self.CLI_PATHS if os.path.isfile(p)), None)
         return self.cli
 
     def engage(self) -> bool:
-        """Спрятать все игровые устройства от системы, кроме нас самих.
-        Вызывать ДО создания виртуального пада, чтобы не спрятать его."""
         if not self.rescan():
-            # Установщик упакован в приложение и отрабатывает раньше нас
-            # (DriverSetup.ensure). Сюда попадаем, только если установка
-            # не удалась или требуется перезагрузка.
             self.code = "install"
-            self.info = "HidHide не установлен — пад НЕ скрыт от игры"
+            self.info = "HidHide is not installed - the pad is NOT hidden from the game"
             return False
         try:
-            # 1) мы сами должны видеть пад сквозь маскировку
             self._run("--app-reg", sys.executable)
             self._apps.add(sys.executable.lower())
-            # 1b) фирменный софт пада (Flydigi Space и т.п.) тоже должен
-            #     видеть свой контроллер - иначе он "теряет" устройство
             self.whitelist_companions()
-            # 2) спрятать все подключённые игровые устройства
             for path in self._present_paths():
                 self._run("--dev-hide", path)
                 self.hidden.add(path)
-            # 3) включить маскировку
             self._run("--cloak-on")
             self.active = True
             self.code, self.arg = "hidden", len(self.hidden)
-            self.info = f"пад скрыт от игры ({len(self.hidden)} устр.)"
+            self.info = f"pad hidden from the game ({len(self.hidden)} devices)"
             return True
         except Exception as e:
             self.code = "error"
-            self.info = (f"ошибка: {e}. Если 'доступ запрещён' — "
-                         "запусти ассист от администратора")
+            self.info = (f"error: {e}. If access is denied, "
+                         "run the assist as administrator")
             return False
 
     def _present_paths(self) -> set:
@@ -1181,8 +851,6 @@ class HidHide:
         return paths
 
     def snapshot_allowed(self):
-        """Вызывать сразу ПОСЛЕ создания виртуального пада: всё, что появилось
-        и не скрыто нами - наш виртуальный пад, его прятать нельзя."""
         if not (self.cli and self.active):
             return
         try:
@@ -1193,8 +861,6 @@ class HidHide:
     COMPANION_PATTERNS = ("flydigi", "ds4windows", "8bitdo", "gamesir")
 
     def whitelist_companions(self):
-        """Найти запущенный фирменный софт геймпадов и пустить его сквозь
-        маскировку - ему нужен доступ к физическому устройству."""
         if not self.cli:
             return
         try:
@@ -1214,43 +880,30 @@ class HidHide:
             pass
 
     def sweep(self):
-        """Периодический досмотр: интерфейсы пада, появившиеся ПОСЛЕ старта
-        (Flydigi Space, смена режима, реконнект), тоже прячем - иначе игра
-        видит второй контроллер и каждое нажатие дублируется."""
         if not (self.cli and self.active):
             return
         try:
             new = self._present_paths() - self.hidden - self.allowed
             if new:
-                # Фирменный софт пада ищем ТОЛЬКО когда в системе реально
-                # появилось устройство. Раньше этот поиск шёл каждый досмотр и
-                # каждый раз поднимал PowerShell: спавн процесса раз в
-                # несколько секунд даёт периодический хич, и нажатие,
-                # попавшее в него, игра теряет.
                 self.whitelist_companions()
                 for path in new:
                     self._run("--dev-hide", path)
                     self.hidden.add(path)
             if len(self.hidden) != self.arg:
                 self.arg = len(self.hidden)
-                self.info = f"пад скрыт от игры ({self.arg} устр.)"
+                self.info = f"pad hidden from the game ({self.arg} devices)"
         except Exception:
             pass
 
     def disengage(self):
-        """Вернуть пад системе (вызывается при выходе)."""
         if self.cli and self.active:
             try:
                 self._run("--cloak-off")
-                self.info = "выключен, пад снова виден всем играм"
+                self.info = "off, the pad is visible to all games again"
             except Exception:
                 pass
             self.active = False
 
-
-# ----------------------------------------------------------------------------
-# Основной цикл
-# ----------------------------------------------------------------------------
 class Bridge:
     def __init__(self):
         self.cfg = load_config()
@@ -1258,45 +911,36 @@ class Bridge:
         self.telemetry = TelemetryListener()
         self.drivers = DriverSetup()
         self.hidhide = HidHide()
-        # Игра перечисляет контроллеры только при СВОЁМ запуске: если Forza
-        # была открыта РАНЬШЕ нас, наш виртуальный пад ей не виден и ассист
-        # молчит без единого признака поломки. Флаг ставится один раз на
-        # старте и снимается, когда игру закрыли - запускать её после нас
-        # штатно, и оверлей на это реагировать не должен.
         self.bad_order = False
-        self.status = "запуск..."
+        self.status = "starting..."
         self.status_code = "starting"
         self.status_detail = ""
         self.physical_slot = None
         self._game_rumble = (0.0, 0.0)
         self._run = threading.Event()
-        self._btn_state = 0                  # принятое состояние кнопок
-        self._btn_lock_until = [0.0] * 16    # антидребезг: до какого момента бит заморожен
-        self._prev_events = 0                # событийные кнопки прошлого кадра
-        self._prev_all = 0                   # все кнопки прошлого кадра
-        self._rumble_target = (0.0, 0.0)     # что хочет контур руления
-        self._rumble_last = (0.0, 0.0)       # последняя ОТПРАВЛЕННАЯ вибрация
-        self._rumble_t = float("-inf")       # когда её отправили: ещё никогда.
-                                             # Не 0.0 - иначе первая отправка
-                                             # зависела бы от абсолютного
-                                             # значения часов цикла
-        self._yield_until = 0.0              # до какого момента зеркало уступает
-        self.buttons = 0                     # для UI: живое состояние кнопок
-        self.capture = False                 # режим назначения кнопки в UI
-        self.captured = 0                    # что поймали в режиме назначения
+        self._btn_state = 0
+        self._btn_lock_until = [0.0] * 16
+        self._prev_events = 0
+        self._prev_all = 0
+        self._rumble_target = (0.0, 0.0)
+        self._rumble_last = (0.0, 0.0)
+        self._rumble_t = float("-inf")
+        self._yield_until = 0.0
+        self.buttons = 0
+        self.capture = False
+        self.captured = 0
         from collections import deque
-        # 60 Гц * 60 с * 10 = последние 10 минут контура (только с DEBUG_LOG)
         self.log = deque(maxlen=int(UPDATE_HZ) * 600 if DEBUG_LOG else 0)
         self._dumped = False
-        self.last_raw = 0.0                  # для UI: сырой стик
+        self.last_raw = 0.0
         self.xusb = XusbDisabler()
-        self.hid_ctrl = None                 # pygame controller (HID-режим)
-        self.hid_joy = None                  # pygame joystick (вибрация)
+        self.hid_ctrl = None
+        self.hid_joy = None
         self.hid_mode = False
         self.mode_info = "starting"
-        self.hz = 0.0                        # для UI: реальная частота цикла
-        self.pad_hz = 0                      # реальная частота отчётов пада
-        self._pad_packet = -1                # последний dwPacketNumber
+        self.hz = 0.0
+        self.pad_hz = 0
+        self._pad_packet = -1
         self._pad_packets = 0
         self._pad_t0 = 0.0
         self._hz_frames = 0
@@ -1304,7 +948,6 @@ class Bridge:
 
     @staticmethod
     def _neutral(pad) -> None:
-        """Обнулить отчёт виртуального пада (вызывающий делает pad.update())."""
         r = pad.report
         r.wButtons = 0
         r.bLeftTrigger = r.bRightTrigger = 0
@@ -1312,21 +955,12 @@ class Bridge:
 
     @staticmethod
     def _quantize_rumble(v: float) -> float:
-        """Округлить силу до ступеньки и придавить шум у нуля: без этого
-        синтетическая вибрация ползёт непрерывно и каждый кадр выглядит
-        как «значение изменилось»."""
         v = clamp(v, 0.0, 1.0)
         if v < RUMBLE_FLOOR:
             return 0.0
         return round(v * RUMBLE_STEPS) / RUMBLE_STEPS
 
     def _rumble_loop(self):
-        """Отдельный поток для вибрации.
-
-        XInputSetState — блокирующий USB-запрос: в контуре руления он давал бы
-        джиттер частоты, а на паде отъедал бы у его же input-репортов. Здесь он
-        никому не мешает и идёт не чаще RUMBLE_HZ.
-        """
         while self._run.is_set():
             gl, gs = self._rumble_target
             if self._rumble_due(gl, gs, time.perf_counter()):
@@ -1341,7 +975,6 @@ class Bridge:
         self._stop_rumble()
 
     def _stop_rumble(self):
-        """Погасить моторы на выходе — иначе пад продолжает жужжать."""
         try:
             if self.hid_mode and self.hid_joy is not None:
                 self.hid_joy.rumble(0, 0, 0)
@@ -1351,14 +984,6 @@ class Bridge:
             pass
 
     def _rumble_due(self, gl: float, gs: float, now: float) -> bool:
-        """Пора ли отправлять вибрацию на физический пад.
-
-        XInputSetState — блокирующий USB-запрос к тому же устройству, с
-        которого мы читаем кнопки. Отправка каждый кадр забивает его
-        control-эндпоинт, и НАЖАТИЯ доходят с задержкой или пропадают.
-        Поэтому: не чаще RUMBLE_HZ и только когда значение изменилось.
-        Остановка моторов проходит без задержки — иначе пад "залипает".
-        """
         pl, ps = self._rumble_last
         stopping = gl <= 0.0 and gs <= 0.0 and (pl > 0.0 or ps > 0.0)
         changed = abs(gl - pl) > RUMBLE_EPS or abs(gs - ps) > RUMBLE_EPS
@@ -1370,19 +995,6 @@ class Bridge:
         return True
 
     def _count_pad_packet(self, packet: int, now: float) -> None:
-        """Считать РЕАЛЬНУЮ частоту отчётов физического пада.
-
-        dwPacketNumber растёт только при изменении состояния, поэтому счёт
-        ведётся по его приросту, а не по числу наших опросов. Считаем в окне
-        в секунду и придерживаем спад: в покое пад молчит и частота честно
-        падает до нуля, а нам нужна та, что бывает при работе стиком.
-
-        ВАЖНО: величина упирается в частоту нашего цикла - опрашивая 60 раз в
-        секунду, больше 60 изменений мы не увидим, и пад на 125 Гц покажет 60.
-        Это не мешает: вопрос не в максимуме пада, а в том, успевает ли он за
-        нашими 60. Значение заметно ниже 60 и означает недобор данных - часть
-        кадров ассист считает по устаревшему положению стика.
-        """
         if packet != self._pad_packet:
             self._pad_packet = packet
             self._pad_packets += 1
@@ -1393,30 +1005,14 @@ class Bridge:
             self._pad_t0 = now
 
     def _virtual_buttons(self, buttons: int, alive: bool, now: float) -> int:
-        """Какие кнопки уходят на виртуальный пад."""
         if self.hid_mode:
-            return self._debounce(buttons, now)     # физического пада игра не видит
+            return self._debounce(buttons, now)
         if MENU_NEUTRAL and not alive:
-            # Заезда нет: меню, пауза, редактор трасс. Кнопки не шлём совсем -
-            # иначе зеркало ручника дублирует подтверждение в меню (A - это
-            # ещё и "принять"). Игра в таком состоянии читает кнопки с
-            # физического пада, это измерено.
             return 0
         return self._mirror_buttons(buttons, now)
 
     def _write_report(self, pad, gp, out_x: float, alive: bool,
                       now: float) -> int:
-        """Собрать отчёт виртуального пада. Возвращает отправленные кнопки.
-
-        ОСИ ИДУТ ВСЕГДА, даже когда заезда нет. Раньше вне заезда пад
-        обнулялся целиком, и это ломало режимы, где игра ведёт себя как в
-        заезде, а IsRaceOn держит нулём - например стадию edit road в Event
-        Lab: игра остаётся привязанной к виртуальному паду, а для неё
-        обнулённые стики означают не "ввода нет", а "ввод в нуле", то есть
-        управление пропадает целиком. Кнопки в таком случае продолжают
-        работать с физического пада, оси - нет: гейпад всегда сообщает
-        какое-то положение осей, и "промолчать" ими невозможно.
-        """
         virt = self._virtual_buttons(gp.wButtons, alive, now)
         r = pad.report
         r.wButtons = virt
@@ -1429,40 +1025,23 @@ class Bridge:
         return virt
 
     def _mirror_buttons(self, buttons: int, now: float) -> int:
-        """Какие кнопки физического пада отдать виртуальному.
-
-        Зеркалятся только кнопки-УДЕРЖАНИЯ (ручник, сцепление): для них
-        "нажато на обоих падах" = просто нажато, дубля-события не существует,
-        зато активность на виртуальном паде не даёт игре увести оси на
-        физический в момент ручника. Маска берётся из конфига - раскладка у
-        всех своя, и захардкоженный A ломал тех, у кого на A передача.
-
-        Событийные кнопки (передачи, камера) зеркалить нельзя - сработают
-        дважды. Чтобы игра всё-таки увидела такое нажатие, зеркало на время
-        уступает; чем именно уступать, решает yield_mode.
-        """
         mask = (self.cfg["btn_handbrake"] | self.cfg["btn_clutch"]) & 0xFFFF
         events = buttons & ~mask & 0xFFFF
-        press = events & ~self._prev_events      # только фронт нажатия
+        press = events & ~self._prev_events
         self._prev_events = events
 
         mode = self.cfg["yield_mode"]
         if mode == "pulse":
-            # Игре нужен только ФРОНТ нажатия: отдаём оси на YIELD_FRAMES
-            # кадров и сразу забираем обратно. В v1.2.2 уступка держалась
-            # всё нажатие, и контрруль пропадал до отпускания кнопки.
             if press:
                 self._yield_until = now + YIELD_FRAMES / UPDATE_HZ
             yielding = now < self._yield_until
         elif mode == "hold":
-            yielding = bool(events)              # поведение v1.2.2
+            yielding = bool(events)
         else:
-            yielding = False                     # зеркало не уступает никогда
+            yielding = False
         return 0 if yielding else buttons & mask
 
     def _debounce(self, raw_buttons: int, now: float) -> int:
-        """Смена состояния кнопки принимается, затем бит замораживается
-        на BUTTON_DEBOUNCE_MS — дребезг контактов срезается, живой ввод нет."""
         if BUTTON_DEBOUNCE_MS <= 0:
             return raw_buttons
         lock = BUTTON_DEBOUNCE_MS / 1000.0
@@ -1472,10 +1051,8 @@ class Bridge:
                 bit = 1 << b
                 if changed & bit:
                     if now >= self._btn_lock_until[b]:
-                        # принять новое состояние и заморозить бит
                         self._btn_state = (self._btn_state & ~bit) | (raw_buttons & bit)
                         self._btn_lock_until[b] = now + lock
-                    # иначе: дребезг — оставить принятое состояние
         return self._btn_state
 
     def start(self):
@@ -1486,18 +1063,10 @@ class Bridge:
         threading.Thread(target=self._rumble_loop, daemon=True).start()
 
     def _sweep_loop(self):
-        """Отдельный поток: досмотр HidHide вне контура руления, чтобы вызовы
-        CLI не подвешивали руль. Реже, чем раньше: каждый досмотр - это запуск
-        внешнего процесса, а он тормозит всю систему на сотни миллисекунд.
-        Новые интерфейсы пада появляются при реконнекте и смене режима, то есть
-        считанные разы за сессию - раз в 5 секунд их искать незачем."""
         while self._run.is_set():
-            for _ in range(int(SWEEP_SEC)):          # чтобы выход не ждал досмотра
+            for _ in range(int(SWEEP_SEC)):
                 if not self._run.is_set():
                     return
-                # Пока висит неверный порядок запуска - ждём, когда игру
-                # закроют, и снимаем блокировку. Обратно флаг не встаёт:
-                # запуск игры ПОСЛЕ нас и есть правильный порядок.
                 if self.bad_order and not game_running():
                     self.bad_order = False
                 time.sleep(1.0)
@@ -1508,36 +1077,31 @@ class Bridge:
         self._run.clear()
         th = getattr(self, "_thread", None)
         if th is not None:
-            th.join(timeout=3.0)   # дать циклу дописать лог
-        self._dump_log()           # страховка, если цикл не дошёл до finally
+            th.join(timeout=3.0)
+        self._dump_log()
 
     def _try_hid_mode(self) -> bool:
-        """Отключить XUSB физических падов и открыть пад через HID (SDL).
-        Возвращает True, если получилось; иначе всё откатывает."""
         if not HAVE_PYGAME:
             self.mode_info = "fallback: pygame not installed (pip install pygame)"
             return False
-        # XUSB-узлы отключаем, только если они есть (проводной Xbox-режим).
-        # Пад в HID-режиме (например, "нинтендо" через донгл) отключений
-        # не требует - и прав администратора тогда тоже.
         xusb_ids = self.xusb.list_xusb()
         if xusb_ids:
             if not is_admin():
                 self.mode_info = "fallback: no admin rights (use run.bat)"
                 return False
             self.xusb.disable_all()
-            time.sleep(0.8)                   # дать системе перечислиться
+            time.sleep(0.8)
         try:
             pygame.init()
             sdl_controller.init()
             pygame.joystick.init()
             for i in range(pygame.joystick.get_count()):
                 if not sdl_controller.is_controller(i):
-                    continue                  # нет раскладки в базе SDL
+                    continue
                 joy = pygame.joystick.Joystick(i)
                 name = (joy.get_name() or "").lower()
                 if "xbox" in name or "x360" in name or "xinput" in name:
-                    continue                  # это чьё-то XUSB, не наш HID
+                    continue
                 self.hid_ctrl = sdl_controller.Controller(i)
                 self.hid_joy = joy
                 self.mode_info = f"clean HID mode: {joy.get_name()}"
@@ -1545,7 +1109,7 @@ class Bridge:
             self.mode_info = "fallback: pad HID has no SDL mapping"
         except Exception as e:
             self.mode_info = f"fallback: SDL error {type(e).__name__}"
-        self.xusb.enable_all()                # не вышло - вернуть как было
+        self.xusb.enable_all()
         return False
 
     def _read_hid(self):
@@ -1560,7 +1124,7 @@ class Bridge:
         st.bLeftTrigger = int(clamp(c.get_axis(SDL_AX_LT) / 32767.0, 0, 1) * 255)
         st.bRightTrigger = int(clamp(c.get_axis(SDL_AX_RT) / 32767.0, 0, 1) * 255)
         st.sThumbLX = c.get_axis(SDL_AX_LX)
-        st.sThumbLY = -c.get_axis(SDL_AX_LY)      # SDL: вниз = плюс
+        st.sThumbLY = -c.get_axis(SDL_AX_LY)
         st.sThumbRX = c.get_axis(SDL_AX_RX)
         st.sThumbRY = -c.get_axis(SDL_AX_RY)
         return st
@@ -1568,34 +1132,18 @@ class Bridge:
     def _loop(self):
         ctypes.windll.winmm.timeBeginPeriod(1)
         try:
-            # Порядок запуска: игра должна стартовать ПОСЛЕ нас, иначе она
-            # никогда не увидит виртуальный пад. Фиксируем один раз здесь.
             self.bad_order = game_running()
 
-            # Драйверы — самое первое: ViGEmBus нужен, чтобы вообще создать
-            # виртуальный пад, HidHide — чтобы спрятать физический. Оба
-            # установщика внутри приложения, ставятся молча и только если
-            # их нет или упакованный новее (см. DriverSetup.ensure).
             self.status_code = "drivers"
             self.drivers.ensure()
 
-            # HidHide — строго ДО создания виртуального пада,
-            # иначе спрячем и его.
             if self.cfg["auto_hide"]:
                 self.hidhide.engage()
             else:
                 self.hidhide.code = "disabled"
-                self.hidhide.info = "авто-режим выключен галкой"
+                self.hidhide.info = "auto mode disabled in config"
 
-            # Страховка: если прошлый запуск был убит, не включив пад - чиним.
             self.xusb.restore_leftovers()
-            # Чистый HID-режим: включается, когда пад УЖЕ переведён в D-Input
-            # (Flydigi: FN + крестовина влево, синий диод) и XInput-падов в
-            # системе нет. Тогда физический пад целиком спрятан HidHide, игра
-            # видит ОДИН виртуальный пад со всеми кнопками - ни дублей, ни
-            # переключения источника осей при нажатии кнопок.
-            # Принудительно отключать XUSB у проводного пада нельзя (игровой
-            # HID умирает вместе с XUSB) - поэтому только при пустом XInput.
             if not xinput_connected_slots() and self._try_hid_mode():
                 self.hid_mode = True
             else:
@@ -1603,11 +1151,9 @@ class Bridge:
                 self.mode_info = ("wired mode: axes mirrored, "
                                   "buttons physical-only")
 
-            # Физический пад = слот, существовавший ДО создания виртуального.
-            # Так исключается петля "скрипт читает собственный виртуальный пад".
             before = xinput_connected_slots()
             try:
-                pad = vg.VX360Gamepad()      # ставит виртуальный пад в систему
+                pad = vg.VX360Gamepad()
             except Exception as e:
                 msi = os.path.join(os.path.dirname(vg.__file__),
                                    "win", "vigem", "install",
@@ -1659,10 +1205,6 @@ class Bridge:
                     gp, packet = xinput_read_state(self.physical_slot)
                     self._count_pad_packet(packet, now)
                 if gp is None:
-                    # Пад отвалился (батарейка, кабель, смена режима). ViGEm
-                    # продолжает отдавать игре ПОСЛЕДНИЙ отчёт, поэтому без
-                    # обнуления в игре остаются зажатый газ и вывернутый руль -
-                    # до самого закрытия ассиста.
                     self.status_code = "pad_lost"
                     self._neutral(pad)
                     pad.update()
@@ -1670,8 +1212,6 @@ class Bridge:
                     continue
                 self.status_code = "ok"
 
-                # Живое состояние кнопок для UI + режим назначения: ловим
-                # ФРОНТ нажатия, чтобы зажатая кнопка не назначалась повторно.
                 self.buttons = gp.wButtons
                 pressed_now = gp.wButtons & ~self._prev_all
                 self._prev_all = gp.wButtons
@@ -1695,20 +1235,14 @@ class Bridge:
 
                 out_x = self.assist.update(stick_x, tm, dt, brake, alive)
 
-                virt_out = 0                 # что реально ушло на виртуальный пад
+                virt_out = 0
                 virt_out = self._write_report(pad, gp, out_x, alive, now)
                 pad.update()
 
                 if DEBUG_LOG and alive:
-                    # btn_phys/btn_virt — главные колонки для разбора
-                    # "передача не защёлкнулась": видно, дошло ли нажатие
-                    # вообще до нас и что мы отдали игре в этот кадр.
                     self.log.append((now,) + self.assist.dbg +
                                     (gp.wButtons, virt_out))
 
-                # вибрация: от игры, а при её молчании — синтетика по сносу.
-                # Здесь только СЧИТАЕМ цель; отправкой занят отдельный поток,
-                # чтобы блокирующий USB-запрос не стоял в контуре руления.
                 gl, gs = self._game_rumble
                 if gl < 0.01 and gs < 0.01:
                     gl, gs = self.assist.rumble_power * 0.3, self.assist.rumble_power
@@ -1728,14 +1262,11 @@ class Bridge:
         finally:
             self.telemetry.stop()
             self.hidhide.disengage()
-            self.xusb.enable_all()            # вернуть XUSB пада системе
+            self.xusb.enable_all()
             ctypes.windll.winmm.timeEndPeriod(1)
             self._dump_log()
 
     def _dump_log(self):
-        """CSV с внутренностями контура — для анализа воблинга.
-        Пишется рядом с конфигом: папка exe может быть недоступна на запись
-        (Program Files), и тогда лог молча терялся."""
         if self._dumped or not self.log:
             return
         self._dumped = True
@@ -1754,22 +1285,15 @@ class Bridge:
             pass
 
 
-# ----------------------------------------------------------------------------
-# UI: pywebview + HTML/CSS — адаптивный перенос макета Figma (12:5)
-# Векторы инлайном из оригинальных SVG, Oswald через @font-face,
-# масштабирование: базовый размер x1.5, тянется вместе с окном.
-# ----------------------------------------------------------------------------
 try:
     import webview
 except ImportError:
-    _fatal("pywebview не установлен.\n"
-           "Выполни:  pip install pywebview\n"
-           "или запусти build.bat — он ставит всё сам.")
+    _fatal("pywebview is not installed.\n"
+           "Run:  pip install pywebview\n"
+           "or use build.bat, which installs everything.")
 
 BASE_SCALE = 1.5
 
-# Стрелка: круг (ar-bg) + глиф (ar-fg) + опциональный контур (ar-ring,
-# в теме Aqua обводит и круг, и треугольник — путь снят с экспорта Figma).
 ARROW_SVG = ('<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">'
              '<path d="M14 7C14 10.866 10.866 14 7 14C3.13401 14 0 10.866 0 7'
              'C0 3.13401 3.13401 0 7 0C10.866 0 14 3.13401 14 7Z" class="ar-bg"/>'
@@ -2233,9 +1757,6 @@ TR = {
 }
 
 
-# Ползунки, видимые в UI. "steer_lag" и "speed_sens" из интерфейса убраны
-# (мало влияют на ощущения): значения остаются в конфиге и физике - у кого
-# они были настроены, ничего не изменится, просто ручек больше нет.
 SLIDERS = [
     ("counter_gain", 0.0, 200.0, 5.0,   0),
     ("gyro",         0.0, 3.0,   0.05,  1),
@@ -2246,10 +1767,8 @@ SLIDERS = [
     ("smoothing",    0.0, 0.99,  0.01,  1),
 ]
 
-
 def _res_dir() -> str:
     return getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-
 
 def _read_asset(name):
     for base in (_app_dir(), _res_dir()):
@@ -2259,7 +1778,6 @@ def _read_asset(name):
                 return f.read()
     return None
 
-
 def _font_b64(name):
     import base64
     for base in (_app_dir(), _res_dir()):
@@ -2268,7 +1786,6 @@ def _font_b64(name):
             with open(p, "rb") as f:
                 return base64.b64encode(f.read()).decode()
     return None
-
 
 def build_html() -> str:
     fm = _font_b64("Oswald-Medium.ttf")
@@ -2281,8 +1798,6 @@ def build_html() -> str:
         font_css += ("@font-face{font-family:'Oswald';font-weight:400;"
                      f"src:url(data:font/ttf;base64,{fr});}}")
 
-    # Логотип 80x16 из макета: чёрные пути текста перекрашиваются темой
-    # (currentColor), градиент иконки остаётся как в оригинале.
     logo = _read_asset(os.path.join("themes", "logo.svg"))
     if logo:
         logo = logo.replace('fill="black"', 'fill="currentColor"')
@@ -2315,7 +1830,7 @@ HTML_PAGE = r"""<!doctype html>
 html,body{width:100%;height:100%;overflow:hidden}
 body{background:var(--win-bg);font-family:'Oswald','Segoe UI',sans-serif}
 
-/* ==== ТЕМЫ: все цвета/заливки перенесены из Figma 1 к 1 ==== */
+
 body.t-fh6{
  --win-bg:#fff; --logo-fg:#000; --btn:#000;
  --app-bg:linear-gradient(180deg,#2A9F7C 0%,#25616B 100%);
@@ -2369,11 +1884,10 @@ body.t-aqua{
  --hint-w:400; --hint-ro:4px; --hint-ri:3px; --accent:#009DFF; --foot:#8DAAC2;
 }
 
-/* ==== каркас окна (frameless): шапка + панель приложения ==== */
+
 #zoom{width:407px;margin:0 auto;transform-origin:top center;
       padding:10px 6px 6px;display:flex;flex-direction:column;gap:10px}
-/* отступы шапки одинаковые со всех сторон: 10px сверху (padding #zoom),
-   10px снизу (gap до фрейма) и 10px по бокам (6px рамки + 4px здесь) */
+
 .titlebar{height:16px;display:flex;align-items:center;padding:0 4px;flex:none}
 .tb-drag{flex:1;height:100%;display:flex;align-items:center}
 .logo{width:80px;height:16px;color:var(--logo-fg)}
@@ -2386,15 +1900,13 @@ body.t-aqua{
 .wb:hover{opacity:.55}
 .appbox{width:395px;border-radius:4px;overflow:hidden;position:relative;
         background:var(--app-bg)}
-        /* 4px вместо макетных 10: внешние углы окна скругляет DWM (~8px,
-           значение фиксировано системой), 10px внутри спорили бы с ними */
+        
 .bgvec{position:absolute;pointer-events:none;z-index:0;display:none}
 body.t-fh6 .bg6{display:block;left:0;top:0;width:395px;height:597px}
 body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
 .bgvec svg{width:100%;height:100%}
 .wrap{position:relative;z-index:1;padding:40px 30px}
-/* Замок неверного порядка запуска: размывает содержимое и перехватывает
-   клики, шапку окна не трогает. */
+
 #gate{position:absolute;inset:0;z-index:40;display:none;
       align-items:center;justify-content:center;padding:24px;
       backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
@@ -2494,9 +2006,7 @@ body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
 <div class="bgvec bg6"><!--BG6--></div>
 <div class="bgvec bgm"><!--BGM--></div>
 <div class="wrap"><div id="app"></div></div>
-<!-- Блокировка неверного порядка запуска. Сидит внутри .appbox, а не поверх
-     всего окна: шапка с кнопками свернуть/закрыть обязана остаться живой,
-     иначе замороженный интерфейс превращается в ловушку. -->
+
 <div id="gate"><div class="gcard">
   <div class="gt" id="gate-title"></div>
   <div class="gb" id="gate-text"></div>
@@ -2514,7 +2024,7 @@ const DEF = __DEFAULTS__;
 const LANGS = __LANGS__;
 const VER = "__VER__";
 let cfg = null, state = null;
-let capturing = null;      // какая кнопка сейчас назначается ('btn_handbrake'…)
+let capturing = null;
 
 const t = k => { const L = TR[(cfg&&cfg.lang)||'en']||TR.en; return L[k]||TR.en[k]||k; };
 const $ = s => document.querySelector(s);
@@ -2541,9 +2051,6 @@ function toggleRow(key){
     </span></div>`;
 }
 
-// Ряд назначения кнопки. Секция «Кнопки» из окна убрана, но механика
-// назначения цела (Api.capture_button, обработчики ниже, строки в словаре):
-// чтобы вернуть её, достаточно снова добавить btnRow(...) в build().
 function btnRow(key){
   return `<div class="row" data-hint="${key}_hint">
     <span class="lbl">${t(key)}</span>
@@ -2606,7 +2113,6 @@ function build(){
 
 let _lastH = 0;
 function reportHeight(){
-  // сообщить питону реальную высоту макета - он выставит пропорцию окна
   requestAnimationFrame(()=>{
     const H = $('#zoom').offsetHeight;
     if (H && Math.abs(H - _lastH) > 2){
@@ -2621,7 +2127,7 @@ const BOOL_FIELD = {helper:'enabled'};
 function toggleIdx(key){
   const f = BOOL_FIELD[key];
   if (f) return cfg[f] ? 1 : 0;
-  return 0;  // язык/тема/уступка кольцевые, серых стрелок нет
+  return 0;
 }
 
 const CYCLIC = ['lang','theme'];
@@ -2684,7 +2190,6 @@ function bindEvents(){
   });
   document.querySelectorAll('[data-btn]').forEach(el=>{
     el.addEventListener('click', ()=>{
-      // клик -> "нажми кнопку на паде"; повторный клик отменяет назначение
       const key = el.dataset.btn;
       capturing = (capturing===key) ? null : key;
       try{ pywebview.api.capture_button(capturing!==null); }catch(e){}
@@ -2713,16 +2218,15 @@ function bindEvents(){
     s.addEventListener('pointerup', ()=>{ s.onpointermove = null; });
   });
   let hintTimer = null, hintShown = false, hintEvt = null;
-  const HINT_DELAY = 1000;          // мс до показа
-  const HINT_MARGIN = 20;           // отступ от краёв окна (дизайн-px)
+  const HINT_DELAY = 1000;
+  const HINT_MARGIN = 20;
   const placeHint = () => {
     if (!hintEvt) return;
     const hint = $('#hint');
     const rect = $('#app').getBoundingClientRect();
-    const z = rect.width / $('#app').offsetWidth;   // текущий масштаб
+    const z = rect.width / $('#app').offsetWidth;
     const m = HINT_MARGIN * z;
     const hw = hint.offsetWidth * z, hh = hint.offsetHeight * z;
-    // центр по курсору, но вписываемся в окно с отступом
     let x = hintEvt.clientX;
     x = Math.max(m + hw / 2, Math.min(innerWidth - m - hw / 2, x));
     let y = hintEvt.clientY + 14 * z;
@@ -2763,9 +2267,6 @@ function setBar(id, v){
 }
 
 function gateMode(){
-  // Forza была открыта раньше нас: она перечисляет контроллеры только при
-  // своём запуске, поэтому виртуальный пад ей не виден и ассист молчит.
-  // Замораживаем содержимое, пока игру не закроют.
   const on = !!(state && state.bad_order);
   const gate = $('#gate');
   if (on){
@@ -2787,26 +2288,21 @@ async function poll(){
   try{
     state = await pywebview.api.state();
     if (!cfg){ cfg = state.cfg; applyTheme(); build(); panelMode(); }
-    // онбординг снимаем по ФАКТУ пакетов (Data Out настроен), а не по заезду:
-    // в меню alive уже false, но настройка телеметрии явно верная
     if (state.recv && !cfg.telemetry_seen){
       cfg.telemetry_seen = true;
       pywebview.api.set('telemetry_seen', true);
       panelMode();
     }
     if (capturing && state.captured){
-      // пад отдал нажатую кнопку - записываем её в назначаемый слот
       cfg[capturing] = state.captured;
       pywebview.api.set(capturing, state.captured);
       capturing = null;
       refreshControls();
     } else if (capturing && !state.capture){
-      capturing = null; refreshControls();   // режим сняли на стороне питона
+      capturing = null; refreshControls();
     }
     gateMode();
     $('#hz').textContent = state.hz;
-    // частота отчётов ФИЗИЧЕСКОГО пада: провод и донгл дают ~125 Гц,
-    // Bluetooth заметно меньше - по этому числу видно, в канале ли дело
     $('#padhz').textContent = state.pad_hz || '—';
     $('#age').textContent = state.recv ? state.age : '—';
     $('#spd').textContent = state.alive ? state.speed : '—';
@@ -2821,8 +2317,6 @@ async function poll(){
     $('#hh').textContent = (hhMap[state.hh_code]||hhMap.idle)();
     let st = '';
     if (state.tele_err){
-      // слушатель телеметрии не поднялся - раньше это было видно только
-      // по мёртвой панели, без единого намёка на причину
       st = t('tele_port').replace('{p}', state.port) + ': ' + state.tele_err;
     }
     else if (state.code === 'ok'){
@@ -2846,7 +2340,6 @@ function rescale(){
 }
 addEventListener('resize', rescale);
 
-// Кнопки окна (frameless): свои крестик/квадрат/минус из макета
 document.querySelectorAll('.wb').forEach(b=>{
   b.addEventListener('click', ()=>{
     const a = b.dataset.win;
@@ -2857,7 +2350,6 @@ document.querySelectorAll('.wb').forEach(b=>{
     }catch(e){}
   });
 });
-// Ресайз без рамки: невидимые зоны по всем сторонам и углам
 document.querySelectorAll('.rz').forEach(z=>{
   z.addEventListener('pointerdown', e=>{
     e.preventDefault();
@@ -2869,22 +2361,14 @@ window.addEventListener('pywebviewready', ()=>{ rescale(); poll(); });
 </script></body></html>"""
 
 
-# Общее состояние окна: пропорция (обновляется из JS по реальной высоте
-# макета) и HWND (для грипа ресайза и DWM-скруглений).
 _ASPECT = {"ratio": 741.0 / 407.0, "hwnd": 0}
-
 
 class Api:
     def __init__(self, bridge):
-        # ВАЖНО: pywebview рекурсивно обходит ПУБЛИЧНЫЕ атрибуты api-объекта
-        # для построения JS-моста. Объект окна хранить можно только в
-        # приватном поле (_window), иначе обход зацикливается на нём
-        # (RecursionError) и мост не строится вовсе.
         self._b = bridge
         self._window = None
         self._maxed = False
 
-    # --- кнопки кастомной шапки (frameless-окно) ---
     def win_min(self):
         try:
             self._window.minimize()
@@ -2911,10 +2395,6 @@ class Api:
         return True
 
     def win_grip(self, edge="br"):
-        """Ресайз без рамки за любую сторону или угол. Системный цикл
-        SC_SIZE не заводится, когда мышь захвачена дочерним окном WebView,
-        поэтому тянем сами: пока зажата ЛКМ - ведём край за курсором,
-        пропорция сохраняется, якорь - противоположный край окна."""
         hwnd = _ASPECT.get("hwnd")
         if not hwnd or edge not in ("l", "r", "t", "b",
                                     "tl", "tr", "bl", "br"):
@@ -2925,7 +2405,7 @@ class Api:
             pt = wintypes.POINT()
             r = wintypes.RECT()
             try:
-                while u.GetAsyncKeyState(0x01) & 0x8000:   # ЛКМ зажата
+                while u.GetAsyncKeyState(0x01) & 0x8000:
                     u.GetCursorPos(ctypes.byref(pt))
                     u.GetWindowRect(hwnd, ctypes.byref(r))
                     ratio = _ASPECT["ratio"]
@@ -2944,7 +2424,7 @@ class Api:
                         w = max(pt.x - L + 7, (B - pt.y + 7) / ratio)
                     elif edge == "bl":
                         w = max(R - pt.x + 7, (pt.y - T + 7) / ratio)
-                    else:                                   # tl
+                    else:
                         w = max(R - pt.x + 7, (B - pt.y + 7) / ratio)
                     w = max(316, int(w))
                     h = int(round(w * ratio))
@@ -2959,8 +2439,6 @@ class Api:
         return True
 
     def content_h(self, h):
-        """JS сообщает реальную высоту макета - обновляем пропорцию окна,
-        чтобы замок аспекта держал ровно контент, без пустых полос."""
         try:
             h = float(h)
             if h < 100:
@@ -2974,7 +2452,7 @@ class Api:
                 new_h = int(round(w * _ASPECT["ratio"]))
                 if abs(new_h - (r.bottom - r.top)) > 2:
                     ctypes.windll.user32.SetWindowPos(
-                        hwnd, 0, 0, 0, w, new_h, 0x0016)  # NOMOVE|NOZORDER|NOACT
+                        hwnd, 0, 0, 0, w, new_h, 0x0016)
         except Exception:
             pass
         return True
@@ -2987,8 +2465,8 @@ class Api:
             "hz": round(b.hz),
             "pad_hz": b.pad_hz,
             "age": round(min(999.0, b.telemetry.age_ms)),
-            "alive": b.telemetry.alive,        # идёт заезд (IsRaceOn = 1)
-            "recv": b.telemetry.receiving,     # пакеты идут (в меню тоже)
+            "alive": b.telemetry.alive,
+            "recv": b.telemetry.receiving,
             "tele_err": b.telemetry.error,
             "port": b.telemetry.port,
             "speed": round(tm.speed_mps * 3.6),
@@ -3010,8 +2488,6 @@ class Api:
         }
 
     def capture_button(self, on=True):
-        """Включить режим 'нажми кнопку на паде' — следующая нажатая кнопка
-        вернётся через state().captured."""
         self._b.captured = 0
         self._b.capture = bool(on)
         return True
@@ -3026,12 +2502,7 @@ class Api:
 
 _instance_mutex = None
 
-
 def _kill_stale_instances():
-    """Перед стартом добиваем все прошлые копии ассиста (в т.ч. упавшие
-    консоли, зависшие на 'Нажми Enter') - каждая лишняя копия держит свой
-    виртуальный пад и дублирует ввод. Чужие python-процессы не трогаем:
-    фильтр по командной строке."""
     me = os.getpid()
     try:
         subprocess.run(
@@ -3043,23 +2514,19 @@ def _kill_stale_instances():
              "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"],
             capture_output=True, text=True,
             creationflags=0x08000000, timeout=20)
-        time.sleep(0.3)   # дать умершим копиям отпустить виртуальные пады
+        time.sleep(0.3)
     except Exception:
         pass
 
-
 def _ensure_single_instance():
-    """Второй запущенный экземпляр = второй виртуальный пад = двойные
-    нажатия. Запрещаем жёстко."""
     global _instance_mutex
     _instance_mutex = ctypes.windll.kernel32.CreateMutexW(
         None, False, "Global\\SteeringAssistSingleton")
-    if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
-        _fatal("Steering Assist уже запущен!\n"
-               "Второй экземпляр создал бы второй виртуальный пад\n"
-               "и каждое нажатие дублировалось бы.\n"
-               "Если окна не видно - закрой процесс: taskkill /F /IM python.exe")
-
+    if ctypes.windll.kernel32.GetLastError() == 183:
+        _fatal("Steering Assist is already running.\n"
+               "A second instance would create a second virtual pad\n"
+               "and every press would be duplicated.\n"
+               "If no window is visible:  taskkill /F /IM python.exe")
 
 def main():
     _kill_stale_instances()
@@ -3067,8 +2534,8 @@ def main():
     bridge = Bridge()
     bridge.start()
     api = Api(bridge)
-    ratio = _ASPECT["ratio"]           # уточнится из JS по реальной высоте
-    h = int(741 * BASE_SCALE)          # 741 — высота макета с шапкой
+    ratio = _ASPECT["ratio"]
+    h = int(741 * BASE_SCALE)
     try:
         scr_h = webview.screens[0].height
         h = min(h, scr_h - 120)
@@ -3084,13 +2551,11 @@ def main():
     api._window = window
 
     def lock_aspect():
-        """Жёсткий замок пропорции через WM_SIZING: прямоугольник окна
-        поправляется ещё во время перетаскивания — без строба."""
         user32 = ctypes.windll.user32
         GWL_WNDPROC = -4
         WM_SIZING = 0x0214
         hwnd = 0
-        for _ in range(100):                       # ждём появления окна
+        for _ in range(100):
             hwnd = user32.FindWindowW(None, "Steering Assist")
             if hwnd:
                 break
@@ -3099,10 +2564,8 @@ def main():
             return
         _ASPECT["hwnd"] = hwnd
 
-        # Windows 11: скруглить углы окна, как в макете (на Win10 вызов
-        # просто не сработает - углы останутся прямыми).
         try:
-            pref = ctypes.c_int(2)             # DWMWCP_ROUND
+            pref = ctypes.c_int(2)
             ctypes.windll.dwmapi.DwmSetWindowAttribute(
                 hwnd, 33, ctypes.byref(pref), ctypes.sizeof(pref))
         except Exception:
@@ -3124,18 +2587,17 @@ def main():
 
         def wnd_proc(h, msg, wp, lp):
             if msg == WM_SIZING:
-                r = _ASPECT["ratio"]                  # живая пропорция
+                r = _ASPECT["ratio"]
                 rect = ctypes.cast(lp, ctypes.POINTER(wintypes.RECT)).contents
                 w = rect.right - rect.left
                 hh = rect.bottom - rect.top
-                # 1 L, 2 R, 3 T, 4 TL, 5 TR, 6 B, 7 BL, 8 BR
-                if wp in (3, 6):                      # тянут верх/низ
+                if wp in (3, 6):
                     new_w = max(316, int(round(hh / r)))
                     rect.right = rect.left + new_w
                     rect.bottom = rect.top + int(round(new_w * r))
-                else:                                  # бока и углы
+                else:
                     new_h = int(round(w * r))
-                    if wp in (4, 5):                   # верхние углы
+                    if wp in (4, 5):
                         rect.top = rect.bottom - new_h
                     else:
                         rect.bottom = rect.top + new_h
@@ -3143,12 +2605,12 @@ def main():
             return user32.CallWindowProcW(old_proc, h, msg, wp, lp)
 
         proc = WNDPROC(wnd_proc)
-        main._aspect_proc = proc                       # защитить от GC
+        main._aspect_proc = proc
         user32.SetWindowLongPtrW(hwnd, GWL_WNDPROC,
                                  ctypes.cast(proc, ctypes.c_void_p))
 
     webview.start(func=lock_aspect)
-    flush_config(bridge.cfg)     # дописать отложенное сохранение настроек
+    flush_config(bridge.cfg)
     bridge.stop()
     time.sleep(0.2)
 
@@ -3162,6 +2624,6 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         try:
-            input("\nОшибка выше. Нажми Enter, чтобы закрыть...")
+            input("\nError above. Press Enter to close...")
         except EOFError:
             pass

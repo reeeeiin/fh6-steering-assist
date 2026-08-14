@@ -1,7 +1,7 @@
 @echo off
-rem То же, что run.bat, но с покадровым CSV-логом контура.
-rem Переменную ставим ПОСЛЕ повышения прав: при UAC-элевации окружение
-rem родительского процесса не наследуется, и set из внешней консоли теряется.
+rem Same as run.bat, but with the frame-by-frame CSV log enabled.
+rem The variable is set AFTER elevation: a UAC-elevated process does
+rem not inherit the caller's environment, so an outer set is lost.
 cd /d "%~dp0"
 net session >nul 2>&1
 if errorlevel 1 (

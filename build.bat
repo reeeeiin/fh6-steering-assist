@@ -12,8 +12,8 @@ for /f tokens^=2^ delims^=^" %%v in ('findstr /b /c:"APP_VERSION" forza_assist_l
 if "%VER%"=="" set VER=0.0.0
 echo Building version %VER%
 
-rem Установщики драйверов кладутся ВНУТРЬ exe, чтобы приложение не ходило
-rem в сеть на машине пользователя. Скачиваются один раз, при сборке.
+rem Driver installers go INSIDE the exe so the app never needs the
+rem network on a user machine. Fetched once, at build time.
 python tools\fetch_drivers.py
 if errorlevel 1 goto fail
 
