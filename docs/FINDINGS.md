@@ -122,6 +122,27 @@ Measured on a linear slip ramp: help at frame 3 dropped from 0.067 to 0.016,
 at frame 6 from 0.244 to 0.087, while the settled correction stayed the same
 (0.865 vs 0.862). Same amount of help, eased in instead of snapped on.
 
+**None of that removed the jerk the driver actually felt.** The simulation
+above holds the stick at zero, and zero to any power is still zero — which
+hid the real cause completely.
+
+The driver's own stick is reshaped as the slide develops: the `steer_curve`
+expo exponent interpolates from linear toward its configured value, and the
+`speed_sens` factor switches over as well. Both were driven by the fast slide
+factor. So entering a slide *while holding steering* — which is what actually
+happens — re-mapped the driver's input under their thumb, faster than the
+assist's own rate limit, and entirely outside it: this is not the assist term,
+so the limiter never saw it.
+
+With the stick held at 0.5 the output moved 0.0506 per frame against an assist
+limit of 0.0417. The reshaping now runs off its own slow time constant
+(`SHAPE_TAU`, 0.9 s) while the yaw damper keeps the fast one, which brings it
+to 0.0446 — a gradual drift rather than a step. Raising the constant further
+gains only ~2% and makes the expo curve appear sluggishly.
+
+Lesson for the next simulation: never validate steering behaviour with the
+driver's input at zero.
+
 ## Measuring the controller itself
 
 `XINPUT_STATE.dwPacketNumber` increments only when the device state actually

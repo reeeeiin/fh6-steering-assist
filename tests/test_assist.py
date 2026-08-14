@@ -336,6 +336,29 @@ def test_entry_help_ramps_in_gradually():
     assert out[-1] > 0.05, "the assist has to actually help once sliding"
 
 
+def test_no_jerk_while_the_driver_holds_steering():
+    """The real jerk lived here, not in the assist term. A driver entering a
+    slide is holding the stick, and the expo curve used to morph with the slide
+    - reshaping the driver's own steering faster than the assist could ever
+    move, and completely outside its rate limit. A stick at zero hides it:
+    zero to any power is still zero."""
+    limit = fa.DEFAULTS["corr_slew"] / 60.0
+    for stick in (0.3, 0.5, 0.8):
+        cfg = dict(fa.DEFAULTS)
+        a = fa.Assist(cfg)
+        a.update(stick, fa.Telemetry(120 / 3.6, 0, 0, 0, 0), 1 / 60, 0.0, True)
+        out = []
+        for i in range(120):
+            beta = min(0.5, 0.03 * i)
+            out.append(a.update(stick, fa.Telemetry(120 / 3.6, 0.0, beta,
+                                                    beta * 2.0, beta),
+                                1 / 60, 0.0, True))
+        worst = max(abs(b - a) for a, b in zip(out, out[1:]))
+        assert worst <= limit * 1.15, (
+            f"stick held at {stick}: output jumped {worst:.4f} per frame, "
+            f"assist limit is {limit:.4f}")
+
+
 def test_slew_setting_bounds_the_rate():
     cfg = dict(fa.DEFAULTS)
     cfg["corr_slew"] = 0.6

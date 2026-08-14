@@ -41,7 +41,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "1.3.2"
+APP_VERSION = "1.3.3"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -407,6 +407,7 @@ def clamp(v, lo, hi):
 SLIDE_RAMP = 1.2
 SLIDE_RELEASE = 0.25
 SLIDE_ATTACK = 0.18
+SHAPE_TAU = 0.9
 
 class Assist:
     def __init__(self, cfg: dict):
@@ -418,6 +419,7 @@ class Assist:
         self._dslip_f = 0.0
         self.dbg = (0.0,) * 10
         self._slide = 0.0
+        self._shape = 0.0
         self._front_f = 0.0
         self._stick_f = 0.0
         self._oppose_f = 0.0
@@ -436,6 +438,7 @@ class Assist:
             self.angle = stick_x
             self.rumble_power = 0.0
             self._slide = 0.0
+            self._shape = 0.0
             self._stick_f = stick_x
             self._oppose_f = 0.0
             self._corr = 0.0
@@ -448,8 +451,8 @@ class Assist:
         speed_gate = clamp((spd_kmh - c["min_speed"]) / 25.0, 0.0, 1.0)
 
         curve = c.get("steer_curve", 1.0)
-        if curve > 1.001 and self._slide > 0.001:
-            k = 1.0 + (curve - 1.0) * self._slide
+        if curve > 1.001 and self._shape > 0.001:
+            k = 1.0 + (curve - 1.0) * self._shape
             stick_x = math.copysign(abs(stick_x) ** k, stick_x)
 
         tau_in = (1.0 - c.get("reaction", 1.0)) * INPUT_TAU_MAX * self._slide
@@ -481,6 +484,8 @@ class Assist:
         excess = slip_abs * slip_abs / (slip_abs + D)
 
         raw_slide = clamp(excess / SLIDE_RAMP, 0.0, 1.0) * speed_gate
+        self._shape += (1.0 - math.exp(-dt / SHAPE_TAU)) * (
+            raw_slide - self._shape)
         if raw_slide > self._slide:
             self._slide += (1.0 - math.exp(-dt / SLIDE_ATTACK)) * (
                 raw_slide - self._slide)
@@ -490,7 +495,7 @@ class Assist:
 
         if c["speed_sens"] > 0:
             sf = 1.0 - (c["speed_sens"] / 100.0) * (spd_kmh / 300.0)
-            stick_x *= max(max(0.15, sf), self._slide)
+            stick_x *= max(max(0.15, sf), self._shape)
 
         authority = max(0.0, 1.0 - stick_x * stick_x)
         gyro_force = -self._yaw_f * c["gyro"] * self._slide
