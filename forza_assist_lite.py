@@ -41,7 +41,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.3.2"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -406,6 +406,7 @@ def clamp(v, lo, hi):
 
 SLIDE_RAMP = 1.2
 SLIDE_RELEASE = 0.25
+SLIDE_ATTACK = 0.18
 
 class Assist:
     def __init__(self, cfg: dict):
@@ -420,6 +421,8 @@ class Assist:
         self._front_f = 0.0
         self._stick_f = 0.0
         self._oppose_f = 0.0
+        self._corr = 0.0
+        self._corr_lag = 0.0
         self.rumble_power = 0.0
 
     @property
@@ -435,6 +438,8 @@ class Assist:
             self._slide = 0.0
             self._stick_f = stick_x
             self._oppose_f = 0.0
+            self._corr = 0.0
+            self._corr_lag = 0.0
             self.dbg = (tm.rear_slip, self._beta_f, 0.0, tm.yaw_rate,
                         self._yaw_f, 0.0, 0.0, 0.0, stick_x, stick_x)
             return stick_x
@@ -469,14 +474,19 @@ class Assist:
         d_alpha = 1.0 - math.exp(-dt / 0.015)
         raw_d = (sig - prev_sig) / dt
         self._dslip_f += d_alpha * (raw_d - self._dslip_f)
-        slip_pred = sig + self._dslip_f * (tau + PREDICT_EXTRA)
+        slip_pred = sig + self._dslip_f * (tau + PREDICT_EXTRA) * self._slide
         slip_abs = abs(slip_pred)
 
         D = max(0.05, c["deadband"])
         excess = slip_abs * slip_abs / (slip_abs + D)
 
         raw_slide = clamp(excess / SLIDE_RAMP, 0.0, 1.0) * speed_gate
-        self._slide = max(raw_slide, self._slide * math.exp(-dt / SLIDE_RELEASE))
+        if raw_slide > self._slide:
+            self._slide += (1.0 - math.exp(-dt / SLIDE_ATTACK)) * (
+                raw_slide - self._slide)
+        else:
+            self._slide = max(raw_slide,
+                              self._slide * math.exp(-dt / SLIDE_RELEASE))
 
         if c["speed_sens"] > 0:
             sf = 1.0 - (c["speed_sens"] / 100.0) * (spd_kmh / 300.0)
@@ -499,15 +509,18 @@ class Assist:
         self._oppose_f += a_y * (oppose - self._oppose_f)
         corr *= 1.0 - YIELD_STRENGTH * self._oppose_f
 
-        target = clamp(stick_x + corr, -1.0, 1.0)
         lag = c["steer_lag"]
         if lag > 0.001:
             lag_eff = lag / (1.0 + abs(self._yaw_f) * TRANSITION_SPEED)
-            self.angle = target + (self.angle - target) * math.exp(-dt / lag_eff)
+            self._corr_lag += (1.0 - math.exp(-dt / lag_eff)) * (
+                corr - self._corr_lag)
         else:
-            self.angle = target
+            self._corr_lag = corr
 
-        self.angle = clamp(self.angle, -1.0, 1.0)
+        slew = max(0.01, c["corr_slew"]) * dt
+        self._corr = clamp(self._corr_lag, self._corr - slew, self._corr + slew)
+
+        self.angle = clamp(stick_x + self._corr, -1.0, 1.0)
         if not math.isfinite(self.angle):
             self.angle = 0.0
         slip_tires = math.copysign(
@@ -533,6 +546,7 @@ DEFAULTS = {
     "min_speed": 15.0,
     "speed_sens": 20.0,
     "smoothing": 0.8,
+    "corr_slew": 2.5,
     "btn_handbrake": 0x1000,
     "btn_clutch": 0x0100,
     "yield_mode": "hold",
@@ -555,6 +569,7 @@ CONFIG_RANGES = {
     "min_speed":    (0.0, 60.0),
     "speed_sens":   (0.0, 100.0),
     "smoothing":    (0.0, 0.99),
+    "corr_slew":    (0.3, 20.0),
 }
 
 def sanitize_config(cfg: dict) -> dict:

@@ -309,6 +309,55 @@ def test_hold_buttons_still_mirrored_during_race():
     assert virt == A, "during a race the handbrake must be mirrored"
     assert pad.report.sThumbLX == int(0.25 * 32767)
 
+def _slide_entry(cfg=None, frames=90, sign=1.0):
+    a = fa.Assist(cfg or dict(fa.DEFAULTS))
+    a.update(0.0, fa.Telemetry(120 / 3.6, 0.0, 0.0, 0.0, 0.0), 1 / 60,
+             brake=0.0, telemetry_alive=True)
+    out = []
+    for i in range(frames):
+        beta = min(0.5, 0.03 * i) * sign
+        tm = fa.Telemetry(120 / 3.6, 0.0, beta, beta * 2.0, beta)
+        out.append(a.update(0.0, tm, 1 / 60, brake=0.0, telemetry_alive=True))
+    return out
+
+
+def test_assist_never_steps_on_slide_entry():
+    out = _slide_entry()
+    limit = fa.DEFAULTS["corr_slew"] / 60.0 + 1e-6
+    worst = max(abs(b - a) for a, b in zip(out, out[1:]))
+    assert worst <= limit, (
+        f"assist jumped by {worst:.4f} in one frame, limit is {limit:.4f}")
+
+
+def test_entry_help_ramps_in_gradually():
+    out = [abs(v) for v in _slide_entry()]
+    assert out[0] < 0.02, f"first frame already gives {out[0]:.3f}"
+    assert out[10] < out[40] < out[-1], "help must keep growing with the angle"
+    assert out[-1] > 0.05, "the assist has to actually help once sliding"
+
+
+def test_slew_setting_bounds_the_rate():
+    cfg = dict(fa.DEFAULTS)
+    cfg["corr_slew"] = 0.6
+    out = _slide_entry(cfg)
+    worst = max(abs(b - a) for a, b in zip(out, out[1:]))
+    assert worst <= 0.6 / 60.0 + 1e-6, f"slew setting ignored, got {worst:.4f}"
+
+
+def test_prediction_no_longer_leads_at_the_very_start():
+    """The old lookahead fired on the derivative alone, so help appeared
+    before the car was actually sideways."""
+    a = fa.Assist(dict(fa.DEFAULTS))
+    first = None
+    for i in range(3):
+        beta = 0.02 * (i + 1)
+        v = a.update(0.0, fa.Telemetry(120 / 3.6, 0.0, beta, beta * 4.0, beta),
+                     1 / 60, brake=0.0, telemetry_alive=True)
+        if first is None:
+            first = abs(v)
+    assert first < 0.01, f"assist grabbed {first:.3f} on the first frame"
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

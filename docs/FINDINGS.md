@@ -90,6 +90,38 @@ in the **car's local frame**, which is what makes the body-slip angle
 at 164–176. Speed at 256 (the FH format inserts 12 bytes of padding at 232,
 which is why it is 324 bytes and not 311).
 
+## Slide entry must not be caught for the driver
+
+The assist used to snap in at the moment a slide began. Three things caused it,
+all fixed in 1.3.2:
+
+1. **The lookahead fired on the derivative alone.** `slip_pred = slip +
+   d(slip)/dt * 60 ms`. At the instant a slide starts the angle is still small
+   but its derivative is at maximum, so the prediction jumped far ahead of the
+   real angle and the assist grabbed the car before it was sideways. The
+   predictive term is now scaled by how established the slide is, so it
+   contributes nothing at the very entry and returns once the car is actually
+   sliding.
+2. **The slide factor had no attack time.** It went to full value in a single
+   frame, which switched the yaw damper on as a step. It now rises with a time
+   constant (`SLIDE_ATTACK`) and still releases slowly.
+3. **Nothing bounded how fast the correction could change.** A step in the
+   signal became a step on the wheel. The assist correction is now rate-limited
+   (`corr_slew`, in steering units per second).
+
+Order matters: the rate limit is applied **after** the lag filter, not before.
+The lag filter has a time-varying constant, and when it catches up on
+accumulated lag it can move further in one frame than the limit allows — so
+limiting first does not actually bound the output.
+
+The lag filter also moved off the driver's own stick and onto the assist
+correction only. Delaying the driver's input works directly against letting
+them catch the car themselves.
+
+Measured on a linear slip ramp: help at frame 3 dropped from 0.067 to 0.016,
+at frame 6 from 0.244 to 0.087, while the settled correction stayed the same
+(0.865 vs 0.862). Same amount of help, eased in instead of snapped on.
+
 ## Measuring the controller itself
 
 `XINPUT_STATE.dwPacketNumber` increments only when the device state actually
