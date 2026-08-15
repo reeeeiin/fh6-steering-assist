@@ -41,7 +41,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "1.3.3"
+APP_VERSION = "1.3.4"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -514,6 +514,8 @@ class Assist:
         a_y = 1.0 - math.exp(-dt / YIELD_TAU)
         self._oppose_f += a_y * (oppose - self._oppose_f)
         corr *= 1.0 - YIELD_STRENGTH * self._oppose_f
+        cmax = c["corr_max"]
+        corr = clamp(corr, -cmax, cmax)
 
         lag = c["steer_lag"]
         if lag > 0.001:
@@ -553,6 +555,7 @@ DEFAULTS = {
     "speed_sens": 20.0,
     "smoothing": 0.8,
     "corr_slew": 2.5,
+    "corr_max": 0.6,
     "btn_handbrake": 0x1000,
     "btn_clutch": 0x0100,
     "yield_mode": "hold",
@@ -576,6 +579,7 @@ CONFIG_RANGES = {
     "speed_sens":   (0.0, 100.0),
     "smoothing":    (0.0, 0.99),
     "corr_slew":    (0.3, 20.0),
+    "corr_max":     (0.1, 1.0),
 }
 
 def sanitize_config(cfg: dict) -> dict:

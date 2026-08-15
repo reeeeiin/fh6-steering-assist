@@ -359,6 +359,39 @@ def test_no_jerk_while_the_driver_holds_steering():
             f"assist limit is {limit:.4f}")
 
 
+def test_driver_always_keeps_authority():
+    """Measured in a real session: the assist alone reached 1.217 of steering
+    travel, pinning the wheel at full lock for 7.7% of moving time. In 41% of
+    those frames the stick could not change the output at all."""
+    cfg = dict(fa.DEFAULTS)
+    cfg["counter_gain"] = 200.0
+    cfg["gyro"] = 3.0
+    a = fa.Assist(cfg)
+    worst = 0.0
+    for i in range(240):
+        beta = min(0.9, 0.02 * i)
+        a.update(0.0, fa.Telemetry(140 / 3.6, 0.0, beta, beta * 3.0, beta),
+                 1 / 60, brake=0.0, telemetry_alive=True)
+        worst = max(worst, abs(a._corr))
+    assert worst <= cfg["corr_max"] + 1e-6, (
+        f"assist used {worst:.3f} of the wheel, cap is {cfg['corr_max']}")
+    assert worst < 1.0, "the assist must never be able to saturate the wheel"
+
+
+def test_corr_max_leaves_room_for_the_stick():
+    cfg = dict(fa.DEFAULTS)
+    cfg["counter_gain"] = 200.0
+    cfg["gyro"] = 3.0
+    a = fa.Assist(cfg)
+    out = 0.0
+    for i in range(240):
+        beta = min(0.9, 0.02 * i)
+        out = a.update(-1.0, fa.Telemetry(140 / 3.6, 0.0, beta, beta * 3.0,
+                                          beta), 1 / 60, 0.0, True)
+    assert out < -0.2, (
+        f"driver held full opposite lock and still got {out:.3f}")
+
+
 def test_slew_setting_bounds_the_rate():
     cfg = dict(fa.DEFAULTS)
     cfg["corr_slew"] = 0.6

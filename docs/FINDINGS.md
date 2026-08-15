@@ -143,6 +143,32 @@ gains only ~2% and makes the expo curve appear sluggishly.
 Lesson for the next simulation: never validate steering behaviour with the
 driver's input at zero.
 
+## The assist could take the wheel away entirely
+
+Two rounds of smoothing the *rate* of the correction changed nothing the driver
+could feel, and the second made it worse. A recorded session explained why:
+smoothing a value that saturates is pointless.
+
+Over 122 seconds of real driving, with the car moving:
+
+- the output was pinned at full lock **7.7%** of the time
+- the assist correction alone exceeded full steering travel (up to **1.217**)
+  for **3.5%** of the time
+- in **41%** of the saturated frames the driver's stick could not change the
+  output at all - the assist alone had used the entire range
+
+That is the jerk: while the correction is above 1.0 the wheel stops responding
+to anything, and when it drops back the output suddenly comes alive again.
+
+The correction is now capped by `corr_max` (default 0.6) before the lag filter
+and rate limiter, so it can never saturate the wheel and the driver always
+keeps at least 40% of the range to override with. On the recorded session a cap
+of 0.8 already removes every powerless frame; 0.6 clips the correction in 28.8%
+of frames, which is the intended trade - less help, more control.
+
+Clamping happens before the filters, not after, so the internal state cannot
+wind up past the cap and then have to unwind before the wheel responds.
+
 ## Measuring the controller itself
 
 `XINPUT_STATE.dwPacketNumber` increments only when the device state actually
