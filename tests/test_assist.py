@@ -359,37 +359,61 @@ def test_no_jerk_while_the_driver_holds_steering():
             f"assist limit is {limit:.4f}")
 
 
-def test_driver_always_keeps_authority():
-    """Measured in a real session: the assist alone reached 1.217 of steering
-    travel, pinning the wheel at full lock for 7.7% of moving time. In 41% of
-    those frames the stick could not change the output at all."""
+def _deep_slide(stick, cap=None, frames=400, gain=200.0, gyro=3.0):
     cfg = dict(fa.DEFAULTS)
-    cfg["counter_gain"] = 200.0
-    cfg["gyro"] = 3.0
-    a = fa.Assist(cfg)
-    worst = 0.0
-    for i in range(240):
-        beta = min(0.9, 0.02 * i)
-        a.update(0.0, fa.Telemetry(140 / 3.6, 0.0, beta, beta * 3.0, beta),
-                 1 / 60, brake=0.0, telemetry_alive=True)
-        worst = max(worst, abs(a._corr))
-    assert worst <= cfg["corr_max"] + 1e-6, (
-        f"assist used {worst:.3f} of the wheel, cap is {cfg['corr_max']}")
-    assert worst < 1.0, "the assist must never be able to saturate the wheel"
-
-
-def test_corr_max_leaves_room_for_the_stick():
-    cfg = dict(fa.DEFAULTS)
-    cfg["counter_gain"] = 200.0
-    cfg["gyro"] = 3.0
+    cfg["counter_gain"] = gain
+    cfg["gyro"] = gyro
+    if cap is not None:
+        cfg["corr_max"] = cap
     a = fa.Assist(cfg)
     out = 0.0
-    for i in range(240):
-        beta = min(0.9, 0.02 * i)
-        out = a.update(-1.0, fa.Telemetry(140 / 3.6, 0.0, beta, beta * 3.0,
-                                          beta), 1 / 60, 0.0, True)
-    assert out < -0.2, (
-        f"driver held full opposite lock and still got {out:.3f}")
+    for i in range(frames):
+        beta = min(0.9, 0.01 * i)
+        out = a.update(stick, fa.Telemetry(140 / 3.6, 0.0, beta, beta * 3.0,
+                                           beta), 1 / 60, 0.0, True)
+    return out, a._corr
+
+
+def test_full_lock_stays_reachable():
+    """A drift needs the wheel all the way over. Capping the correction below
+    1.0 caps the countersteer angle itself: with the stick released the output
+    is the correction, so a cap of 0.6 means the wheels never pass 60%."""
+    out, _ = _deep_slide(0.0)
+    assert abs(out) > 0.98, f"deep slide only reached {abs(out):.3f} of lock"
+
+
+def test_no_dead_zone_against_the_driver():
+    """Measured in a real session: the correction reached 1.217, more than the
+    wheel physically has. The driver then had to push 0.217 of travel before
+    anything moved at all - 41% of the saturated frames were like that."""
+    base, corr = _deep_slide(0.0)
+    assert abs(corr) <= 1.0 + 1e-6, f"correction {corr:.3f} exceeds full travel"
+    against = math.copysign(0.2, -base)
+    nudged, _ = _deep_slide(against)
+    assert abs(nudged) < abs(base) - 0.01, (
+        f"20% of opposing stick moved the output from {base:.3f} to "
+        f"{nudged:.3f} - the driver is fighting a dead zone")
+
+
+def test_driver_wins_outright_at_normal_settings():
+    gain, gyro = fa.DEFAULTS["counter_gain"], fa.DEFAULTS["gyro"]
+    base, _ = _deep_slide(0.0, gain=gain, gyro=gyro)
+    full = math.copysign(1.0, -base)
+    out, _ = _deep_slide(full, gain=gain, gyro=gyro)
+    assert math.copysign(1.0, out) == math.copysign(1.0, full), (
+        f"full opposite lock still produced {out:.3f}")
+
+
+def test_at_maximum_damping_the_driver_can_at_least_neutralise():
+    """With the yaw damper at its maximum the assist can cancel full opposite
+    lock but not beat it. The damper is not scaled by driver authority the way
+    the countersteer term is - only the yield reduces it."""
+    base, _ = _deep_slide(0.0)
+    full = math.copysign(1.0, -base)
+    out, _ = _deep_slide(full)
+    assert abs(out) < abs(base) * 0.2, (
+        f"at max damping full opposite lock only reached {out:.3f} "
+        f"against a base of {base:.3f}")
 
 
 def test_slew_setting_bounds_the_rate():

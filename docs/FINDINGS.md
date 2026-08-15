@@ -160,11 +160,22 @@ Over 122 seconds of real driving, with the car moving:
 That is the jerk: while the correction is above 1.0 the wheel stops responding
 to anything, and when it drops back the output suddenly comes alive again.
 
-The correction is now capped by `corr_max` (default 0.6) before the lag filter
-and rate limiter, so it can never saturate the wheel and the driver always
-keeps at least 40% of the range to override with. On the recorded session a cap
-of 0.8 already removes every powerless frame; 0.6 clips the correction in 28.8%
-of frames, which is the intended trade - less help, more control.
+The cap must be exactly **1.0**, and the first attempt at 0.6 was wrong.
+
+With the stick released the output *is* the correction, so capping it below 1.0
+caps the countersteer angle itself: at 0.6 the wheels never pass 60% of lock,
+which in the car reads as "the assist stopped working" and no amount of extra
+strength helps, because the cap binds before the gain does.
+
+At exactly 1.0 both requirements hold. Full lock stays reachable, and since the
+correction can no longer exceed what the wheel physically has, any opposing
+input moves the output immediately. Measured in a deep slide: with a cap of 1.0,
+20% of opposing stick shifts the output by 0.04 and 40% by 0.12; uncapped at
+1.3, the first 40% of travel changes nothing at all.
+
+Note the yaw damper is not scaled by driver authority the way the countersteer
+term is - only the yield reduces it. At the maximum damping setting it can
+neutralise full opposite lock, though not beat it.
 
 Clamping happens before the filters, not after, so the internal state cannot
 wind up past the cap and then have to unwind before the wheel responds.

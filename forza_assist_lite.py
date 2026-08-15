@@ -41,7 +41,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "1.3.4"
+APP_VERSION = "1.3.5"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -555,7 +555,7 @@ DEFAULTS = {
     "speed_sens": 20.0,
     "smoothing": 0.8,
     "corr_slew": 2.5,
-    "corr_max": 0.6,
+    "corr_max": 1.0,
     "btn_handbrake": 0x1000,
     "btn_clutch": 0x0100,
     "yield_mode": "hold",
