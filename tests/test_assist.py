@@ -359,12 +359,10 @@ def test_no_jerk_while_the_driver_holds_steering():
             f"assist limit is {limit:.4f}")
 
 
-def _deep_slide(stick, cap=None, frames=400, gain=200.0, gyro=3.0):
+def _deep_slide(stick, frames=400, gain=200.0, gyro=3.0):
     cfg = dict(fa.DEFAULTS)
     cfg["counter_gain"] = gain
     cfg["gyro"] = gyro
-    if cap is not None:
-        cfg["corr_max"] = cap
     a = fa.Assist(cfg)
     out = 0.0
     for i in range(frames):
@@ -372,6 +370,35 @@ def _deep_slide(stick, cap=None, frames=400, gain=200.0, gyro=3.0):
         out = a.update(stick, fa.Telemetry(140 / 3.6, 0.0, beta, beta * 3.0,
                                            beta), 1 / 60, 0.0, True)
     return out, a._corr
+
+
+def test_defaults_pass_the_stick_through_untouched():
+    """Measured on a real session: with steer_curve 2.0 and speed_sens 20, half
+    a stick reached the game as a quarter of the wheel - 48% of the input
+    thrown away exactly where the driver steers. At 0.2 of stick it was 76%."""
+    a = fa.Assist(dict(fa.DEFAULTS))
+    for _ in range(120):
+        a.update(0.5, fa.Telemetry(100 / 3.6, 0.0, 0.4, 0.8, 0.35),
+                 1 / 60, 0.0, True)
+    _, _, _, _, _, _, _, _, _, shaped, _, _ = a.dbg
+    assert abs(abs(shaped) - 0.5) < 0.02, (
+        f"driver asked for 0.5 of the wheel, {abs(shaped):.3f} reached the game")
+
+
+def test_config_v6_restores_linear_steering():
+    import io
+    import json
+    backup = io.open(fa.CONFIG_FILE, encoding="utf-8").read()
+    try:
+        io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(json.dumps({
+            "version": 5, "steer_curve": 2.0, "speed_sens": 20.0,
+            "gyro": 0.6, "counter_gain": 60.0}))
+        cfg = fa.load_config()
+        assert cfg["steer_curve"] == 1.0, cfg["steer_curve"]
+        assert cfg["speed_sens"] == 0.0, cfg["speed_sens"]
+        assert cfg["gyro"] == 0.6 and cfg["counter_gain"] == 60.0
+    finally:
+        io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(backup)
 
 
 def test_full_lock_stays_reachable():

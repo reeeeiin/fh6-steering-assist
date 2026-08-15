@@ -180,6 +180,46 @@ neutralise full opposite lock, though not beat it.
 Clamping happens before the filters, not after, so the internal state cannot
 wind up past the cap and then have to unwind before the wheel responds.
 
+## The steering range was eaten by our own curves, not by the assist
+
+"The wheels only move 5-10%" survived every change to the assist, because the
+assist was never the limiter. A recorded session shows the app already sending
+**full lock** to the game: max |out| = 1.000, and above 80 km/h even the 95th
+percentile is 1.000. There is nothing above 1.0 for a gamepad axis to send.
+
+What actually ate the range was the shaping applied to the driver's own stick.
+At 100 km/h in a slide, with the then-defaults `steer_curve` 2.0 and
+`speed_sens` 20:
+
+| stick | reached the game | lost |
+|-------|------------------|------|
+| 0.20  | 0.048            | 76%  |
+| 0.30  | 0.101            | 66%  |
+| 0.50  | 0.259            | 48%  |
+| 0.70  | 0.482            | 31%  |
+| 1.00  | 0.933            | 7%   |
+
+Half a stick produced a quarter of the wheel, and the loss is worst exactly
+where a driver spends most of their time. Both defaults are now neutral
+(`steer_curve` 1.0, `speed_sens` 0) and old configs are migrated at config
+version 6 - the values are otherwise invisible, since `speed_sens` has had no
+UI since 1.2.2.
+
+Forza applies its own speed-sensitive steering on top of whatever it receives.
+Ours stacked with it for no benefit.
+
+## Config keys with no UI are a trap
+
+`corr_max` was added, defaulted to 0.6, then corrected to 1.0 one version later
+- and the correction did nothing, because a saved config always wins over a
+changed default. The same had already happened with `yield_mode`. A key with no
+UI and a changed default needs a config-version migration, or it should not be
+a key at all.
+
+`corr_max` turned out to be the second kind: the only defensible value is 1.0,
+since anything higher creates a dead zone and anything lower caps the
+countersteer angle. It is a constant now.
+
 ## Measuring the controller itself
 
 `XINPUT_STATE.dwPacketNumber` increments only when the device state actually
