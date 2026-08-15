@@ -465,6 +465,93 @@ def test_prediction_no_longer_leads_at_the_very_start():
     assert first < 0.01, f"assist grabbed {first:.3f} on the first frame"
 
 
+class _StubBridge:
+    def __init__(self, **over):
+        self.cfg = dict(fa.DEFAULTS)
+        self.cfg.update(over)
+
+
+def _api(**over):
+    """Api against a stub bridge, with saving disabled so the real config
+    file is never touched by a test run."""
+    saved = fa.save_config_soon
+    fa.save_config_soon = lambda cfg, delay=0.0: None
+    api = fa.Api(_StubBridge(**over))
+    api._restore_save = saved
+    return api
+
+
+def _done(api):
+    fa.save_config_soon = api._restore_save
+
+
+def test_profile_applies_its_values():
+    api = _api()
+    try:
+        got = api.set_profile("strong")
+        for key, value in fa.PROFILES["strong"].items():
+            assert api._b.cfg[key] == value, key
+            assert got[key] == value, key
+        assert api._b.cfg["profile"] == "strong"
+    finally:
+        _done(api)
+
+
+def test_moving_a_slider_switches_to_custom():
+    api = _api(profile="strong")
+    try:
+        api.set("counter_gain", 123.0)
+        assert api._b.cfg["profile"] == "custom"
+        assert api._b.cfg["custom"]["counter_gain"] == 123.0
+    finally:
+        _done(api)
+
+
+def test_custom_values_survive_a_round_trip():
+    """Switching away from Custom and back must bring the driver's own numbers
+    back, otherwise the preset buttons quietly destroy their tuning."""
+    api = _api()
+    try:
+        api.set("counter_gain", 137.0)
+        api.set("gyro", 1.25)
+        api.set_profile("minimal")
+        assert api._b.cfg["counter_gain"] == fa.PROFILES["minimal"]["counter_gain"]
+        api.set_profile("custom")
+        assert api._b.cfg["counter_gain"] == 137.0
+        assert api._b.cfg["gyro"] == 1.25
+    finally:
+        _done(api)
+
+
+def test_unknown_profile_is_rejected():
+    api = _api()
+    try:
+        before = dict(api._b.cfg)
+        assert api.set_profile("cheat") == {}
+        assert api._b.cfg["profile"] == before["profile"]
+    finally:
+        _done(api)
+
+
+def test_first_run_starts_on_default_and_remembers_the_choice():
+    assert fa.DEFAULTS["profile"] == "default"
+    cfg = dict(fa.DEFAULTS)
+    cfg["profile"] = "strong"
+    fa.sanitize_config(cfg)
+    assert cfg["profile"] == "strong", "a saved profile must survive load"
+    cfg["profile"] = "nonsense"
+    fa.sanitize_config(cfg)
+    assert cfg["profile"] == "default"
+
+
+def test_every_profile_covers_every_slider():
+    keys = {k for k, *_ in fa.SLIDERS}
+    for name, values in fa.PROFILES.items():
+        assert set(values) == keys, (
+            f"profile {name} misses {keys - set(values)} "
+            f"and has extra {set(values) - keys}")
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

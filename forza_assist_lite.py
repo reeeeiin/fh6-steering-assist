@@ -41,7 +41,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "1.3.6"
+APP_VERSION = "1.4.0"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -560,10 +560,25 @@ DEFAULTS = {
     "rumble": True,
     "lang": "en",
     "theme": "fh6",
+    "profile": "default",
+    "custom": {},
     "telemetry_seen": False,
 }
 
 THEMES = ("fh6", "fh4", "matter", "aqua")
+PROFILE_ORDER = ("default", "strong", "minimal", "custom")
+
+PROFILES = {
+    "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0,
+                "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0,
+                "smoothing": 0.8},
+    "strong": {"counter_gain": 110.0, "gyro": 0.9, "steer_curve": 1.0,
+               "reaction": 0.35, "deadband": 0.12, "min_speed": 10.0,
+               "smoothing": 0.7},
+    "minimal": {"counter_gain": 30.0, "gyro": 0.2, "steer_curve": 1.0,
+                "reaction": 0.1, "deadband": 0.4, "min_speed": 25.0,
+                "smoothing": 0.85},
+}
 YIELD_MODES = ("pulse", "hold", "off")
 
 CONFIG_RANGES = {
@@ -600,6 +615,17 @@ def sanitize_config(cfg: dict) -> dict:
         cfg["lang"] = DEFAULTS["lang"]
     if cfg.get("theme") not in THEMES:
         cfg["theme"] = DEFAULTS["theme"]
+    if cfg.get("profile") not in PROFILE_ORDER:
+        cfg["profile"] = DEFAULTS["profile"]
+    snap = cfg.get("custom")
+    clean = {}
+    if isinstance(snap, dict):
+        for key, lo, hi, _res, _dec in SLIDERS:
+            try:
+                clean[key] = clamp(float(snap[key]), lo, hi)
+            except (KeyError, TypeError, ValueError):
+                pass
+    cfg["custom"] = clean
     return cfg
 
 def load_config() -> dict:
@@ -1365,6 +1391,12 @@ TR = {
         "steer_curve_hint": "In a slide only: widens the stick centre for finer corrections while drifting",
         "speed": "Speed", "slip": "Slip", "no_telemetry": "no telemetry",
         "paused": "in menu / paused",
+        "profile": "Profile",
+        "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
+        "prof_default": "Default",
+        "prof_strong": "Strong",
+        "prof_minimal": "Minimal",
+        "prof_custom": "Custom",
         "order_title": "Wrong launch order",
         "order_text": "Forza is already running. The game looks for controllers only while it starts, so it cannot see the assist's virtual pad.",
         "order_hint": "Close the game and start it again — leave the assist running.",
@@ -1409,6 +1441,12 @@ TR = {
         "steer_curve_hint": "Только в заносе: растягивает центр стика для тонких коррекций в дрифте",
         "speed": "Скорость", "slip": "Снос", "no_telemetry": "нет телеметрии",
         "paused": "в меню / на паузе",
+        "profile": "Профиль",
+        "profile_hint": "Готовые наборы. Любое движение ползунка переключает на «Свой» и сохраняет твои значения — к ним всегда можно вернуться.",
+        "prof_default": "Обычный",
+        "prof_strong": "Сильный",
+        "prof_minimal": "Минимум",
+        "prof_custom": "Свой",
         "order_title": "Неверный порядок запуска",
         "order_text": "Forza уже запущена. Игра ищет контроллеры только в момент своего старта, поэтому виртуальный пад ассиста ей не виден.",
         "order_hint": "Закрой игру и запусти её заново — ассист оставь открытым.",
@@ -1453,6 +1491,12 @@ TR = {
         "steer_curve_hint": "Лише в заносі: розтягує центр стика для тонких корекцій у дрифті",
         "speed": "Швидкість", "slip": "Занос", "no_telemetry": "немає телеметрії",
         "paused": "у меню / на паузі",
+        "profile": "Профіль",
+        "profile_hint": "Готові набори. Будь-який рух повзунка перемикає на «Свій» і зберігає твої значення — до них завжди можна повернутися.",
+        "prof_default": "Звичайний",
+        "prof_strong": "Сильний",
+        "prof_minimal": "Мінімум",
+        "prof_custom": "Свій",
         "order_title": "Невірний порядок запуску",
         "order_text": "Forza вже запущена. Гра шукає контролери лише під час свого старту, тому віртуальний пад асиста їй не видно.",
         "order_hint": "Закрий гру і запусти її знову — асист залиш відкритим.",
@@ -1497,6 +1541,12 @@ TR = {
         "steer_curve_hint": "Nur im Drift: weitet die Stickmitte für feinere Korrekturen",
         "speed": "Tempo", "slip": "Schlupf", "no_telemetry": "keine Telemetrie",
         "paused": "im Menü / pausiert",
+        "profile": "Profil",
+        "profile_hint": "Fertige Voreinstellungen. Jeder Reglerzug wechselt auf Eigenes und behält deine Werte, du kommst also immer zurück.",
+        "prof_default": "Standard",
+        "prof_strong": "Stark",
+        "prof_minimal": "Minimal",
+        "prof_custom": "Eigenes",
         "order_title": "Falsche Startreihenfolge",
         "order_text": "Forza läuft bereits. Das Spiel sucht Controller nur beim Start, das virtuelle Pad des Assistenten sieht es daher nicht.",
         "order_hint": "Schließe das Spiel und starte es erneut — Assistent laufen lassen.",
@@ -1541,6 +1591,12 @@ TR = {
         "steer_curve_hint": "En glisse uniquement : centre du stick élargi pour des corrections fines",
         "speed": "Vitesse", "slip": "Glisse", "no_telemetry": "pas de télémétrie",
         "paused": "dans le menu / en pause",
+        "profile": "Profil",
+        "profile_hint": "Réglages prêts à l'emploi. Bouger un curseur passe sur Perso et conserve tes valeurs, tu peux toujours y revenir.",
+        "prof_default": "Défaut",
+        "prof_strong": "Fort",
+        "prof_minimal": "Minimal",
+        "prof_custom": "Perso",
         "order_title": "Mauvais ordre de lancement",
         "order_text": "Forza est déjà lancé. Le jeu ne cherche les manettes qu'à son démarrage : il ne voit donc pas la manette virtuelle.",
         "order_hint": "Ferme le jeu et relance-le — laisse l'assistant ouvert.",
@@ -1585,6 +1641,12 @@ TR = {
         "steer_curve_hint": "Solo en derrape: ensancha el centro del stick para correcciones finas",
         "speed": "Velocidad", "slip": "Derrape", "no_telemetry": "sin telemetría",
         "paused": "en menú / en pausa",
+        "profile": "Perfil",
+        "profile_hint": "Ajustes listos. Mover cualquier control cambia a Propio y guarda tus valores, siempre puedes volver a ellos.",
+        "prof_default": "Normal",
+        "prof_strong": "Fuerte",
+        "prof_minimal": "Mínimo",
+        "prof_custom": "Propio",
         "order_title": "Orden de inicio incorrecto",
         "order_text": "Forza ya está abierto. El juego busca mandos solo al arrancar, así que no ve el mando virtual del asistente.",
         "order_hint": "Cierra el juego y ábrelo de nuevo — deja el asistente abierto.",
@@ -1629,6 +1691,12 @@ TR = {
         "steer_curve_hint": "Solo in derapata: allarga il centro dello stick per correzioni fini",
         "speed": "Velocità", "slip": "Derapata", "no_telemetry": "niente telemetria",
         "paused": "nel menu / in pausa",
+        "profile": "Profilo",
+        "profile_hint": "Preimpostazioni pronte. Muovere un cursore passa a Personale e conserva i tuoi valori, puoi sempre tornarci.",
+        "prof_default": "Predefinito",
+        "prof_strong": "Forte",
+        "prof_minimal": "Minimo",
+        "prof_custom": "Personale",
         "order_title": "Ordine di avvio sbagliato",
         "order_text": "Forza è già in esecuzione. Il gioco cerca i controller solo all'avvio, quindi non vede il pad virtuale dell'assistente.",
         "order_hint": "Chiudi il gioco e riavvialo — lascia aperto l'assistente.",
@@ -1673,6 +1741,12 @@ TR = {
         "steer_curve_hint": "Tylko w poślizgu: poszerza środek gałki dla drobnych korekt",
         "speed": "Prędkość", "slip": "Poślizg", "no_telemetry": "brak telemetrii",
         "paused": "w menu / pauza",
+        "profile": "Profil",
+        "profile_hint": "Gotowe ustawienia. Ruch dowolnego suwaka przełącza na Własny i zachowuje twoje wartości, zawsze możesz do nich wrócić.",
+        "prof_default": "Domyślny",
+        "prof_strong": "Mocny",
+        "prof_minimal": "Minimalny",
+        "prof_custom": "Własny",
         "order_title": "Zła kolejność uruchomienia",
         "order_text": "Forza już działa. Gra szuka kontrolerów tylko przy swoim starcie, więc nie widzi wirtualnego pada asystenta.",
         "order_hint": "Zamknij grę i uruchom ją ponownie — asystenta zostaw włączonego.",
@@ -1717,6 +1791,12 @@ TR = {
         "steer_curve_hint": "Só na derrapagem: alarga o centro do analógico para correções finas",
         "speed": "Velocidade", "slip": "Derrapagem", "no_telemetry": "sem telemetria",
         "paused": "no menu / em pausa",
+        "profile": "Perfil",
+        "profile_hint": "Ajustes prontos. Mover qualquer controle muda para Próprio e guarda seus valores, dá para voltar sempre.",
+        "prof_default": "Padrão",
+        "prof_strong": "Forte",
+        "prof_minimal": "Mínimo",
+        "prof_custom": "Próprio",
         "order_title": "Ordem de inicialização errada",
         "order_text": "O Forza já está aberto. O jogo procura controles apenas ao iniciar, por isso não enxerga o controle virtual do assistente.",
         "order_hint": "Feche o jogo e abra de novo — deixe o assistente rodando.",
@@ -1761,6 +1841,12 @@ TR = {
         "steer_curve_hint": "Yalnızca kayışta: ince düzeltmeler için çubuk merkezi genişler",
         "speed": "Hız", "slip": "Kayma", "no_telemetry": "telemetri yok",
         "paused": "menüde / duraklatıldı",
+        "profile": "Profil",
+        "profile_hint": "Hazır ayarlar. Herhangi bir kaydırıcıyı oynatmak Kendi'ne geçer ve değerlerini saklar, istediğinde geri dönersin.",
+        "prof_default": "Varsayılan",
+        "prof_strong": "Güçlü",
+        "prof_minimal": "Az",
+        "prof_custom": "Kendi",
         "order_title": "Yanlış başlatma sırası",
         "order_text": "Forza zaten açık. Oyun kumandaları yalnızca açılışta arar, bu yüzden asistanın sanal kolunu göremez.",
         "order_hint": "Oyunu kapat ve yeniden başlat — asistan açık kalsın.",
@@ -1842,6 +1928,8 @@ def build_html() -> str:
     html = html.replace("__SLIDERS__", json.dumps(SLIDERS))
     html = html.replace("__ARROW__", json.dumps(ARROW_SVG))
     html = html.replace("__LANGS__", json.dumps(LANG_ORDER))
+    html = html.replace("__PROFILES__", json.dumps(PROFILES))
+    html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__VER__", APP_VERSION)
     html = html.replace("__DEFAULTS__", json.dumps(
         {k: DEFAULTS[k] for k, *_ in SLIDERS}))
@@ -2048,6 +2136,8 @@ const SLIDERS = __SLIDERS__;
 const ARROW = __ARROW__;
 const DEF = __DEFAULTS__;
 const LANGS = __LANGS__;
+const PROFILES = __PROFILES__;
+const PROF_ORDER = __PROF_ORDER__;
 const VER = "__VER__";
 let cfg = null, state = null;
 let capturing = null;
@@ -2087,6 +2177,7 @@ function build(){
   let h = '';
   h += `<div class="grp"><div class="row sec"><span class="lbl">${t('assist_sec')}</span></div>`;
   h += toggleRow('helper');
+  h += toggleRow('profile');
   h += `</div>`;
   h += `<div class="grp"><div class="row sec"><span class="lbl">${t('settings_sec')}</span></div>`;
   for (const [key,lo,hi,res,dec] of SLIDERS){
@@ -2156,7 +2247,44 @@ function toggleIdx(key){
   return 0;
 }
 
-const CYCLIC = ['lang','theme'];
+const CYCLIC = ['lang','theme','profile'];
+
+let profAnim = null;
+
+function stopProfileAnim(){
+  if (profAnim !== null){ cancelAnimationFrame(profAnim); profAnim = null; }
+}
+
+function switchProfile(name){
+  stopProfileAnim();
+  const from = {};
+  for (const [k] of SLIDERS) from[k] = cfg[k];
+  if (cfg.profile === 'custom' && name !== 'custom')
+    cfg.custom = Object.assign({}, from);
+  const src = (name === 'custom') ? (cfg.custom || {}) : (PROFILES[name] || {});
+  const to = Object.assign({}, from, src);
+  cfg.profile = name;
+
+  const t0 = performance.now(), dur = 420;
+  const ease = x => x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3)/2;
+  const step = now => {
+    const p = Math.min(1, (now - t0)/dur), e = ease(p);
+    for (const [k] of SLIDERS) cfg[k] = from[k] + (to[k] - from[k])*e;
+    refreshControls();
+    if (p < 1){ profAnim = requestAnimationFrame(step); return; }
+    profAnim = null;
+    try{
+      pywebview.api.set_profile(name).then(vals=>{
+        if (vals && Object.keys(vals).length){
+          Object.assign(cfg, vals);
+          refreshControls();
+        }
+      });
+    }catch(e){}
+  };
+  refreshControls();
+  profAnim = requestAnimationFrame(step);
+}
 
 function refreshControls(){
   document.querySelectorAll('[data-toggle]').forEach(z=>{
@@ -2164,6 +2292,7 @@ function refreshControls(){
     const idx = toggleIdx(key);
     const val = key==='lang' ? t('lang_name')
               : key==='theme' ? (THEME_NAMES[cfg.theme]||'FH6')
+              : key==='profile' ? t('prof_'+cfg.profile)
               : (idx ? t('on') : t('off'));
     z.querySelector('.tval').textContent = val;
     const [la, ra] = z.querySelectorAll('.ar');
@@ -2205,6 +2334,10 @@ function bindEvents(){
           await pywebview.api.set('theme', cfg.theme);
           applyTheme(); refreshControls(); return;
         }
+        if (key==='profile'){
+          const i = (PROF_ORDER.indexOf(cfg.profile)+dir+PROF_ORDER.length)%PROF_ORDER.length;
+          switchProfile(PROF_ORDER[i]); return;
+        }
         const idx = Math.max(0, Math.min(1, toggleIdx(key)+dir));
         const field = BOOL_FIELD[key];
         if (!field) return;
@@ -2233,7 +2366,9 @@ function bindEvents(){
       let v = lo + tt*(hi-lo);
       v = Math.max(lo, Math.min(hi, Math.round(v/res)*res));
       v = +v.toFixed(4);
+      stopProfileAnim();
       cfg[key] = v;
+      cfg.profile = 'custom';
       refreshControls();
       pywebview.api.set(key, v);
     };
@@ -2520,10 +2655,32 @@ class Api:
 
     def set(self, key, value):
         if key in DEFAULTS and key != "version":
-            self._b.cfg[key] = value
-            sanitize_config(self._b.cfg)
-            save_config_soon(self._b.cfg)
+            cfg = self._b.cfg
+            cfg[key] = value
+            if any(key == k for k, *_ in SLIDERS):
+                cfg["profile"] = "custom"
+                cfg["custom"] = {k: cfg[k] for k, *_ in SLIDERS}
+            sanitize_config(cfg)
+            save_config_soon(cfg)
         return True
+
+    def set_profile(self, name):
+        """Apply a preset. Returns the values so the page and the config
+        cannot drift apart."""
+        cfg = self._b.cfg
+        if name not in PROFILE_ORDER:
+            return {}
+        if name == "custom":
+            values = dict(cfg.get("custom") or {})
+        else:
+            values = dict(PROFILES.get(name, {}))
+        if cfg.get("profile") == "custom" and name != "custom":
+            cfg["custom"] = {k: cfg[k] for k, *_ in SLIDERS}
+        cfg.update(values)
+        cfg["profile"] = name
+        sanitize_config(cfg)
+        save_config_soon(cfg)
+        return {k: cfg[k] for k, *_ in SLIDERS}
 
 
 _instance_mutex = None
