@@ -41,7 +41,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "1.4.1"
+APP_VERSION = "1.4.2"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -2006,12 +2006,18 @@ body.t-aqua{
 .tb-drag{flex:1;height:100%;display:flex;align-items:center}
 .logo{width:80px;height:16px;color:var(--logo-fg)}
 .logo svg{width:100%;height:100%;display:block}
-.winbtns{display:flex;align-items:center;gap:10px}
-.wb{display:flex;align-items:center;cursor:pointer;padding:2px;margin:-2px}
-.wb svg{display:block}
-.wb path,.wb rect{stroke:var(--btn);stroke-width:1.5;fill:none;
-                  stroke-linecap:round;stroke-linejoin:round}
-.wb:hover{opacity:.55}
+.winbtns{display:flex;align-items:center;gap:6px}
+.wb{width:9.5px;height:9.5px;border-radius:50%;cursor:pointer;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 0 0 .5px rgba(0,0,0,.16)}
+.wb-close{background:#FF5F57}
+.wb-min{background:#FEBC2E}
+.wb svg{display:block;width:100%;height:100%;opacity:0;
+        transition:opacity .12s ease}
+.winbtns:hover .wb svg{opacity:1}
+.wb path{stroke:rgba(0,0,0,.55);stroke-width:1.1;fill:none;
+         stroke-linecap:round}
+.wb:active{filter:brightness(.86)}
 .appbox{width:395px;border-radius:4px;overflow:hidden;position:relative;
         background:var(--app-bg)}
         
@@ -2111,9 +2117,8 @@ body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
 <div class="titlebar">
   <div class="tb-drag pywebview-drag-region"><div class="logo"><!--LOGO--></div></div>
   <div class="winbtns">
-    <div class="wb" data-win="min"><svg width="9.5" height="9.5" viewBox="0 0 9.5 9.5"><path d="M0.75 4.75H8.75"/></svg></div>
-    <div class="wb" data-win="max"><svg width="9.5" height="9.5" viewBox="0 0 9.5 9.5"><rect x="0.75" y="0.75" width="8" height="8"/></svg></div>
-    <div class="wb" data-win="close"><svg width="9.5" height="9.5" viewBox="0 0 9.5 9.5"><path d="M0.75 0.75L4.75 4.75M8.75 8.75L4.75 4.75M4.75 4.75L8.75 0.75M4.75 4.75L0.75 8.75"/></svg></div>
+    <div class="wb wb-close" data-win="close"><svg viewBox="0 0 10 10"><path d="M3.2 3.2L6.8 6.8M6.8 3.2L3.2 6.8"/></svg></div>
+    <div class="wb wb-min" data-win="min"><svg viewBox="0 0 10 10"><path d="M2.9 5H7.1"/></svg></div>
   </div>
 </div>
 <div class="appbox">
@@ -2507,7 +2512,6 @@ document.querySelectorAll('.wb').forEach(b=>{
     try{
       if (a==='close') pywebview.api.win_close();
       else if (a==='min') pywebview.api.win_min();
-      else pywebview.api.win_max();
     }catch(e){}
   });
 });
