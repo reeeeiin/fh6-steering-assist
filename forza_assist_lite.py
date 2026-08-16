@@ -41,7 +41,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "1.4.2"
+APP_VERSION = "1.5.0"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -582,13 +582,13 @@ PROFILES = {
 YIELD_MODES = ("pulse", "hold", "off")
 
 CONFIG_RANGES = {
-    "counter_gain": (0.0, 200.0),
-    "gyro":         (0.0, 3.0),
+    "counter_gain": (0.0, 120.0),
+    "gyro":         (0.0, 1.5),
     "reaction":     (0.0, 1.0),
     "steer_lag":    (0.0, 0.25),
     "steer_curve":  (1.0, 3.0),
     "deadband":     (0.0, 2.0),
-    "min_speed":    (0.0, 60.0),
+    "min_speed":    (0.0, 100.0),
     "speed_sens":   (0.0, 100.0),
     "smoothing":    (0.0, 0.99),
     "corr_slew":    (0.3, 20.0),
@@ -620,7 +620,7 @@ def sanitize_config(cfg: dict) -> dict:
     snap = cfg.get("custom")
     clean = {}
     if isinstance(snap, dict):
-        for key, lo, hi, _res, _dec in SLIDERS:
+        for key, lo, hi, *_ in SLIDERS:
             try:
                 clean[key] = clamp(float(snap[key]), lo, hi)
             except (KeyError, TypeError, ValueError):
@@ -1870,13 +1870,13 @@ TR = {
 
 
 SLIDERS = [
-    ("counter_gain", 0.0, 200.0, 5.0,   0),
-    ("gyro",         0.0, 3.0,   0.05,  1),
-    ("steer_curve",  1.0, 3.0,   0.05,  1),
-    ("reaction",     0.0, 1.0,   0.05,  2),
-    ("deadband",     0.0, 2.0,   0.02,  1),
-    ("min_speed",    0.0, 60.0,  1.0,   0),
-    ("smoothing",    0.0, 0.99,  0.01,  1),
+    ("counter_gain", 0.0, 120.0, 1.2,    0, "%"),
+    ("gyro",         0.0, 1.5,   0.015,  2, "%"),
+    ("steer_curve",  1.0, 3.0,   0.02,   2, "%"),
+    ("reaction",     0.0, 1.0,   0.01,   2, "%"),
+    ("deadband",     0.0, 2.0,   0.02,   2, "%"),
+    ("min_speed",    0.0, 100.0, 1.0,    0, ""),
+    ("smoothing",    0.0, 0.99,  0.0099, 2, "%"),
 ]
 
 def _res_dir() -> str:
@@ -2152,6 +2152,13 @@ const $ = s => document.querySelector(s);
 
 function fmt(v, dec){ return dec===0 ? Math.round(v).toString() : (+v).toFixed(dec); }
 
+function shown(key, v){
+  const row = SLIDERS.find(x=>x[0]===key);
+  const lo = row[1], hi = row[2], dec = row[4], unit = row[5];
+  if (unit === '%') return String(Math.round((v-lo)/(hi-lo)*100));
+  return fmt(v, dec);
+}
+
 const THEME_ORDER = ['fh6','fh4','matter','aqua'];
 const THEME_NAMES = {fh6:'FH6', fh4:'FH4', matter:'Matter', aqua:'Aqua'};
 
@@ -2318,7 +2325,7 @@ function refreshControls(){
     const x = 2 + (v-lo)/(hi-lo)*140;
     s.querySelector('.fill').style.width = (x-2)+'px';
     s.querySelector('.knob').style.left = x+'px';
-    s.parentElement.querySelector('.sval').textContent = fmt(v, dec);
+    s.parentElement.querySelector('.sval').textContent = shown(key, v);
   });
 }
 

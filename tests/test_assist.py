@@ -112,7 +112,7 @@ def test_sanitize_clamps_dangerous_values():
     cfg["enabled"] = "yes"
     fa.sanitize_config(cfg)
     assert cfg["steer_curve"] == 1.0, cfg["steer_curve"]
-    assert cfg["counter_gain"] == 200.0, cfg["counter_gain"]
+    assert cfg["counter_gain"] == 120.0, cfg["counter_gain"]
     assert cfg["gyro"] == fa.DEFAULTS["gyro"], cfg["gyro"]
     assert cfg["min_speed"] == 0.0, cfg["min_speed"]
     assert cfg["lang"] == "en" and cfg["theme"] == "fh6"
@@ -500,9 +500,9 @@ def test_profile_applies_its_values():
 def test_moving_a_slider_switches_to_custom():
     api = _api(profile="strong")
     try:
-        api.set("counter_gain", 123.0)
+        api.set("counter_gain", 111.0)
         assert api._b.cfg["profile"] == "custom"
-        assert api._b.cfg["custom"]["counter_gain"] == 123.0
+        assert api._b.cfg["custom"]["counter_gain"] == 111.0
     finally:
         _done(api)
 
@@ -512,12 +512,12 @@ def test_custom_values_survive_a_round_trip():
     back, otherwise the preset buttons quietly destroy their tuning."""
     api = _api()
     try:
-        api.set("counter_gain", 137.0)
+        api.set("counter_gain", 117.0)
         api.set("gyro", 1.25)
         api.set_profile("minimal")
         assert api._b.cfg["counter_gain"] == fa.PROFILES["minimal"]["counter_gain"]
         api.set_profile("custom")
-        assert api._b.cfg["counter_gain"] == 137.0
+        assert api._b.cfg["counter_gain"] == 117.0
         assert api._b.cfg["gyro"] == 1.25
     finally:
         _done(api)
@@ -542,6 +542,35 @@ def test_first_run_starts_on_default_and_remembers_the_choice():
     cfg["profile"] = "nonsense"
     fa.sanitize_config(cfg)
     assert cfg["profile"] == "default"
+
+
+def test_every_slider_reads_zero_to_a_hundred():
+    """One scale for everything. Each step of a slider must move the shown
+    number by exactly one, otherwise the readout skips or repeats values."""
+    for key, lo, hi, res, _dec, unit in fa.SLIDERS:
+        steps = (hi - lo) / res
+        if unit == "%":
+            assert abs(steps - 100) < 0.5, (
+                f"{key}: {steps:.1f} steps across the range, expected 100")
+        else:
+            assert lo == 0.0 and hi == 100.0, (
+                f"{key} is shown in its own units, so the range itself has to "
+                f"be 0..100, got {lo}..{hi}")
+
+
+def test_speed_is_shown_in_real_units():
+    """Min speed is the one slider whose number means something physical.
+    Showing 25 for 15 km/h under a label that says km/h would be a lie."""
+    row = next(r for r in fa.SLIDERS if r[0] == "min_speed")
+    assert row[5] == "", "min_speed must not be displayed as a percentage"
+    assert fa.CONFIG_RANGES["min_speed"] == (0.0, 100.0)
+
+
+def test_profile_values_fit_the_new_ranges():
+    for name, values in fa.PROFILES.items():
+        for key, value in values.items():
+            lo, hi = fa.CONFIG_RANGES[key]
+            assert lo <= value <= hi, f"{name}.{key} = {value} outside {lo}..{hi}"
 
 
 def test_every_profile_covers_every_slider():
