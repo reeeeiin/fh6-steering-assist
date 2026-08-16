@@ -41,7 +41,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.4.1"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -572,12 +572,12 @@ PROFILES = {
     "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0,
                 "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0,
                 "smoothing": 0.8},
-    "strong": {"counter_gain": 110.0, "gyro": 0.9, "steer_curve": 1.0,
-               "reaction": 0.35, "deadband": 0.12, "min_speed": 10.0,
-               "smoothing": 0.7},
-    "minimal": {"counter_gain": 30.0, "gyro": 0.2, "steer_curve": 1.0,
-                "reaction": 0.1, "deadband": 0.4, "min_speed": 25.0,
-                "smoothing": 0.85},
+    "strong": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0,
+               "reaction": 0.05, "deadband": 0.2, "min_speed": 10.0,
+               "smoothing": 0.8},
+    "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 2.5,
+                "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0,
+                "smoothing": 0.8},
 }
 YIELD_MODES = ("pulse", "hold", "off")
 
