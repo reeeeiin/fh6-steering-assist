@@ -2282,8 +2282,8 @@ body.t-light{
  --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 
-#zoom{width:510px;min-height:100vh;display:flex;flex-direction:column;
-      padding:18px;gap:14px}
+#zoom{width:510px;min-height:calc(100vh / 1.5);zoom:1.5;
+      display:flex;flex-direction:column;padding:18px;gap:14px}
 
 /* ---------- title bar: components are 18 px tall, radius 5 ---------- */
 .tbar{display:flex;align-items:center;gap:8px;height:18px;flex:none}
@@ -2311,7 +2311,7 @@ body.t-light{
 .hbtn.sq[data-win=min] svg{width:10px;height:2px}
 .hbtn.back svg{width:6px;height:10px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none}
-.logo svg{display:block;width:55px;height:10px}
+.logo svg{display:block;width:99px;height:18px}
 .vbadge{height:18px;padding:0 6px;border-radius:5px;display:flex;
         align-items:center;font-size:8px;font-weight:600;flex:none;
         color:var(--accent);background:var(--btn-hov-bg);
@@ -2335,7 +2335,7 @@ body.t-light{
     background:var(--off);position:relative;transition:background .22s ease}
 .tg.on{background:var(--accent)}
 .tg i{position:absolute;top:2px;left:2px;width:10px;height:10px;
-      border-radius:50%;background:#fff;
+      border-radius:4px;background:#fff;
       transition:transform .22s cubic-bezier(.4,0,.2,1)}
 .tg.on i{transform:translateX(14px)}
 
@@ -2359,7 +2359,7 @@ body.t-light{
          background:var(--track);transform:translateY(-50%)}
 .sl .fil{position:absolute;top:50%;left:0;height:4px;border-radius:2px;
          background:var(--sfill);transform:translateY(-50%)}
-.sl .knb{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;
+.sl .knb{position:absolute;top:50%;width:20px;height:14px;border-radius:5px;
          background:#fff;transform:translate(-50%,-50%);
          box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .sl.anim .fil,.sl.anim .knb{transition:width .42s cubic-bezier(.4,0,.2,1),
@@ -2593,7 +2593,8 @@ function render(){
     b.classList.toggle('on', b.dataset.nav === screen));
   const box = $('#screen');
   box.innerHTML = screen === 'settings' ? screenSettings() : screenMain();
-  if (bootPhase === 'app') $$('#screen .reveal').forEach(e => e.classList.add('shown'));
+  if (bootPhase === 'app')
+    $$('#screen .reveal, .foot.reveal').forEach(e => e.classList.add('shown'));
   bindRows();
   refresh();
   reportHeight();
@@ -2736,7 +2737,7 @@ function liveUpdate(){
 let lastH = 0;
 function reportHeight(){
   requestAnimationFrame(() => {
-    const h = $('#zoom').offsetHeight;
+    const h = Math.round($('#zoom').offsetHeight * 1.5);
     if (h && Math.abs(h - lastH) > 2){
       lastH = h;
       try{ pywebview.api.content_h(h); }catch(e){}
@@ -2785,7 +2786,8 @@ function revealApp(){
   bootPhase = 'app';
   $('#boot').classList.add('gone');
   setTimeout(() => { $('#boot').style.display = 'none'; }, 480);
-  const items = [...$$('.tbar .reveal'), ...$$('#screen .reveal')];
+  const items = [...$$('.tbar .reveal'), ...$$('#screen .reveal'),
+                 ...$$('.foot.reveal')];
   items.forEach((el, i) => setTimeout(() => el.classList.add('shown'), 120 + i * 80));
   reportHeight();
 }
@@ -2849,8 +2851,9 @@ window.addEventListener('pywebviewready', () => {
 </script></body></html>"""
 
 
-WIN_W = 510          # ширина окна из макета, меняться не должна
-WIN_MIN_H = 360      # экран загрузки - самый низкий из состояний
+UI_SCALE = 1.5       # design pixels are small; everything is scaled once
+WIN_W = int(510 * UI_SCALE)
+WIN_MIN_H = int(360 * UI_SCALE)
 _WIN = {"hwnd": 0, "content_h": 770}
 
 class Api:
