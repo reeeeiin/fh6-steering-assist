@@ -560,6 +560,8 @@ DEFAULTS = {
     "rumble": True,
     "lang": "en",
     "theme": "dark",
+    "steer_in_general": False,
+    "ext_telemetry": True,
     "profile": "default",
     "custom": {},
     "telemetry_seen": False,
@@ -619,7 +621,8 @@ def sanitize_config(cfg: dict) -> dict:
         except (KeyError, TypeError, ValueError):
             v = float(DEFAULTS[key])
         cfg[key] = clamp(v, lo, hi) if math.isfinite(v) else float(DEFAULTS[key])
-    for key in ("enabled", "auto_hide", "telemetry_seen", "rumble"):
+    for key in ("enabled", "auto_hide", "telemetry_seen", "rumble",
+                "steer_in_general", "ext_telemetry"):
         cfg[key] = bool(cfg.get(key, DEFAULTS[key]))
     for key in ("btn_handbrake", "btn_clutch"):
         try:
@@ -1423,6 +1426,30 @@ TR = {
         "steer_curve_hint": "In a slide only: widens the stick centre for finer corrections while drifting",
         "speed": "Speed", "slip": "Slip", "no_telemetry": "no telemetry",
         "paused": "in menu / paused",
+        "general_sec": "General",
+        "tele_status": "Telemetry status",
+        "version_sec": "Version",
+        "cur_version": "Current version",
+        "check_updates": "Check for updates",
+        "check": "Check",
+        "checking": "Checking...",
+        "raw_input": "Raw input",
+        "assisted": "Assisted",
+        "pad_status": "Controller",
+        "mod_status": "Pad hiding",
+        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - On",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "steer_in_general": "Show steering settings here",
+        "ext_telemetry": "Show extended telemetry",
+        "st_waiting": "Waiting",
+        "st_ingame": "In game",
+        "st_inmenu": "In menu",
+        "st_notele": "No telemetry",
+        "st_port": "Port busy",
+        "st_error": "Error",
+        "hh_idle": "Idle",
         "profile": "Profile",
         "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
         "prof_default": "Default",
@@ -1473,6 +1500,30 @@ TR = {
         "steer_curve_hint": "Только в заносе: растягивает центр стика для тонких коррекций в дрифте",
         "speed": "Скорость", "slip": "Снос", "no_telemetry": "нет телеметрии",
         "paused": "в меню / на паузе",
+        "general_sec": "Основное",
+        "tele_status": "Статус телеметрии",
+        "version_sec": "Версия",
+        "cur_version": "Текущая версия",
+        "check_updates": "Проверить обновления",
+        "check": "Проверить",
+        "checking": "Проверяю...",
+        "raw_input": "Ввод игрока",
+        "assisted": "С ассистом",
+        "pad_status": "Контроллер",
+        "mod_status": "Скрытие пада",
+        "setup_where": "Настройки игры > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - Вкл",
+        "theme_dark": "Тёмная",
+        "theme_light": "Светлая",
+        "steer_in_general": "Показывать настройки руля здесь",
+        "ext_telemetry": "Расширенная телеметрия",
+        "st_waiting": "Ожидание",
+        "st_ingame": "В игре",
+        "st_inmenu": "В меню",
+        "st_notele": "Нет телеметрии",
+        "st_port": "Порт занят",
+        "st_error": "Ошибка",
+        "hh_idle": "Не запускался",
         "profile": "Профиль",
         "profile_hint": "Готовые наборы. Любое движение ползунка переключает на «Свой» и сохраняет твои значения — к ним всегда можно вернуться.",
         "prof_default": "Обычный",
@@ -1523,6 +1574,30 @@ TR = {
         "steer_curve_hint": "Лише в заносі: розтягує центр стика для тонких корекцій у дрифті",
         "speed": "Швидкість", "slip": "Занос", "no_telemetry": "немає телеметрії",
         "paused": "у меню / на паузі",
+        "general_sec": "General",
+        "tele_status": "Telemetry status",
+        "version_sec": "Version",
+        "cur_version": "Current version",
+        "check_updates": "Check for updates",
+        "check": "Check",
+        "checking": "Checking...",
+        "raw_input": "Raw input",
+        "assisted": "Assisted",
+        "pad_status": "Controller",
+        "mod_status": "Pad hiding",
+        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - On",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "steer_in_general": "Show steering settings here",
+        "ext_telemetry": "Show extended telemetry",
+        "st_waiting": "Waiting",
+        "st_ingame": "In game",
+        "st_inmenu": "In menu",
+        "st_notele": "No telemetry",
+        "st_port": "Port busy",
+        "st_error": "Error",
+        "hh_idle": "Idle",
         "profile": "Профіль",
         "profile_hint": "Готові набори. Будь-який рух повзунка перемикає на «Свій» і зберігає твої значення — до них завжди можна повернутися.",
         "prof_default": "Звичайний",
@@ -1573,6 +1648,30 @@ TR = {
         "steer_curve_hint": "Nur im Drift: weitet die Stickmitte für feinere Korrekturen",
         "speed": "Tempo", "slip": "Schlupf", "no_telemetry": "keine Telemetrie",
         "paused": "im Menü / pausiert",
+        "general_sec": "General",
+        "tele_status": "Telemetry status",
+        "version_sec": "Version",
+        "cur_version": "Current version",
+        "check_updates": "Check for updates",
+        "check": "Check",
+        "checking": "Checking...",
+        "raw_input": "Raw input",
+        "assisted": "Assisted",
+        "pad_status": "Controller",
+        "mod_status": "Pad hiding",
+        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - On",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "steer_in_general": "Show steering settings here",
+        "ext_telemetry": "Show extended telemetry",
+        "st_waiting": "Waiting",
+        "st_ingame": "In game",
+        "st_inmenu": "In menu",
+        "st_notele": "No telemetry",
+        "st_port": "Port busy",
+        "st_error": "Error",
+        "hh_idle": "Idle",
         "profile": "Profil",
         "profile_hint": "Fertige Voreinstellungen. Jeder Reglerzug wechselt auf Eigenes und behält deine Werte, du kommst also immer zurück.",
         "prof_default": "Standard",
@@ -1623,6 +1722,30 @@ TR = {
         "steer_curve_hint": "En glisse uniquement : centre du stick élargi pour des corrections fines",
         "speed": "Vitesse", "slip": "Glisse", "no_telemetry": "pas de télémétrie",
         "paused": "dans le menu / en pause",
+        "general_sec": "General",
+        "tele_status": "Telemetry status",
+        "version_sec": "Version",
+        "cur_version": "Current version",
+        "check_updates": "Check for updates",
+        "check": "Check",
+        "checking": "Checking...",
+        "raw_input": "Raw input",
+        "assisted": "Assisted",
+        "pad_status": "Controller",
+        "mod_status": "Pad hiding",
+        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - On",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "steer_in_general": "Show steering settings here",
+        "ext_telemetry": "Show extended telemetry",
+        "st_waiting": "Waiting",
+        "st_ingame": "In game",
+        "st_inmenu": "In menu",
+        "st_notele": "No telemetry",
+        "st_port": "Port busy",
+        "st_error": "Error",
+        "hh_idle": "Idle",
         "profile": "Profil",
         "profile_hint": "Réglages prêts à l'emploi. Bouger un curseur passe sur Perso et conserve tes valeurs, tu peux toujours y revenir.",
         "prof_default": "Défaut",
@@ -1673,6 +1796,30 @@ TR = {
         "steer_curve_hint": "Solo en derrape: ensancha el centro del stick para correcciones finas",
         "speed": "Velocidad", "slip": "Derrape", "no_telemetry": "sin telemetría",
         "paused": "en menú / en pausa",
+        "general_sec": "General",
+        "tele_status": "Telemetry status",
+        "version_sec": "Version",
+        "cur_version": "Current version",
+        "check_updates": "Check for updates",
+        "check": "Check",
+        "checking": "Checking...",
+        "raw_input": "Raw input",
+        "assisted": "Assisted",
+        "pad_status": "Controller",
+        "mod_status": "Pad hiding",
+        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - On",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "steer_in_general": "Show steering settings here",
+        "ext_telemetry": "Show extended telemetry",
+        "st_waiting": "Waiting",
+        "st_ingame": "In game",
+        "st_inmenu": "In menu",
+        "st_notele": "No telemetry",
+        "st_port": "Port busy",
+        "st_error": "Error",
+        "hh_idle": "Idle",
         "profile": "Perfil",
         "profile_hint": "Ajustes listos. Mover cualquier control cambia a Propio y guarda tus valores, siempre puedes volver a ellos.",
         "prof_default": "Normal",
@@ -1723,6 +1870,30 @@ TR = {
         "steer_curve_hint": "Solo in derapata: allarga il centro dello stick per correzioni fini",
         "speed": "Velocità", "slip": "Derapata", "no_telemetry": "niente telemetria",
         "paused": "nel menu / in pausa",
+        "general_sec": "General",
+        "tele_status": "Telemetry status",
+        "version_sec": "Version",
+        "cur_version": "Current version",
+        "check_updates": "Check for updates",
+        "check": "Check",
+        "checking": "Checking...",
+        "raw_input": "Raw input",
+        "assisted": "Assisted",
+        "pad_status": "Controller",
+        "mod_status": "Pad hiding",
+        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - On",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "steer_in_general": "Show steering settings here",
+        "ext_telemetry": "Show extended telemetry",
+        "st_waiting": "Waiting",
+        "st_ingame": "In game",
+        "st_inmenu": "In menu",
+        "st_notele": "No telemetry",
+        "st_port": "Port busy",
+        "st_error": "Error",
+        "hh_idle": "Idle",
         "profile": "Profilo",
         "profile_hint": "Preimpostazioni pronte. Muovere un cursore passa a Personale e conserva i tuoi valori, puoi sempre tornarci.",
         "prof_default": "Predefinito",
@@ -1773,6 +1944,30 @@ TR = {
         "steer_curve_hint": "Tylko w poślizgu: poszerza środek gałki dla drobnych korekt",
         "speed": "Prędkość", "slip": "Poślizg", "no_telemetry": "brak telemetrii",
         "paused": "w menu / pauza",
+        "general_sec": "General",
+        "tele_status": "Telemetry status",
+        "version_sec": "Version",
+        "cur_version": "Current version",
+        "check_updates": "Check for updates",
+        "check": "Check",
+        "checking": "Checking...",
+        "raw_input": "Raw input",
+        "assisted": "Assisted",
+        "pad_status": "Controller",
+        "mod_status": "Pad hiding",
+        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - On",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "steer_in_general": "Show steering settings here",
+        "ext_telemetry": "Show extended telemetry",
+        "st_waiting": "Waiting",
+        "st_ingame": "In game",
+        "st_inmenu": "In menu",
+        "st_notele": "No telemetry",
+        "st_port": "Port busy",
+        "st_error": "Error",
+        "hh_idle": "Idle",
         "profile": "Profil",
         "profile_hint": "Gotowe ustawienia. Ruch dowolnego suwaka przełącza na Własny i zachowuje twoje wartości, zawsze możesz do nich wrócić.",
         "prof_default": "Domyślny",
@@ -1823,6 +2018,30 @@ TR = {
         "steer_curve_hint": "Só na derrapagem: alarga o centro do analógico para correções finas",
         "speed": "Velocidade", "slip": "Derrapagem", "no_telemetry": "sem telemetria",
         "paused": "no menu / em pausa",
+        "general_sec": "General",
+        "tele_status": "Telemetry status",
+        "version_sec": "Version",
+        "cur_version": "Current version",
+        "check_updates": "Check for updates",
+        "check": "Check",
+        "checking": "Checking...",
+        "raw_input": "Raw input",
+        "assisted": "Assisted",
+        "pad_status": "Controller",
+        "mod_status": "Pad hiding",
+        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - On",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "steer_in_general": "Show steering settings here",
+        "ext_telemetry": "Show extended telemetry",
+        "st_waiting": "Waiting",
+        "st_ingame": "In game",
+        "st_inmenu": "In menu",
+        "st_notele": "No telemetry",
+        "st_port": "Port busy",
+        "st_error": "Error",
+        "hh_idle": "Idle",
         "profile": "Perfil",
         "profile_hint": "Ajustes prontos. Mover qualquer controle muda para Próprio e guarda seus valores, dá para voltar sempre.",
         "prof_default": "Padrão",
@@ -1873,6 +2092,30 @@ TR = {
         "steer_curve_hint": "Yalnızca kayışta: ince düzeltmeler için çubuk merkezi genişler",
         "speed": "Hız", "slip": "Kayma", "no_telemetry": "telemetri yok",
         "paused": "menüde / duraklatıldı",
+        "general_sec": "General",
+        "tele_status": "Telemetry status",
+        "version_sec": "Version",
+        "cur_version": "Current version",
+        "check_updates": "Check for updates",
+        "check": "Check",
+        "checking": "Checking...",
+        "raw_input": "Raw input",
+        "assisted": "Assisted",
+        "pad_status": "Controller",
+        "mod_status": "Pad hiding",
+        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
+        "setup_dataout": "Data out - On",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "steer_in_general": "Show steering settings here",
+        "ext_telemetry": "Show extended telemetry",
+        "st_waiting": "Waiting",
+        "st_ingame": "In game",
+        "st_inmenu": "In menu",
+        "st_notele": "No telemetry",
+        "st_port": "Port busy",
+        "st_error": "Error",
+        "hh_idle": "Idle",
         "profile": "Profil",
         "profile_hint": "Hazır ayarlar. Herhangi bir kaydırıcıyı oynatmak Kendi'ne geçer ve değerlerini saklar, istediğinde geri dönersin.",
         "prof_default": "Varsayılan",
@@ -1985,9 +2228,9 @@ HTML_PAGE = r"""<!doctype html>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;
   -webkit-user-select:none;cursor:default}
 html,body{width:100%;height:100%;overflow:hidden}
-body{background:var(--win-bg);font-family:'Chiron','Segoe UI',system-ui,sans-serif}
-
-
+body{background:var(--win-bg);
+     font-family:'Chiron','Segoe UI',system-ui,sans-serif;
+     -webkit-font-smoothing:antialiased}
 body.t-dark{
  --win-bg:#111111; --app-bg:#111111; --card:#1C1C1C; --card-2:#242424;
  --row-fg:#FFFFFF; --muted:#8A8A8A; --foot:#5A5A5A;
@@ -2017,681 +2260,570 @@ body.t-light{
  --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 
+#zoom{width:340px;transform-origin:top left;display:flex;
+      flex-direction:column;padding:10px 12px 12px;gap:10px}
 
-#zoom{width:407px;margin:0 auto;transform-origin:top center;
-      padding:10px 6px 6px;display:flex;flex-direction:column;gap:10px}
-
-.titlebar{height:16px;display:flex;align-items:center;padding:0 4px;flex:none}
-.tb-drag{flex:1;height:100%;display:flex;align-items:center}
-.logo{width:80px;height:16px;color:var(--logo-fg)}
-.logo svg{width:100%;height:100%;display:block}
-.winbtns{display:flex;align-items:center;gap:6px}
-.wb{width:9.5px;height:9.5px;border-radius:50%;cursor:pointer;flex:none;
+/* ---------- title bar ---------- */
+.tbar{display:flex;align-items:center;gap:8px;height:22px;flex:none}
+.tdrag{flex:1;height:22px;display:flex;align-items:center;gap:8px;min-width:0}
+.back{width:16px;height:16px;border-radius:5px;flex:none;display:none;
+      align-items:center;justify-content:center;cursor:pointer;
+      background:var(--card);transition:background .16s ease,opacity .16s ease}
+.back.on{display:flex}
+.back:hover{background:var(--card-2)}
+.back svg{width:8px;height:8px}
+.back path{stroke:var(--btn);stroke-width:1.6;fill:none;
+           stroke-linecap:round;stroke-linejoin:round}
+.logo{color:var(--logo-fg);display:flex;align-items:center;flex:none}
+.logo svg{display:block;height:14px;width:auto}
+.vbadge{font-size:8px;font-weight:600;letter-spacing:-.01em;
+        color:var(--accent);border:1px solid var(--accent);
+        border-radius:4px;padding:1px 4px;flex:none}
+.tabs{display:flex;align-items:center;gap:5px;flex:none}
+.tab{height:16px;border-radius:5px;padding:0 6px;display:flex;
+     align-items:center;gap:3px;cursor:pointer;font-size:8px;font-weight:500;
+     letter-spacing:-.01em;background:var(--card);color:var(--muted);
+     transition:background .16s ease,color .16s ease}
+.tab:hover{background:var(--card-2);color:var(--row-fg)}
+.tab.on{background:var(--accent);color:var(--accent-fg)}
+.tab.warn{background:var(--warn);color:#101010}
+.tab.warn:hover{filter:brightness(1.06)}
+.tab svg{width:8px;height:8px;flex:none}
+.tab path,.tab circle{stroke:currentColor;stroke-width:1.5;fill:none}
+.wbtns{display:flex;align-items:center;gap:4px;flex:none}
+.wb{width:16px;height:16px;border-radius:5px;flex:none;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
-    box-shadow:inset 0 0 0 .5px rgba(0,0,0,.16)}
-.wb-close{background:#FF5F57}
-.wb-min{background:#FEBC2E}
-.wb svg{display:block;width:100%;height:100%;opacity:0;
-        transition:opacity .12s ease}
-.winbtns:hover .wb svg{opacity:1}
-.wb path{stroke:rgba(0,0,0,.55);stroke-width:1.1;fill:none;
-         stroke-linecap:round}
-.wb:active{filter:brightness(.86)}
-.appbox{width:395px;border-radius:4px;overflow:hidden;position:relative;
-        background:var(--app-bg)}
-        
-.wrap{position:relative;z-index:1;padding:40px 30px}
+    background:var(--card);transition:background .16s ease}
+.wb:hover{background:var(--card-2)}
+.wb-close:hover{background:var(--danger)}
+.wb svg{width:8px;height:8px}
+.wb path{stroke:var(--btn);stroke-width:1.6;fill:none;stroke-linecap:round}
+.wb-close path{stroke:var(--danger)}
+.wb-close:hover path{stroke:#fff}
 
-#gate{position:absolute;inset:0;z-index:40;display:none;
-      align-items:center;justify-content:center;padding:24px;
-      backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
-      background:rgba(0,0,0,.5)}
-#gate.show{display:flex}
-.gcard{background:var(--panel-bg);color:var(--panel-fg);border-radius:3px;
-       padding:14px;display:flex;flex-direction:column;gap:7px;max-width:300px;
-       border:1px solid var(--accent)}
-.gt{color:var(--accent);font-weight:500;font-size:12px;letter-spacing:-.02em}
-.gb{font-weight:400;font-size:10px;line-height:1.35;letter-spacing:-.02em}
-.gdim{opacity:.7}
-#app{position:relative;display:flex;flex-direction:column;gap:10px}
-.grp .row:last-child{margin-bottom:0}
-.row{display:flex;justify-content:space-between;align-items:center;
-     height:24px;padding:0 10px;border-radius:2px;background:var(--row-bg);
-     margin-bottom:3px}
-.row .lbl{font-weight:500;font-size:12px;letter-spacing:-.02em;
-          color:var(--row-fg)}
-.lbl,.tval,.sval{text-box: trim-both cap alphabetic}
-.sec{background:var(--sec-bg)}
-.sec .lbl{color:var(--sec-fg)}
-.zone{width:180px;display:flex;justify-content:space-between;
-      align-items:center;height:100%}
-.ar{width:14px;height:14px;flex:none}
-.ar svg{width:100%;height:100%;display:block}
-.ar .ar-bg{fill:var(--ar-on)}
-.ar.off .ar-bg{fill:var(--ar-off)}
-.ar .ar-fg{fill:var(--ar-fg)}
-.ar .ar-ring{fill:none;stroke:var(--ar-ring);stroke-width:.5}
-.ar.r{transform:rotate(180deg)}
-.tval{font-weight:500;font-size:12px;letter-spacing:-.02em;color:var(--row-fg)}
-.btnpick{font-weight:500;font-size:12px;letter-spacing:-.02em;color:var(--row-fg);
-         cursor:pointer;min-width:52px;text-align:center;padding:1px 6px;
-         border:1px solid var(--track);border-radius:2px}
-.btnpick.wait{color:var(--accent);border-color:var(--accent)}
-.slider{width:144px;height:24px;position:relative;flex:none}
-.track,.fill{position:absolute;top:50%;height:2.5px;border-radius:1.25px;
-             transform:translateY(-50%)}
-.track{left:2px;width:140px;background:var(--track)}
-.fill{left:2px;background:var(--sfill)}
-.knob{position:absolute;top:50%;width:8px;height:8px;border-radius:50%;
-      background:var(--knob-bg);border:2.5px solid var(--knob-ring);
-      transform:translate(-50%,-50%)}
-.tick{position:absolute;top:17px;width:0;height:0;transform:translateX(-50%);
-      border-left:2px solid transparent;border-right:2px solid transparent;
-      border-bottom:3px solid var(--tick)}
-.sval{font-weight:500;font-size:12px;letter-spacing:-.02em;
-      color:var(--row-fg);width:18px;text-align:right}
-.panel{background:var(--panel-bg);border-radius:2px;padding:10px;
-       display:flex;flex-direction:column;gap:10px;color:var(--panel-fg);
-       font-weight:400;font-size:10px;letter-spacing:-.02em}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
-.stat{display:flex;justify-content:space-between}
-.stat b{font-weight:400}
-.hhrow{display:flex;justify-content:space-between}
-.divider{height:1px;background:rgba(255,255,255,.25)}
-.bar{height:12px;background:var(--bar-bg);border-radius:1px;
-     position:relative;overflow:hidden;margin-top:6px}
+/* ---------- sections and cards ---------- */
+.sec{font-size:8px;font-weight:400;color:var(--muted);letter-spacing:.01em;
+     padding:0 4px 4px}
+.card{background:var(--card);border-radius:8px;padding:2px 10px;flex:none}
+.row{display:flex;align-items:center;gap:10px;min-height:30px;
+     border-bottom:1px solid var(--line)}
+.card .row:last-child{border-bottom:none}
+.rname{font-size:11px;font-weight:400;color:var(--row-fg);flex:1;min-width:0}
+.rval{font-size:11px;font-weight:500;color:var(--row-fg);flex:none;
+      min-width:26px;text-align:right}
+
+/* ---------- toggle ---------- */
+.tg{width:26px;height:14px;border-radius:7px;flex:none;cursor:pointer;
+    background:var(--off);position:relative;transition:background .22s ease}
+.tg.on{background:var(--accent)}
+.tg i{position:absolute;top:2px;left:2px;width:10px;height:10px;
+      border-radius:50%;background:#fff;
+      transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.tg.on i{transform:translateX(12px)}
+
+/* ---------- segmented ---------- */
+.seg{display:flex;align-items:center;background:var(--card-2);
+     border-radius:6px;padding:2px;gap:2px;position:relative;flex:none}
+.seg .pill{position:absolute;top:2px;bottom:2px;border-radius:4px;
+           background:var(--accent);
+           transition:left .28s cubic-bezier(.4,0,.2,1),
+                      width .28s cubic-bezier(.4,0,.2,1)}
+.seg span{position:relative;z-index:1;font-size:9px;font-weight:500;
+          padding:3px 7px;border-radius:4px;color:var(--muted);
+          cursor:pointer;white-space:nowrap;transition:color .2s ease}
+.seg span:hover{color:var(--row-fg)}
+.seg span.on{color:var(--accent-fg)}
+
+/* ---------- slider ---------- */
+.sl{flex:1;height:14px;position:relative;cursor:pointer;min-width:60px}
+.sl .trk{position:absolute;top:50%;left:0;right:0;height:3px;border-radius:2px;
+         background:var(--track);transform:translateY(-50%)}
+.sl .fil{position:absolute;top:50%;left:0;height:3px;border-radius:2px;
+         background:var(--sfill);transform:translateY(-50%)}
+.sl .knb{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;
+         background:#fff;transform:translate(-50%,-50%);
+         box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.sl.anim .fil,.sl.anim .knb{transition:width .42s cubic-bezier(.4,0,.2,1),
+                            left .42s cubic-bezier(.4,0,.2,1)}
+
+/* ---------- telemetry ---------- */
+.tstat{font-size:10px;font-weight:500;flex:none;transition:color .3s ease}
+.tstat.ok{color:var(--ok)} .tstat.wait{color:var(--muted)}
+.tstat.err{color:var(--danger)}
+.chip{font-size:8px;font-weight:500;color:var(--accent);flex:none}
+.hintrow{display:flex;align-items:center;gap:8px;padding:5px 0;
+         border-bottom:1px solid var(--line);font-size:8px;color:var(--muted)}
+.barwrap{padding:5px 0}
+.barlbl{font-size:9px;color:var(--muted);margin-bottom:3px}
+.bar{height:12px;border-radius:3px;background:var(--bar-bg);position:relative;
+     overflow:hidden}
 .bar i{position:absolute;top:0;height:12px;background:var(--bar-fill);
-       border-radius:1px}
-.status{color:var(--accent);min-height:12px}
-#hint{position:absolute;left:0;width:max-content;max-width:280px;
-      background:var(--hint-bg);padding:1px;border-radius:var(--hint-ro);
-      z-index:9;pointer-events:none;
-      opacity:0;transform:translate(-50%,6px);
-      transition:opacity .18s ease,transform .18s ease}
-#hint.show{opacity:1;transform:translate(-50%,0)}
-#hint .in{border:1px solid var(--hint-border);border-radius:var(--hint-ri);
-      padding:8px 10px;font-weight:var(--hint-w);font-size:10px;
-      color:var(--hint-fg);line-height:1.2}
-.foot{display:flex;justify-content:space-between;font-weight:400;
-      font-size:10px;letter-spacing:-.02em;color:var(--foot)}
-.foot span{text-box: trim-both cap alphabetic}
-.setup{display:flex;flex-direction:column;gap:6px}
-.setup .st{color:var(--accent);font-weight:500}
-.setup .sw{opacity:.7}
-.rz{position:fixed;z-index:99}
+       border-radius:2px;transition:left .12s linear,width .12s linear}
+.bar u{position:absolute;left:50%;top:0;width:1px;height:12px;
+       background:var(--track)}
 
-#boot{position:absolute;inset:0;z-index:60;background:var(--win-bg);
-      display:flex;flex-direction:column;align-items:center;
-      justify-content:center;gap:14px;padding:26px 20px;
-      transition:opacity .45s ease}
-#boot.gone{opacity:0;pointer-events:none}
-#boot .bname{font-weight:500;font-size:15px;letter-spacing:-.02em;
-             color:var(--row-fg)}
-#boot .bmark{position:relative;width:150px;height:64px}
-#boot .bmark .lay{position:absolute;inset:0;display:flex;align-items:center;
-                  justify-content:center;overflow:hidden}
-#boot .bmark .lay svg{width:150px;height:64px;flex:none}
-#boot .bmark .dim{opacity:.22}
-#boot .bmark .lit{width:0;transition:width .18s linear}
-#boot .bmark .lit svg{width:150px}
-#boot .bpct{font-weight:400;font-size:11px;color:var(--foot)}
-#boot .bpct b{color:var(--accent);font-weight:500}
-#boot .bline{font-weight:400;font-size:12px;color:var(--row-fg);
-             min-height:15px;text-align:center;
-             transition:opacity .22s ease}
-#boot .bline b{color:var(--accent);font-weight:500}
-#boot .bnote{font-weight:400;font-size:11px;color:var(--accent);
-             min-height:14px;text-align:center;
-             transition:opacity .22s ease}
-#boot .bhint{font-weight:400;font-size:10px;color:var(--foot);
-             text-align:center;transition:opacity .4s ease}
-#boot .fade{opacity:0}
-#boot .dots{display:flex;align-items:center;gap:0}
-#boot .dot{width:15px;height:15px;border-radius:50%;flex:none;
-           border:2px solid var(--accent);box-sizing:border-box;
-           display:flex;align-items:center;justify-content:center;
-           transition:background .3s ease}
-#boot .dot.on{background:var(--accent)}
-#boot .dot svg{width:9px;height:9px;opacity:0;transition:opacity .3s ease}
-#boot .dot.on svg{opacity:1}
-#boot .dot path{stroke:var(--win-bg);stroke-width:2;fill:none;
-                stroke-linecap:round;stroke-linejoin:round}
-#boot .bar{width:22px;height:2px;background:var(--accent);opacity:.35;
-           transition:opacity .3s ease}
-#boot .bar.on{opacity:1}
-#boot.step2 { animation:bootIn .5s ease both }
-@keyframes bootIn{from{opacity:0;transform:translateY(14px)}
-                  to{opacity:1;transform:none}}
+/* ---------- footer ---------- */
+.foot{font-size:6px;line-height:1.5;color:var(--foot);padding:2px 4px 0}
 
+/* ---------- screens ---------- */
+.screen{display:none;flex-direction:column;gap:10px}
+.screen.on{display:flex}
 .reveal{opacity:0;transform:translateY(10px)}
 .reveal.shown{opacity:1;transform:none;
               transition:opacity .42s ease,transform .42s ease}
-.titlebar .reveal{transform:none}
-.titlebar .reveal.shown{transition:opacity .42s ease}
+.tbar .reveal{transform:none}
+.tbar .reveal.shown{transition:opacity .42s ease}
+
+#boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:12px;padding:24px 18px;transition:opacity .45s ease}
+#boot.gone{opacity:0;pointer-events:none}
+.bname{font-size:15px;font-weight:600;color:var(--row-fg)}
+.bmark{position:relative;width:140px;height:60px}
+.blay{position:absolute;inset:0;display:flex;align-items:center;
+      justify-content:center;overflow:hidden}
+.blay svg{width:140px;height:60px;flex:none}
+.bdim{opacity:.2}
+.blit{width:0;transition:width .18s linear}
+.bpct{font-size:10px;color:var(--foot);transition:opacity .3s ease}
+.bpct b{color:var(--accent);font-weight:600}
+.bline{font-size:11px;color:var(--row-fg);min-height:14px;
+       transition:opacity .22s ease;text-align:center}
+.bline b{color:var(--accent);font-weight:600}
+.bnote{font-size:10px;color:var(--accent);min-height:13px;
+       transition:opacity .22s ease;text-align:center}
+.bhint{font-size:8px;color:var(--foot);transition:opacity .4s ease;text-align:center}
+.fade{opacity:0}
+.bdots{display:flex;align-items:center}
+.bdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent);
+      box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+      transition:background .3s ease;flex:none}
+.bdot.on{background:var(--accent)}
+.bdot svg{width:8px;height:8px;opacity:0;transition:opacity .3s ease}
+.bdot.on svg{opacity:1}
+.bdot path{stroke:var(--win-bg);stroke-width:2;fill:none;
+           stroke-linecap:round;stroke-linejoin:round}
+.bbar{width:20px;height:2px;background:var(--accent);opacity:.3;
+      transition:opacity .3s ease}
+.bbar.on{opacity:1}
+.rz{position:fixed;z-index:99}
 .rz[data-e=t]{top:0;left:14px;right:14px;height:5px;cursor:ns-resize}
 .rz[data-e=b]{bottom:0;left:14px;right:14px;height:6px;cursor:ns-resize}
 .rz[data-e=l]{left:0;top:14px;bottom:14px;width:5px;cursor:ew-resize}
-.rz[data-e=r]{right:0;top:14px;bottom:14px;width:6px;cursor:ew-resize}
-.rz[data-e=tl]{top:0;left:0;width:13px;height:13px;cursor:nwse-resize}
-.rz[data-e=br]{bottom:0;right:0;width:16px;height:16px;cursor:nwse-resize}
-.rz[data-e=tr]{top:0;right:0;width:13px;height:13px;cursor:nesw-resize}
-.rz[data-e=bl]{bottom:0;left:0;width:13px;height:13px;cursor:nesw-resize}
+.rz[data-e=r]{right:0;top:14px;bottom:14px;width:5px;cursor:ew-resize}
+.rz[data-e=tl]{top:0;left:0;width:14px;height:14px;cursor:nwse-resize}
+.rz[data-e=tr]{top:0;right:0;width:14px;height:14px;cursor:nesw-resize}
+.rz[data-e=bl]{bottom:0;left:0;width:14px;height:14px;cursor:nesw-resize}
+.rz[data-e=br]{bottom:0;right:0;width:14px;height:14px;cursor:nwse-resize}
 </style></head><body class="t-dark">
 <div id="zoom">
-<div class="titlebar">
-  <div class="tb-drag pywebview-drag-region"><div class="logo"><!--LOGO--></div></div>
-  <div class="winbtns">
-    <div class="wb wb-close" data-win="close"><svg viewBox="0 0 10 10"><path d="M3.2 3.2L6.8 6.8M6.8 3.2L3.2 6.8"/></svg></div>
-    <div class="wb wb-min" data-win="min"><svg viewBox="0 0 10 10"><path d="M2.9 5H7.1"/></svg></div>
+  <div class="tbar">
+    <div class="tdrag pywebview-drag-region">
+      <span class="back reveal" id="back"><svg viewBox="0 0 8 8"><path d="M5.2 1L2 4l3.2 3"/></svg></span>
+      <span class="logo reveal"><!--LOGO--></span>
+      <span class="vbadge reveal">v__VER__</span>
+    </div>
+    <div class="tabs">
+      <span class="tab warn reveal" data-nav="support">Support</span>
+      <span class="tab reveal" data-nav="legal">Legal</span>
+      <span class="tab reveal" data-nav="settings">
+        <svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="2.1"/><path d="M6 1v1.4M6 9.6V11M1 6h1.4M9.6 6H11"/></svg>
+        Settings</span>
+    </div>
+    <div class="wbtns">
+      <span class="wb reveal" data-win="min"><svg viewBox="0 0 10 10"><path d="M2.5 5h5"/></svg></span>
+      <span class="wb wb-close reveal" data-win="close"><svg viewBox="0 0 10 10"><path d="M3 3l4 4M7 3l-4 4"/></svg></span>
+    </div>
   </div>
+  <div class="screen on" id="screen"></div>
+  <div class="foot reveal">Steering Assist is an independent fan project. Not affiliated with or endorsed by Microsoft, Playground Games or Turn 10 Studios. Forza is a trademark of Microsoft Corporation.</div>
 </div>
-<div class="appbox">
-<div class="wrap"><div id="app"></div></div>
 <div id="boot">
   <div class="bname">Steering assist.</div>
   <div class="bmark">
-    <div class="lay dim"><!--LOGO2--></div>
-    <div class="lay lit" id="boot-lit"><!--LOGO3--></div>
+    <div class="blay bdim"><!--LOGO2--></div>
+    <div class="blay blit" id="boot-lit"><!--LOGO3--></div>
   </div>
   <div class="bpct" id="boot-pct">Loading <b>0%</b></div>
   <div class="bline" id="boot-line"></div>
-  <div class="dots" id="boot-dots"></div>
+  <div class="bdots" id="boot-dots"></div>
   <div class="bnote" id="boot-note"></div>
   <div class="bhint" id="boot-hint"></div>
 </div>
-
-<div id="gate"><div class="gcard">
-  <div class="gt" id="gate-title"></div>
-  <div class="gb" id="gate-text"></div>
-  <div class="gb gdim" id="gate-hint"></div>
-</div></div>
-</div>
-</div>
 <div class="rz" data-e="t"></div><div class="rz" data-e="b"></div><div class="rz" data-e="l"></div><div class="rz" data-e="r"></div><div class="rz" data-e="tl"></div><div class="rz" data-e="tr"></div><div class="rz" data-e="bl"></div><div class="rz" data-e="br"></div>
-
 <script>
 const TR = __TR__;
 const SLIDERS = __SLIDERS__;
-const ARROW = __ARROW__;
 const DEF = __DEFAULTS__;
 const LANGS = __LANGS__;
 const PROFILES = __PROFILES__;
-const BOOT = __BOOT__;
 const PROF_ORDER = __PROF_ORDER__;
+const BOOT = __BOOT__;
 const VER = "__VER__";
-let cfg = null, state = null;
-let capturing = null;
+const THEMES = ['dark','light'];
 
-const t = k => { const L = TR[(cfg&&cfg.lang)||'en']||TR.en; return L[k]||TR.en[k]||k; };
-const $ = s => document.querySelector(s);
-
-function fmt(v, dec){ return dec===0 ? Math.round(v).toString() : (+v).toFixed(dec); }
+let cfg = null, state = null, screen = 'main';
+const $ = q => document.querySelector(q);
+const $$ = q => [...document.querySelectorAll(q)];
+const t = k => (TR[cfg && cfg.lang] || TR.en)[k] || (TR.en[k] || k);
 
 function shown(key, v){
-  const row = SLIDERS.find(x=>x[0]===key);
-  const lo = row[1], hi = row[2], dec = row[4], unit = row[5];
-  if (unit === '%') return String(Math.round((v-lo)/(hi-lo)*100));
-  return fmt(v, dec);
+  const r = SLIDERS.find(x => x[0] === key);
+  const lo = r[1], hi = r[2], dec = r[4], unit = r[5];
+  if (unit === '%') return String(Math.round((v - lo) / (hi - lo) * 100));
+  return dec === 0 ? String(Math.round(v)) : (+v).toFixed(dec);
 }
 
-const THEME_ORDER = ['dark','light'];
-const THEME_NAMES = {dark:'Dark', light:'Light'};
-
-function applyTheme(){
-  const th = (cfg && THEME_ORDER.includes(cfg.theme)) ? cfg.theme : 'dark';
-  document.body.className = 't-' + th;
+/* ---------------- rendering ---------------- */
+function segEl(id, items, active){
+  let h = '<span class="seg" data-seg="' + id + '"><i class="pill"></i>';
+  items.forEach(it => {
+    h += '<span data-key="' + it.key + '"' +
+         (it.key === active ? ' class="on"' : '') + '>' + it.label + '</span>';
+  });
+  return h + '</span>';
 }
 
-function arrowEl(dir, cls){
-  return `<div class="ar ${dir>0?'r':''} ${cls||''}" data-dir="${dir}">${ARROW}</div>`;
+function sliderRow(key){
+  return '<div class="row" data-hint="' + key + '_hint">' +
+    '<span class="rname">' + t(key) + '</span>' +
+    '<span class="sl" data-slider="' + key + '">' +
+      '<i class="trk"></i><i class="fil"></i><i class="knb"></i></span>' +
+    '<span class="rval" data-val="' + key + '"></span></div>';
 }
 
-function toggleRow(key){
-  return `<div class="row" data-hint="${key}_hint">
-    <span class="lbl">${t(key)}</span>
-    <span class="zone" data-toggle="${key}">
-      ${arrowEl(-1)}<span class="tval"></span>${arrowEl(1)}
-    </span></div>`;
+function toggleRow(key, field){
+  return '<div class="row" data-hint="' + key + '_hint">' +
+    '<span class="rname">' + t(key) + '</span>' +
+    '<span class="tg" data-toggle="' + field + '"><i></i></span></div>';
 }
 
-function btnRow(key){
-  return `<div class="row" data-hint="${key}_hint">
-    <span class="lbl">${t(key)}</span>
-    <span class="zone"><span class="btnpick" data-btn="${key}"></span></span></div>`;
-}
+function screenMain(){
+  const sliders = cfg.steer_in_general
+    ? SLIDERS.map(s => s[0]) : ['counter_gain'];
+  let h = '<div class="reveal"><div class="sec">' + t('general_sec') + '</div>' +
+          '<div class="card">' + toggleRow('helper', 'enabled') +
+          '<div class="row" data-hint="profile_hint">' +
+            '<span class="rname">' + t('profile') + '</span>' +
+            segEl('profile', PROF_ORDER.map(p => ({key: p, label: t('prof_' + p)})),
+                  cfg.profile) + '</div>';
+  sliders.forEach(k => { h += sliderRow(k); });
+  h += '</div></div>';
 
-function build(){
-  let h = '';
-  h += `<div class="grp"><div class="row sec"><span class="lbl">${t('assist_sec')}</span></div>`;
-  h += toggleRow('helper');
-  h += toggleRow('profile');
-  h += `</div>`;
-  h += `<div class="grp"><div class="row sec"><span class="lbl">${t('settings_sec')}</span></div>`;
-  for (const [key,lo,hi,res,dec] of SLIDERS){
-    h += `<div class="row" data-hint="${key}_hint">
-      <span class="lbl">${t(key)}</span>
-      <span class="zone">
-        <span class="slider" data-slider="${key}">
-          <span class="track"></span><span class="fill"></span>
-          <span class="knob"></span>
-          <span class="tick" style="left:${2+(DEF[key]-lo)/(hi-lo)*140}px"></span>
-        </span>
-        <span class="sval"></span>
-      </span></div>`;
+  h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>' +
+       '<div class="card">' +
+       '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
+       '<span class="tstat" id="tstat">—</span></div>' +
+       '<div class="hintrow" id="setuphint"><span>' + t('setup_where') + '</span>' +
+       '<span class="chip">' + t('setup_dataout') + '</span>' +
+       '<span class="chip">127.0.0.1</span><span class="chip">20777</span></div>' +
+       '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
+       '<div class="bar"><u></u><i id="rawbar"></i></div></div>' +
+       '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
+       '<div class="bar"><u></u><i id="outbar"></i></div></div>';
+  if (cfg.ext_telemetry){
+    h += '<div class="row"><span class="rname">' + t('pad_status') + '</span>' +
+         '<span class="rval" id="padstat">—</span></div>' +
+         '<div class="row"><span class="rname">' + t('mod_status') + '</span>' +
+         '<span class="rval" id="modstat">—</span></div>';
   }
-  h += `</div>`;
-  h += `<div class="grp"><div class="row sec"><span class="lbl">${t('interface_sec')}</span></div>`;
-  h += toggleRow('lang');
-  h += toggleRow('theme');
-  h += `</div>`;
-  h += `<div class="grp"><div class="row sec"><span class="lbl">${t('telemetry_sec')}</span></div>`;
-  h += `<div class="panel">
-    <div id="telem-setup" class="setup" style="display:none">
-      <div class="st">${t('setup_title')}</div>
-      <div>1. ${t('setup_1')}</div>
-      <div>2. ${t('setup_2')}</div>
-      <div>3. ${t('setup_3')}</div>
-      <div class="sw">${t('setup_wait')}</div>
-    </div>
-    <div id="telem-live">
-    <div class="stats">
-      <div class="stat"><span>Loop / Pad</span><b><span id="hz">—</span> / <span id="padhz">—</span> Hz</b></div>
-      <div class="stat"><span>Callback</span><b><span id="age">—</span> ms</b></div>
-      <div class="stat"><span>${t('speed')}</span><b><span id="spd">—</span> km/h</b></div>
-      <div class="stat"><span>${t('slip')}</span><b><span id="slip">—</span></b></div>
-    </div>
-    <div class="hhrow"><span>HidHide</span><span id="hh">—</span></div>
-    <div class="divider"></div>
-    <div><div>Raw Input</div><div class="bar"><i id="rawbar"></i></div></div>
-    <div><div>Assisted</div><div class="bar"><i id="outbar"></i></div></div>
-    <div class="status" id="status"></div>
-    </div>
-  </div></div>`;
-  h += `<div class="foot"><span>Steering Assist</span><span>v${VER}</span></div>`;
-  $('#app').innerHTML = h + '<div id="hint"></div>';
-  if (bootPhase !== 'app')
-    document.querySelectorAll('#app .grp').forEach(g=>g.classList.add('reveal'));
-  else
-    document.querySelectorAll('#app .grp').forEach(g=>g.classList.add('reveal','shown'));
-  bindEvents();
-  refreshControls();
-  if (cfg) panelMode();
+  return h + '</div></div>';
+}
+
+function screenSettings(){
+  let h = '<div class="reveal"><div class="sec">' + t('settings_sec') + '</div>' +
+          '<div class="card">' +
+          '<div class="row" data-hint="profile_hint">' +
+          '<span class="rname">' + t('profile') + '</span>' +
+          segEl('profile', PROF_ORDER.map(p => ({key: p, label: t('prof_' + p)})),
+                cfg.profile) + '</div>';
+  SLIDERS.forEach(s => { h += sliderRow(s[0]); });
+  h += '</div></div>';
+
+  h += '<div class="reveal"><div class="sec">' + t('interface_sec') + '</div>' +
+       '<div class="card">' +
+       '<div class="row"><span class="rname">' + t('lang') + '</span>' +
+       segEl('lang', LANGS.map(l => ({key: l, label: TR[l].lang_name})), cfg.lang) +
+       '</div>' +
+       '<div class="row"><span class="rname">' + t('theme') + '</span>' +
+       segEl('theme', THEMES.map(x => ({key: x, label: t('theme_' + x)})), cfg.theme) +
+       '</div>' +
+       toggleRow('steer_in_general', 'steer_in_general') +
+       toggleRow('ext_telemetry', 'ext_telemetry') +
+       '</div></div>';
+
+  h += '<div class="reveal"><div class="sec">' + t('version_sec') + '</div>' +
+       '<div class="card">' +
+       '<div class="row"><span class="rname">' + t('cur_version') + '</span>' +
+       '<span class="vbadge">v' + VER + '</span></div>' +
+       '<div class="row"><span class="rname">' + t('check_updates') + '</span>' +
+       '<span class="tab" id="btn-update">' + t('check') + '</span></div>' +
+       '</div></div>';
+  return h;
+}
+
+function render(){
+  if (!cfg) return;
+  document.body.className = 't-' + (THEMES.includes(cfg.theme) ? cfg.theme : 'dark');
+  $('#back').classList.toggle('on', screen !== 'main');
+  $$('.tab[data-nav]').forEach(b =>
+    b.classList.toggle('on', b.dataset.nav === screen));
+  const box = $('#screen');
+  box.innerHTML = screen === 'settings' ? screenSettings() : screenMain();
+  if (bootPhase === 'app') $$('#screen .reveal').forEach(e => e.classList.add('shown'));
+  bindRows();
+  refresh();
   reportHeight();
 }
 
-let _lastH = 0;
-function reportHeight(){
-  requestAnimationFrame(()=>{
-    const H = $('#zoom').offsetHeight;
-    if (H && Math.abs(H - _lastH) > 2){
-      _lastH = H;
-      try{ pywebview.api.content_h(H); }catch(e){}
+function refresh(){
+  $$('[data-slider]').forEach(el => {
+    const key = el.dataset.slider;
+    const r = SLIDERS.find(x => x[0] === key);
+    const p = (cfg[key] - r[1]) / (r[2] - r[1]);
+    el.querySelector('.fil').style.width = (p * 100) + '%';
+    el.querySelector('.knb').style.left = (p * 100) + '%';
+    const v = document.querySelector('[data-val="' + key + '"]');
+    if (v) v.textContent = shown(key, cfg[key]);
+  });
+  $$('[data-toggle]').forEach(el =>
+    el.classList.toggle('on', !!cfg[el.dataset.toggle]));
+  $$('[data-seg]').forEach(seg => {
+    const id = seg.dataset.seg;
+    const cur = id === 'profile' ? cfg.profile : id === 'lang' ? cfg.lang : cfg.theme;
+    const items = [...seg.querySelectorAll('[data-key]')];
+    items.forEach(s => s.classList.toggle('on', s.dataset.key === cur));
+    const act = items.find(s => s.dataset.key === cur) || items[0];
+    const pill = seg.querySelector('.pill');
+    if (act && pill){
+      pill.style.left = act.offsetLeft + 'px';
+      pill.style.width = act.offsetWidth + 'px';
     }
   });
 }
 
-const BOOL_FIELD = {helper:'enabled'};
-
-function toggleIdx(key){
-  const f = BOOL_FIELD[key];
-  if (f) return cfg[f] ? 1 : 0;
-  return 0;
-}
-
-const CYCLIC = ['lang','theme','profile'];
-
+/* ---------------- interaction ---------------- */
 let profAnim = null;
+function stopProfAnim(){ if (profAnim){ cancelAnimationFrame(profAnim); profAnim = null; } }
 
-function stopProfileAnim(){
-  if (profAnim !== null){ cancelAnimationFrame(profAnim); profAnim = null; }
-}
-
-function switchProfile(name){
-  stopProfileAnim();
-  const from = {};
-  for (const [k] of SLIDERS) from[k] = cfg[k];
+function applyProfile(name){
+  stopProfAnim();
+  const from = {}; SLIDERS.forEach(s => from[s[0]] = cfg[s[0]]);
   if (cfg.profile === 'custom' && name !== 'custom')
     cfg.custom = Object.assign({}, from);
-  const src = (name === 'custom') ? (cfg.custom || {}) : (PROFILES[name] || {});
+  const src = name === 'custom' ? (cfg.custom || {}) : (PROFILES[name] || {});
   const to = Object.assign({}, from, src);
   cfg.profile = name;
-
+  refresh();
   const t0 = performance.now(), dur = 420;
-  const ease = x => x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3)/2;
+  const ease = x => x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3)/2;
   const step = now => {
     const p = Math.min(1, (now - t0)/dur), e = ease(p);
-    for (const [k] of SLIDERS) cfg[k] = from[k] + (to[k] - from[k])*e;
-    refreshControls();
+    SLIDERS.forEach(s => { cfg[s[0]] = from[s[0]] + (to[s[0]] - from[s[0]])*e; });
+    refresh();
     if (p < 1){ profAnim = requestAnimationFrame(step); return; }
     profAnim = null;
-    try{
-      pywebview.api.set_profile(name).then(vals=>{
-        if (vals && Object.keys(vals).length){
-          Object.assign(cfg, vals);
-          refreshControls();
-        }
-      });
-    }catch(e){}
+    try{ pywebview.api.set_profile(name).then(v => {
+      if (v && Object.keys(v).length){ Object.assign(cfg, v); refresh(); }
+    }); }catch(e){}
   };
-  refreshControls();
   profAnim = requestAnimationFrame(step);
 }
 
-function refreshControls(){
-  document.querySelectorAll('[data-toggle]').forEach(z=>{
-    const key = z.dataset.toggle;
-    const idx = toggleIdx(key);
-    const val = key==='lang' ? t('lang_name')
-              : key==='theme' ? (THEME_NAMES[cfg.theme]||'FH6')
-              : key==='profile' ? t('prof_'+cfg.profile)
-              : (idx ? t('on') : t('off'));
-    z.querySelector('.tval').textContent = val;
-    const [la, ra] = z.querySelectorAll('.ar');
-    if (CYCLIC.includes(key)){ la.classList.remove('off'); ra.classList.remove('off'); }
-    else { la.classList.toggle('off', idx===0); ra.classList.toggle('off', idx===1); }
-  });
-  document.querySelectorAll('[data-btn]').forEach(el=>{
-    const key = el.dataset.btn;
-    const names = (state && state.btn_names) || {};
-    el.textContent = (capturing===key) ? t('press_button')
-                                       : (names[cfg[key]] || t('btn_none'));
-    el.classList.toggle('wait', capturing===key);
-  });
-  document.querySelectorAll('[data-slider]').forEach(s=>{
-    const key = s.dataset.slider;
-    const [,lo,hi,res,dec] = SLIDERS.find(x=>x[0]===key);
-    const v = cfg[key];
-    const x = 2 + (v-lo)/(hi-lo)*140;
-    s.querySelector('.fill').style.width = (x-2)+'px';
-    s.querySelector('.knob').style.left = x+'px';
-    s.parentElement.querySelector('.sval').textContent = shown(key, v);
-  });
+function segPick(id, key){
+  if (id === 'profile'){ applyProfile(key); return; }
+  cfg[id] = key;
+  refresh();
+  try{ pywebview.api.set(id, key); }catch(e){}
+  if (id === 'lang') render();
+  if (id === 'theme') document.body.className = 't-' + key;
 }
 
-function bindEvents(){
-  document.querySelectorAll('[data-toggle]').forEach(z=>{
-    z.querySelectorAll('.ar').forEach(a=>{
-      a.addEventListener('click', async ()=>{
-        const key = z.dataset.toggle, dir = +a.dataset.dir;
-        if (key==='lang'){
-          const i = (LANGS.indexOf(cfg.lang)+dir+LANGS.length)%LANGS.length;
-          cfg.lang = LANGS[i];
-          await pywebview.api.set('lang', cfg.lang);
-          build(); return;
-        }
-        if (key==='theme'){
-          const i = (THEME_ORDER.indexOf(cfg.theme)+dir+THEME_ORDER.length)%THEME_ORDER.length;
-          cfg.theme = THEME_ORDER[i];
-          await pywebview.api.set('theme', cfg.theme);
-          applyTheme(); refreshControls(); return;
-        }
-        if (key==='profile'){
-          const i = (PROF_ORDER.indexOf(cfg.profile)+dir+PROF_ORDER.length)%PROF_ORDER.length;
-          switchProfile(PROF_ORDER[i]); return;
-        }
-        const idx = Math.max(0, Math.min(1, toggleIdx(key)+dir));
-        const field = BOOL_FIELD[key];
-        if (!field) return;
-        cfg[field] = !!idx;
-        await pywebview.api.set(field, cfg[field]);
-        refreshControls();
-      });
+function bindRows(){
+  $$('[data-seg] [data-key]').forEach(el => {
+    el.addEventListener('click', () =>
+      segPick(el.closest('[data-seg]').dataset.seg, el.dataset.key));
+  });
+  $$('[data-toggle]').forEach(el => {
+    el.addEventListener('click', () => {
+      const f = el.dataset.toggle;
+      cfg[f] = !cfg[f];
+      refresh();
+      try{ pywebview.api.set(f, cfg[f]); }catch(e){}
+      if (f === 'steer_in_general' || f === 'ext_telemetry') render();
     });
   });
-  document.querySelectorAll('[data-btn]').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const key = el.dataset.btn;
-      capturing = (capturing===key) ? null : key;
-      try{ pywebview.api.capture_button(capturing!==null); }catch(e){}
-      refreshControls();
-    });
-  });
-  document.querySelectorAll('[data-slider]').forEach(s=>{
-    const key = s.dataset.slider;
-    const [,lo,hi,res,dec] = SLIDERS.find(x=>x[0]===key);
-    const drag = e=>{
-      const r = s.getBoundingClientRect();
-      const scale = r.width/144;
-      let tt = ((e.clientX-r.left)/scale - 2)/140;
-      tt = Math.max(0, Math.min(1, tt));
-      let v = lo + tt*(hi-lo);
-      v = Math.max(lo, Math.min(hi, Math.round(v/res)*res));
+  $$('[data-slider]').forEach(el => {
+    const key = el.dataset.slider;
+    const r = SLIDERS.find(x => x[0] === key);
+    const drag = e => {
+      const b = el.getBoundingClientRect();
+      let p = (e.clientX - b.left) / b.width;
+      p = Math.max(0, Math.min(1, p));
+      let v = r[1] + p * (r[2] - r[1]);
+      v = Math.max(r[1], Math.min(r[2], Math.round(v / r[3]) * r[3]));
       v = +v.toFixed(4);
-      stopProfileAnim();
-      cfg[key] = v;
-      cfg.profile = 'custom';
-      refreshControls();
-      pywebview.api.set(key, v);
+      stopProfAnim();
+      cfg[key] = v; cfg.profile = 'custom';
+      refresh();
+      try{ pywebview.api.set(key, v); }catch(e){}
     };
-    s.addEventListener('pointerdown', e=>{
-      s.setPointerCapture(e.pointerId); drag(e);
-      s.onpointermove = drag;
+    el.addEventListener('pointerdown', e => {
+      el.setPointerCapture(e.pointerId); drag(e); el.onpointermove = drag;
     });
-    s.addEventListener('pointerup', ()=>{ s.onpointermove = null; });
+    el.addEventListener('pointerup', () => { el.onpointermove = null; });
   });
-  let hintTimer = null, hintShown = false, hintEvt = null;
-  const HINT_DELAY = 1000;
-  const HINT_MARGIN = 20;
-  const placeHint = () => {
-    if (!hintEvt) return;
-    const hint = $('#hint');
-    const rect = $('#app').getBoundingClientRect();
-    const z = rect.width / $('#app').offsetWidth;
-    const m = HINT_MARGIN * z;
-    const hw = hint.offsetWidth * z, hh = hint.offsetHeight * z;
-    let x = hintEvt.clientX;
-    x = Math.max(m + hw / 2, Math.min(innerWidth - m - hw / 2, x));
-    let y = hintEvt.clientY + 14 * z;
-    if (y + hh > innerHeight - m) y = hintEvt.clientY - 10 * z - hh;
-    hint.style.left = ((x - rect.left) / z) + 'px';
-    hint.style.top = ((y - rect.top) / z) + 'px';
-  };
-  document.querySelectorAll('[data-hint]').forEach(r=>{
-    r.addEventListener('mouseenter', e=>{
-      const hint = $('#hint');
-      hintEvt = e;
-      hint.innerHTML = '<div class="in">' + t(r.dataset.hint) + '</div>';
-      clearTimeout(hintTimer);
-      hintTimer = setTimeout(()=>{
-        placeHint();
-        requestAnimationFrame(()=>hint.classList.add('show'));
-        hintShown = true;
-      }, HINT_DELAY);
-    });
-    r.addEventListener('mousemove', e=>{
-      hintEvt = e;
-      if (hintShown) placeHint();
-    });
-    r.addEventListener('mouseleave', ()=>{
-      clearTimeout(hintTimer);
-      hintShown = false;
-      $('#hint').classList.remove('show');
-    });
-  });
+  const up = $('#btn-update');
+  if (up) up.addEventListener('click', () => { up.textContent = t('checking'); });
 }
 
+/* ---------------- live state ---------------- */
+let sRaw = 0, sOut = 0;
 function setBar(id, v){
+  const el = document.getElementById(id); if (!el) return;
   v = Math.max(-1, Math.min(1, v));
-  const el = document.getElementById(id);
-  const half = 50;
-  if (v>=0){ el.style.left = '50%'; el.style.width = (v*half)+'%'; }
-  else { el.style.left = (50+v*half)+'%'; el.style.width = (-v*half)+'%'; }
+  if (v >= 0){ el.style.left = '50%'; el.style.width = (v*50) + '%'; }
+  else { el.style.left = (50 + v*50) + '%'; el.style.width = (-v*50) + '%'; }
 }
 
-function gateMode(){
-  const on = !!(state && state.bad_order);
-  const gate = $('#gate');
-  if (on){
-    $('#gate-title').textContent = t('order_title');
-    $('#gate-text').textContent = t('order_text');
-    $('#gate-hint').textContent = t('order_hint');
+function liveUpdate(){
+  if (!state || !cfg) return;
+  const ts = $('#tstat');
+  if (ts){
+    let cls = 'wait', txt = t('st_waiting');
+    if (state.tele_err){ cls = 'err'; txt = t('st_port'); }
+    else if (state.alive){ cls = 'ok'; txt = t('st_ingame'); }
+    else if (state.recv){ cls = 'wait'; txt = t('st_inmenu'); }
+    else { cls = 'err'; txt = t('st_notele'); }
+    ts.className = 'tstat ' + cls;
+    ts.textContent = txt;
   }
-  gate.classList.toggle('show', on);
+  const hint = $('#setuphint');
+  if (hint) hint.style.display = (state.recv || state.alive) ? 'none' : '';
+  sRaw += (state.raw - sRaw) * 0.35;
+  sOut += (state.out - sOut) * 0.35;
+  setBar('rawbar', sRaw); setBar('outbar', sOut);
+  const ps = $('#padstat');
+  if (ps) ps.textContent = state.code === 'ok'
+    ? (state.pad_hz || '—') + ' Hz' : t('st_' + state.code);
+  const ms = $('#modstat');
+  if (ms) ms.textContent = t('hh_' + (state.hh_code || 'idle'));
 }
 
-function panelMode(){
-  const setup = $('#telem-setup'), live = $('#telem-live');
-  const showSetup = !cfg.telemetry_seen && !(state && (state.alive || state.recv));
-  setup.style.display = showSetup ? '' : 'none';
-  live.style.display = showSetup ? 'none' : '';
+let lastH = 0;
+function reportHeight(){
+  requestAnimationFrame(() => {
+    const h = $('#zoom').offsetHeight;
+    if (h && Math.abs(h - lastH) > 2){
+      lastH = h;
+      try{ pywebview.api.content_h(h); }catch(e){}
+    }
+  });
 }
+function rescale(){
+  const z = $('#zoom');
+  const k = Math.min(innerWidth / 340, innerHeight / (z.offsetHeight || 500));
+  z.style.transform = 'scale(' + k + ')';
+}
+addEventListener('resize', rescale);
 
 async function poll(){
   try{
     state = await pywebview.api.state();
-    if (!cfg){ cfg = state.cfg; applyTheme(); build(); panelMode(); }
-    if (state.recv && !cfg.telemetry_seen){
-      cfg.telemetry_seen = true;
-      pywebview.api.set('telemetry_seen', true);
-      panelMode();
-    }
-    if (capturing && state.captured){
-      cfg[capturing] = state.captured;
-      pywebview.api.set(capturing, state.captured);
-      capturing = null;
-      refreshControls();
-    } else if (capturing && !state.capture){
-      capturing = null; refreshControls();
-    }
-    gateMode();
-    $('#hz').textContent = state.hz;
-    $('#padhz').textContent = state.pad_hz || '—';
-    $('#age').textContent = state.recv ? state.age : '—';
-    $('#spd').textContent = state.alive ? state.speed : '—';
-    $('#slip').textContent = state.alive ? state.slip.toFixed(2) : '—';
-    const hhMap = {
-      hidden: ()=>t('hh_hidden')+' ('+state.hh_arg+')',
-      install: ()=>t('hh_install'),
-      disabled: ()=>t('hh_disabled'),
-      error: ()=>t('hh_error'),
-      idle: ()=>'—',
-    };
-    $('#hh').textContent = (hhMap[state.hh_code]||hhMap.idle)();
-    let st = '';
-    if (state.tele_err){
-      st = t('tele_port').replace('{p}', state.port) + ': ' + state.tele_err;
-    }
-    else if (state.code === 'ok'){
-      st = state.mode;
-      if (!state.alive) st += ' | ' + t(state.recv ? 'paused' : 'no_telemetry');
-    }
-    else if (state.code === 'error') st = 'ERROR: ' + (state.detail||'');
-    else st = t('st_' + state.code);
-    $('#status').textContent = st;
-    setBar('rawbar', state.raw);
-    setBar('outbar', state.out);
+    if (!cfg){ cfg = state.cfg; render(); }
+    liveUpdate();
   }catch(e){}
   setTimeout(poll, 100);
 }
 
-function rescale(){
-  const el = $('#zoom');
-  const H = el.offsetHeight || 741;
-  const z = Math.min(innerWidth/407, innerHeight/H);
-  el.style.transform = 'scale('+z+')';
-}
-addEventListener('resize', rescale);
-
-document.querySelectorAll('.wb').forEach(b=>{
-  b.addEventListener('click', ()=>{
-    const a = b.dataset.win;
-    try{
-      if (a==='close') pywebview.api.win_close();
-      else if (a==='min') pywebview.api.win_min();
-    }catch(e){}
-  });
-});
-document.querySelectorAll('.rz').forEach(z=>{
-  z.addEventListener('pointerdown', e=>{
-    e.preventDefault();
-    try{ pywebview.api.win_grip(z.dataset.e); }catch(err){}
-  });
-});
-
-// ---------- boot sequence ----------
+/* ---------------- boot ---------------- */
 const TICK = '<svg viewBox="0 0 12 12"><path d="M2.5 6.3L5 8.8L9.5 3.8"/></svg>';
-let bootPhase = 'load';
-let bootT0 = 0;
-let bootShownStep = -1;
-let bootDoneAt = 0;
+let bootPhase = 'load', bootT0 = 0, bootDoneAt = 0;
 
 function bootDots(active){
   const el = $('#boot-dots');
   if (!el.dataset.built){
     let h = '';
-    for (let i=0;i<5;i++){
-      if (i) h += '<span class="bar" data-bar="'+i+'"></span>';
-      h += '<span class="dot" data-dot="'+i+'">'+TICK+'</span>';
+    for (let i = 0; i < 5; i++){
+      if (i) h += '<span class="bbar" data-bar="' + i + '"></span>';
+      h += '<span class="bdot" data-dot="' + i + '">' + TICK + '</span>';
     }
-    el.innerHTML = h;
-    el.dataset.built = '1';
+    el.innerHTML = h; el.dataset.built = '1';
   }
-  el.querySelectorAll('[data-dot]').forEach(d=>{
-    d.classList.toggle('on', (+d.dataset.dot) < active);
-  });
-  el.querySelectorAll('[data-bar]').forEach(b=>{
-    b.classList.toggle('on', (+b.dataset.bar) < active);
-  });
+  el.querySelectorAll('[data-dot]').forEach(d =>
+    d.classList.toggle('on', (+d.dataset.dot) < active));
+  el.querySelectorAll('[data-bar]').forEach(b =>
+    b.classList.toggle('on', (+b.dataset.bar) < active));
 }
 
-function swapText(el, text){
-  if (el.dataset.cur === text) return;
-  el.dataset.cur = text;
+function swapText(el, html){
+  if (!el || el.dataset.cur === html) return;
+  el.dataset.cur = html;
   el.classList.add('fade');
-  setTimeout(()=>{ el.innerHTML = text; el.classList.remove('fade'); }, 230);
+  setTimeout(() => { el.innerHTML = html; el.classList.remove('fade'); }, 230);
 }
 
 function revealApp(){
   bootPhase = 'app';
   $('#boot').classList.add('gone');
-  setTimeout(()=>{ $('#boot').style.display = 'none'; }, 480);
-  const items = [...document.querySelectorAll('.titlebar .reveal'),
-                 ...document.querySelectorAll('#app .reveal')];
-  items.forEach((el, i)=> setTimeout(()=> el.classList.add('shown'), 120 + i*70));
+  setTimeout(() => { $('#boot').style.display = 'none'; }, 480);
+  const items = [...$$('.tbar .reveal'), ...$$('#screen .reveal')];
+  items.forEach((el, i) => setTimeout(() => el.classList.add('shown'), 120 + i * 80));
   reportHeight();
 }
 
 function bootTick(){
   if (bootPhase === 'app' || !state) return;
-  const now = performance.now();
-  const elapsed = now - bootT0;
-
+  const now = performance.now(), el = now - bootT0;
   if (bootPhase === 'load'){
-    const pct = Math.min(100, Math.round(elapsed / BOOT.minMs * 100));
+    const pct = Math.min(100, Math.round(el / BOOT.minMs * 100));
     $('#boot-lit').style.width = pct + '%';
     $('#boot-pct').innerHTML = 'Loading <b>' + pct + '%</b>';
-    if (elapsed < BOOT.minMs) return;
-    if (!state.first_run && state.boot_step >= 5){ revealApp(); return; }
-    if (!state.first_run && !state.boot_error) return;
+    if (el < BOOT.minMs) return;
+    if (!state.first_run && !state.boot_error){
+      if (state.boot_step >= 5) revealApp();
+      return;
+    }
     bootPhase = 'steps';
     $('#boot-pct').classList.add('fade');
-    $('#boot').classList.add('step2');
     $('#boot-hint').innerHTML = BOOT.hint;
     return;
   }
-
   if (bootPhase === 'steps'){
     const step = Math.max(1, Math.min(5, state.boot_step || 1));
-    const info = BOOT.steps[step-1];
+    const info = BOOT.steps[step - 1];
     swapText($('#boot-line'), info.title + ': <b>Step ' + step + '</b>');
     swapText($('#boot-note'), state.boot_error ? '' : info.note);
     bootDots(state.boot_error ? step - 1 : step);
     $('#boot-hint').classList.toggle('fade', step >= 5 || !!state.boot_error);
     if (state.boot_error) return;
     if (state.boot_step >= 5 && (state.recv || state.alive)){
-      bootPhase = 'done';
-      bootDoneAt = now;
+      bootPhase = 'done'; bootDoneAt = now;
       swapText($('#boot-line'), BOOT.done);
-      swapText($('#boot-note'), '');
-      bootDots(5);
+      swapText($('#boot-note'), ''); bootDots(5);
     }
     return;
   }
-
   if (bootPhase === 'done' && now - bootDoneAt > BOOT.doneMs) revealApp();
 }
 
-window.addEventListener('pywebviewready', ()=>{
+/* ---------------- window ---------------- */
+$$('[data-win]').forEach(b => b.addEventListener('click', () => {
+  const a = b.dataset.win;
+  try{ if (a === 'close') pywebview.api.win_close();
+       else pywebview.api.win_min(); }catch(e){}
+}));
+$$('[data-nav]').forEach(b => b.addEventListener('click', () => {
+  screen = (screen === b.dataset.nav) ? 'main' : b.dataset.nav;
+  render();
+}));
+$('#back').addEventListener('click', () => { screen = 'main'; render(); });
+$$('.rz').forEach(z => z.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  try{ pywebview.api.win_grip(z.dataset.e); }catch(err){}
+}));
+
+window.addEventListener('pywebviewready', () => {
   bootT0 = performance.now();
   rescale(); poll();
   setInterval(bootTick, 60);
