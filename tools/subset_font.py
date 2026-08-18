@@ -43,8 +43,8 @@ def ui_characters():
     for node in ast.parse(src).body:
         if (isinstance(node, ast.Assign)
                 and isinstance(node.targets[0], ast.Name)
-                and node.targets[0].id in ("TR", "BOOT_STEPS", "BOOT_HINT",
-                                           "BOOT_DONE", "THEME_NAMES")):
+                and node.targets[0].id in ("TR", "BOOT_TR", "LANG_SHORT",
+                                           "THEME_NAMES")):
             try:
                 walk(ast.literal_eval(node.value))
             except (ValueError, SyntaxError):

@@ -568,57 +568,230 @@ DEFAULTS = {
 }
 
 THEMES = ("dark", "light")
+BOOT_TR = {
+    "en": {
+        "loading": 'Loading', "step": 'Step',
+        "steps": [
+            {"title": 'Getting few things ready',
+             "note": 'Checking your drivers'},
+            {"title": 'Getting few things ready',
+             "note": 'Installing ViGEmBus and HidHide'},
+            {"title": 'Getting few things ready',
+             "note": 'Hiding your controller from the game'},
+            {"title": 'Getting few things ready',
+             "note": 'Creating the virtual controller'},
+            {"title": 'Almost ready',
+             "note": 'Steering Assist needs the game telemetry'},
+        ],
+        "hint": 'It might take a while, please wait',
+        "tele": {"top": 'Launch the game - Navigate to settings HUD & Gameplay / Telemetry:',
+                 "bottom": 'Set the settings to these exact parameters',
+                 "btn": 'Done',
+                 "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
+        "done": {"title": 'You all set!',
+                 "note": 'Enjoy drifting on the streets of Horizon.',
+                 "hint": "Don't forget to support if you enjoyed the app"},
+        "errTitle": 'Something went wrong', "errBtn": 'Start over',
+        "errors": {
+            'failed': ['An error occurred while installing the drivers',
+             'Try to close apps like controller drivers and etc, it might interfere with Steering Assist installation.'],
+            'noadmin': ['Administrator rights are needed to install the drivers',
+             'Close the app and start it again, then confirm the Windows prompt.'],
+            'reboot': ['Restart your PC to finish the driver installation',
+             'The drivers are installed, a restart is needed to activate them.'],
+            'hide': ['An error occurred while hiding your controller',
+             'Try to close apps like controller drivers and etc, it might interfere with Steering Assist installation.'],
+            'vigem': ['An error occurred while creating the virtual controller',
+             'Try to close apps like controller drivers and etc, it might interfere with Steering Assist installation.'],
+        },
+    },
+    "ru": {
+        "loading": 'Загрузка', "step": 'Шаг',
+        "steps": [
+            {"title": 'Готовим пару вещей',
+             "note": 'Проверяем драйверы'},
+            {"title": 'Готовим пару вещей',
+             "note": 'Устанавливаем ViGEmBus и HidHide'},
+            {"title": 'Готовим пару вещей',
+             "note": 'Прячем геймпад от игры'},
+            {"title": 'Готовим пару вещей',
+             "note": 'Создаем виртуальный геймпад'},
+            {"title": 'Почти готово',
+             "note": 'Steering Assist нужна телеметрия игры'},
+        ],
+        "hint": 'Это может занять время, подождите',
+        "tele": {"top": 'Запустите игру - Откройте настройки HUD & Gameplay / Telemetry:',
+                 "bottom": 'Выставьте эти значения в точности',
+                 "btn": 'Готово',
+                 "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
+        "done": {"title": 'Все готово!',
+                 "note": 'Приятного дрифта на улицах Horizon.',
+                 "hint": 'Если приложение понравилось, поддержите проект'},
+        "errTitle": 'Что-то пошло не так', "errBtn": 'Начать заново',
+        "errors": {
+            'failed': ['Ошибка при установке драйверов',
+             'Закройте программы вроде драйверов геймпадов, они могут мешать установке Steering Assist.'],
+            'noadmin': ['Нужны права администратора',
+             'Закройте приложение и запустите снова, затем подтвердите запрос Windows.'],
+            'reboot': ['Перезагрузите компьютер, чтобы завершить установку',
+             'Драйверы установлены, для их активации нужна перезагрузка.'],
+            'hide': ['Ошибка при скрытии геймпада',
+             'Закройте программы вроде драйверов геймпадов, они могут мешать установке Steering Assist.'],
+            'vigem': ['Ошибка при создании виртуального геймпада',
+             'Закройте программы вроде драйверов геймпадов, они могут мешать установке Steering Assist.'],
+        },
+    },
+    "es": {
+        "loading": 'Cargando', "step": 'Paso',
+        "steps": [
+            {"title": 'Preparando algunas cosas',
+             "note": 'Comprobando los controladores'},
+            {"title": 'Preparando algunas cosas',
+             "note": 'Instalando ViGEmBus y HidHide'},
+            {"title": 'Preparando algunas cosas',
+             "note": 'Ocultando tu mando del juego'},
+            {"title": 'Preparando algunas cosas',
+             "note": 'Creando el mando virtual'},
+            {"title": 'Casi listo',
+             "note": 'Steering Assist necesita la telemetria del juego'},
+        ],
+        "hint": 'Puede tardar un poco, espera por favor',
+        "tele": {"top": 'Inicia el juego - Ve a los ajustes HUD & Gameplay / Telemetry:',
+                 "bottom": 'Configura estos valores exactos',
+                 "btn": 'Listo',
+                 "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
+        "done": {"title": 'Todo listo!',
+                 "note": 'Disfruta derrapando por las calles de Horizon.',
+                 "hint": 'Si te gusta la app, no olvides apoyarla'},
+        "errTitle": 'Algo ha salido mal', "errBtn": 'Empezar de nuevo',
+        "errors": {
+            'failed': ['Error al instalar los controladores',
+             'Cierra apps como controladores de mando, pueden interferir con la instalacion de Steering Assist.'],
+            'noadmin': ['Se necesitan permisos de administrador',
+             'Cierra la app y vuelve a abrirla, luego confirma el aviso de Windows.'],
+            'reboot': ['Reinicia el PC para terminar la instalacion',
+             'Los controladores estan instalados, hace falta reiniciar para activarlos.'],
+            'hide': ['Error al ocultar tu mando',
+             'Cierra apps como controladores de mando, pueden interferir con la instalacion de Steering Assist.'],
+            'vigem': ['Error al crear el mando virtual',
+             'Cierra apps como controladores de mando, pueden interferir con la instalacion de Steering Assist.'],
+        },
+    },
+    "fr": {
+        "loading": 'Chargement', "step": 'Etape',
+        "steps": [
+            {"title": 'Preparation de quelques elements',
+             "note": 'Verification des pilotes'},
+            {"title": 'Preparation de quelques elements',
+             "note": 'Installation de ViGEmBus et HidHide'},
+            {"title": 'Preparation de quelques elements',
+             "note": 'Masquage de votre manette'},
+            {"title": 'Preparation de quelques elements',
+             "note": 'Creation de la manette virtuelle'},
+            {"title": 'Presque pret',
+             "note": 'Steering Assist a besoin de la telemetrie du jeu'},
+        ],
+        "hint": 'Cela peut prendre un moment, patientez',
+        "tele": {"top": 'Lancez le jeu - Ouvrez les reglages HUD & Gameplay / Telemetry:',
+                 "bottom": 'Reglez exactement ces parametres',
+                 "btn": 'Termine',
+                 "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
+        "done": {"title": 'Tout est pret !',
+                 "note": 'Bon drift dans les rues de Horizon.',
+                 "hint": "Si l'app vous plait, pensez a la soutenir"},
+        "errTitle": 'Une erreur est survenue', "errBtn": 'Recommencer',
+        "errors": {
+            'failed': ["Erreur lors de l'installation des pilotes",
+             "Fermez les applications de pilotes de manette, elles peuvent gener l'installation de Steering Assist."],
+            'noadmin': ['Droits administrateur requis',
+             "Fermez l'app et relancez-la, puis confirmez l'invite Windows."],
+            'reboot': ["Redemarrez le PC pour terminer l'installation",
+             'Les pilotes sont installes, un redemarrage est necessaire pour les activer.'],
+            'hide': ['Erreur lors du masquage de la manette',
+             "Fermez les applications de pilotes de manette, elles peuvent gener l'installation de Steering Assist."],
+            'vigem': ['Erreur lors de la creation de la manette virtuelle',
+             "Fermez les applications de pilotes de manette, elles peuvent gener l'installation de Steering Assist."],
+        },
+    },
+    "de": {
+        "loading": 'Wird geladen', "step": 'Schritt',
+        "steps": [
+            {"title": 'Wir richten alles ein',
+             "note": 'Treiber werden geprueft'},
+            {"title": 'Wir richten alles ein',
+             "note": 'ViGEmBus und HidHide werden installiert'},
+            {"title": 'Wir richten alles ein',
+             "note": 'Controller wird vor dem Spiel versteckt'},
+            {"title": 'Wir richten alles ein',
+             "note": 'Virtueller Controller wird erstellt'},
+            {"title": 'Fast fertig',
+             "note": 'Steering Assist braucht die Telemetrie des Spiels'},
+        ],
+        "hint": 'Das kann etwas dauern, bitte warten',
+        "tele": {"top": 'Starte das Spiel - Oeffne die Einstellungen HUD & Gameplay / Telemetry:',
+                 "bottom": 'Stelle genau diese Werte ein',
+                 "btn": 'Fertig',
+                 "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
+        "done": {"title": 'Alles bereit!',
+                 "note": 'Viel Spass beim Driften in den Strassen von Horizon.',
+                 "hint": 'Wenn dir die App gefaellt, unterstuetze sie gern'},
+        "errTitle": 'Etwas ist schiefgelaufen', "errBtn": 'Neu starten',
+        "errors": {
+            'failed': ['Fehler bei der Treiberinstallation',
+             'Schliesse Apps wie Controller-Treiber, sie koennen die Installation von Steering Assist stoeren.'],
+            'noadmin': ['Administratorrechte werden benoetigt',
+             'Schliesse die App und starte sie neu, bestaetige dann die Windows-Abfrage.'],
+            'reboot': ['Starte den PC neu, um die Installation abzuschliessen',
+             'Die Treiber sind installiert, ein Neustart aktiviert sie.'],
+            'hide': ['Fehler beim Verstecken des Controllers',
+             'Schliesse Apps wie Controller-Treiber, sie koennen die Installation von Steering Assist stoeren.'],
+            'vigem': ['Fehler beim Erstellen des virtuellen Controllers',
+             'Schliesse Apps wie Controller-Treiber, sie koennen die Installation von Steering Assist stoeren.'],
+        },
+    },
+    "ja": {
+        "loading": '読み込み中', "step": 'ステップ',
+        "steps": [
+            {"title": '準備しています',
+             "note": 'ドライバーを確認しています'},
+            {"title": '準備しています',
+             "note": 'ViGEmBus と HidHide をインストールしています'},
+            {"title": '準備しています',
+             "note": 'コントローラーをゲームから隠しています'},
+            {"title": '準備しています',
+             "note": '仮想コントローラーを作成しています'},
+            {"title": 'もうすぐ完了',
+             "note": 'Steering Assist にはゲームのテレメトリーが必要です'},
+        ],
+        "hint": '少し時間がかかります。お待ちください',
+        "tele": {"top": 'ゲームを起動し、設定の HUD & Gameplay / Telemetry を開きます:',
+                 "bottom": 'この通りに設定してください',
+                 "btn": '完了',
+                 "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
+        "done": {"title": '準備完了!',
+                 "note": 'Horizon の街でドリフトをお楽しみください。',
+                 "hint": 'アプリが気に入ったら応援をお願いします'},
+        "errTitle": '問題が発生しました', "errBtn": 'やり直す',
+        "errors": {
+            'failed': ['ドライバーのインストールに失敗しました',
+             'コントローラードライバーなどのアプリを終了してください。Steering Assist のインストールを妨げることがあります。'],
+            'noadmin': ['管理者権限が必要です',
+             'アプリを終了して再起動し、Windows の確認画面で許可してください。'],
+            'reboot': ['インストールを完了するには PC を再起動してください',
+             'ドライバーはインストール済みです。有効化には再起動が必要です。'],
+            'hide': ['コントローラーを隠せませんでした',
+             'コントローラードライバーなどのアプリを終了してください。Steering Assist のインストールを妨げることがあります。'],
+            'vigem': ['仮想コントローラーを作成できませんでした',
+             'コントローラードライバーなどのアプリを終了してください。Steering Assist のインストールを妨げることがあります。'],
+        },
+    },
+}
+
+BOOT_DEMO = os.environ.get("ASSIST_BOOT_DEMO", "")
+BOOT_DEMO_ERR = os.environ.get("ASSIST_BOOT_ERROR", "")
+
 BOOT_MIN_MS = 3500
 BOOT_DONE_MS = 6000
-
-BOOT_STEPS = [
-    {"title": "Getting few things ready",
-     "note": "Checking your drivers"},
-    {"title": "Getting few things ready",
-     "note": "Installing ViGEmBus and HidHide"},
-    {"title": "Getting few things ready",
-     "note": "Hiding your controller from the game"},
-    {"title": "Getting few things ready",
-     "note": "Creating the virtual controller"},
-    {"title": "Almost ready",
-     "note": "Steering Assist needs the game telemetry"},
-]
-BOOT_HINT = "It might take a while, please wait"
-
-BOOT_TELE = {
-    "top": "Launch the game - Navigate to settings HUD & Gameplay / Telemetry:",
-    "bottom": "Set the settings written down above to these exact parameters:",
-    "chips": [("Data out", "On"), ("IP address", "127.0.0.1"),
-              ("IP port", "20777")],
-    "btn": "Done",
-}
-
-BOOT_DONE = {
-    "title": "You all set!",
-    "note": "Enjoy drifting on the streets of Horizon.",
-    "hint": "Don't forget to support if you enjoyed the app",
-}
-
-BOOT_ERR_TITLE = "Something went wrong"
-BOOT_ERR_BTN = "Start over"
-
-BOOT_ERRORS = {
-    "failed": ("An error occurred while installing the drivers",
-               "Try to close apps like controller drivers and etc, "
-               "it might interfere with Steering Assist installation."),
-    "noadmin": ("Administrator rights are needed to install the drivers",
-                "Close the app and start it again, "
-                "then confirm the Windows prompt."),
-    "reboot": ("Restart your PC to finish the driver installation",
-               "The drivers are installed, "
-               "a restart is needed to activate them."),
-    "hide": ("An error occurred while hiding your controller",
-             "Try to close apps like controller drivers and etc, "
-             "it might interfere with Steering Assist installation."),
-    "vigem": ("An error occurred while creating the virtual controller",
-              "Try to close apps like controller drivers and etc, "
-              "it might interfere with Steering Assist installation."),
-}
 
 PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
 
@@ -1172,10 +1345,36 @@ class Bridge:
 
     def start(self):
         self._run.set()
+        if BOOT_DEMO:
+            threading.Thread(target=self._demo_loop, daemon=True).start()
+            return
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
         threading.Thread(target=self._sweep_loop, daemon=True).start()
         threading.Thread(target=self._rumble_loop, daemon=True).start()
+
+    def _demo_loop(self):
+        """Walk the boot screens without touching drivers or the pad, so the
+        first launch can be reviewed on any machine. ASSIST_BOOT_DEMO picks
+        the run: 1 walks through to the app, or a step number stops there,
+        optionally with ASSIST_BOOT_ERROR to show the failure panel."""
+        stop = 0
+        try:
+            stop = int(BOOT_DEMO)
+        except ValueError:
+            pass
+        for step in range(1, 6):
+            self.boot_step = step
+            if stop > 1 and step == stop:
+                if BOOT_DEMO_ERR:
+                    self.boot_error = BOOT_DEMO_ERR
+                return
+            time.sleep(2.2 if step < 5 else 3.0)
+        self.status_code = "ok"
+        while self._run.is_set():
+            self.telemetry._t_last = time.monotonic()
+            self.telemetry._t_race = time.monotonic()
+            time.sleep(0.1)
 
     def _sweep_loop(self):
         while self._run.is_set():
@@ -1438,7 +1637,9 @@ ARROW_SVG = ('<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">'
              '7.35225 4.33594 7.64355L7.86426 9.75977C8.36407 10.0597 8.99979 '
              '9.69999 9 9.11719V4.88281Z" class="ar-ring"/></svg>')
 
-LANG_ORDER = ["en", "ru", "uk", "de", "fr", "es", "it", "pl", "pt", "tr"]
+LANG_ORDER = ["en", "ru", "es", "fr", "de", "ja"]
+LANG_SHORT = {"en": "En", "ru": "Ру", "es": "Es",
+              "fr": "Fr", "de": "De", "ja": "日本"}
 
 TR = {
     "en": {
@@ -1594,83 +1795,6 @@ TR = {
         "setup_2": "IP-адрес: 127.0.0.1 · Порт: 20777",
         "setup_3": "Управление → Руление: Симуляция",
         "setup_wait": "Панель оживёт сама, как только пойдут данные…",
-    },
-    "uk": {
-        "interface_sec": "Інтерфейс", "theme": "Тема",
-        "theme_hint": "Тема оформлення вікна",
-        "reaction": "Реакція на кермо",
-        "reaction_hint": "Як асист сприймає ТВОЇ корекції в заносі: 1 = миттєво, 0 = максимально згладжує підрулювання",
-        "assist_sec": "Асистент", "settings_sec": "Налаштування",
-        "telemetry_sec": "Телеметрія",
-        "helper": "Помічник", "lang": "Мова",
-        "on": "Увімкнено", "off": "Вимкнено", "lang_name": "Українська",
-        "helper_hint": "Увімк/вимк корекцію керма (кнопки завжди проходять)",
-        "lang_hint": "Мова інтерфейсу",
-        "counter_gain": "Сила помічника",
-        "counter_gain_hint": "Сила контркерма, %. 100 = колеса йдуть за вектором руху (як у BeamNG); більше = різкіше повернення, аж до повного лока",
-        "gyro": "Вирівнювання",
-        "gyro_hint": "Гасить обертання авто, як амортизатор",
-        "deadband": "Межа зчеплення",
-        "deadband_hint": "М'який поріг: допомога є з першого градуса заносу, нижче цього рівня вона приглушена і наростає з кутом",
-        "min_speed": "Мін. швидкість (км/г)",
-        "min_speed_hint": "Нижче цієї швидкості асистент вимкнено — пончики!",
-        "smoothing": "Згладжування",
-        "smoothing_hint": "Фільтр телеметрії: більше — плавніше, але із запізненням",
-        "steer_curve": "Крива керма",
-        "steer_curve_hint": "Лише в заносі: розтягує центр стика для тонких корекцій у дрифті",
-        "speed": "Швидкість", "slip": "Занос", "no_telemetry": "немає телеметрії",
-        "paused": "у меню / на паузі",
-        "setup_ip": "IP address - 127.0.0.1",
-        "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
-        "st_recv": "Reciving",
-        "general_sec": "General",
-        "tele_status": "Telemetry status",
-        "version_sec": "Version",
-        "cur_version": "Current version",
-        "check_updates": "Check for updates",
-        "check": "Check",
-        "checking": "Checking...",
-        "raw_input": "Raw input",
-        "assisted": "Assisted",
-        "pad_status": "Controller",
-        "mod_status": "Pad hiding",
-        "setup_dataout": "Data out - On",
-        "theme_dark": "Dark",
-        "theme_light": "Light",
-        "steer_in_general": "Show steering settings here",
-        "ext_telemetry": "Show extended telemetry",
-        "st_waiting": "Waiting",
-        "st_ingame": "In game",
-        "st_inmenu": "In menu",
-        "st_notele": "No telemetry",
-        "st_port": "Port busy",
-        "st_error": "Error",
-        "hh_idle": "Idle",
-        "profile": "Профіль",
-        "profile_hint": "Готові набори. Будь-який рух повзунка перемикає на «Свій» і зберігає твої значення — до них завжди можна повернутися.",
-        "prof_default": "Звичайний",
-        "prof_heavy": "Сильний",
-        "prof_minimal": "Мінімум",
-        "prof_custom": "Свій",
-        "order_title": "Невірний порядок запуску",
-        "order_text": "Forza вже запущена. Гра шукає контролери лише під час свого старту, тому віртуальний пад асиста їй не видно.",
-        "order_hint": "Закрий гру і запусти її знову — асист залиш відкритим.",
-        "st_drivers": "встановлюю драйвери…",
-        "buttons_sec": "Кнопки",
-        "btn_handbrake": "Ручник",
-        "btn_handbrake_hint": "Яка кнопка пада у тебе ручник. Кнопки-утримання дзеркаляться на віртуальний пад, щоб гра й далі брала з нього кермо. Натисни сюди, потім кнопку на паді",
-        "btn_clutch": "Зчеплення",
-        "btn_clutch_hint": "Яка кнопка пада у тебе зчеплення. Як і ручник — утримання, дзеркалити безпечно",
-        "press_button": "натисни…",
-        "btn_none": "немає",
-        "tele_port": "порт {p} зайнято",
-        "st_starting": "запуск…", "st_no_pad": "контролер не знайдено (XInput)", "st_pad_lost": "контролер від\u2019єднано — чекаю…", "st_vigem": "немає драйвера ViGEmBus — відкрив інсталятор, встанови і перезапусти", "hh_hidden": "ґеймпад приховано від гри", "hh_install": "відкрив інсталятор — встанови і перезапусти", "hh_disabled": "авто-приховування вимкнено", "hh_error": "помилка HidHide — спробуй запуск від адміністратора",
-        "setup_title": "Перший запуск — увімкни телеметрію у грі:",
-        "setup_1": "Налаштування гри → HUD → Data Out: УВІМК",
-        "setup_2": "IP-адреса: 127.0.0.1 · Порт: 20777",
-        "setup_3": "Керування → Кермо: Симуляція",
-        "setup_wait": "Панель оживе сама, щойно підуть дані…",
     },
     "de": {
         "interface_sec": "Oberfläche", "theme": "Design",
@@ -1903,31 +2027,31 @@ TR = {
         "setup_3": "Controles → Dirección: Simulación",
         "setup_wait": "Este panel cobrará vida cuando lleguen datos…",
     },
-    "it": {
-        "interface_sec": "Interfaccia", "theme": "Tema",
-        "theme_hint": "Tema colori della finestra",
-        "reaction": "Risposta allo sterzo",
-        "reaction_hint": "Come l'assistente tratta le TUE correzioni in derapata: 1 = immediata, 0 = leviga i colpetti",
-        "assist_sec": "Assistente", "settings_sec": "Impostazioni",
-        "telemetry_sec": "Telemetria",
-        "helper": "Assistente", "lang": "Lingua",
-        "on": "Attivo", "off": "Disattivo", "lang_name": "Italiano",
-        "helper_hint": "Correzione sterzo on/off (i tasti passano sempre)",
-        "lang_hint": "Lingua dell'interfaccia",
-        "counter_gain": "Forza assistente",
-        "counter_gain_hint": "Forza di controsterzo, %. 100 = le ruote seguono la traiettoria (stile BeamNG); di più = più aggressivo, fino al fine corsa",
-        "gyro": "Allineamento",
-        "gyro_hint": "Smorza la rotazione dell'auto, come un ammortizzatore",
-        "deadband": "Limite di grip",
-        "deadband_hint": "Soglia morbida: l'aiuto parte dal primo grado di derapata, minimo sotto questo livello e crescente con l'angolo",
-        "min_speed": "Velocità min (km/h)",
-        "min_speed_hint": "Sotto questa velocità assistente spento — donut!",
-        "smoothing": "Levigatura",
-        "smoothing_hint": "Filtro telemetria: più = più morbido ma più lento",
-        "steer_curve": "Curva di sterzo",
-        "steer_curve_hint": "Solo in derapata: allarga il centro dello stick per correzioni fini",
-        "speed": "Velocità", "slip": "Derapata", "no_telemetry": "niente telemetria",
-        "paused": "nel menu / in pausa",
+    "ja": {
+        "interface_sec": "Interface", "theme": "Theme",
+        "theme_hint": "Window colour theme",
+        "reaction": "Steering response",
+        "reaction_hint": "How the assist treats YOUR corrections mid-slide: 1 = passes them through instantly, 0 = smooths twitchy micro-steering",
+        "assist_sec": "Assistant", "settings_sec": "Settings",
+        "telemetry_sec": "Telemetry",
+        "helper": "Assistant", "lang": "Language",
+        "on": "Enabled", "off": "Disabled", "lang_name": "日本語",
+        "helper_hint": "Toggle steering correction (buttons always pass through)",
+        "lang_hint": "UI language",
+        "counter_gain": "Assist strength",
+        "counter_gain_hint": "Countersteer strength, %. 100 = wheels follow the car's real direction (BeamNG-style); higher = sharper recovery, up to full lock",
+        "gyro": "Alignment",
+        "gyro_hint": "Damps car rotation like a shock absorber",
+        "deadband": "Grip limit",
+        "deadband_hint": "Soft engagement: help starts from the very first degree of slide, stays tiny below this level and grows with angle",
+        "min_speed": "Min speed (km/h)",
+        "min_speed_hint": "Assist fully off below this speed — donuts!",
+        "smoothing": "Smoothing",
+        "smoothing_hint": "Telemetry filter: higher = smoother but laggier",
+        "steer_curve": "Steering curve",
+        "steer_curve_hint": "In a slide only: widens the stick centre for finer corrections while drifting",
+        "speed": "Speed", "slip": "Slip", "no_telemetry": "no telemetry",
+        "paused": "in menu / paused",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
         "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
@@ -1955,261 +2079,30 @@ TR = {
         "st_port": "Port busy",
         "st_error": "Error",
         "hh_idle": "Idle",
-        "profile": "Profilo",
-        "profile_hint": "Preimpostazioni pronte. Muovere un cursore passa a Personale e conserva i tuoi valori, puoi sempre tornarci.",
-        "prof_default": "Predefinito",
-        "prof_heavy": "Forte",
-        "prof_minimal": "Minimo",
-        "prof_custom": "Personale",
-        "order_title": "Ordine di avvio sbagliato",
-        "order_text": "Forza è già in esecuzione. Il gioco cerca i controller solo all'avvio, quindi non vede il pad virtuale dell'assistente.",
-        "order_hint": "Chiudi il gioco e riavvialo — lascia aperto l'assistente.",
-        "st_drivers": "installazione driver…",
-        "buttons_sec": "Pulsanti",
-        "btn_handbrake": "Freno a mano",
-        "btn_handbrake_hint": "Quale pulsante è il tuo freno a mano. I pulsanti tenuti premuti vengono copiati sul pad virtuale così il gioco continua a prenderne lo sterzo. Clicca qui e premi il pulsante",
-        "btn_clutch": "Frizione",
-        "btn_clutch_hint": "Quale pulsante è la tua frizione. Come il freno a mano è una pressione tenuta: si può copiare",
-        "press_button": "premi…",
-        "btn_none": "nessuno",
-        "tele_port": "porta {p} occupata",
-        "st_starting": "avvio…", "st_no_pad": "controller non trovato (XInput)", "st_pad_lost": "controller scollegato — attendo…", "st_vigem": "driver ViGEmBus mancante — installer aperto, installa e riavvia", "hh_hidden": "pad nascosto al gioco", "hh_install": "installer aperto — installa e riavvia", "hh_disabled": "nascondi automatico disattivato", "hh_error": "errore HidHide — esegui come amministratore",
-        "setup_title": "Primo avvio — attiva la telemetria nel gioco:",
-        "setup_1": "Impostazioni di gioco → HUD → Data Out: ON",
-        "setup_2": "Indirizzo IP: 127.0.0.1 · Porta: 20777",
-        "setup_3": "Comandi → Sterzo: Simulazione",
-        "setup_wait": "Questo pannello si animerà appena arrivano i dati…",
-    },
-    "pl": {
-        "interface_sec": "Interfejs", "theme": "Motyw",
-        "theme_hint": "Motyw kolorystyczny okna",
-        "reaction": "Reakcja na kierownicę",
-        "reaction_hint": "Jak asysta traktuje TWOJE korekty w poślizgu: 1 = natychmiast, 0 = wygładza szarpanie",
-        "assist_sec": "Asystent", "settings_sec": "Ustawienia",
-        "telemetry_sec": "Telemetria",
-        "helper": "Asystent", "lang": "Język",
-        "on": "Włączony", "off": "Wyłączony", "lang_name": "Polski",
-        "helper_hint": "Korekcja kierownicy wł/wył (przyciski zawsze przechodzą)",
-        "lang_hint": "Język interfejsu",
-        "counter_gain": "Siła asystenta",
-        "counter_gain_hint": "Siła kontrskrętu, %. 100 = koła podążają za wektorem ruchu (jak w BeamNG); więcej = ostrzej, aż do pełnego skrętu",
-        "gyro": "Wyrównanie",
-        "gyro_hint": "Tłumi obrót auta jak amortyzator",
-        "deadband": "Granica przyczepności",
-        "deadband_hint": "Miękki próg: pomoc działa od pierwszego stopnia poślizgu, znikoma poniżej tego poziomu i rosnąca z kątem",
-        "min_speed": "Min. prędkość (km/h)",
-        "min_speed_hint": "Poniżej asystent wyłączony — bączki!",
-        "smoothing": "Wygładzanie",
-        "smoothing_hint": "Filtr telemetrii: więcej = płynniej, ale wolniej",
-        "steer_curve": "Krzywa skrętu",
-        "steer_curve_hint": "Tylko w poślizgu: poszerza środek gałki dla drobnych korekt",
-        "speed": "Prędkość", "slip": "Poślizg", "no_telemetry": "brak telemetrii",
-        "paused": "w menu / pauza",
-        "setup_ip": "IP address - 127.0.0.1",
-        "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
-        "st_recv": "Reciving",
-        "general_sec": "General",
-        "tele_status": "Telemetry status",
-        "version_sec": "Version",
-        "cur_version": "Current version",
-        "check_updates": "Check for updates",
-        "check": "Check",
-        "checking": "Checking...",
-        "raw_input": "Raw input",
-        "assisted": "Assisted",
-        "pad_status": "Controller",
-        "mod_status": "Pad hiding",
-        "setup_dataout": "Data out - On",
-        "theme_dark": "Dark",
-        "theme_light": "Light",
-        "steer_in_general": "Show steering settings here",
-        "ext_telemetry": "Show extended telemetry",
-        "st_waiting": "Waiting",
-        "st_ingame": "In game",
-        "st_inmenu": "In menu",
-        "st_notele": "No telemetry",
-        "st_port": "Port busy",
-        "st_error": "Error",
-        "hh_idle": "Idle",
-        "profile": "Profil",
-        "profile_hint": "Gotowe ustawienia. Ruch dowolnego suwaka przełącza na Własny i zachowuje twoje wartości, zawsze możesz do nich wrócić.",
-        "prof_default": "Domyślny",
-        "prof_heavy": "Mocny",
-        "prof_minimal": "Minimalny",
-        "prof_custom": "Własny",
-        "order_title": "Zła kolejność uruchomienia",
-        "order_text": "Forza już działa. Gra szuka kontrolerów tylko przy swoim starcie, więc nie widzi wirtualnego pada asystenta.",
-        "order_hint": "Zamknij grę i uruchom ją ponownie — asystenta zostaw włączonego.",
-        "st_drivers": "instaluję sterowniki…",
-        "buttons_sec": "Przyciski",
-        "btn_handbrake": "Hamulec ręczny",
-        "btn_handbrake_hint": "Który przycisk to twój hamulec ręczny. Przyciski przytrzymywane są kopiowane na wirtualnego pada, żeby gra dalej brała z niego kierownicę. Kliknij tutaj i naciśnij przycisk",
-        "btn_clutch": "Sprzęgło",
-        "btn_clutch_hint": "Który przycisk to twoje sprzęgło. Jak hamulec — przytrzymanie, można bezpiecznie kopiować",
-        "press_button": "naciśnij…",
-        "btn_none": "brak",
-        "tele_port": "port {p} zajęty",
-        "st_starting": "start…", "st_no_pad": "kontroler nie znaleziony (XInput)", "st_pad_lost": "kontroler odłączony — czekam…", "st_vigem": "brak sterownika ViGEmBus — otwarto instalator, zainstaluj i uruchom ponownie", "hh_hidden": "pad ukryty przed grą", "hh_install": "otwarto instalator — zainstaluj i uruchom ponownie", "hh_disabled": "auto-ukrywanie wyłączone", "hh_error": "błąd HidHide — uruchom jako administrator",
-        "setup_title": "Pierwsze uruchomienie — włącz telemetrię w grze:",
-        "setup_1": "Ustawienia gry → HUD → Data Out: WŁ",
-        "setup_2": "Adres IP: 127.0.0.1 · Port: 20777",
-        "setup_3": "Sterowanie → Kierownica: Symulacja",
-        "setup_wait": "Panel ożyje, gdy tylko popłyną dane…",
-    },
-    "pt": {
-        "interface_sec": "Interface", "theme": "Tema",
-        "theme_hint": "Tema de cores da janela",
-        "reaction": "Resposta ao volante",
-        "reaction_hint": "Como o assistente trata as SUAS correções no drift: 1 = imediata, 0 = suaviza os toques",
-        "assist_sec": "Assistente", "settings_sec": "Configurações",
-        "telemetry_sec": "Telemetria",
-        "helper": "Assistente", "lang": "Idioma",
-        "on": "Ativado", "off": "Desativado", "lang_name": "Português",
-        "helper_hint": "Correção de direção lig/desl (botões sempre passam)",
-        "lang_hint": "Idioma da interface",
-        "counter_gain": "Força do assistente",
-        "counter_gain_hint": "Força de contraesterço, %. 100 = as rodas seguem a trajetória (estilo BeamNG); mais = mais agressivo, até o batente",
-        "gyro": "Alinhamento",
-        "gyro_hint": "Amortece a rotação do carro, como um amortecedor",
-        "deadband": "Limite de aderência",
-        "deadband_hint": "Limiar suave: a ajuda atua desde o primeiro grau de derrapagem, mínima abaixo deste nível e crescente com o ângulo",
-        "min_speed": "Vel. mínima (km/h)",
-        "min_speed_hint": "Abaixo disso o assistente desliga — cavalos de pau!",
-        "smoothing": "Suavização",
-        "smoothing_hint": "Filtro de telemetria: mais = mais suave porém lento",
-        "steer_curve": "Curva de direção",
-        "steer_curve_hint": "Só na derrapagem: alarga o centro do analógico para correções finas",
-        "speed": "Velocidade", "slip": "Derrapagem", "no_telemetry": "sem telemetria",
-        "paused": "no menu / em pausa",
-        "setup_ip": "IP address - 127.0.0.1",
-        "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
-        "st_recv": "Reciving",
-        "general_sec": "General",
-        "tele_status": "Telemetry status",
-        "version_sec": "Version",
-        "cur_version": "Current version",
-        "check_updates": "Check for updates",
-        "check": "Check",
-        "checking": "Checking...",
-        "raw_input": "Raw input",
-        "assisted": "Assisted",
-        "pad_status": "Controller",
-        "mod_status": "Pad hiding",
-        "setup_dataout": "Data out - On",
-        "theme_dark": "Dark",
-        "theme_light": "Light",
-        "steer_in_general": "Show steering settings here",
-        "ext_telemetry": "Show extended telemetry",
-        "st_waiting": "Waiting",
-        "st_ingame": "In game",
-        "st_inmenu": "In menu",
-        "st_notele": "No telemetry",
-        "st_port": "Port busy",
-        "st_error": "Error",
-        "hh_idle": "Idle",
-        "profile": "Perfil",
-        "profile_hint": "Ajustes prontos. Mover qualquer controle muda para Próprio e guarda seus valores, dá para voltar sempre.",
-        "prof_default": "Padrão",
-        "prof_heavy": "Forte",
-        "prof_minimal": "Mínimo",
-        "prof_custom": "Próprio",
-        "order_title": "Ordem de inicialização errada",
-        "order_text": "O Forza já está aberto. O jogo procura controles apenas ao iniciar, por isso não enxerga o controle virtual do assistente.",
-        "order_hint": "Feche o jogo e abra de novo — deixe o assistente rodando.",
-        "st_drivers": "instalando drivers…",
-        "buttons_sec": "Botões",
-        "btn_handbrake": "Freio de mão",
-        "btn_handbrake_hint": "Qual botão é o seu freio de mão. Botões de segurar são espelhados no controle virtual para o jogo continuar pegando a direção dele. Clique aqui e aperte o botão",
-        "btn_clutch": "Embreagem",
-        "btn_clutch_hint": "Qual botão é a sua embreagem. Como o freio de mão, é um segurar: dá para espelhar",
-        "press_button": "aperte…",
-        "btn_none": "nenhum",
-        "tele_port": "porta {p} ocupada",
-        "st_starting": "iniciando…", "st_no_pad": "controle não encontrado (XInput)", "st_pad_lost": "controle desconectado — aguardando…", "st_vigem": "driver ViGEmBus ausente — instalador aberto, instale e reinicie", "hh_hidden": "controle oculto do jogo", "hh_install": "instalador aberto — instale e reinicie", "hh_disabled": "ocultação automática desligada", "hh_error": "erro do HidHide — execute como administrador",
-        "setup_title": "Primeira execução — ative a telemetria no jogo:",
-        "setup_1": "Configurações do jogo → HUD → Data Out: ON",
-        "setup_2": "Endereço IP: 127.0.0.1 · Porta: 20777",
-        "setup_3": "Controles → Direção: Simulação",
-        "setup_wait": "Este painel ganhará vida assim que os dados chegarem…",
-    },
-    "tr": {
-        "interface_sec": "Arayüz", "theme": "Tema",
-        "theme_hint": "Pencere renk teması",
-        "reaction": "Direksiyon tepkisi",
-        "reaction_hint": "Asistanın kaymada SENİN düzeltmelerine tepkisi: 1 = anında, 0 = ufak oynatmaları yumuşatır",
-        "assist_sec": "Asistan", "settings_sec": "Ayarlar",
-        "telemetry_sec": "Telemetri",
-        "helper": "Asistan", "lang": "Dil",
-        "on": "Açık", "off": "Kapalı", "lang_name": "Türkçe",
-        "helper_hint": "Direksiyon düzeltmesi açık/kapalı (tuşlar her zaman geçer)",
-        "lang_hint": "Arayüz dili",
-        "counter_gain": "Asistan gücü",
-        "counter_gain_hint": "Karşı direksiyon gücü, %. 100 = tekerlekler hareket yönünü izler (BeamNG tarzı); fazlası = tam kilide kadar daha sert",
-        "gyro": "Hizalama",
-        "gyro_hint": "Aracın dönüşünü amortisör gibi söndürür",
-        "deadband": "Tutunma sınırı",
-        "deadband_hint": "Yumuşak eşik: yardım kaymanın ilk derecesinden devreye girer, bu seviyenin altında çok zayıftır ve açıyla artar",
-        "min_speed": "Min. hız (km/s)",
-        "min_speed_hint": "Bu hızın altında asistan tamamen kapalı — donut!",
-        "smoothing": "Yumuşatma",
-        "smoothing_hint": "Telemetri filtresi: fazlası = yumuşak ama gecikmeli",
-        "steer_curve": "Direksiyon eğrisi",
-        "steer_curve_hint": "Yalnızca kayışta: ince düzeltmeler için çubuk merkezi genişler",
-        "speed": "Hız", "slip": "Kayma", "no_telemetry": "telemetri yok",
-        "paused": "menüde / duraklatıldı",
-        "setup_ip": "IP address - 127.0.0.1",
-        "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
-        "st_recv": "Reciving",
-        "general_sec": "General",
-        "tele_status": "Telemetry status",
-        "version_sec": "Version",
-        "cur_version": "Current version",
-        "check_updates": "Check for updates",
-        "check": "Check",
-        "checking": "Checking...",
-        "raw_input": "Raw input",
-        "assisted": "Assisted",
-        "pad_status": "Controller",
-        "mod_status": "Pad hiding",
-        "setup_dataout": "Data out - On",
-        "theme_dark": "Dark",
-        "theme_light": "Light",
-        "steer_in_general": "Show steering settings here",
-        "ext_telemetry": "Show extended telemetry",
-        "st_waiting": "Waiting",
-        "st_ingame": "In game",
-        "st_inmenu": "In menu",
-        "st_notele": "No telemetry",
-        "st_port": "Port busy",
-        "st_error": "Error",
-        "hh_idle": "Idle",
-        "profile": "Profil",
-        "profile_hint": "Hazır ayarlar. Herhangi bir kaydırıcıyı oynatmak Kendi'ne geçer ve değerlerini saklar, istediğinde geri dönersin.",
-        "prof_default": "Varsayılan",
-        "prof_heavy": "Güçlü",
-        "prof_minimal": "Az",
-        "prof_custom": "Kendi",
-        "order_title": "Yanlış başlatma sırası",
-        "order_text": "Forza zaten açık. Oyun kumandaları yalnızca açılışta arar, bu yüzden asistanın sanal kolunu göremez.",
-        "order_hint": "Oyunu kapat ve yeniden başlat — asistan açık kalsın.",
-        "st_drivers": "sürücüler kuruluyor…",
-        "buttons_sec": "Tuşlar",
-        "btn_handbrake": "El freni",
-        "btn_handbrake_hint": "Hangi tuş senin el frenin. Basılı tutulan tuşlar sanal kola yansıtılır, böylece oyun direksiyonu oradan almaya devam eder. Buraya tıkla, sonra tuşa bas",
-        "btn_clutch": "Debriyaj",
-        "btn_clutch_hint": "Hangi tuş senin debriyajın. El freni gibi bir tutuş: yansıtmak güvenli",
-        "press_button": "bas…",
-        "btn_none": "yok",
-        "tele_port": "{p} portu meşgul",
-        "st_starting": "başlatılıyor…", "st_no_pad": "kumanda bulunamadı (XInput)", "st_pad_lost": "kumanda bağlantısı kesildi — bekleniyor…", "st_vigem": "ViGEmBus sürücüsü yok — kurulum açıldı, kur ve yeniden başlat", "hh_hidden": "kol oyundan gizli", "hh_install": "kurulum açıldı — kur ve yeniden başlat", "hh_disabled": "otomatik gizleme kapalı", "hh_error": "HidHide hatası — yönetici olarak çalıştır",
-        "setup_title": "İlk çalıştırma — oyunda telemetriyi aç:",
-        "setup_1": "Oyun Ayarları → HUD → Data Out: AÇIK",
-        "setup_2": "IP adresi: 127.0.0.1 · Port: 20777",
-        "setup_3": "Kontroller → Direksiyon: Simülasyon",
-        "setup_wait": "Veri akmaya başlayınca bu panel canlanacak…",
+        "profile": "Preset",
+        "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
+        "prof_default": "Default",
+        "prof_heavy": "Heavy",
+        "prof_minimal": "Minimal",
+        "prof_custom": "Custom",
+        "order_title": "Wrong launch order",
+        "order_text": "Forza is already running. The game looks for controllers only while it starts, so it cannot see the assist's virtual pad.",
+        "order_hint": "Close the game and start it again — leave the assist running.",
+        "st_drivers": "installing drivers…",
+        "buttons_sec": "Buttons",
+        "btn_handbrake": "Handbrake",
+        "btn_handbrake_hint": "Which pad button is your handbrake. Hold-type buttons are mirrored to the virtual pad so the game keeps taking the steering from it. Click, then press the button",
+        "btn_clutch": "Clutch",
+        "btn_clutch_hint": "Which pad button is your clutch. Like the handbrake it is a hold, so mirroring it is safe",
+        "press_button": "press…",
+        "btn_none": "none",
+        "tele_port": "port {p} busy",
+        "st_starting": "starting…", "st_no_pad": "controller not found (XInput)", "st_pad_lost": "controller disconnected — waiting…", "st_vigem": "ViGEmBus driver missing — installer opened, install it and restart", "hh_hidden": "pad hidden from the game", "hh_install": "installer opened — install it and restart the app", "hh_disabled": "auto-hide is off", "hh_error": "HidHide error — try running as administrator",
+        "setup_title": "First run — enable telemetry in the game:",
+        "setup_1": "Game Settings → HUD & Gameplay → Data Out: ON",
+        "setup_2": "IP address: 127.0.0.1 · Port: 20777",
+        "setup_3": "Controls → Steering: Simulation",
+        "setup_wait": "This panel will come alive once data flows…",
     },
 }
 
@@ -2297,9 +2190,7 @@ def build_html() -> str:
     html = html.replace("__LANGS__", json.dumps(LANG_ORDER))
     html = html.replace("__PROFILES__", json.dumps(PROFILES))
     html = html.replace("__BOOT__", json.dumps(
-         {"steps": BOOT_STEPS, "hint": BOOT_HINT, "done": BOOT_DONE,
-         "tele": BOOT_TELE, "errors": BOOT_ERRORS,
-         "errTitle": BOOT_ERR_TITLE, "errBtn": BOOT_ERR_BTN,
+         {"tr": BOOT_TR, "short": LANG_SHORT, "langs": LANG_ORDER,
          "minMs": BOOT_MIN_MS, "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
@@ -2495,6 +2386,14 @@ body.t-light{
         transition:background .15s ease,color .15s ease}
 .bclose:hover{background:var(--danger);border-color:var(--danger);color:#fff}
 .bclose svg{width:10px;height:10px}
+.blang{position:absolute;top:15px;right:38px;height:18px;
+       box-sizing:border-box;padding:0 6px;display:flex;align-items:center;
+       justify-content:center;border-radius:5px;font-size:8px;font-weight:600;
+       color:var(--btn-fg);border:1px solid var(--btn-line);
+       background:var(--btn-bg);cursor:default;white-space:nowrap;
+       transition:background .15s ease,color .15s ease}
+.blang:hover{background:var(--btn-hov-bg);color:var(--accent);
+             border-color:var(--accent)}
 .btag{position:absolute;top:30px;left:0;right:0;display:flex;
       justify-content:center;color:var(--logo-fg)}
 .btag svg{display:block;width:141px;height:20px}
@@ -2605,6 +2504,7 @@ body.t-light{
   </div>
 </div>
 <div id="boot">
+  <span class="blang" id="boot-lang"></span>
   <span class="bclose" data-win="close"><!--ICON:close--></span>
   <div class="btag"><!--ICON:applogotagline--></div>
 
@@ -2613,7 +2513,7 @@ body.t-light{
       <span class="blay bdim"><!--ICON:logoappspline--></span>
       <span class="blay blit" id="boot-lit"><!--ICON:logoappspline--></span>
     </div>
-    <div class="bpct">Loading <b id="boot-pct">0%</b></div>
+    <div class="bpct"><span id="boot-load">Loading</span> <b id="boot-pct">0%</b></div>
   </div>
 
   <div class="bstage off" id="bs-steps">
@@ -2754,6 +2654,12 @@ function screenSettings(){
        '<span class="tab" id="btn-update">' + t('check') + '</span></div>' +
        '</div></div>';
   return h;
+}
+
+/* the first launch is shown in the dark theme whatever is configured */
+function bootTheme(){
+  if (bootPhase !== 'app' && state && state.first_run)
+    document.body.className = 't-dark';
 }
 
 function render(){
@@ -2920,7 +2826,12 @@ function reportHeight(){
 async function poll(){
   try{
     state = await pywebview.api.state();
-    if (!cfg){ cfg = state.cfg; render(); }
+    if (!cfg){
+      cfg = state.cfg;
+      bootLang = cfg.lang;
+      bootRedraw();
+      render();
+    }
     liveUpdate();
   }catch(e){}
   setTimeout(poll, 100);
@@ -2929,6 +2840,36 @@ async function poll(){
 /* ---------------- boot ---------------- */
 const B_OK = __ICON_OK__, B_X = __ICON_X__;
 let bootPhase = 'load', bootT0 = 0, bootDoneAt = 0, bootSkip = false;
+let bootLang = 'en';
+
+/* the pack of strings for the language shown on the boot screen */
+function BT(){ return BOOT.tr[bootLang] || BOOT.tr.en; }
+
+/* re-render whatever the boot screen is showing right now */
+function bootRedraw(){
+  $('#boot-lang').textContent = BOOT.short[bootLang] || bootLang;
+  const t = BT();
+  ['#boot-line', '#boot-note', '#boot-hint', '#tele-top', '#tele-bot',
+   '.berr'].forEach(sel => { const e = $(sel); if (e) e.dataset.cur = ''; });
+  $('#boot-load').textContent = t.loading;
+  if ($('#tele-chips').dataset.built){
+    $('#tele-chips').dataset.built = '';
+    $('#tele-chips').innerHTML = '';
+    bootChips();
+  }
+  if (bootPhase === 'done'){
+    $('#boot-line').innerHTML = t.done.title;
+    $('#boot-note').innerHTML = t.done.note;
+    $('#boot-hint').innerHTML = t.done.hint;
+  }
+}
+
+$('#boot-lang').addEventListener('click', () => {
+  const i = BOOT.langs.indexOf(bootLang);
+  bootLang = BOOT.langs[(i + 1) % BOOT.langs.length];
+  bootRedraw();
+  if (cfg) segPick('lang', bootLang);
+});
 
 /* the five stage dots with the connecting bars between them */
 function bootDots(done, bad){
@@ -2988,10 +2929,11 @@ function stageHide(id){
 function bootChips(){
   const el = $('#tele-chips');
   if (el.dataset.built) return;
-  el.innerHTML = BOOT.tele.chips.map(
+  const t = BT().tele;
+  el.innerHTML = t.chips.map(
       c => '<span class="bchip">' + c[0] + ' - <b>' + c[1] + '</b></span>'
     ).join('') + '<button class="bbtn" id="tele-btn">' +
-    BOOT.tele.btn + '</button>';
+    t.btn + '</button>';
   el.dataset.built = '1';
   $('#tele-btn').addEventListener('click', () => { bootSkip = true; });
 }
@@ -2999,6 +2941,7 @@ function bootChips(){
 /* the boot screen fades out, then the app rises block by block */
 function revealApp(){
   bootPhase = 'app';
+  document.body.className = 't-' + (cfg ? cfg.theme : 'dark');
   $('#boot').classList.add('gone');
   setTimeout(() => { $('#boot').style.display = 'none'; }, 520);
   reportHeight();
@@ -3011,17 +2954,18 @@ function revealApp(){
 }
 
 function bootError(code){
-  const e = BOOT.errors[code] || BOOT.errors.failed;
+  const t = BT();
+  const e = t.errors[code] || t.errors.failed;
   stageHide('#bs-load'); stageHide('#bs-tele'); stageShow('#bs-steps');
-  swapText($('#boot-line'), BOOT.errTitle);
+  swapText($('#boot-line'), t.errTitle);
   swapText($('#boot-note'), e[0]);
   $('#boot-note').classList.add('bad');
   $('#boot-hint').classList.add('fade');
-  const t = $('#err-text');
-  if (t.dataset.cur !== e[1]){
-    t.dataset.cur = e[1];
-    t.textContent = e[1];
-    $('#err-btn').textContent = BOOT.errBtn;
+  const box = $('#err-text');
+  if (box.dataset.cur !== e[1]){
+    box.dataset.cur = e[1];
+    box.textContent = e[1];
+    $('#err-btn').textContent = t.errBtn;
   }
   stageShow('#bs-err');
   bootDots(Math.max(0, (state.boot_step || 1) - 1), (state.boot_step || 1) - 1);
@@ -3029,10 +2973,12 @@ function bootError(code){
 
 function bootTick(){
   if (bootPhase === 'app' || !state) return;
+  bootTheme();
   const now = performance.now(), el = now - bootT0;
 
   if (bootPhase === 'load'){
     const pct = Math.min(100, Math.round(el / BOOT.minMs * 100));
+    $('#boot-load').textContent = BT().loading;
     $('#boot-lit').style.width = pct + '%';
     $('#boot-pct').textContent = pct + '%';
     if (el < BOOT.minMs) return;
@@ -3046,7 +2992,7 @@ function bootTick(){
     setTimeout(() => {
       if (bootPhase === 'app') return;
       stageShow('#bs-steps');
-      $('#boot-hint').innerHTML = BOOT.hint;
+      $('#boot-hint').innerHTML = BT().hint;
     }, 300);
     return;
   }
@@ -3055,28 +3001,29 @@ function bootTick(){
     if (state.boot_error){ bootError(state.boot_error); return; }
     if ($('#bs-steps').classList.contains('off')) return;
     const step = Math.max(1, Math.min(5, state.boot_step || 1));
-    const info = BOOT.steps[step - 1];
+    const t = BT();
+    const info = t.steps[step - 1];
     swapText($('#boot-line'),
-             info.title + ': <b>Step ' + step + '</b>');
+             info.title + ': <b>' + t.step + ' ' + step + '</b>');
     swapText($('#boot-note'), info.note);
     bootDots(step - 1, -1);
     /* on the last step the hint gives way to the telemetry instructions */
     if (step >= 5){
       $('#boot-hint').classList.add('fade');
       bootChips();
-      $('#tele-top').textContent = BOOT.tele.top;
-      $('#tele-bot').textContent = BOOT.tele.bottom;
+      $('#tele-top').textContent = t.tele.top;
+      $('#tele-bot').textContent = t.tele.bottom;
       stageShow('#bs-tele');
     }
     if (state.boot_step >= 5 && (bootSkip || state.recv || state.alive)){
       bootPhase = 'done'; bootDoneAt = now;
       stageHide('#bs-tele');
-      swapText($('#boot-line'), BOOT.done.title);
-      swapText($('#boot-note'), BOOT.done.note);
+      swapText($('#boot-line'), t.done.title);
+      swapText($('#boot-note'), t.done.note);
       bootDots(5, -1);
       setTimeout(() => {
         if (bootPhase !== 'done') return;
-        $('#boot-hint').innerHTML = BOOT.done.hint;
+        $('#boot-hint').innerHTML = BT().done.hint;
         $('#boot-hint').classList.remove('fade');
       }, 320);
     }
@@ -3242,7 +3189,8 @@ class Api:
             "boot_step": b.boot_step,
             "boot_error": b.boot_error,
             "boot_installed": b.boot_installed,
-            "first_run": bool(b.boot_installed) or not b.cfg["telemetry_seen"],
+            "first_run": bool(BOOT_DEMO) or bool(b.boot_installed)
+                         or not b.cfg["telemetry_seen"],
             "drv_code": b.drivers.code,
             "drv_info": b.drivers.info,
             "hh_code": b.hidhide.code,
