@@ -852,7 +852,6 @@ BOOT_DEMO_ERR = os.environ.get("ASSIST_BOOT_ERROR", "")
 
 BOOT_MIN_MS = 8000
 BOOT_STEP_MS = 6000
-BOOT_PHRASE_MS = 4500
 BOOT_DONE_MS = 6000
 
 PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
@@ -2261,7 +2260,7 @@ def build_html() -> str:
     html = html.replace("__BOOT__", json.dumps(
          {"tr": BOOT_TR, "short": LANG_SHORT, "langs": LANG_ORDER,
          "minMs": BOOT_MIN_MS, "stepMs": BOOT_STEP_MS,
-         "phraseMs": BOOT_PHRASE_MS, "doneMs": BOOT_DONE_MS}))
+         "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
@@ -2919,9 +2918,10 @@ let bootPhase = 'load', bootT0 = 0, bootDoneAt = 0, bootSkip = false;
 /* the install is paced so every step can actually be read: the shown step
    trails the real one and never advances faster than BOOT.stepMs */
 let bootShown = 0, bootShownAt = 0;
-/* the reassuring line under the steps, shuffled so each launch reads
-   differently; the first one is always the wording from the mockup */
-let bootPhrases = [], bootPhraseAt = 0, bootPhraseIx = 0;
+/* the wording that titles each step, shuffled so no two launches read the
+   same; the first step always carries the wording from the mockup and the
+   last one keeps its own, since it announces the end of the install */
+let bootPhrases = [];
 
 function bootPhraseList(){
   const t = BT();
@@ -2930,7 +2930,13 @@ function bootPhraseList(){
     const j = Math.floor(Math.random() * (i + 1));
     const tmp = rest[i]; rest[i] = rest[j]; rest[j] = tmp;
   }
-  return [t.hint].concat(rest);
+  return [t.steps[0].title].concat(rest);
+}
+
+function bootTitle(step){
+  const t = BT();
+  if (step >= t.steps.length) return t.steps[step - 1].title;
+  return bootPhrases[step - 1] || t.steps[step - 1].title;
 }
 let bootLang = 'en';
 
@@ -3004,9 +3010,7 @@ function bootRedraw(){
   $('#boot-load').textContent = t.loading;
   if (bootPhrases.length){
     bootPhrases = bootPhraseList();
-    bootPhraseIx = 0;
-    bootPhraseAt = performance.now();
-    if (bootPhase === 'steps') $('#boot-hint').innerHTML = bootPhrases[0];
+    if (bootPhase === 'steps') $('#boot-hint').innerHTML = BT().hint;
   }
   if ($('#tele-chips').dataset.built){
     $('#tele-chips').dataset.built = '';
@@ -3152,13 +3156,11 @@ function bootTick(){
     }
     bootPhase = 'steps';
     bootPhrases = bootPhraseList();
-    bootPhraseIx = 0;
     stageHide('#bs-load');
     setTimeout(() => {
       if (bootPhase === 'app') return;
       stageShow('#bs-steps');
-      $('#boot-hint').innerHTML = bootPhrases[0];
-      bootPhraseAt = performance.now();
+      $('#boot-hint').innerHTML = BT().hint;
     }, 300);
     return;
   }
@@ -3180,14 +3182,9 @@ function bootTick(){
     const t = BT();
     const info = t.steps[step - 1];
     swapText($('#boot-line'),
-             info.title + ': <b>' + t.step + ' ' + step + '</b>');
+             bootTitle(step) + ': <b>' + t.step + ' ' + step + '</b>');
     swapText($('#boot-note'), info.note);
     bootDots(step - 1, -1, fill);
-    if (step < 5 && now - bootPhraseAt >= BOOT.phraseMs){
-      bootPhraseAt = now;
-      bootPhraseIx = (bootPhraseIx + 1) % bootPhrases.length;
-      swapText($('#boot-hint'), bootPhrases[bootPhraseIx]);
-    }
     /* on the last step the hint gives way to the telemetry instructions */
     if (step >= 5){
       $('#boot-hint').classList.add('fade');
