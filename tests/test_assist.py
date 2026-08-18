@@ -115,7 +115,7 @@ def test_sanitize_clamps_dangerous_values():
     assert cfg["counter_gain"] == 120.0, cfg["counter_gain"]
     assert cfg["gyro"] == fa.DEFAULTS["gyro"], cfg["gyro"]
     assert cfg["min_speed"] == 0.0, cfg["min_speed"]
-    assert cfg["lang"] == "en" and cfg["theme"] == "fh6"
+    assert cfg["lang"] == "en" and cfg["theme"] == "dark"
     assert cfg["enabled"] is True
 
 def test_v5_migration_rescues_debug_leftovers():

@@ -538,7 +538,7 @@ class Assist:
         return self.angle
 
 
-CONFIG_VERSION = 6
+CONFIG_VERSION = 7
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
@@ -559,13 +559,13 @@ DEFAULTS = {
     "yield_mode": "hold",
     "rumble": True,
     "lang": "en",
-    "theme": "fh6",
+    "theme": "dark",
     "profile": "default",
     "custom": {},
     "telemetry_seen": False,
 }
 
-THEMES = ("fh6", "fh4", "matter", "aqua")
+THEMES = ("dark", "light")
 BOOT_MIN_MS = 3500
 BOOT_DONE_MS = 6000
 
@@ -657,6 +657,8 @@ def load_config() -> dict:
         if data.get("version", 1) < 5:
             for key in ("yield_mode", "rumble"):
                 cfg[key] = DEFAULTS[key]
+        if data.get("version", 1) < 7 and cfg.get("theme") not in THEMES:
+            cfg["theme"] = DEFAULTS["theme"]
         if data.get("version", 1) < 6:
             for key in ("steer_curve", "speed_sens"):
                 cfg[key] = DEFAULTS[key]
@@ -1929,16 +1931,26 @@ def _font_b64(name):
                 return base64.b64encode(f.read()).decode()
     return None
 
+
+UI_FONT = "Chiron"
+FONT_WEIGHTS = ((400, "regular"), (500, "medium"), (600, "semibold"))
+
+
+def _font_css() -> str:
+    """Subset faces produced by tools/subset_font.py, inlined as data URIs."""
+    css = ""
+    for weight, name in FONT_WEIGHTS:
+        blob = _font_b64(os.path.join("assets", "fonts",
+                                      "chiron-%s.woff2" % name))
+        if blob:
+            css += ("@font-face{font-family:'%s';font-style:normal;"
+                    "font-weight:%d;font-display:block;"
+                    "src:url(data:font/woff2;base64,%s) format('woff2');}"
+                    % (UI_FONT, weight, blob))
+    return css
+
 def build_html() -> str:
-    fm = _font_b64("Oswald-Medium.ttf")
-    fr = _font_b64("Oswald-Regular.ttf")
-    font_css = ""
-    if fm:
-        font_css += ("@font-face{font-family:'Oswald';font-weight:500;"
-                     f"src:url(data:font/ttf;base64,{fm});}}")
-    if fr:
-        font_css += ("@font-face{font-family:'Oswald';font-weight:400;"
-                     f"src:url(data:font/ttf;base64,{fr});}}")
+    font_css = _font_css()
 
     logo = _read_asset(os.path.join("themes", "logo.svg"))
     if logo:
@@ -1946,16 +1958,12 @@ def build_html() -> str:
     else:
         logo = ("<b style='font-size:12px'>Steering "
                 "<span style='color:#FF0084'>Assist</span></b>")
-    bg6 = _read_asset(os.path.join("themes", "fh6_bg.svg")) or ""
-    bgm = _read_asset(os.path.join("themes", "matter_bg.svg")) or ""
 
     html = HTML_PAGE
     html = html.replace("/*FONTS*/", font_css)
     html = html.replace("<!--LOGO-->", logo)
     html = html.replace("<!--LOGO2-->", logo)
     html = html.replace("<!--LOGO3-->", logo)
-    html = html.replace("<!--BG6-->", bg6)
-    html = html.replace("<!--BGM-->", bgm)
     html = html.replace("__TR__", json.dumps(TR, ensure_ascii=False))
     html = html.replace("__SLIDERS__", json.dumps(SLIDERS))
     html = html.replace("__ARROW__", json.dumps(ARROW_SVG))
@@ -1977,60 +1985,36 @@ HTML_PAGE = r"""<!doctype html>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;
   -webkit-user-select:none;cursor:default}
 html,body{width:100%;height:100%;overflow:hidden}
-body{background:var(--win-bg);font-family:'Oswald','Segoe UI',sans-serif}
+body{background:var(--win-bg);font-family:'Chiron','Segoe UI',system-ui,sans-serif}
 
 
-body.t-fh6{
- --win-bg:#fff; --logo-fg:#000; --btn:#000;
- --app-bg:linear-gradient(180deg,#2A9F7C 0%,#25616B 100%);
- --sec-bg:#CEFE0D; --sec-fg:#000;
- --row-bg:#fff; --row-fg:#000;
- --panel-bg:rgba(0,0,0,.5); --panel-fg:#fff;
- --bar-bg:rgba(0,0,0,.25); --bar-fill:#CEFE0D;
- --track:#BDBDBD; --sfill:#FF0084; --knob-bg:#fff; --knob-ring:#FF0084;
- --tick:#BDBDBD;
- --ar-on:#FF0084; --ar-off:#BDBDBD; --ar-fg:#fff; --ar-ring:transparent;
- --hint-bg:rgba(0,0,0,.75); --hint-border:#CEFE0D; --hint-fg:#fff;
- --hint-w:400; --hint-ro:3px; --hint-ri:2px; --accent:#CEFE0D; --foot:#fff;
+body.t-dark{
+ --win-bg:#111111; --app-bg:#111111; --card:#1C1C1C; --card-2:#242424;
+ --row-fg:#FFFFFF; --muted:#8A8A8A; --foot:#5A5A5A;
+ --line:#2A2A2A; --track:#3A3A3A; --knob:#FFFFFF;
+ --accent:#0492F8; --accent-fg:#FFFFFF;
+ --warn:#FFCC00; --danger:#E91F1F; --ok:#0DDE64; --off:#848484;
+ --panel-bg:#1C1C1C; --panel-fg:#FFFFFF;
+ --sec-bg:transparent; --sec-fg:#8A8A8A;
+ --btn:#FFFFFF; --logo-fg:#FFFFFF; --bar-bg:#242424; --bar-fill:#0492F8;
+ --sfill:#0492F8; --knob-bg:#FFFFFF; --knob-ring:#FFFFFF; --tick:#3A3A3A;
+ --ar-bg:#0492F8; --ar-off:#3A3A3A; --ar-fg:#FFFFFF; --ar-ring:transparent;
+ --hint-bg:#242424; --hint-border:#3A3A3A; --hint-fg:#FFFFFF;
+ --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
-body.t-fh4{
- --win-bg:#fff; --logo-fg:#000; --btn:#000;
- --app-bg:linear-gradient(180deg,#E5E5E5 0%,#DADADA 100%);
- --sec-bg:linear-gradient(90deg,#FB5B2A 0%,#F60B69 100%); --sec-fg:#fff;
- --row-bg:#fff; --row-fg:#000;
- --panel-bg:linear-gradient(90deg,#1CBD8B 0%,#2A9F7C 100%); --panel-fg:#fff;
- --bar-bg:rgba(0,0,0,.25); --bar-fill:#fff;
- --track:#E8E8E8; --sfill:#A3A3A3; --knob-bg:#fff; --knob-ring:#A3A3A3;
- --tick:#E8E8E8;
- --ar-on:#A3A3A3; --ar-off:#E8E8E8; --ar-fg:#fff; --ar-ring:transparent;
- --hint-bg:#1CBD8B; --hint-border:transparent; --hint-fg:#fff;
- --hint-w:500; --hint-ro:3px; --hint-ri:2px; --accent:#fff; --foot:#A3A3A3;
-}
-body.t-matter{
- --win-bg:#2A2A2A; --logo-fg:#fff; --btn:#fff;
- --app-bg:#1C1C1C;
- --sec-bg:#3C3C3C; --sec-fg:#A3A3A3;
- --row-bg:#2A2A2A; --row-fg:#A3A3A3;
- --panel-bg:#2A2A2A; --panel-fg:#A3A3A3;
- --bar-bg:rgba(18,18,18,.25); --bar-fill:#A3A3A3;
- --track:#3C3C3C; --sfill:#A3A3A3; --knob-bg:#2A2A2A; --knob-ring:#A3A3A3;
- --tick:#3C3C3C;
- --ar-on:#A3A3A3; --ar-off:#3C3C3C; --ar-fg:#2A2A2A; --ar-ring:transparent;
- --hint-bg:#2A2A2A; --hint-border:#A3A3A3; --hint-fg:#A3A3A3;
- --hint-w:400; --hint-ro:4px; --hint-ri:3px; --accent:#A3A3A3; --foot:#A3A3A3;
-}
-body.t-aqua{
- --win-bg:#20282F; --logo-fg:#fff; --btn:#fff;
- --app-bg:#16181B;
- --sec-bg:#293947; --sec-fg:#8DAAC2;
- --row-bg:#20282F; --row-fg:#8DAAC2;
- --panel-bg:#20282F; --panel-fg:#8DAAC2;
- --bar-bg:rgba(3,9,13,.25); --bar-fill:#1783C7;
- --track:#293947; --sfill:#1783C7; --knob-bg:#20282F; --knob-ring:#1783C7;
- --tick:#293947;
- --ar-on:#1783C7; --ar-off:#293947; --ar-fg:#20282F; --ar-ring:#1783C7;
- --hint-bg:#16181B; --hint-border:#1783C7; --hint-fg:#009DFF;
- --hint-w:400; --hint-ro:4px; --hint-ri:3px; --accent:#009DFF; --foot:#8DAAC2;
+body.t-light{
+ --win-bg:#F2F2F2; --app-bg:#F2F2F2; --card:#FFFFFF; --card-2:#F7F7F7;
+ --row-fg:#101010; --muted:#6E6E6E; --foot:#9A9A9A;
+ --line:#E4E4E4; --track:#DCDCDC; --knob:#FFFFFF;
+ --accent:#0492F8; --accent-fg:#FFFFFF;
+ --warn:#FFCC00; --danger:#E91F1F; --ok:#0DDE64; --off:#848484;
+ --panel-bg:#FFFFFF; --panel-fg:#101010;
+ --sec-bg:transparent; --sec-fg:#6E6E6E;
+ --btn:#101010; --logo-fg:#101010; --bar-bg:#E9E9E9; --bar-fill:#0492F8;
+ --sfill:#0492F8; --knob-bg:#FFFFFF; --knob-ring:#FFFFFF; --tick:#DCDCDC;
+ --ar-bg:#0492F8; --ar-off:#DCDCDC; --ar-fg:#FFFFFF; --ar-ring:transparent;
+ --hint-bg:#FFFFFF; --hint-border:#E4E4E4; --hint-fg:#101010;
+ --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 
 
@@ -2056,10 +2040,6 @@ body.t-aqua{
 .appbox{width:395px;border-radius:4px;overflow:hidden;position:relative;
         background:var(--app-bg)}
         
-.bgvec{position:absolute;pointer-events:none;z-index:0;display:none}
-body.t-fh6 .bg6{display:block;left:0;top:0;width:395px;height:597px}
-body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
-.bgvec svg{width:100%;height:100%}
 .wrap{position:relative;z-index:1;padding:40px 30px}
 
 #gate{position:absolute;inset:0;z-index:40;display:none;
@@ -2196,7 +2176,7 @@ body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
 .rz[data-e=br]{bottom:0;right:0;width:16px;height:16px;cursor:nwse-resize}
 .rz[data-e=tr]{top:0;right:0;width:13px;height:13px;cursor:nesw-resize}
 .rz[data-e=bl]{bottom:0;left:0;width:13px;height:13px;cursor:nesw-resize}
-</style></head><body class="t-fh6">
+</style></head><body class="t-dark">
 <div id="zoom">
 <div class="titlebar">
   <div class="tb-drag pywebview-drag-region"><div class="logo"><!--LOGO--></div></div>
@@ -2206,8 +2186,6 @@ body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
   </div>
 </div>
 <div class="appbox">
-<div class="bgvec bg6"><!--BG6--></div>
-<div class="bgvec bgm"><!--BGM--></div>
 <div class="wrap"><div id="app"></div></div>
 <div id="boot">
   <div class="bname">Steering assist.</div>
@@ -2256,11 +2234,11 @@ function shown(key, v){
   return fmt(v, dec);
 }
 
-const THEME_ORDER = ['fh6','fh4','matter','aqua'];
-const THEME_NAMES = {fh6:'FH6', fh4:'FH4', matter:'Matter', aqua:'Aqua'};
+const THEME_ORDER = ['dark','light'];
+const THEME_NAMES = {dark:'Dark', light:'Light'};
 
 function applyTheme(){
-  const th = (cfg && THEME_ORDER.includes(cfg.theme)) ? cfg.theme : 'fh6';
+  const th = (cfg && THEME_ORDER.includes(cfg.theme)) ? cfg.theme : 'dark';
   document.body.className = 't-' + th;
 }
 
