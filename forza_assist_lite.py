@@ -3279,6 +3279,84 @@ def _place(hwnd, x, y, w, h):
                                       int(w), int(h), 0x0014)
 
 
+GWL_EXSTYLE = -20
+GWL_STYLE = -16
+WS_EX_LAYERED = 0x00080000
+WS_MINIMIZEBOX = 0x00020000
+LWA_ALPHA = 0x00000002
+SW_SHOWNA = 8
+SW_MINIMIZE = 6
+
+OPEN_MS = 190.0
+CLOSE_MS = 150.0
+OPEN_FROM = 0.90
+
+
+def _layered(hwnd, on):
+    u = ctypes.windll.user32
+    u.GetWindowLongW.restype = ctypes.c_long
+    ex = u.GetWindowLongW(hwnd, GWL_EXSTYLE)
+    u.SetWindowLongW(hwnd, GWL_EXSTYLE,
+                     (ex | WS_EX_LAYERED) if on else (ex & ~WS_EX_LAYERED))
+
+
+def _alpha(hwnd, a):
+    ctypes.windll.user32.SetLayeredWindowAttributes(
+        hwnd, 0, max(0, min(255, int(a))), LWA_ALPHA)
+
+
+def _ease_out(p):
+    return 1.0 - (1.0 - p) ** 3
+
+
+def _ease_in(p):
+    return p * p * p
+
+
+def _grow(hwnd, x, y, w, h, ms, ease, opening):
+    """Windows 11 opens and closes a window by scaling it about its centre
+    while it fades. The frame is animated rather than the layout, so the
+    page inside is never asked to reflow mid-flight."""
+    t0 = time.perf_counter()
+    while True:
+        p = min(1.0, (time.perf_counter() - t0) * 1000.0 / ms)
+        e = ease(p)
+        f = e if opening else 1.0 - e
+        k = OPEN_FROM + (1.0 - OPEN_FROM) * f
+        cw, ch = max(1, int(w * k)), max(1, int(h * k))
+        ctypes.windll.user32.SetWindowPos(
+            hwnd, 0, int(x + (w - cw) // 2), int(y + (h - ch) // 2),
+            cw, ch, 0x0014)
+        _alpha(hwnd, 255.0 * f)
+        if p >= 1.0:
+            return
+        time.sleep(0.008)
+
+
+def open_window(hwnd, w, h):
+    """Show the window centred, growing and fading in."""
+    l, t, r, b = _work_area(hwnd)
+    x, y = l + (r - l - w) // 2, t + (b - t - h) // 2
+    _layered(hwnd, True)
+    _alpha(hwnd, 0)
+    ctypes.windll.user32.ShowWindow(hwnd, SW_SHOWNA)
+    _grow(hwnd, x, y, w, h, OPEN_MS, _ease_out, True)
+    _layered(hwnd, False)
+    ctypes.windll.user32.SetForegroundWindow(hwnd)
+
+
+def close_window(hwnd):
+    """Shrink and fade out, the reverse of the opening."""
+    try:
+        rect = wintypes.RECT()
+        ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        w, h = rect.right - rect.left, rect.bottom - rect.top
+        _layered(hwnd, True)
+        _grow(hwnd, rect.left, rect.top, w, h, CLOSE_MS, _ease_in, False)
+    except Exception:
+        pass
+
+
 def centre_window(hwnd, w, h):
     l, t, r, b = _work_area(hwnd)
     _place(hwnd, l + (r - l - w) // 2, t + (b - t - h) // 2, w, h)
@@ -3320,8 +3398,14 @@ class Api:
         self._maxed = False
 
     def win_min(self):
+        """ShowWindow lets Windows animate the window into its own taskbar
+        button; pywebview's own minimise skips that flight."""
+        hwnd = _WIN.get("hwnd")
         try:
-            self._window.minimize()
+            if hwnd:
+                ctypes.windll.user32.ShowWindow(hwnd, SW_MINIMIZE)
+            else:
+                self._window.minimize()
         except Exception:
             pass
         return True
@@ -3339,6 +3423,9 @@ class Api:
 
     def win_close(self):
         try:
+            hwnd = _WIN.get("hwnd")
+            if hwnd:
+                close_window(hwnd)
             self._window.destroy()
         except Exception:
             pass
@@ -3510,8 +3597,8 @@ def main():
     window = webview.create_window("Steering Assist", html=build_html(),
                                    js_api=api,
                                    width=WIN_W, height=WIN_MIN_H,
-                                   min_size=(WIN_W, WIN_MIN_H),
                                    frameless=True, easy_drag=False,
+                                   hidden=True,
                                    background_color="#111111")
     api._window = window
 
@@ -3528,7 +3615,16 @@ def main():
         if not hwnd:
             return
         _WIN["hwnd"] = hwnd
-        centre_window(hwnd, WIN_W, WIN_MIN_H)
+        # transparent and hidden before anything can paint it, so the
+        # window never flashes at the toolkit's default position
+        _layered(hwnd, True)
+        _alpha(hwnd, 0)
+        ctypes.windll.user32.ShowWindow(hwnd, 0)
+        u = ctypes.windll.user32
+        u.GetWindowLongW.restype = ctypes.c_long
+        st = u.GetWindowLongW(hwnd, GWL_STYLE)
+        u.SetWindowLongW(hwnd, GWL_STYLE, st | WS_MINIMIZEBOX)
+        open_window(hwnd, WIN_W, WIN_MIN_H)
         try:
             pref = ctypes.c_int(2)
             ctypes.windll.dwmapi.DwmSetWindowAttribute(
