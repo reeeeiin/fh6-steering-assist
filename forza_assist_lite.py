@@ -596,7 +596,7 @@ BOOT_TR = {
         ],
         "tele": {"top": 'Launch the game - Navigate to settings HUD & Gameplay / Telemetry:',
                  "bottom": 'Set the settings to these exact parameters',
-                 "btn": 'Done',
+                 "btn": "I'll set it later",
                  "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
         "done": {"title": 'You all set!',
                  "note": 'Enjoy drifting on the streets of Horizon.',
@@ -642,7 +642,7 @@ BOOT_TR = {
         ],
         "tele": {"top": 'Запустите игру - Откройте настройки HUD & Gameplay / Telemetry:',
                  "bottom": 'Выставьте эти значения в точности',
-                 "btn": 'Готово',
+                 "btn": 'Настрою позже',
                  "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
         "done": {"title": 'Все готово!',
                  "note": 'Приятного дрифта на улицах Horizon.',
@@ -688,7 +688,7 @@ BOOT_TR = {
         ],
         "tele": {"top": 'Inicia el juego - Ve a los ajustes HUD & Gameplay / Telemetry:',
                  "bottom": 'Configura estos valores exactos',
-                 "btn": 'Listo',
+                 "btn": 'Lo hare luego',
                  "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
         "done": {"title": 'Todo listo!',
                  "note": 'Disfruta derrapando por las calles de Horizon.',
@@ -734,7 +734,7 @@ BOOT_TR = {
         ],
         "tele": {"top": 'Lancez le jeu - Ouvrez les reglages HUD & Gameplay / Telemetry:',
                  "bottom": 'Reglez exactement ces parametres',
-                 "btn": 'Termine',
+                 "btn": 'Plus tard',
                  "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
         "done": {"title": 'Tout est pret !',
                  "note": 'Bon drift dans les rues de Horizon.',
@@ -780,7 +780,7 @@ BOOT_TR = {
         ],
         "tele": {"top": 'Starte das Spiel - Oeffne die Einstellungen HUD & Gameplay / Telemetry:',
                  "bottom": 'Stelle genau diese Werte ein',
-                 "btn": 'Fertig',
+                 "btn": 'Spaeter',
                  "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
         "done": {"title": 'Alles bereit!',
                  "note": 'Viel Spass beim Driften in den Strassen von Horizon.',
@@ -826,7 +826,7 @@ BOOT_TR = {
         ],
         "tele": {"top": 'ゲームを起動し、設定の HUD & Gameplay / Telemetry を開きます:',
                  "bottom": 'この通りに設定してください',
-                 "btn": '完了',
+                 "btn": '後で設定します',
                  "chips": [('Data out', 'On'), ('IP address', '127.0.0.1'), ('IP port', '20777')]},
         "done": {"title": '準備完了!',
                  "note": 'Horizon の街でドリフトをお楽しみください。',
@@ -2496,6 +2496,7 @@ body.t-light{
 .bnote{margin-top:30px;font-size:12px;font-weight:500;color:var(--accent);
        text-align:center;line-height:1;transition:opacity .22s ease}
 .bnote.bad{color:var(--danger)}
+.bline.fade,.bnote.fade{opacity:0}
 .bdot{position:relative;width:28px;height:28px;border-radius:50%;
       box-sizing:border-box;flex:none;border:2px solid var(--accent);
       color:var(--accent-fg);
@@ -3193,8 +3194,9 @@ function bootTick(){
       $('#tele-bot').textContent = t.tele.bottom;
       stageShow('#bs-tele');
     }
-    if (step >= 5 && held >= BOOT.stepMs
-        && (bootSkip || state.recv || state.alive)){
+    /* the last step is finished by the game itself: the tick lands when
+       telemetry arrives, or when the user chooses to set it up later */
+    if (step >= 5 && (bootSkip || state.recv || state.alive)){
       bootPhase = 'done'; bootDoneAt = now;
       stageHide('#bs-tele');
       swapText($('#boot-line'), t.done.title);
