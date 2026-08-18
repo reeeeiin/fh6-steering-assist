@@ -1456,10 +1456,10 @@ TR = {
         "st_port": "Port busy",
         "st_error": "Error",
         "hh_idle": "Idle",
-        "profile": "Profile",
+        "profile": "Preset",
         "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
         "prof_default": "Default",
-        "prof_heavy": "Strong",
+        "prof_heavy": "Heavy",
         "prof_minimal": "Minimal",
         "prof_custom": "Custom",
         "order_title": "Wrong launch order",
@@ -1534,7 +1534,7 @@ TR = {
         "st_port": "Порт занят",
         "st_error": "Ошибка",
         "hh_idle": "Не запускался",
-        "profile": "Профиль",
+        "profile": "Пресет",
         "profile_hint": "Готовые наборы. Любое движение ползунка переключает на «Свой» и сохраняет твои значения — к ним всегда можно вернуться.",
         "prof_default": "Обычный",
         "prof_heavy": "Сильный",
@@ -2322,14 +2322,14 @@ body.t-light{
  --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 
-#zoom{width:100%;min-width:510px;min-height:calc(100vh / 1.25);zoom:1.25;
-      display:flex;flex-direction:column;padding:18px;gap:14px}
+#zoom{width:100%;min-width:510px;zoom:1.25;
+      display:flex;flex-direction:column;padding:18px;gap:24px}
 
 /* ---------- title bar: components are 18 px tall, radius 5 ---------- */
 .tbar{display:flex;align-items:center;gap:8px;height:18px;flex:none}
 .hbtn,.vbadge{-webkit-app-region:no-drag}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
-.hbtn{height:18px;border-radius:6px;-webkit-corner-smoothing:60%;
+.hbtn{height:18px;border-radius:8px;-webkit-corner-smoothing:60%;
       corner-shape:squircle;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
       font-size:8px;font-weight:600;box-sizing:border-box;
@@ -2354,7 +2354,7 @@ body.t-light{
 .hbtn.back svg{width:6px;height:10px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none}
 .logo svg{display:block;width:99px;height:18px}
-.vbadge{height:18px;padding:0 6px;border-radius:6px;
+.vbadge{height:18px;padding:0 6px;border-radius:8px;
         -webkit-corner-smoothing:60%;corner-shape:squircle;display:flex;
         align-items:center;font-size:8px;font-weight:600;flex:none;
         color:var(--accent);background:var(--btn-hov-bg);
@@ -2364,8 +2364,8 @@ body.t-light{
 
 /* ---------- sections and cards ---------- */
 .sec{font-size:9px;font-weight:400;color:var(--muted);
-     padding:10px 4px 6px}
-.card{background:var(--card);border-radius:12px;padding:0 15px;flex:none;
+     padding:0 4px 8px}
+.card{background:var(--card);border-radius:14px;padding:0 15px;flex:none;
       -webkit-corner-smoothing:60%;corner-shape:squircle}
 .row{display:flex;align-items:center;gap:12px;min-height:42px;
      border-bottom:1px solid var(--line)}
@@ -2385,15 +2385,15 @@ body.t-light{
 
 /* ---------- segmented ---------- */
 .seg{display:flex;align-items:center;background:var(--card-2);
-     border-radius:6px;padding:0;gap:0;position:relative;flex:none;height:24px}
-.seg .pill{position:absolute;top:0;bottom:0;border-radius:6px;
+     border-radius:8px;padding:0;gap:0;position:relative;flex:none;height:24px}
+.seg .pill{position:absolute;top:0;bottom:0;border-radius:8px;
            -webkit-corner-smoothing:60%;corner-shape:squircle;
            background:var(--accent);
            transition:left .28s cubic-bezier(.4,0,.2,1),
                       width .28s cubic-bezier(.4,0,.2,1)}
 .seg span{position:relative;z-index:1;font-size:11px;font-weight:500;
           height:24px;line-height:24px;text-align:center;box-sizing:border-box;
-          padding:0 12px;min-width:67px;border-radius:6px;color:var(--muted);
+          padding:0 12px;min-width:67px;border-radius:8px;color:var(--muted);
           cursor:pointer;white-space:nowrap;transition:color .2s ease;
           -webkit-corner-smoothing:60%;corner-shape:squircle}
 .seg span:hover{color:var(--row-fg)}
@@ -2405,7 +2405,7 @@ body.t-light{
          background:var(--track);transform:translateY(-50%)}
 .sl .fil{position:absolute;top:50%;left:0;height:4px;border-radius:2px;
          background:var(--sfill);transform:translateY(-50%)}
-.sl .knb{position:absolute;top:50%;width:22px;height:14px;border-radius:999px;
+.sl .knb{position:absolute;top:50%;width:18px;height:12px;border-radius:999px;
          background:#fff;transform:translate(-50%,-50%);
          box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .sl.anim .fil,.sl.anim .knb{transition:width .42s cubic-bezier(.4,0,.2,1),
@@ -2422,7 +2422,7 @@ body.t-light{
 .hintchips{display:flex;align-items:center;gap:14px}
 .barwrap{padding:5px 0}
 .barlbl{font-size:9px;color:var(--muted);margin-bottom:3px}
-.bar{height:20px;border-radius:4px;background:var(--bar-bg);position:relative;
+.bar{height:20px;border-radius:6px;background:var(--bar-bg);position:relative;
      overflow:hidden;border:1px solid var(--btn-line)}
 .bar i{position:absolute;top:0;height:100%;background:var(--bar-fill);
        transition:left .12s linear,width .12s linear}
@@ -2433,8 +2433,8 @@ body.t-light{
 .barwrap{padding:8px 0}
 
 /* ---------- footer ---------- */
-.foot{display:flex;flex-direction:column;gap:6px;padding:16px 4px 0;
-      margin-top:auto}
+.foot{display:flex;flex-direction:column;gap:6px;padding:0 4px;
+      margin-top:0}
 .foot span{font-size:6px;line-height:1.55;color:var(--foot)}
 
 /* ---------- screens ---------- */
