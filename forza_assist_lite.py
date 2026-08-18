@@ -2260,8 +2260,8 @@ body.t-light{
  --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 
-#zoom{width:340px;transform-origin:top left;display:flex;
-      flex-direction:column;padding:10px 12px 12px;gap:10px}
+#zoom{width:510px;min-height:100vh;display:flex;flex-direction:column;
+      padding:18px;gap:0}
 
 /* ---------- title bar ---------- */
 .tbar{display:flex;align-items:center;gap:8px;height:22px;flex:none}
@@ -2720,12 +2720,7 @@ function reportHeight(){
     }
   });
 }
-function rescale(){
-  const z = $('#zoom');
-  const k = Math.min(innerWidth / 340, innerHeight / (z.offsetHeight || 500));
-  z.style.transform = 'scale(' + k + ')';
-}
-addEventListener('resize', rescale);
+/* the layout never scales: the window resizes, the content does not */
 
 async function poll(){
   try{
@@ -2825,13 +2820,15 @@ $$('.rz').forEach(z => z.addEventListener('pointerdown', e => {
 
 window.addEventListener('pywebviewready', () => {
   bootT0 = performance.now();
-  rescale(); poll();
+  poll();
   setInterval(bootTick, 60);
 });
 </script></body></html>"""
 
 
-_ASPECT = {"ratio": 741.0 / 407.0, "hwnd": 0}
+WIN_W = 510          # ширина окна из макета, меняться не должна
+WIN_MIN_H = 360      # экран загрузки - самый низкий из состояний
+_WIN = {"hwnd": 0, "content_h": 770}
 
 class Api:
     def __init__(self, bridge):
@@ -2865,9 +2862,10 @@ class Api:
         return True
 
     def win_grip(self, edge="br"):
-        hwnd = _ASPECT.get("hwnd")
-        if not hwnd or edge not in ("l", "r", "t", "b",
-                                    "tl", "tr", "bl", "br"):
+        """Frameless resize. Free on both axes, clamped so the window can
+        never go below the layout width or the shortest state's height."""
+        hwnd = _WIN.get("hwnd")
+        if not hwnd or edge not in ("l", "r", "t", "b", "tl", "tr", "bl", "br"):
             return True
 
         def loop():
@@ -2878,28 +2876,18 @@ class Api:
                 while u.GetAsyncKeyState(0x01) & 0x8000:
                     u.GetCursorPos(ctypes.byref(pt))
                     u.GetWindowRect(hwnd, ctypes.byref(r))
-                    ratio = _ASPECT["ratio"]
                     L, T, R, B = r.left, r.top, r.right, r.bottom
-                    if edge == "r":
-                        w = pt.x - L + 4
-                    elif edge == "l":
-                        w = R - pt.x + 4
-                    elif edge == "b":
-                        w = (pt.y - T + 4) / ratio
-                    elif edge == "t":
-                        w = (B - pt.y + 4) / ratio
-                    elif edge == "br":
-                        w = max(pt.x - L + 7, (pt.y - T + 7) / ratio)
-                    elif edge == "tr":
-                        w = max(pt.x - L + 7, (B - pt.y + 7) / ratio)
-                    elif edge == "bl":
-                        w = max(R - pt.x + 7, (pt.y - T + 7) / ratio)
-                    else:
-                        w = max(R - pt.x + 7, (B - pt.y + 7) / ratio)
-                    w = max(316, int(w))
-                    h = int(round(w * ratio))
-                    x = R - w if edge in ("l", "bl", "tl") else L
-                    y = B - h if edge in ("t", "tr", "tl") else T
+                    w, h = R - L, B - T
+                    if "l" in edge:
+                        w = max(WIN_W, R - pt.x)
+                    elif "r" in edge:
+                        w = max(WIN_W, pt.x - L)
+                    if "t" in edge:
+                        h = max(WIN_MIN_H, B - pt.y)
+                    elif "b" in edge:
+                        h = max(WIN_MIN_H, pt.y - T)
+                    x = R - w if "l" in edge else L
+                    y = B - h if "t" in edge else T
                     if w != R - L or h != B - T:
                         u.SetWindowPos(hwnd, 0, x, y, w, h, 0x0014)
                     time.sleep(0.016)
@@ -2909,21 +2897,20 @@ class Api:
         return True
 
     def content_h(self, h):
+        """JS reports the natural height of the layout; the window follows it.
+        Width is fixed by the design and never derived from content."""
         try:
-            h = float(h)
-            if h < 100:
-                return False
-            _ASPECT["ratio"] = h / 407.0
-            hwnd = _ASPECT.get("hwnd")
+            h = max(WIN_MIN_H, int(float(h)))
+            _WIN["content_h"] = h
+            hwnd = _WIN.get("hwnd")
             if hwnd:
                 r = wintypes.RECT()
                 ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
-                w = r.right - r.left
-                new_h = int(round(w * _ASPECT["ratio"]))
-                if abs(new_h - (r.bottom - r.top)) > 2:
+                w = max(WIN_W, r.right - r.left)
+                if abs(h - (r.bottom - r.top)) > 2 or w != r.right - r.left:
                     ctypes.windll.user32.SetWindowPos(
-                        hwnd, 0, 0, 0, w, new_h, 0x0016)
-        except Exception:
+                        hwnd, 0, 0, 0, w, h, 0x0016)
+        except (TypeError, ValueError):
             pass
         return True
 
@@ -3030,26 +3017,18 @@ def main():
     bridge = Bridge()
     bridge.start()
     api = Api(bridge)
-    ratio = _ASPECT["ratio"]
-    h = int(741 * BASE_SCALE)
-    try:
-        scr_h = webview.screens[0].height
-        h = min(h, scr_h - 120)
-    except Exception:
-        pass
-    win_w, win_h = int(h / ratio), h
     window = webview.create_window("Steering Assist", html=build_html(),
                                    js_api=api,
-                                   width=win_w, height=win_h,
-                                   min_size=(316, int(316 * ratio)),
+                                   width=WIN_W, height=WIN_MIN_H,
+                                   min_size=(WIN_W, WIN_MIN_H),
                                    frameless=True, easy_drag=False,
-                                   background_color="#FFFFFF")
+                                   background_color="#111111")
     api._window = window
 
-    def lock_aspect():
+    def setup_window():
+        """Round the corners and clamp the minimum size. No aspect lock:
+        width is fixed by the design, height follows the content."""
         user32 = ctypes.windll.user32
-        GWL_WNDPROC = -4
-        WM_SIZING = 0x0214
         hwnd = 0
         for _ in range(100):
             hwnd = user32.FindWindowW(None, "Steering Assist")
@@ -3058,8 +3037,7 @@ def main():
             time.sleep(0.05)
         if not hwnd:
             return
-        _ASPECT["hwnd"] = hwnd
-
+        _WIN["hwnd"] = hwnd
         try:
             pref = ctypes.c_int(2)
             ctypes.windll.dwmapi.DwmSetWindowAttribute(
@@ -3079,33 +3057,29 @@ def main():
         user32.CallWindowProcW.argtypes = [ctypes.c_void_p, wintypes.HWND,
                                            ctypes.c_uint, wintypes.WPARAM,
                                            wintypes.LPARAM]
-        old_proc = user32.GetWindowLongPtrW(hwnd, GWL_WNDPROC)
+        old_proc = user32.GetWindowLongPtrW(hwnd, -4)
 
         def wnd_proc(h, msg, wp, lp):
-            if msg == WM_SIZING:
-                r = _ASPECT["ratio"]
+            if msg == 0x0214:
                 rect = ctypes.cast(lp, ctypes.POINTER(wintypes.RECT)).contents
-                w = rect.right - rect.left
-                hh = rect.bottom - rect.top
-                if wp in (3, 6):
-                    new_w = max(316, int(round(hh / r)))
-                    rect.right = rect.left + new_w
-                    rect.bottom = rect.top + int(round(new_w * r))
-                else:
-                    new_h = int(round(w * r))
-                    if wp in (4, 5):
-                        rect.top = rect.bottom - new_h
+                if rect.right - rect.left < WIN_W:
+                    if wp in (1, 4, 7):
+                        rect.left = rect.right - WIN_W
                     else:
-                        rect.bottom = rect.top + new_h
+                        rect.right = rect.left + WIN_W
+                if rect.bottom - rect.top < WIN_MIN_H:
+                    if wp in (3, 4, 5):
+                        rect.top = rect.bottom - WIN_MIN_H
+                    else:
+                        rect.bottom = rect.top + WIN_MIN_H
                 return 1
             return user32.CallWindowProcW(old_proc, h, msg, wp, lp)
 
         proc = WNDPROC(wnd_proc)
-        main._aspect_proc = proc
-        user32.SetWindowLongPtrW(hwnd, GWL_WNDPROC,
-                                 ctypes.cast(proc, ctypes.c_void_p))
+        main._proc = proc
+        user32.SetWindowLongPtrW(hwnd, -4, ctypes.cast(proc, ctypes.c_void_p))
 
-    webview.start(func=lock_aspect)
+    webview.start(func=setup_window)
     flush_config(bridge.cfg)
     bridge.stop()
     time.sleep(0.2)
