@@ -2944,6 +2944,7 @@ let bootLang = 'en';
 /* the loading shape is drawn stroke-first, so it fills along its own
    curve while the dim copy underneath keeps the whole outline visible */
 let bootPath = null, bootLen = 0;
+const LINE_GAP = 300;
 
 function bootFill(p){
   if (!bootPath){
@@ -3066,11 +3067,19 @@ function bootDots(done, bad, fill){
 }
 
 /* one line swaps for another only after the first has fully faded */
-function swapText(el, html){
+function swapText(el, html, delay){
   if (!el || el.dataset.cur === html) return;
+  /* claimed straight away, so the ticks arriving during the delay do not
+     queue a second turnover of the same text */
   el.dataset.cur = html;
-  el.classList.add('fade');
-  setTimeout(() => { el.innerHTML = html; el.classList.remove('fade'); }, 230);
+  const turn = () => {
+    el.classList.add('fade');
+    setTimeout(() => {
+      el.innerHTML = html;
+      el.classList.remove('fade');
+    }, 230);
+  };
+  if (delay) setTimeout(turn, delay); else turn();
 }
 
 function stageShow(id){
@@ -3108,16 +3117,22 @@ function revealApp(){
   delete document.documentElement.dataset.boot;
   document.body.className = 't-' + (cfg ? cfg.theme : 'dark');
   $('#boot').classList.add('gone');
-  setTimeout(() => { $('#boot').style.display = 'none'; }, 520);
-  try{ pywebview.api.boot_done(); }catch(e){}
-  lastH = 0;
-  reportHeight();
   const head = [...$$('.tbar .reveal')];
   const body = [...$$('#screen .reveal'), ...$$('.foot.reveal')];
-  head.forEach((el, i) => setTimeout(() => el.classList.add('shown'),
-                                     260 + i * 60));
-  body.forEach((el, i) => setTimeout(() => el.classList.add('shown'),
-                                     260 + head.length * 60 + i * 90));
+  /* nothing of the boot screen is left on screen before the window grows:
+     it fades out, then the window opens, and only then do the blocks rise */
+  setTimeout(() => {
+    $('#boot').style.display = 'none';
+    try{ pywebview.api.boot_done(); }catch(e){}
+    lastH = 0;
+    reportHeight();
+    setTimeout(() => {
+      head.forEach((el, i) => setTimeout(() => el.classList.add('shown'),
+                                         i * 60));
+      body.forEach((el, i) => setTimeout(() => el.classList.add('shown'),
+                                         head.length * 60 + i * 90));
+    }, 180);
+  }, 520);
 }
 
 function bootError(code){
@@ -3125,7 +3140,7 @@ function bootError(code){
   const e = t.errors[code] || t.errors.failed;
   stageHide('#bs-load'); stageHide('#bs-tele'); stageShow('#bs-steps');
   swapText($('#boot-line'), t.errTitle);
-  swapText($('#boot-note'), e[0]);
+  swapText($('#boot-note'), e[0], LINE_GAP);
   $('#boot-note').classList.add('bad');
   $('#boot-hint').classList.add('fade');
   const box = $('#err-text');
@@ -3184,7 +3199,7 @@ function bootTick(){
     const info = t.steps[step - 1];
     swapText($('#boot-line'),
              bootTitle(step) + ': <b>' + t.step + ' ' + step + '</b>');
-    swapText($('#boot-note'), info.note);
+    swapText($('#boot-note'), info.note, LINE_GAP);
     bootDots(step - 1, -1, fill);
     /* on the last step the hint gives way to the telemetry instructions */
     if (step >= 5){
@@ -3200,7 +3215,7 @@ function bootTick(){
       bootPhase = 'done'; bootDoneAt = now;
       stageHide('#bs-tele');
       swapText($('#boot-line'), t.done.title);
-      swapText($('#boot-note'), t.done.note);
+      swapText($('#boot-note'), t.done.note, LINE_GAP);
       bootDots(5, -1, 1);
       setTimeout(() => {
         if (bootPhase !== 'done') return;
