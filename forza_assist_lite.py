@@ -41,7 +41,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "1.5.0"
+APP_VERSION = "2.0.0-dev"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -566,6 +566,24 @@ DEFAULTS = {
 }
 
 THEMES = ("fh6", "fh4", "matter", "aqua")
+BOOT_MIN_MS = 3500
+BOOT_DONE_MS = 6000
+
+BOOT_STEPS = [
+    {"title": "Getting a few things ready",
+     "note": "Checking drivers"},
+    {"title": "Getting a few things ready",
+     "note": "Installing ViGEmBus and HidHide"},
+    {"title": "Getting a few things ready",
+     "note": "Hiding your controller from the game"},
+    {"title": "Almost there",
+     "note": "Creating the virtual controller"},
+    {"title": "Almost ready",
+     "note": "Waiting for telemetry from the game"},
+]
+BOOT_HINT = "This might take a while, the window is not frozen"
+BOOT_DONE = "All set"
+
 PROFILE_ORDER = ("default", "strong", "minimal", "custom")
 
 PROFILES = {
@@ -963,6 +981,9 @@ class Bridge:
         self.drivers = DriverSetup()
         self.hidhide = HidHide()
         self.bad_order = False
+        self.boot_step = 0
+        self.boot_error = ""
+        self.boot_installed = []
         self.status = "starting..."
         self.status_code = "starting"
         self.status_detail = ""
@@ -1185,9 +1206,14 @@ class Bridge:
         try:
             self.bad_order = game_running()
 
+            self.boot_step = 1
             self.status_code = "drivers"
             self.drivers.ensure()
+            self.boot_installed = list(self.drivers.installed)
+            if self.drivers.code in ("failed", "noadmin", "reboot"):
+                self.boot_error = self.drivers.code
 
+            self.boot_step = 2
             if self.cfg["auto_hide"]:
                 self.hidhide.engage()
             else:
@@ -1202,6 +1228,7 @@ class Bridge:
                 self.mode_info = ("wired mode: axes mirrored, "
                                   "buttons physical-only")
 
+            self.boot_step = 3
             before = xinput_connected_slots()
             try:
                 pad = vg.VX360Gamepad()
@@ -1218,8 +1245,10 @@ class Bridge:
                 else:
                     self.status_code = "vigem"
                     self.status_detail = str(e)[:60]
+                self.boot_error = "vigem"
                 return
             time.sleep(1.0)
+            self.boot_step = 4
             self.hidhide.snapshot_allowed()
             virtual = xinput_connected_slots() - before
 
@@ -1230,6 +1259,7 @@ class Bridge:
             if not self._run.is_set():
                 return
             self.physical_slot = min(before) if before else None
+            self.boot_step = 5
             self.status_code = "ok"
 
             if RUMBLE_FORWARD:
@@ -1922,6 +1952,8 @@ def build_html() -> str:
     html = HTML_PAGE
     html = html.replace("/*FONTS*/", font_css)
     html = html.replace("<!--LOGO-->", logo)
+    html = html.replace("<!--LOGO2-->", logo)
+    html = html.replace("<!--LOGO3-->", logo)
     html = html.replace("<!--BG6-->", bg6)
     html = html.replace("<!--BGM-->", bgm)
     html = html.replace("__TR__", json.dumps(TR, ensure_ascii=False))
@@ -1929,6 +1961,9 @@ def build_html() -> str:
     html = html.replace("__ARROW__", json.dumps(ARROW_SVG))
     html = html.replace("__LANGS__", json.dumps(LANG_ORDER))
     html = html.replace("__PROFILES__", json.dumps(PROFILES))
+    html = html.replace("__BOOT__", json.dumps(
+        {"steps": BOOT_STEPS, "hint": BOOT_HINT, "done": BOOT_DONE,
+         "minMs": BOOT_MIN_MS, "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__VER__", APP_VERSION)
     html = html.replace("__DEFAULTS__", json.dumps(
@@ -2104,6 +2139,55 @@ body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
 .setup .st{color:var(--accent);font-weight:500}
 .setup .sw{opacity:.7}
 .rz{position:fixed;z-index:99}
+
+#boot{position:absolute;inset:0;z-index:60;background:var(--win-bg);
+      display:flex;flex-direction:column;align-items:center;
+      justify-content:center;gap:14px;padding:26px 20px;
+      transition:opacity .45s ease}
+#boot.gone{opacity:0;pointer-events:none}
+#boot .bname{font-weight:500;font-size:15px;letter-spacing:-.02em;
+             color:var(--row-fg)}
+#boot .bmark{position:relative;width:150px;height:64px}
+#boot .bmark .lay{position:absolute;inset:0;display:flex;align-items:center;
+                  justify-content:center;overflow:hidden}
+#boot .bmark .lay svg{width:150px;height:64px;flex:none}
+#boot .bmark .dim{opacity:.22}
+#boot .bmark .lit{width:0;transition:width .18s linear}
+#boot .bmark .lit svg{width:150px}
+#boot .bpct{font-weight:400;font-size:11px;color:var(--foot)}
+#boot .bpct b{color:var(--accent);font-weight:500}
+#boot .bline{font-weight:400;font-size:12px;color:var(--row-fg);
+             min-height:15px;text-align:center;
+             transition:opacity .22s ease}
+#boot .bline b{color:var(--accent);font-weight:500}
+#boot .bnote{font-weight:400;font-size:11px;color:var(--accent);
+             min-height:14px;text-align:center;
+             transition:opacity .22s ease}
+#boot .bhint{font-weight:400;font-size:10px;color:var(--foot);
+             text-align:center;transition:opacity .4s ease}
+#boot .fade{opacity:0}
+#boot .dots{display:flex;align-items:center;gap:0}
+#boot .dot{width:15px;height:15px;border-radius:50%;flex:none;
+           border:2px solid var(--accent);box-sizing:border-box;
+           display:flex;align-items:center;justify-content:center;
+           transition:background .3s ease}
+#boot .dot.on{background:var(--accent)}
+#boot .dot svg{width:9px;height:9px;opacity:0;transition:opacity .3s ease}
+#boot .dot.on svg{opacity:1}
+#boot .dot path{stroke:var(--win-bg);stroke-width:2;fill:none;
+                stroke-linecap:round;stroke-linejoin:round}
+#boot .bar{width:22px;height:2px;background:var(--accent);opacity:.35;
+           transition:opacity .3s ease}
+#boot .bar.on{opacity:1}
+#boot.step2 { animation:bootIn .5s ease both }
+@keyframes bootIn{from{opacity:0;transform:translateY(14px)}
+                  to{opacity:1;transform:none}}
+
+.reveal{opacity:0;transform:translateY(10px)}
+.reveal.shown{opacity:1;transform:none;
+              transition:opacity .42s ease,transform .42s ease}
+.titlebar .reveal{transform:none}
+.titlebar .reveal.shown{transition:opacity .42s ease}
 .rz[data-e=t]{top:0;left:14px;right:14px;height:5px;cursor:ns-resize}
 .rz[data-e=b]{bottom:0;left:14px;right:14px;height:6px;cursor:ns-resize}
 .rz[data-e=l]{left:0;top:14px;bottom:14px;width:5px;cursor:ew-resize}
@@ -2125,6 +2209,18 @@ body.t-matter .bgm{display:block;left:-16px;top:-32px;width:427px;height:702px}
 <div class="bgvec bg6"><!--BG6--></div>
 <div class="bgvec bgm"><!--BGM--></div>
 <div class="wrap"><div id="app"></div></div>
+<div id="boot">
+  <div class="bname">Steering assist.</div>
+  <div class="bmark">
+    <div class="lay dim"><!--LOGO2--></div>
+    <div class="lay lit" id="boot-lit"><!--LOGO3--></div>
+  </div>
+  <div class="bpct" id="boot-pct">Loading <b>0%</b></div>
+  <div class="bline" id="boot-line"></div>
+  <div class="dots" id="boot-dots"></div>
+  <div class="bnote" id="boot-note"></div>
+  <div class="bhint" id="boot-hint"></div>
+</div>
 
 <div id="gate"><div class="gcard">
   <div class="gt" id="gate-title"></div>
@@ -2142,6 +2238,7 @@ const ARROW = __ARROW__;
 const DEF = __DEFAULTS__;
 const LANGS = __LANGS__;
 const PROFILES = __PROFILES__;
+const BOOT = __BOOT__;
 const PROF_ORDER = __PROF_ORDER__;
 const VER = "__VER__";
 let cfg = null, state = null;
@@ -2234,6 +2331,10 @@ function build(){
   </div></div>`;
   h += `<div class="foot"><span>Steering Assist</span><span>v${VER}</span></div>`;
   $('#app').innerHTML = h + '<div id="hint"></div>';
+  if (bootPhase !== 'app')
+    document.querySelectorAll('#app .grp').forEach(g=>g.classList.add('reveal'));
+  else
+    document.querySelectorAll('#app .grp').forEach(g=>g.classList.add('reveal','shown'));
   bindEvents();
   refreshControls();
   if (cfg) panelMode();
@@ -2529,7 +2630,94 @@ document.querySelectorAll('.rz').forEach(z=>{
   });
 });
 
-window.addEventListener('pywebviewready', ()=>{ rescale(); poll(); });
+// ---------- boot sequence ----------
+const TICK = '<svg viewBox="0 0 12 12"><path d="M2.5 6.3L5 8.8L9.5 3.8"/></svg>';
+let bootPhase = 'load';
+let bootT0 = 0;
+let bootShownStep = -1;
+let bootDoneAt = 0;
+
+function bootDots(active){
+  const el = $('#boot-dots');
+  if (!el.dataset.built){
+    let h = '';
+    for (let i=0;i<5;i++){
+      if (i) h += '<span class="bar" data-bar="'+i+'"></span>';
+      h += '<span class="dot" data-dot="'+i+'">'+TICK+'</span>';
+    }
+    el.innerHTML = h;
+    el.dataset.built = '1';
+  }
+  el.querySelectorAll('[data-dot]').forEach(d=>{
+    d.classList.toggle('on', (+d.dataset.dot) < active);
+  });
+  el.querySelectorAll('[data-bar]').forEach(b=>{
+    b.classList.toggle('on', (+b.dataset.bar) < active);
+  });
+}
+
+function swapText(el, text){
+  if (el.dataset.cur === text) return;
+  el.dataset.cur = text;
+  el.classList.add('fade');
+  setTimeout(()=>{ el.innerHTML = text; el.classList.remove('fade'); }, 230);
+}
+
+function revealApp(){
+  bootPhase = 'app';
+  $('#boot').classList.add('gone');
+  setTimeout(()=>{ $('#boot').style.display = 'none'; }, 480);
+  const items = [...document.querySelectorAll('.titlebar .reveal'),
+                 ...document.querySelectorAll('#app .reveal')];
+  items.forEach((el, i)=> setTimeout(()=> el.classList.add('shown'), 120 + i*70));
+  reportHeight();
+}
+
+function bootTick(){
+  if (bootPhase === 'app' || !state) return;
+  const now = performance.now();
+  const elapsed = now - bootT0;
+
+  if (bootPhase === 'load'){
+    const pct = Math.min(100, Math.round(elapsed / BOOT.minMs * 100));
+    $('#boot-lit').style.width = pct + '%';
+    $('#boot-pct').innerHTML = 'Loading <b>' + pct + '%</b>';
+    if (elapsed < BOOT.minMs) return;
+    if (!state.first_run && state.boot_step >= 5){ revealApp(); return; }
+    if (!state.first_run && !state.boot_error) return;
+    bootPhase = 'steps';
+    $('#boot-pct').classList.add('fade');
+    $('#boot').classList.add('step2');
+    $('#boot-hint').innerHTML = BOOT.hint;
+    return;
+  }
+
+  if (bootPhase === 'steps'){
+    const step = Math.max(1, Math.min(5, state.boot_step || 1));
+    const info = BOOT.steps[step-1];
+    swapText($('#boot-line'), info.title + ': <b>Step ' + step + '</b>');
+    swapText($('#boot-note'), state.boot_error ? '' : info.note);
+    bootDots(state.boot_error ? step - 1 : step);
+    $('#boot-hint').classList.toggle('fade', step >= 5 || !!state.boot_error);
+    if (state.boot_error) return;
+    if (state.boot_step >= 5 && (state.recv || state.alive)){
+      bootPhase = 'done';
+      bootDoneAt = now;
+      swapText($('#boot-line'), BOOT.done);
+      swapText($('#boot-note'), '');
+      bootDots(5);
+    }
+    return;
+  }
+
+  if (bootPhase === 'done' && now - bootDoneAt > BOOT.doneMs) revealApp();
+}
+
+window.addEventListener('pywebviewready', ()=>{
+  bootT0 = performance.now();
+  rescale(); poll();
+  setInterval(bootTick, 60);
+});
 </script></body></html>"""
 
 
@@ -2650,6 +2838,10 @@ class Api:
             "captured": b.captured,
             "buttons": b.buttons,
             "bad_order": b.bad_order,
+            "boot_step": b.boot_step,
+            "boot_error": b.boot_error,
+            "boot_installed": b.boot_installed,
+            "first_run": bool(b.boot_installed) or not b.cfg["telemetry_seen"],
             "drv_code": b.drivers.code,
             "drv_info": b.drivers.info,
             "hh_code": b.hidhide.code,
