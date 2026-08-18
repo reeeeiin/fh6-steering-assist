@@ -1428,6 +1428,10 @@ TR = {
         "steer_curve_hint": "In a slide only: widens the stick centre for finer corrections while drifting",
         "speed": "Speed", "slip": "Slip", "no_telemetry": "no telemetry",
         "paused": "in menu / paused",
+        "setup_ip": "IP address - 127.0.0.1",
+        "setup_port": "IP port - 20777",
+        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -1502,6 +1506,10 @@ TR = {
         "steer_curve_hint": "Только в заносе: растягивает центр стика для тонких коррекций в дрифте",
         "speed": "Скорость", "slip": "Снос", "no_telemetry": "нет телеметрии",
         "paused": "в меню / на паузе",
+        "setup_ip": "IP адрес - 127.0.0.1",
+        "setup_port": "IP порт - 20777",
+        "setup_where": "Настройки игры > Hud & Gameplay / Telemetry:",
+        "st_recv": "Приём",
         "general_sec": "Основное",
         "tele_status": "Статус телеметрии",
         "version_sec": "Версия",
@@ -1576,6 +1584,10 @@ TR = {
         "steer_curve_hint": "Лише в заносі: розтягує центр стика для тонких корекцій у дрифті",
         "speed": "Швидкість", "slip": "Занос", "no_telemetry": "немає телеметрії",
         "paused": "у меню / на паузі",
+        "setup_ip": "IP address - 127.0.0.1",
+        "setup_port": "IP port - 20777",
+        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -1650,6 +1662,10 @@ TR = {
         "steer_curve_hint": "Nur im Drift: weitet die Stickmitte für feinere Korrekturen",
         "speed": "Tempo", "slip": "Schlupf", "no_telemetry": "keine Telemetrie",
         "paused": "im Menü / pausiert",
+        "setup_ip": "IP address - 127.0.0.1",
+        "setup_port": "IP port - 20777",
+        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -1724,6 +1740,10 @@ TR = {
         "steer_curve_hint": "En glisse uniquement : centre du stick élargi pour des corrections fines",
         "speed": "Vitesse", "slip": "Glisse", "no_telemetry": "pas de télémétrie",
         "paused": "dans le menu / en pause",
+        "setup_ip": "IP address - 127.0.0.1",
+        "setup_port": "IP port - 20777",
+        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -1798,6 +1818,10 @@ TR = {
         "steer_curve_hint": "Solo en derrape: ensancha el centro del stick para correcciones finas",
         "speed": "Velocidad", "slip": "Derrape", "no_telemetry": "sin telemetría",
         "paused": "en menú / en pausa",
+        "setup_ip": "IP address - 127.0.0.1",
+        "setup_port": "IP port - 20777",
+        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -1872,6 +1896,10 @@ TR = {
         "steer_curve_hint": "Solo in derapata: allarga il centro dello stick per correzioni fini",
         "speed": "Velocità", "slip": "Derapata", "no_telemetry": "niente telemetria",
         "paused": "nel menu / in pausa",
+        "setup_ip": "IP address - 127.0.0.1",
+        "setup_port": "IP port - 20777",
+        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -1946,6 +1974,10 @@ TR = {
         "steer_curve_hint": "Tylko w poślizgu: poszerza środek gałki dla drobnych korekt",
         "speed": "Prędkość", "slip": "Poślizg", "no_telemetry": "brak telemetrii",
         "paused": "w menu / pauza",
+        "setup_ip": "IP address - 127.0.0.1",
+        "setup_port": "IP port - 20777",
+        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -2020,6 +2052,10 @@ TR = {
         "steer_curve_hint": "Só na derrapagem: alarga o centro do analógico para correções finas",
         "speed": "Velocidade", "slip": "Derrapagem", "no_telemetry": "sem telemetria",
         "paused": "no menu / em pausa",
+        "setup_ip": "IP address - 127.0.0.1",
+        "setup_port": "IP port - 20777",
+        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -2094,6 +2130,10 @@ TR = {
         "steer_curve_hint": "Yalnızca kayışta: ince düzeltmeler için çubuk merkezi genişler",
         "speed": "Hız", "slip": "Kayma", "no_telemetry": "telemetri yok",
         "paused": "menüde / duraklatıldı",
+        "setup_ip": "IP address - 127.0.0.1",
+        "setup_port": "IP port - 20777",
+        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -2282,16 +2322,18 @@ body.t-light{
  --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 
-#zoom{width:510px;min-height:calc(100vh / 1.5);zoom:1.5;
+#zoom{width:100%;min-width:510px;min-height:calc(100vh / 1.5);zoom:1.5;
       display:flex;flex-direction:column;padding:18px;gap:14px}
 
 /* ---------- title bar: components are 18 px tall, radius 5 ---------- */
 .tbar{display:flex;align-items:center;gap:8px;height:18px;flex:none}
+.hbtn,.vbadge{-webkit-app-region:no-drag}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
-.hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
+.hbtn{height:18px;border-radius:6px;-webkit-corner-smoothing:60%;
+      corner-shape:squircle;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
       font-size:8px;font-weight:600;box-sizing:border-box;
-      background:var(--btn-bg);border:1px solid var(--btn-line);
+      background:var(--btn-bg);border:1.5px solid var(--btn-line);
       color:var(--btn-fg);
       transition:background .18s ease,border-color .18s ease,color .18s ease}
 .hbtn:hover{background:var(--btn-hov-bg);border-color:var(--accent);
@@ -2312,17 +2354,19 @@ body.t-light{
 .hbtn.back svg{width:6px;height:10px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none}
 .logo svg{display:block;width:99px;height:18px}
-.vbadge{height:18px;padding:0 6px;border-radius:5px;display:flex;
+.vbadge{height:18px;padding:0 6px;border-radius:6px;
+        -webkit-corner-smoothing:60%;corner-shape:squircle;display:flex;
         align-items:center;font-size:8px;font-weight:600;flex:none;
         color:var(--accent);background:var(--btn-hov-bg);
-        border:1px solid var(--accent)}
+        border:1.5px solid var(--accent)}
 .wbtns{display:flex;align-items:center;gap:3px;flex:none}
 .tabs{display:flex;align-items:center;gap:5px;flex:none}
 
 /* ---------- sections and cards ---------- */
 .sec{font-size:9px;font-weight:400;color:var(--muted);
-     padding:0 4px 6px}
-.card{background:var(--card);border-radius:8px;padding:0 15px;flex:none}
+     padding:10px 4px 6px}
+.card{background:var(--card);border-radius:12px;padding:0 15px;flex:none;
+      -webkit-corner-smoothing:60%;corner-shape:squircle}
 .row{display:flex;align-items:center;gap:12px;min-height:42px;
      border-bottom:1px solid var(--line)}
 .card .row:last-child{border-bottom:none}
@@ -2334,22 +2378,24 @@ body.t-light{
 .tg{width:28px;height:14px;border-radius:7px;flex:none;cursor:pointer;
     background:var(--off);position:relative;transition:background .22s ease}
 .tg.on{background:var(--accent)}
-.tg i{position:absolute;top:2px;left:2px;width:10px;height:10px;
-      border-radius:4px;background:#fff;
+.tg i{position:absolute;top:2px;left:2px;width:12px;height:10px;
+      border-radius:999px;background:#fff;
       transition:transform .22s cubic-bezier(.4,0,.2,1)}
-.tg.on i{transform:translateX(14px)}
+.tg.on i{transform:translateX(12px)}
 
 /* ---------- segmented ---------- */
 .seg{display:flex;align-items:center;background:var(--card-2);
      border-radius:6px;padding:0;gap:0;position:relative;flex:none;height:24px}
-.seg .pill{position:absolute;top:0;bottom:0;border-radius:5px;
+.seg .pill{position:absolute;top:0;bottom:0;border-radius:6px;
+           -webkit-corner-smoothing:60%;corner-shape:squircle;
            background:var(--accent);
            transition:left .28s cubic-bezier(.4,0,.2,1),
                       width .28s cubic-bezier(.4,0,.2,1)}
 .seg span{position:relative;z-index:1;font-size:11px;font-weight:500;
-          height:24px;display:flex;align-items:center;justify-content:center;
-          min-width:67px;border-radius:5px;color:var(--muted);
-          cursor:pointer;white-space:nowrap;transition:color .2s ease}
+          height:24px;line-height:24px;text-align:center;box-sizing:border-box;
+          padding:0 12px;min-width:67px;border-radius:6px;color:var(--muted);
+          cursor:pointer;white-space:nowrap;transition:color .2s ease;
+          -webkit-corner-smoothing:60%;corner-shape:squircle}
 .seg span:hover{color:var(--row-fg)}
 .seg span.on{color:var(--accent-fg)}
 
@@ -2359,7 +2405,7 @@ body.t-light{
          background:var(--track);transform:translateY(-50%)}
 .sl .fil{position:absolute;top:50%;left:0;height:4px;border-radius:2px;
          background:var(--sfill);transform:translateY(-50%)}
-.sl .knb{position:absolute;top:50%;width:20px;height:14px;border-radius:5px;
+.sl .knb{position:absolute;top:50%;width:22px;height:14px;border-radius:999px;
          background:#fff;transform:translate(-50%,-50%);
          box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .sl.anim .fil,.sl.anim .knb{transition:width .42s cubic-bezier(.4,0,.2,1),
@@ -2369,17 +2415,20 @@ body.t-light{
 .tstat{font-size:13px;font-weight:600;flex:none;transition:color .3s ease}
 .tstat.ok{color:var(--ok)} .tstat.wait{color:var(--muted)}
 .tstat.err{color:var(--danger)}
-.chip{font-size:8px;font-weight:500;color:var(--accent);flex:none}
-.hintrow{display:flex;align-items:center;gap:8px;padding:5px 0;
-         border-bottom:1px solid var(--line);font-size:8px;color:var(--muted)}
+.chip{font-size:11px;font-weight:600;color:var(--accent);flex:none}
+.hintrow{display:flex;align-items:center;justify-content:space-between;
+         gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.hintq{font-size:9px;line-height:1.35;color:var(--muted);max-width:150px}
+.hintchips{display:flex;align-items:center;gap:14px}
 .barwrap{padding:5px 0}
 .barlbl{font-size:9px;color:var(--muted);margin-bottom:3px}
 .bar{height:20px;border-radius:4px;background:var(--bar-bg);position:relative;
      overflow:hidden;border:1px solid var(--btn-line)}
 .bar i{position:absolute;top:0;height:100%;background:var(--bar-fill);
        transition:left .12s linear,width .12s linear}
-.bar u{position:absolute;left:50%;top:0;width:2px;height:100%;
-       background:var(--row-fg);opacity:.85;z-index:1}
+.bar{overflow:visible}
+.bar u{position:absolute;left:50%;top:-3px;width:2px;height:calc(100% + 6px);
+       background:var(--row-fg);opacity:.9;z-index:2;border-radius:1px}
 .barlbl{font-size:11px;color:var(--row-fg);margin-bottom:6px}
 .barwrap{padding:8px 0}
 
@@ -2439,16 +2488,17 @@ body.t-light{
 .rz[data-e=br]{bottom:0;right:0;width:14px;height:14px;cursor:nwse-resize}
 </style></head><body class="t-dark">
 <div id="zoom">
-  <div class="tbar">
-    <div class="tdrag pywebview-drag-region">
+  <div class="tbar pywebview-drag-region">
+    <div class="tdrag">
       <span class="hbtn sq back reveal" id="back"><!--ICON:arrowback--></span>
       <span class="logo reveal"><!--ICON:applogo--></span>
       <span class="vbadge reveal">v__VER__</span>
     </div>
     <div class="tabs">
       <span class="hbtn tab sup reveal" data-nav="support">Support</span>
-      <span class="hbtn tab reveal" data-nav="legal">Legal</span>
       <span class="hbtn tab reveal" data-nav="settings"><!--ICON:settings-->Settings</span>
+      <span class="hbtn tab reveal" data-nav="faq">FAQ</span>
+      <span class="hbtn tab reveal" data-nav="about">About</span>
     </div>
     <div class="wbtns">
       <span class="hbtn sq reveal" data-win="min"><!--ICON:minimize--></span>
@@ -2536,19 +2586,21 @@ function screenMain(){
   h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>' +
        '<div class="card">' +
        '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
-       '<span class="tstat" id="tstat">—</span></div>' +
-       '<div class="hintrow" id="setuphint"><span>' + t('setup_where') + '</span>' +
-       '<span class="chip">' + t('setup_dataout') + '</span>' +
-       '<span class="chip">127.0.0.1</span><span class="chip">20777</span></div>' +
+       '<span class="tstat" id="tstat">-</span></div>' +
+       '<div class="hintrow" id="setuphint">' +
+       '<span class="hintq">' + t('setup_where') + '</span>' +
+       '<span class="hintchips"><span class="chip">' + t('setup_dataout') + '</span>' +
+       '<span class="chip">' + t('setup_ip') + '</span>' +
+       '<span class="chip">' + t('setup_port') + '</span></span></div>' +
        '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
-       '<div class="bar"><u></u><i id="rawbar"></i></div></div>' +
+       '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
        '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
-       '<div class="bar"><u></u><i id="outbar"></i></div></div>';
+       '<div class="bar"><i id="outbar"></i><u></u></div></div>';
   if (cfg.ext_telemetry){
     h += '<div class="row"><span class="rname">' + t('pad_status') + '</span>' +
-         '<span class="rval" id="padstat">—</span></div>' +
+         '<span class="rval" id="padstat">-</span></div>' +
          '<div class="row"><span class="rname">' + t('mod_status') + '</span>' +
-         '<span class="rval" id="modstat">—</span></div>';
+         '<span class="rval" id="modstat">-</span></div>';
   }
   return h + '</div></div>';
 }
@@ -2717,7 +2769,7 @@ function liveUpdate(){
     let cls = 'wait', txt = t('st_waiting');
     if (state.tele_err){ cls = 'err'; txt = t('st_port'); }
     else if (state.alive){ cls = 'ok'; txt = t('st_ingame'); }
-    else if (state.recv){ cls = 'wait'; txt = t('st_inmenu'); }
+    else if (state.recv){ cls = 'ok'; txt = t('st_recv'); }
     else { cls = 'err'; txt = t('st_notele'); }
     ts.className = 'tstat ' + cls;
     ts.textContent = txt;
