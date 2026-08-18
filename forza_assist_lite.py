@@ -2323,7 +2323,7 @@ body.t-light{
 .tbar > *:not(.drag){position:relative;z-index:1}
 .hbtn,.vbadge{-webkit-app-region:no-drag}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
-.hbtn{height:18px;border-radius:8px;display:flex;align-items:center;
+.hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
       font-size:8px;font-weight:600;box-sizing:border-box;
       background:var(--btn-bg);border:1.5px solid var(--btn-line);
@@ -2347,7 +2347,7 @@ body.t-light{
 .hbtn.back svg{width:6px;height:10px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none}
 .logo svg{display:block;width:99px;height:18px}
-.vbadge{height:18px;padding:0 6px;border-radius:8px;
+.vbadge{height:18px;padding:0 6px;border-radius:5px;
         display:flex;
         align-items:center;font-size:8px;font-weight:600;flex:none;
         color:var(--accent);background:var(--btn-hov-bg);
