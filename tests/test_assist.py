@@ -488,11 +488,11 @@ def _done(api):
 def test_profile_applies_its_values():
     api = _api()
     try:
-        got = api.set_profile("strong")
-        for key, value in fa.PROFILES["strong"].items():
+        got = api.set_profile("heavy")
+        for key, value in fa.PROFILES["heavy"].items():
             assert api._b.cfg[key] == value, key
             assert got[key] == value, key
-        assert api._b.cfg["profile"] == "strong"
+        assert api._b.cfg["profile"] == "heavy"
     finally:
         _done(api)
 
@@ -536,9 +536,9 @@ def test_unknown_profile_is_rejected():
 def test_first_run_starts_on_default_and_remembers_the_choice():
     assert fa.DEFAULTS["profile"] == "default"
     cfg = dict(fa.DEFAULTS)
-    cfg["profile"] = "strong"
+    cfg["profile"] = "heavy"
     fa.sanitize_config(cfg)
-    assert cfg["profile"] == "strong", "a saved profile must survive load"
+    assert cfg["profile"] == "heavy", "a saved profile must survive load"
     cfg["profile"] = "nonsense"
     fa.sanitize_config(cfg)
     assert cfg["profile"] == "default"

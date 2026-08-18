@@ -538,7 +538,7 @@ class Assist:
         return self.angle
 
 
-CONFIG_VERSION = 7
+CONFIG_VERSION = 8
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
@@ -586,13 +586,13 @@ BOOT_STEPS = [
 BOOT_HINT = "This might take a while, the window is not frozen"
 BOOT_DONE = "All set"
 
-PROFILE_ORDER = ("default", "strong", "minimal", "custom")
+PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
 
 PROFILES = {
     "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0,
                 "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0,
                 "smoothing": 0.8},
-    "strong": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0,
+    "heavy": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0,
                "reaction": 0.05, "deadband": 0.2, "min_speed": 10.0,
                "smoothing": 0.8},
     "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 2.5,
@@ -660,6 +660,8 @@ def load_config() -> dict:
         if data.get("version", 1) < 5:
             for key in ("yield_mode", "rumble"):
                 cfg[key] = DEFAULTS[key]
+        if data.get("version", 1) < 8 and cfg.get("profile") == "strong":
+            cfg["profile"] = "heavy"
         if data.get("version", 1) < 7 and cfg.get("theme") not in THEMES:
             cfg["theme"] = DEFAULTS["theme"]
         if data.get("version", 1) < 6:
@@ -1453,7 +1455,7 @@ TR = {
         "profile": "Profile",
         "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
         "prof_default": "Default",
-        "prof_strong": "Strong",
+        "prof_heavy": "Strong",
         "prof_minimal": "Minimal",
         "prof_custom": "Custom",
         "order_title": "Wrong launch order",
@@ -1527,7 +1529,7 @@ TR = {
         "profile": "Профиль",
         "profile_hint": "Готовые наборы. Любое движение ползунка переключает на «Свой» и сохраняет твои значения — к ним всегда можно вернуться.",
         "prof_default": "Обычный",
-        "prof_strong": "Сильный",
+        "prof_heavy": "Сильный",
         "prof_minimal": "Минимум",
         "prof_custom": "Свой",
         "order_title": "Неверный порядок запуска",
@@ -1601,7 +1603,7 @@ TR = {
         "profile": "Профіль",
         "profile_hint": "Готові набори. Будь-який рух повзунка перемикає на «Свій» і зберігає твої значення — до них завжди можна повернутися.",
         "prof_default": "Звичайний",
-        "prof_strong": "Сильний",
+        "prof_heavy": "Сильний",
         "prof_minimal": "Мінімум",
         "prof_custom": "Свій",
         "order_title": "Невірний порядок запуску",
@@ -1675,7 +1677,7 @@ TR = {
         "profile": "Profil",
         "profile_hint": "Fertige Voreinstellungen. Jeder Reglerzug wechselt auf Eigenes und behält deine Werte, du kommst also immer zurück.",
         "prof_default": "Standard",
-        "prof_strong": "Stark",
+        "prof_heavy": "Stark",
         "prof_minimal": "Minimal",
         "prof_custom": "Eigenes",
         "order_title": "Falsche Startreihenfolge",
@@ -1749,7 +1751,7 @@ TR = {
         "profile": "Profil",
         "profile_hint": "Réglages prêts à l'emploi. Bouger un curseur passe sur Perso et conserve tes valeurs, tu peux toujours y revenir.",
         "prof_default": "Défaut",
-        "prof_strong": "Fort",
+        "prof_heavy": "Fort",
         "prof_minimal": "Minimal",
         "prof_custom": "Perso",
         "order_title": "Mauvais ordre de lancement",
@@ -1823,7 +1825,7 @@ TR = {
         "profile": "Perfil",
         "profile_hint": "Ajustes listos. Mover cualquier control cambia a Propio y guarda tus valores, siempre puedes volver a ellos.",
         "prof_default": "Normal",
-        "prof_strong": "Fuerte",
+        "prof_heavy": "Fuerte",
         "prof_minimal": "Mínimo",
         "prof_custom": "Propio",
         "order_title": "Orden de inicio incorrecto",
@@ -1897,7 +1899,7 @@ TR = {
         "profile": "Profilo",
         "profile_hint": "Preimpostazioni pronte. Muovere un cursore passa a Personale e conserva i tuoi valori, puoi sempre tornarci.",
         "prof_default": "Predefinito",
-        "prof_strong": "Forte",
+        "prof_heavy": "Forte",
         "prof_minimal": "Minimo",
         "prof_custom": "Personale",
         "order_title": "Ordine di avvio sbagliato",
@@ -1971,7 +1973,7 @@ TR = {
         "profile": "Profil",
         "profile_hint": "Gotowe ustawienia. Ruch dowolnego suwaka przełącza na Własny i zachowuje twoje wartości, zawsze możesz do nich wrócić.",
         "prof_default": "Domyślny",
-        "prof_strong": "Mocny",
+        "prof_heavy": "Mocny",
         "prof_minimal": "Minimalny",
         "prof_custom": "Własny",
         "order_title": "Zła kolejność uruchomienia",
@@ -2045,7 +2047,7 @@ TR = {
         "profile": "Perfil",
         "profile_hint": "Ajustes prontos. Mover qualquer controle muda para Próprio e guarda seus valores, dá para voltar sempre.",
         "prof_default": "Padrão",
-        "prof_strong": "Forte",
+        "prof_heavy": "Forte",
         "prof_minimal": "Mínimo",
         "prof_custom": "Próprio",
         "order_title": "Ordem de inicialização errada",
@@ -2119,7 +2121,7 @@ TR = {
         "profile": "Profil",
         "profile_hint": "Hazır ayarlar. Herhangi bir kaydırıcıyı oynatmak Kendi'ne geçer ve değerlerini saklar, istediğinde geri dönersin.",
         "prof_default": "Varsayılan",
-        "prof_strong": "Güçlü",
+        "prof_heavy": "Güçlü",
         "prof_minimal": "Az",
         "prof_custom": "Kendi",
         "order_title": "Yanlış başlatma sırası",
@@ -2281,7 +2283,7 @@ body.t-light{
 }
 
 #zoom{width:510px;min-height:100vh;display:flex;flex-direction:column;
-      padding:18px;gap:0}
+      padding:18px;gap:14px}
 
 /* ---------- title bar: components are 18 px tall, radius 5 ---------- */
 .tbar{display:flex;align-items:center;gap:8px;height:18px;flex:none}
@@ -2304,8 +2306,12 @@ body.t-light{
 .hbtn.close:hover{background:var(--danger-bg);border-color:var(--danger);
                   color:var(--danger)}
 .hbtn svg{display:block;flex:none}
+.hbtn.tab svg{width:10px;height:8px}
+.hbtn.sq svg{width:10px;height:10px}
+.hbtn.sq[data-win=min] svg{width:10px;height:2px}
+.hbtn.back svg{width:6px;height:10px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none}
-.logo svg{display:block;height:10px;width:auto}
+.logo svg{display:block;width:55px;height:10px}
 .vbadge{height:18px;padding:0 6px;border-radius:5px;display:flex;
         align-items:center;font-size:8px;font-weight:600;flex:none;
         color:var(--accent);background:var(--btn-hov-bg);
@@ -2314,52 +2320,53 @@ body.t-light{
 .tabs{display:flex;align-items:center;gap:5px;flex:none}
 
 /* ---------- sections and cards ---------- */
-.sec{font-size:8px;font-weight:400;color:var(--muted);letter-spacing:.01em;
-     padding:0 4px 4px}
-.card{background:var(--card);border-radius:8px;padding:2px 10px;flex:none}
-.row{display:flex;align-items:center;gap:10px;min-height:30px;
+.sec{font-size:9px;font-weight:400;color:var(--muted);
+     padding:0 4px 6px}
+.card{background:var(--card);border-radius:8px;padding:0 15px;flex:none}
+.row{display:flex;align-items:center;gap:12px;min-height:42px;
      border-bottom:1px solid var(--line)}
 .card .row:last-child{border-bottom:none}
-.rname{font-size:11px;font-weight:400;color:var(--row-fg);flex:1;min-width:0}
-.rval{font-size:11px;font-weight:500;color:var(--row-fg);flex:none;
-      min-width:26px;text-align:right}
+.rname{font-size:13px;font-weight:400;color:var(--row-fg);flex:1;min-width:0}
+.rval{font-size:15px;font-weight:600;color:var(--row-fg);flex:none;
+      min-width:30px;text-align:right}
 
 /* ---------- toggle ---------- */
-.tg{width:26px;height:14px;border-radius:7px;flex:none;cursor:pointer;
+.tg{width:28px;height:14px;border-radius:7px;flex:none;cursor:pointer;
     background:var(--off);position:relative;transition:background .22s ease}
 .tg.on{background:var(--accent)}
 .tg i{position:absolute;top:2px;left:2px;width:10px;height:10px;
       border-radius:50%;background:#fff;
       transition:transform .22s cubic-bezier(.4,0,.2,1)}
-.tg.on i{transform:translateX(12px)}
+.tg.on i{transform:translateX(14px)}
 
 /* ---------- segmented ---------- */
 .seg{display:flex;align-items:center;background:var(--card-2);
-     border-radius:6px;padding:2px;gap:2px;position:relative;flex:none}
-.seg .pill{position:absolute;top:2px;bottom:2px;border-radius:4px;
+     border-radius:6px;padding:0;gap:0;position:relative;flex:none;height:24px}
+.seg .pill{position:absolute;top:0;bottom:0;border-radius:5px;
            background:var(--accent);
            transition:left .28s cubic-bezier(.4,0,.2,1),
                       width .28s cubic-bezier(.4,0,.2,1)}
-.seg span{position:relative;z-index:1;font-size:9px;font-weight:500;
-          padding:3px 7px;border-radius:4px;color:var(--muted);
+.seg span{position:relative;z-index:1;font-size:11px;font-weight:500;
+          height:24px;display:flex;align-items:center;justify-content:center;
+          min-width:67px;border-radius:5px;color:var(--muted);
           cursor:pointer;white-space:nowrap;transition:color .2s ease}
 .seg span:hover{color:var(--row-fg)}
 .seg span.on{color:var(--accent-fg)}
 
 /* ---------- slider ---------- */
 .sl{flex:1;height:14px;position:relative;cursor:pointer;min-width:60px}
-.sl .trk{position:absolute;top:50%;left:0;right:0;height:3px;border-radius:2px;
+.sl .trk{position:absolute;top:50%;left:0;right:0;height:4px;border-radius:2px;
          background:var(--track);transform:translateY(-50%)}
-.sl .fil{position:absolute;top:50%;left:0;height:3px;border-radius:2px;
+.sl .fil{position:absolute;top:50%;left:0;height:4px;border-radius:2px;
          background:var(--sfill);transform:translateY(-50%)}
-.sl .knb{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;
+.sl .knb{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;
          background:#fff;transform:translate(-50%,-50%);
          box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .sl.anim .fil,.sl.anim .knb{transition:width .42s cubic-bezier(.4,0,.2,1),
                             left .42s cubic-bezier(.4,0,.2,1)}
 
 /* ---------- telemetry ---------- */
-.tstat{font-size:10px;font-weight:500;flex:none;transition:color .3s ease}
+.tstat{font-size:13px;font-weight:600;flex:none;transition:color .3s ease}
 .tstat.ok{color:var(--ok)} .tstat.wait{color:var(--muted)}
 .tstat.err{color:var(--danger)}
 .chip{font-size:8px;font-weight:500;color:var(--accent);flex:none}
@@ -2367,12 +2374,14 @@ body.t-light{
          border-bottom:1px solid var(--line);font-size:8px;color:var(--muted)}
 .barwrap{padding:5px 0}
 .barlbl{font-size:9px;color:var(--muted);margin-bottom:3px}
-.bar{height:12px;border-radius:3px;background:var(--bar-bg);position:relative;
-     overflow:hidden}
-.bar i{position:absolute;top:0;height:12px;background:var(--bar-fill);
-       border-radius:2px;transition:left .12s linear,width .12s linear}
-.bar u{position:absolute;left:50%;top:0;width:1px;height:12px;
-       background:var(--track)}
+.bar{height:20px;border-radius:4px;background:var(--bar-bg);position:relative;
+     overflow:hidden;border:1px solid var(--btn-line)}
+.bar i{position:absolute;top:0;height:100%;background:var(--bar-fill);
+       transition:left .12s linear,width .12s linear}
+.bar u{position:absolute;left:50%;top:0;width:2px;height:100%;
+       background:var(--row-fg);opacity:.85;z-index:1}
+.barlbl{font-size:11px;color:var(--row-fg);margin-bottom:6px}
+.barwrap{padding:8px 0}
 
 /* ---------- footer ---------- */
 .foot{display:flex;flex-direction:column;gap:6px;padding:10px 4px 0}
