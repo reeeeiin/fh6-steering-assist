@@ -2322,7 +2322,7 @@ body.t-light{
  --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 
-#zoom{width:100%;min-width:510px;min-height:calc(100vh / 1.5);zoom:1.5;
+#zoom{width:100%;min-width:510px;min-height:calc(100vh / 1.25);zoom:1.25;
       display:flex;flex-direction:column;padding:18px;gap:14px}
 
 /* ---------- title bar: components are 18 px tall, radius 5 ---------- */
@@ -2378,10 +2378,10 @@ body.t-light{
 .tg{width:28px;height:14px;border-radius:7px;flex:none;cursor:pointer;
     background:var(--off);position:relative;transition:background .22s ease}
 .tg.on{background:var(--accent)}
-.tg i{position:absolute;top:2px;left:2px;width:12px;height:10px;
+.tg i{position:absolute;top:2px;left:2px;width:16px;height:10px;
       border-radius:999px;background:#fff;
       transition:transform .22s cubic-bezier(.4,0,.2,1)}
-.tg.on i{transform:translateX(12px)}
+.tg.on i{transform:translateX(8px)}
 
 /* ---------- segmented ---------- */
 .seg{display:flex;align-items:center;background:var(--card-2);
@@ -2433,7 +2433,8 @@ body.t-light{
 .barwrap{padding:8px 0}
 
 /* ---------- footer ---------- */
-.foot{display:flex;flex-direction:column;gap:6px;padding:10px 4px 0}
+.foot{display:flex;flex-direction:column;gap:6px;padding:16px 4px 0;
+      margin-top:auto}
 .foot span{font-size:6px;line-height:1.55;color:var(--foot)}
 
 /* ---------- screens ---------- */
@@ -2789,7 +2790,7 @@ function liveUpdate(){
 let lastH = 0;
 function reportHeight(){
   requestAnimationFrame(() => {
-    const h = Math.round($('#zoom').offsetHeight * 1.5);
+    const h = Math.round($('#zoom').offsetHeight * 1.25);
     if (h && Math.abs(h - lastH) > 2){
       lastH = h;
       try{ pywebview.api.content_h(h); }catch(e){}
@@ -2903,7 +2904,7 @@ window.addEventListener('pywebviewready', () => {
 </script></body></html>"""
 
 
-UI_SCALE = 1.5       # design pixels are small; everything is scaled once
+UI_SCALE = 1.25      # design pixels are small; everything is scaled once
 WIN_W = int(510 * UI_SCALE)
 WIN_MIN_H = int(360 * UI_SCALE)
 _WIN = {"hwnd": 0, "content_h": 770}
@@ -2960,10 +2961,11 @@ class Api:
                         w = max(WIN_W, R - pt.x)
                     elif "r" in edge:
                         w = max(WIN_W, pt.x - L)
+                    floor = max(WIN_MIN_H, int(_WIN.get("content_h", WIN_MIN_H)))
                     if "t" in edge:
-                        h = max(WIN_MIN_H, B - pt.y)
+                        h = max(floor, B - pt.y)
                     elif "b" in edge:
-                        h = max(WIN_MIN_H, pt.y - T)
+                        h = max(floor, pt.y - T)
                     x = R - w if "l" in edge else L
                     y = B - h if "t" in edge else T
                     if w != R - L or h != B - T:
@@ -3145,11 +3147,12 @@ def main():
                         rect.left = rect.right - WIN_W
                     else:
                         rect.right = rect.left + WIN_W
-                if rect.bottom - rect.top < WIN_MIN_H:
+                floor = max(WIN_MIN_H, int(_WIN.get("content_h", WIN_MIN_H)))
+                if rect.bottom - rect.top < floor:
                     if wp in (3, 4, 5):
-                        rect.top = rect.bottom - WIN_MIN_H
+                        rect.top = rect.bottom - floor
                     else:
-                        rect.bottom = rect.top + WIN_MIN_H
+                        rect.bottom = rect.top + floor
                 return 1
             return user32.CallWindowProcW(old_proc, h, msg, wp, lp)
 
