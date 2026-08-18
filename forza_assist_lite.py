@@ -584,6 +584,16 @@ BOOT_TR = {
              "note": 'Steering Assist needs the game telemetry'},
         ],
         "hint": 'It might take a while, please wait',
+        "phrases": [
+            'Hang tight, this is almost done',
+            'Making sure everything is in place',
+            'Still working on a few things',
+            'Getting the details right',
+            'This setup only happens once',
+            'Almost there, thanks for waiting',
+            'Setting things up just for you',
+            'Just a moment longer',
+        ],
         "tele": {"top": 'Launch the game - Navigate to settings HUD & Gameplay / Telemetry:',
                  "bottom": 'Set the settings to these exact parameters',
                  "btn": 'Done',
@@ -620,6 +630,16 @@ BOOT_TR = {
              "note": 'Steering Assist нужна телеметрия игры'},
         ],
         "hint": 'Это может занять время, подождите',
+        "phrases": [
+            'Немного терпения, почти готово',
+            'Проверяем, что все на месте',
+            'Осталась пара мелочей',
+            'Доводим детали до ума',
+            'Эта настройка выполняется один раз',
+            'Почти закончили, спасибо за ожидание',
+            'Настраиваем все под вас',
+            'Еще минутку',
+        ],
         "tele": {"top": 'Запустите игру - Откройте настройки HUD & Gameplay / Telemetry:',
                  "bottom": 'Выставьте эти значения в точности',
                  "btn": 'Готово',
@@ -656,6 +676,16 @@ BOOT_TR = {
              "note": 'Steering Assist necesita la telemetria del juego'},
         ],
         "hint": 'Puede tardar un poco, espera por favor',
+        "phrases": [
+            'Un poco de paciencia, ya casi esta',
+            'Comprobando que todo este en su sitio',
+            'Aun quedan un par de cosas',
+            'Puliendo los ultimos detalles',
+            'Esta configuracion solo se hace una vez',
+            'Ya casi, gracias por esperar',
+            'Ajustando todo para ti',
+            'Solo un momento mas',
+        ],
         "tele": {"top": 'Inicia el juego - Ve a los ajustes HUD & Gameplay / Telemetry:',
                  "bottom": 'Configura estos valores exactos',
                  "btn": 'Listo',
@@ -692,6 +722,16 @@ BOOT_TR = {
              "note": 'Steering Assist a besoin de la telemetrie du jeu'},
         ],
         "hint": 'Cela peut prendre un moment, patientez',
+        "phrases": [
+            "Encore un peu de patience, c'est presque fini",
+            'On verifie que tout est en place',
+            'Il reste deux ou trois choses',
+            'On peaufine les derniers details',
+            "Cette configuration ne se fait qu'une fois",
+            'Presque termine, merci de patienter',
+            'On regle tout pour vous',
+            'Encore un instant',
+        ],
         "tele": {"top": 'Lancez le jeu - Ouvrez les reglages HUD & Gameplay / Telemetry:',
                  "bottom": 'Reglez exactement ces parametres',
                  "btn": 'Termine',
@@ -728,6 +768,16 @@ BOOT_TR = {
              "note": 'Steering Assist braucht die Telemetrie des Spiels'},
         ],
         "hint": 'Das kann etwas dauern, bitte warten',
+        "phrases": [
+            'Noch ein wenig Geduld, gleich geschafft',
+            'Wir pruefen, ob alles an seinem Platz ist',
+            'Es fehlen noch ein paar Kleinigkeiten',
+            'Wir bringen die Details in Ordnung',
+            'Diese Einrichtung laeuft nur einmal',
+            'Fast fertig, danke fuers Warten',
+            'Wir richten alles fuer dich ein',
+            'Nur noch einen Moment',
+        ],
         "tele": {"top": 'Starte das Spiel - Oeffne die Einstellungen HUD & Gameplay / Telemetry:',
                  "bottom": 'Stelle genau diese Werte ein',
                  "btn": 'Fertig',
@@ -764,6 +814,16 @@ BOOT_TR = {
              "note": 'Steering Assist にはゲームのテレメトリーが必要です'},
         ],
         "hint": '少し時間がかかります。お待ちください',
+        "phrases": [
+            'もう少しです。そのままお待ちください',
+            'すべて揃っているか確認しています',
+            'あと少しだけ残っています',
+            '細かい部分を整えています',
+            'この設定は最初の一回だけです',
+            'もうすぐ完了です。お待ちいただきありがとうございます',
+            'あなたに合わせて設定しています',
+            'あと少しお待ちください',
+        ],
         "tele": {"top": 'ゲームを起動し、設定の HUD & Gameplay / Telemetry を開きます:',
                  "bottom": 'この通りに設定してください',
                  "btn": '完了',
@@ -792,6 +852,7 @@ BOOT_DEMO_ERR = os.environ.get("ASSIST_BOOT_ERROR", "")
 
 BOOT_MIN_MS = 8000
 BOOT_STEP_MS = 6000
+BOOT_PHRASE_MS = 4500
 BOOT_DONE_MS = 6000
 
 PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
@@ -2200,7 +2261,7 @@ def build_html() -> str:
     html = html.replace("__BOOT__", json.dumps(
          {"tr": BOOT_TR, "short": LANG_SHORT, "langs": LANG_ORDER,
          "minMs": BOOT_MIN_MS, "stepMs": BOOT_STEP_MS,
-         "doneMs": BOOT_DONE_MS}))
+         "phraseMs": BOOT_PHRASE_MS, "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
@@ -2420,7 +2481,9 @@ body.t-light{
 .bdim{color:var(--accent);opacity:.28}
 /* the lit copy is drawn along the spline itself, not cropped to a box */
 .blit{color:var(--accent)}
-.blit path{transition:stroke-dashoffset .12s linear}
+/* starts empty before any script runs, so the shape never flashes full */
+.blit path{stroke-dasharray:1200;stroke-dashoffset:1200;
+           transition:stroke-dashoffset .12s linear}
 .bpct{margin-top:30px;text-align:center;font-size:10px;font-weight:500;
       color:var(--row-fg)}
 .bpct b{color:var(--accent);font-weight:600}
@@ -2856,6 +2919,19 @@ let bootPhase = 'load', bootT0 = 0, bootDoneAt = 0, bootSkip = false;
 /* the install is paced so every step can actually be read: the shown step
    trails the real one and never advances faster than BOOT.stepMs */
 let bootShown = 0, bootShownAt = 0;
+/* the reassuring line under the steps, shuffled so each launch reads
+   differently; the first one is always the wording from the mockup */
+let bootPhrases = [], bootPhraseAt = 0, bootPhraseIx = 0;
+
+function bootPhraseList(){
+  const t = BT();
+  const rest = (t.phrases || []).slice();
+  for (let i = rest.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = rest[i]; rest[i] = rest[j]; rest[j] = tmp;
+  }
+  return [t.hint].concat(rest);
+}
 let bootLang = 'en';
 
 /* the loading shape is drawn stroke-first, so it fills along its own
@@ -2867,9 +2943,53 @@ function bootFill(p){
     bootPath = $('#boot-lit').querySelector('path');
     if (!bootPath) return;
     bootLen = bootPath.getTotalLength();
+    /* the empty state has to land without a transition, or the shape
+       animates from fully drawn down to nothing on the first frame */
+    bootPath.style.transition = 'none';
     bootPath.style.strokeDasharray = bootLen;
+    bootPath.style.strokeDashoffset = bootLen;
+    void bootPath.getBoundingClientRect();
+    bootPath.style.transition = '';
   }
   bootPath.style.strokeDashoffset = bootLen * (1 - Math.max(0, Math.min(1, p)));
+}
+
+/* A progress curve that moves in uneven bursts: a real install never
+   advances at a constant rate, and a perfectly smooth bar reads as fake.
+   The segments are rolled once per launch, so no two runs look alike. */
+let bootCurve = null;
+
+function bootRoll(){
+  const segs = [];
+  let acc = 0;
+  for (let i = 0; i < 7; i++){
+    const w = 0.5 + Math.random() * 1.5;
+    segs.push(w);
+    acc += w;
+  }
+  let t = 0, done = 0;
+  bootCurve = segs.map((w, i) => {
+    const share = w / acc;
+    t += share;
+    /* the gained percentage runs ahead of or behind the elapsed share */
+    done = i === segs.length - 1
+      ? 1 : Math.min(0.97, done + share * (0.45 + Math.random() * 1.3));
+    return [t, done];
+  });
+}
+
+function bootProgress(x){
+  if (!bootCurve) bootRoll();
+  x = Math.max(0, Math.min(1, x));
+  let t0 = 0, p0 = 0;
+  for (const [t1, p1] of bootCurve){
+    if (x <= t1){
+      const k = t1 > t0 ? (x - t0) / (t1 - t0) : 1;
+      return p0 + (p1 - p0) * k;
+    }
+    t0 = t1; p0 = p1;
+  }
+  return 1;
 }
 
 /* the pack of strings for the language shown on the boot screen */
@@ -2882,6 +3002,12 @@ function bootRedraw(){
   ['#boot-line', '#boot-note', '#boot-hint', '#tele-top', '#tele-bot',
    '.berr'].forEach(sel => { const e = $(sel); if (e) e.dataset.cur = ''; });
   $('#boot-load').textContent = t.loading;
+  if (bootPhrases.length){
+    bootPhrases = bootPhraseList();
+    bootPhraseIx = 0;
+    bootPhraseAt = performance.now();
+    if (bootPhase === 'steps') $('#boot-hint').innerHTML = bootPhrases[0];
+  }
   if ($('#tele-chips').dataset.built){
     $('#tele-chips').dataset.built = '';
     $('#tele-chips').innerHTML = '';
@@ -3014,7 +3140,7 @@ function bootTick(){
   const now = performance.now(), el = now - bootT0;
 
   if (bootPhase === 'load'){
-    const pct = Math.min(100, Math.round(el / BOOT.minMs * 100));
+    const pct = Math.round(bootProgress(el / BOOT.minMs) * 100);
     $('#boot-load').textContent = BT().loading;
     bootFill(pct / 100);
     $('#boot-pct').textContent = pct + '%';
@@ -3025,11 +3151,14 @@ function bootTick(){
       return;
     }
     bootPhase = 'steps';
+    bootPhrases = bootPhraseList();
+    bootPhraseIx = 0;
     stageHide('#bs-load');
     setTimeout(() => {
       if (bootPhase === 'app') return;
       stageShow('#bs-steps');
-      $('#boot-hint').innerHTML = BT().hint;
+      $('#boot-hint').innerHTML = bootPhrases[0];
+      bootPhraseAt = performance.now();
     }, 300);
     return;
   }
@@ -3054,6 +3183,11 @@ function bootTick(){
              info.title + ': <b>' + t.step + ' ' + step + '</b>');
     swapText($('#boot-note'), info.note);
     bootDots(step - 1, -1, fill);
+    if (step < 5 && now - bootPhraseAt >= BOOT.phraseMs){
+      bootPhraseAt = now;
+      bootPhraseIx = (bootPhraseIx + 1) % bootPhrases.length;
+      swapText($('#boot-hint'), bootPhrases[bootPhraseIx]);
+    }
     /* on the last step the hint gives way to the telemetry instructions */
     if (step >= 5){
       $('#boot-hint').classList.add('fade');
