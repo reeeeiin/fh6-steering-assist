@@ -2142,6 +2142,15 @@ UI_FONT = "Chiron"
 FONT_WEIGHTS = ((400, "regular"), (500, "medium"), (600, "semibold"))
 
 
+def _icon_names():
+    """Every icon exported from Figma, so new ones need no registration."""
+    for base in (_app_dir(), _res_dir()):
+        d = os.path.join(base, "assets", "icons")
+        if os.path.isdir(d):
+            return sorted(n[:-4] for n in os.listdir(d) if n.endswith(".svg"))
+    return []
+
+
 def _icon(name: str) -> str:
     """Inline an exported Figma icon, recoloured to follow the text colour."""
     raw = _read_asset(os.path.join("icons", name + ".svg"))
@@ -2179,9 +2188,7 @@ def build_html() -> str:
 
     html = HTML_PAGE
     html = html.replace("/*FONTS*/", font_css)
-    for _n in ("applogo", "applogotagline", "logoappspline", "arrowback",
-               "close", "minimize", "settings", "donecheck",
-               "undonecross", "downloadarrow"):
+    for _n in _icon_names():
         html = html.replace("<!--ICON:%s-->" % _n, _icon(_n))
     html = html.replace("<!--LOGO-->", logo)
     html = html.replace("__TR__", json.dumps(TR, ensure_ascii=False))
@@ -2405,12 +2412,13 @@ body.t-light{
 .bstage.off{display:none !important}
 
 #bs-load{top:106px}
-.bmark{position:relative;width:292px;height:120px;margin:0 auto}
-.blay{position:absolute;top:0;left:0;display:block;overflow:hidden;
-      width:292px;height:120px}
-.blay svg{display:block;width:292px;height:120px}
+.bmark{position:relative;width:292px;height:122px;margin:0 auto}
+.blay{position:absolute;top:0;left:0;display:block;width:292px;height:122px}
+.blay svg{display:block;width:292px;height:122px}
 .bdim{color:var(--accent);opacity:.28}
-.blit{color:var(--accent);width:0;transition:width .1s linear}
+/* the lit copy is drawn along the spline itself, not cropped to a box */
+.blit{color:var(--accent)}
+.blit path{transition:stroke-dashoffset .12s linear}
 .bpct{margin-top:30px;text-align:center;font-size:10px;font-weight:500;
       color:var(--row-fg)}
 .bpct b{color:var(--accent);font-weight:600}
@@ -2424,19 +2432,20 @@ body.t-light{
 .bnote{margin-top:30px;font-size:12px;font-weight:500;color:var(--accent);
        text-align:center;line-height:1;transition:opacity .22s ease}
 .bnote.bad{color:var(--danger)}
-.bdot{width:28px;height:28px;border-radius:50%;box-sizing:border-box;flex:none;
-      border:2px solid var(--accent);display:flex;align-items:center;
-      justify-content:center;color:var(--accent-fg);
+.bdot{position:relative;width:28px;height:28px;border-radius:50%;
+      box-sizing:border-box;flex:none;border:2px solid var(--accent);
+      color:var(--accent-fg);
       transition:background .3s ease,border-color .3s ease}
 .bdot.on{background:var(--accent)}
 .bdot.bad{border-color:var(--danger)}
 .bdot.bad.hit{background:var(--danger)}
-.bdot svg{width:14px;height:10px;opacity:0;transition:opacity .3s ease}
-.bdot .x{width:12px;height:12px}
-.bdot.on .ok,.bdot.bad.hit .x{opacity:1}
-.bdot .x{display:none}
-.bdot.bad .ok{display:none}
-.bdot.bad .x{display:block}
+.bdot .ok,.bdot .x{position:absolute;inset:0;display:flex;
+                   align-items:center;justify-content:center;opacity:0;
+                   transition:opacity .3s ease}
+.bdot.on .ok{opacity:1}
+.bdot.bad.hit .x{opacity:1}
+.bdot .ok svg{display:block;width:14px;height:10px}
+.bdot .x svg{display:block;width:12px;height:12px}
 .bbar{width:24px;height:4px;border-radius:2px;background:var(--track);
       flex:none;overflow:hidden}
 .bbar i{display:block;height:100%;width:0;border-radius:2px;
@@ -2510,8 +2519,8 @@ body.t-light{
 
   <div class="bstage" id="bs-load">
     <div class="bmark">
-      <span class="blay bdim"><!--ICON:logoappspline--></span>
-      <span class="blay blit" id="boot-lit"><!--ICON:logoappspline--></span>
+      <span class="blay bdim"><!--ICON:applogoshape--></span>
+      <span class="blay blit" id="boot-lit"><!--ICON:applogoshape--></span>
     </div>
     <div class="bpct"><span id="boot-load">Loading</span> <b id="boot-pct">0%</b></div>
   </div>
@@ -2842,6 +2851,20 @@ const B_OK = __ICON_OK__, B_X = __ICON_X__;
 let bootPhase = 'load', bootT0 = 0, bootDoneAt = 0, bootSkip = false;
 let bootLang = 'en';
 
+/* the loading shape is drawn stroke-first, so it fills along its own
+   curve while the dim copy underneath keeps the whole outline visible */
+let bootPath = null, bootLen = 0;
+
+function bootFill(p){
+  if (!bootPath){
+    bootPath = $('#boot-lit').querySelector('path');
+    if (!bootPath) return;
+    bootLen = bootPath.getTotalLength();
+    bootPath.style.strokeDasharray = bootLen;
+  }
+  bootPath.style.strokeDashoffset = bootLen * (1 - Math.max(0, Math.min(1, p)));
+}
+
 /* the pack of strings for the language shown on the boot screen */
 function BT(){ return BOOT.tr[bootLang] || BOOT.tr.en; }
 
@@ -2979,7 +3002,7 @@ function bootTick(){
   if (bootPhase === 'load'){
     const pct = Math.min(100, Math.round(el / BOOT.minMs * 100));
     $('#boot-load').textContent = BT().loading;
-    $('#boot-lit').style.width = pct + '%';
+    bootFill(pct / 100);
     $('#boot-pct').textContent = pct + '%';
     if (el < BOOT.minMs) return;
     /* a repeat launch goes straight to the app once the loop is up */
@@ -3066,6 +3089,66 @@ WIN_W = int(510 * UI_SCALE)
 WIN_MIN_H = int(360 * UI_SCALE)
 _WIN = {"hwnd": 0, "content_h": 770}
 
+class MONITORINFO(ctypes.Structure):
+    _fields_ = [("cbSize", ctypes.c_ulong),
+                ("rcMonitor", wintypes.RECT),
+                ("rcWork", wintypes.RECT),
+                ("dwFlags", ctypes.c_ulong)]
+
+
+def _work_area(hwnd):
+    """The desktop area of the monitor the window sits on, minus the
+    taskbar. Falls back to the primary screen when the call fails."""
+    try:
+        mon = ctypes.windll.user32.MonitorFromWindow(hwnd, 2)
+        info = MONITORINFO()
+        info.cbSize = ctypes.sizeof(MONITORINFO)
+        if ctypes.windll.user32.GetMonitorInfoW(mon, ctypes.byref(info)):
+            r = info.rcWork
+            return r.left, r.top, r.right, r.bottom
+    except Exception:
+        pass
+    w = ctypes.windll.user32.GetSystemMetrics(0)
+    h = ctypes.windll.user32.GetSystemMetrics(1)
+    return 0, 0, w, h
+
+
+def _place(hwnd, x, y, w, h):
+    """Move and size the window, keeping it inside the work area."""
+    l, t, r, b = _work_area(hwnd)
+    x = max(l, min(x, r - w)) if r - l > w else l
+    y = max(t, min(y, b - h)) if b - t > h else t
+    ctypes.windll.user32.SetWindowPos(hwnd, 0, int(x), int(y),
+                                      int(w), int(h), 0x0014)
+
+
+def centre_window(hwnd, w, h):
+    l, t, r, b = _work_area(hwnd)
+    _place(hwnd, l + (r - l - w) // 2, t + (b - t - h) // 2, w, h)
+
+
+def _resize_keeping_centre(h):
+    """JS reports the natural height of the layout; the window follows it
+    and grows around its own centre, so a window opened in the middle of
+    the screen stays there as the boot screen gives way to the app."""
+    try:
+        h = max(WIN_MIN_H, int(float(h)))
+        _WIN["content_h"] = h
+        hwnd = _WIN.get("hwnd")
+        if not hwnd:
+            return True
+        r = wintypes.RECT()
+        ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
+        w = max(WIN_W, r.right - r.left)
+        old_h = r.bottom - r.top
+        if abs(h - old_h) <= 2 and w == r.right - r.left:
+            return True
+        _place(hwnd, r.left, r.top - (h - old_h) // 2, w, h)
+    except (TypeError, ValueError):
+        pass
+    return True
+
+
 class Api:
     def __init__(self, bridge):
         self._b = bridge
@@ -3148,22 +3231,7 @@ class Api:
         return True
 
     def content_h(self, h):
-        """JS reports the natural height of the layout; the window follows it.
-        Width is fixed by the design and never derived from content."""
-        try:
-            h = max(WIN_MIN_H, int(float(h)))
-            _WIN["content_h"] = h
-            hwnd = _WIN.get("hwnd")
-            if hwnd:
-                r = wintypes.RECT()
-                ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
-                w = max(WIN_W, r.right - r.left)
-                if abs(h - (r.bottom - r.top)) > 2 or w != r.right - r.left:
-                    ctypes.windll.user32.SetWindowPos(
-                        hwnd, 0, 0, 0, w, h, 0x0016)
-        except (TypeError, ValueError):
-            pass
-        return True
+        return _resize_keeping_centre(h)
 
     def state(self):
         b = self._b
@@ -3290,6 +3358,7 @@ def main():
         if not hwnd:
             return
         _WIN["hwnd"] = hwnd
+        centre_window(hwnd, WIN_W, WIN_MIN_H)
         try:
             pref = ctypes.c_int(2)
             ctypes.windll.dwmapi.DwmSetWindowAttribute(
