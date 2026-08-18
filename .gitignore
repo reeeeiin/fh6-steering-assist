@@ -28,3 +28,6 @@ log*.csv
 # из-за правила RELEASE_NOTES*.md, и у выпущенного проекта не было истории.
 # Черновики релизных заметок по-прежнему локальные:
 RELEASE_NOTES_v*.md
+
+# Subset UI fonts, regenerated at build time by tools/subset_font.py
+assets/fonts/

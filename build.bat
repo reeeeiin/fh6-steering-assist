@@ -12,6 +12,11 @@ for /f tokens^=2^ delims^=^" %%v in ('findstr /b /c:"APP_VERSION" forza_assist_l
 if "%VER%"=="" set VER=0.0.0
 echo Building version %VER%
 
+rem The UI font is a full CJK family, 26 MB per weight. Subset it to the
+rem characters the interface actually uses - about 13 KB each.
+python tools\subset_font.py
+if errorlevel 1 goto fail
+
 rem Driver installers go INSIDE the exe so the app never needs the
 rem network on a user machine. Fetched once, at build time.
 python tools\fetch_drivers.py
