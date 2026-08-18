@@ -2179,6 +2179,18 @@ UI_FONT = "Chiron"
 FONT_WEIGHTS = ((400, "regular"), (500, "medium"), (600, "semibold"))
 
 
+def _icon(name: str) -> str:
+    """Inline an exported Figma icon, recoloured to follow the text colour."""
+    raw = _read_asset(os.path.join("icons", name + ".svg"))
+    if not raw:
+        return ""
+    raw = re.sub(r'\s(width|height)="[^"]*"', "", raw, count=2)
+    raw = raw.replace('stroke="black"', 'stroke="currentColor"')
+    raw = raw.replace('fill="black"', 'fill="currentColor"')
+    raw = raw.replace('fill="white"', 'fill="currentColor"')
+    return raw.strip()
+
+
 def _font_css() -> str:
     """Subset faces produced by tools/subset_font.py, inlined as data URIs."""
     css = ""
@@ -2204,6 +2216,10 @@ def build_html() -> str:
 
     html = HTML_PAGE
     html = html.replace("/*FONTS*/", font_css)
+    for _n in ("applogo", "applogotagline", "logoappspline", "arrowback",
+               "close", "minimize", "settings", "donecheck",
+               "undonecross", "downloadarrow"):
+        html = html.replace("<!--ICON:%s-->" % _n, _icon(_n))
     html = html.replace("<!--LOGO-->", logo)
     html = html.replace("<!--LOGO2-->", logo)
     html = html.replace("<!--LOGO3-->", logo)
@@ -2232,6 +2248,8 @@ body{background:var(--win-bg);
      font-family:'Chiron','Segoe UI',system-ui,sans-serif;
      -webkit-font-smoothing:antialiased}
 body.t-dark{
+ --btn-bg:rgba(255,255,255,.1); --btn-line:rgba(255,255,255,.1); --btn-fg:rgba(255,255,255,.5); --btn-hov-bg:rgba(4,146,248,.1); --danger-bg:rgba(233,31,31,.12);
+
  --win-bg:#111111; --app-bg:#111111; --card:#1C1C1C; --card-2:#242424;
  --row-fg:#FFFFFF; --muted:#8A8A8A; --foot:#5A5A5A;
  --line:#2A2A2A; --track:#3A3A3A; --knob:#FFFFFF;
@@ -2246,6 +2264,8 @@ body.t-dark{
  --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 body.t-light{
+ --btn-bg:rgba(0,0,0,.06); --btn-line:rgba(0,0,0,.08); --btn-fg:rgba(0,0,0,.5); --btn-hov-bg:rgba(4,146,248,.1); --danger-bg:rgba(233,31,31,.10);
+
  --win-bg:#F2F2F2; --app-bg:#F2F2F2; --card:#FFFFFF; --card-2:#F7F7F7;
  --row-fg:#101010; --muted:#6E6E6E; --foot:#9A9A9A;
  --line:#E4E4E4; --track:#DCDCDC; --knob:#FFFFFF;
@@ -2263,43 +2283,35 @@ body.t-light{
 #zoom{width:510px;min-height:100vh;display:flex;flex-direction:column;
       padding:18px;gap:0}
 
-/* ---------- title bar ---------- */
-.tbar{display:flex;align-items:center;gap:8px;height:22px;flex:none}
-.tdrag{flex:1;height:22px;display:flex;align-items:center;gap:8px;min-width:0}
-.back{width:16px;height:16px;border-radius:5px;flex:none;display:none;
-      align-items:center;justify-content:center;cursor:pointer;
-      background:var(--card);transition:background .16s ease,opacity .16s ease}
-.back.on{display:flex}
-.back:hover{background:var(--card-2)}
-.back svg{width:8px;height:8px}
-.back path{stroke:var(--btn);stroke-width:1.6;fill:none;
-           stroke-linecap:round;stroke-linejoin:round}
-.logo{color:var(--logo-fg);display:flex;align-items:center;flex:none}
-.logo svg{display:block;height:14px;width:auto}
-.vbadge{font-size:8px;font-weight:600;letter-spacing:-.01em;
-        color:var(--accent);border:1px solid var(--accent);
-        border-radius:4px;padding:1px 4px;flex:none}
+/* ---------- title bar: components are 18 px tall, radius 5 ---------- */
+.tbar{display:flex;align-items:center;gap:8px;height:18px;flex:none}
+.tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
+.hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
+      justify-content:center;gap:5px;cursor:pointer;flex:none;
+      font-size:8px;font-weight:600;box-sizing:border-box;
+      background:var(--btn-bg);border:1px solid var(--btn-line);
+      color:var(--btn-fg);
+      transition:background .18s ease,border-color .18s ease,color .18s ease}
+.hbtn:hover{background:var(--btn-hov-bg);border-color:var(--accent);
+            color:var(--accent)}
+.hbtn.on{background:var(--accent);border-color:var(--accent);
+         color:var(--accent-fg)}
+.hbtn.tab{padding:0 8px}
+.hbtn.sq{width:18px;padding:0}
+.hbtn.back{display:none} .hbtn.back.show{display:flex}
+.hbtn.sup{background:var(--warn);border-color:var(--warn);color:#101010}
+.hbtn.sup:hover{filter:brightness(1.08)}
+.hbtn.close:hover{background:var(--danger-bg);border-color:var(--danger);
+                  color:var(--danger)}
+.hbtn svg{display:block;flex:none}
+.logo{display:flex;align-items:center;color:var(--logo-fg);flex:none}
+.logo svg{display:block;height:10px;width:auto}
+.vbadge{height:18px;padding:0 6px;border-radius:5px;display:flex;
+        align-items:center;font-size:8px;font-weight:600;flex:none;
+        color:var(--accent);background:var(--btn-hov-bg);
+        border:1px solid var(--accent)}
+.wbtns{display:flex;align-items:center;gap:3px;flex:none}
 .tabs{display:flex;align-items:center;gap:5px;flex:none}
-.tab{height:16px;border-radius:5px;padding:0 6px;display:flex;
-     align-items:center;gap:3px;cursor:pointer;font-size:8px;font-weight:500;
-     letter-spacing:-.01em;background:var(--card);color:var(--muted);
-     transition:background .16s ease,color .16s ease}
-.tab:hover{background:var(--card-2);color:var(--row-fg)}
-.tab.on{background:var(--accent);color:var(--accent-fg)}
-.tab.warn{background:var(--warn);color:#101010}
-.tab.warn:hover{filter:brightness(1.06)}
-.tab svg{width:8px;height:8px;flex:none}
-.tab path,.tab circle{stroke:currentColor;stroke-width:1.5;fill:none}
-.wbtns{display:flex;align-items:center;gap:4px;flex:none}
-.wb{width:16px;height:16px;border-radius:5px;flex:none;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-    background:var(--card);transition:background .16s ease}
-.wb:hover{background:var(--card-2)}
-.wb-close:hover{background:var(--danger)}
-.wb svg{width:8px;height:8px}
-.wb path{stroke:var(--btn);stroke-width:1.6;fill:none;stroke-linecap:round}
-.wb-close path{stroke:var(--danger)}
-.wb-close:hover path{stroke:#fff}
 
 /* ---------- sections and cards ---------- */
 .sec{font-size:8px;font-weight:400;color:var(--muted);letter-spacing:.01em;
@@ -2363,7 +2375,8 @@ body.t-light{
        background:var(--track)}
 
 /* ---------- footer ---------- */
-.foot{font-size:6px;line-height:1.5;color:var(--foot);padding:2px 4px 0}
+.foot{display:flex;flex-direction:column;gap:6px;padding:10px 4px 0}
+.foot span{font-size:6px;line-height:1.55;color:var(--foot)}
 
 /* ---------- screens ---------- */
 .screen{display:none;flex-direction:column;gap:10px}
@@ -2419,24 +2432,25 @@ body.t-light{
 <div id="zoom">
   <div class="tbar">
     <div class="tdrag pywebview-drag-region">
-      <span class="back reveal" id="back"><svg viewBox="0 0 8 8"><path d="M5.2 1L2 4l3.2 3"/></svg></span>
-      <span class="logo reveal"><!--LOGO--></span>
+      <span class="hbtn sq back reveal" id="back"><!--ICON:arrowback--></span>
+      <span class="logo reveal"><!--ICON:applogo--></span>
       <span class="vbadge reveal">v__VER__</span>
     </div>
     <div class="tabs">
-      <span class="tab warn reveal" data-nav="support">Support</span>
-      <span class="tab reveal" data-nav="legal">Legal</span>
-      <span class="tab reveal" data-nav="settings">
-        <svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="2.1"/><path d="M6 1v1.4M6 9.6V11M1 6h1.4M9.6 6H11"/></svg>
-        Settings</span>
+      <span class="hbtn tab sup reveal" data-nav="support">Support</span>
+      <span class="hbtn tab reveal" data-nav="legal">Legal</span>
+      <span class="hbtn tab reveal" data-nav="settings"><!--ICON:settings-->Settings</span>
     </div>
     <div class="wbtns">
-      <span class="wb reveal" data-win="min"><svg viewBox="0 0 10 10"><path d="M2.5 5h5"/></svg></span>
-      <span class="wb wb-close reveal" data-win="close"><svg viewBox="0 0 10 10"><path d="M3 3l4 4M7 3l-4 4"/></svg></span>
+      <span class="hbtn sq reveal" data-win="min"><!--ICON:minimize--></span>
+      <span class="hbtn sq close reveal" data-win="close"><!--ICON:close--></span>
     </div>
   </div>
   <div class="screen on" id="screen"></div>
-  <div class="foot reveal">Steering Assist is an independent fan project. Not affiliated with or endorsed by Microsoft, Playground Games or Turn 10 Studios. Forza is a trademark of Microsoft Corporation.</div>
+  <div class="foot reveal">
+    <span>Steering Assist is an independent fan project. Not affiliated with or endorsed by Microsoft, Playground Games or Turn 10 Studios. Forza is a trademark of Microsoft Corporation. Created and published by reeeeiin.</span>
+    <span>Steering Assist &#8482; 2026. Released under the MIT Licence.</span>
+  </div>
 </div>
 <div id="boot">
   <div class="bname">Steering assist.</div>
@@ -2565,8 +2579,8 @@ function screenSettings(){
 function render(){
   if (!cfg) return;
   document.body.className = 't-' + (THEMES.includes(cfg.theme) ? cfg.theme : 'dark');
-  $('#back').classList.toggle('on', screen !== 'main');
-  $$('.tab[data-nav]').forEach(b =>
+  $('#back').classList.toggle('show', screen !== 'main');
+  $$('[data-nav]').forEach(b =>
     b.classList.toggle('on', b.dataset.nav === screen));
   const box = $('#screen');
   box.innerHTML = screen === 'settings' ? screenSettings() : screenMain();
