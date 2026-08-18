@@ -572,19 +572,53 @@ BOOT_MIN_MS = 3500
 BOOT_DONE_MS = 6000
 
 BOOT_STEPS = [
-    {"title": "Getting a few things ready",
-     "note": "Checking drivers"},
-    {"title": "Getting a few things ready",
+    {"title": "Getting few things ready",
+     "note": "Checking your drivers"},
+    {"title": "Getting few things ready",
      "note": "Installing ViGEmBus and HidHide"},
-    {"title": "Getting a few things ready",
+    {"title": "Getting few things ready",
      "note": "Hiding your controller from the game"},
-    {"title": "Almost there",
+    {"title": "Getting few things ready",
      "note": "Creating the virtual controller"},
     {"title": "Almost ready",
-     "note": "Waiting for telemetry from the game"},
+     "note": "Steering Assist needs the game telemetry"},
 ]
-BOOT_HINT = "This might take a while, the window is not frozen"
-BOOT_DONE = "All set"
+BOOT_HINT = "It might take a while, please wait"
+
+BOOT_TELE = {
+    "top": "Launch the game - Navigate to settings HUD & Gameplay / Telemetry:",
+    "bottom": "Set the settings written down above to these exact parameters:",
+    "chips": [("Data out", "On"), ("IP address", "127.0.0.1"),
+              ("IP port", "20777")],
+    "btn": "Done",
+}
+
+BOOT_DONE = {
+    "title": "You all set!",
+    "note": "Enjoy drifting on the streets of Horizon.",
+    "hint": "Don't forget to support if you enjoyed the app",
+}
+
+BOOT_ERR_TITLE = "Something went wrong"
+BOOT_ERR_BTN = "Start over"
+
+BOOT_ERRORS = {
+    "failed": ("An error occurred while installing the drivers",
+               "Try to close apps like controller drivers and etc, "
+               "it might interfere with Steering Assist installation."),
+    "noadmin": ("Administrator rights are needed to install the drivers",
+                "Close the app and start it again, "
+                "then confirm the Windows prompt."),
+    "reboot": ("Restart your PC to finish the driver installation",
+               "The drivers are installed, "
+               "a restart is needed to activate them."),
+    "hide": ("An error occurred while hiding your controller",
+             "Try to close apps like controller drivers and etc, "
+             "it might interfere with Steering Assist installation."),
+    "vigem": ("An error occurred while creating the virtual controller",
+              "Try to close apps like controller drivers and etc, "
+              "it might interfere with Steering Assist installation."),
+}
 
 PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
 
@@ -809,7 +843,7 @@ class DriverSetup:
                             creationflags=0x08000000, timeout=600)
         return cp.returncode
 
-    def ensure(self) -> None:
+    def ensure(self, on_install=None) -> None:
         manifest = self._manifest()
         need = []
         for label, reg_name, service, key in self.ITEMS:
@@ -832,6 +866,8 @@ class DriverSetup:
             return
 
         self.code = "installing"
+        if on_install:
+            on_install()
         self.info = "installing " + ", ".join(n for n, _, _ in need)
         reboot = False
         failed = []
@@ -1215,14 +1251,17 @@ class Bridge:
 
             self.boot_step = 1
             self.status_code = "drivers"
-            self.drivers.ensure()
+            self.drivers.ensure(on_install=lambda: setattr(self,
+                                                           "boot_step", 2))
             self.boot_installed = list(self.drivers.installed)
             if self.drivers.code in ("failed", "noadmin", "reboot"):
                 self.boot_error = self.drivers.code
 
-            self.boot_step = 2
+            self.boot_step = 3
             if self.cfg["auto_hide"]:
                 self.hidhide.engage()
+                if self.hidhide.code == "error":
+                    self.boot_error = "hide"
             else:
                 self.hidhide.code = "disabled"
                 self.hidhide.info = "auto mode disabled in config"
@@ -1235,7 +1274,7 @@ class Bridge:
                 self.mode_info = ("wired mode: axes mirrored, "
                                   "buttons physical-only")
 
-            self.boot_step = 3
+            self.boot_step = 4
             before = xinput_connected_slots()
             try:
                 pad = vg.VX360Gamepad()
@@ -1255,7 +1294,6 @@ class Bridge:
                 self.boot_error = "vigem"
                 return
             time.sleep(1.0)
-            self.boot_step = 4
             self.hidhide.snapshot_allowed()
             virtual = xinput_connected_slots() - before
 
@@ -2253,17 +2291,19 @@ def build_html() -> str:
                "undonecross", "downloadarrow"):
         html = html.replace("<!--ICON:%s-->" % _n, _icon(_n))
     html = html.replace("<!--LOGO-->", logo)
-    html = html.replace("<!--LOGO2-->", logo)
-    html = html.replace("<!--LOGO3-->", logo)
     html = html.replace("__TR__", json.dumps(TR, ensure_ascii=False))
     html = html.replace("__SLIDERS__", json.dumps(SLIDERS))
     html = html.replace("__ARROW__", json.dumps(ARROW_SVG))
     html = html.replace("__LANGS__", json.dumps(LANG_ORDER))
     html = html.replace("__PROFILES__", json.dumps(PROFILES))
     html = html.replace("__BOOT__", json.dumps(
-        {"steps": BOOT_STEPS, "hint": BOOT_HINT, "done": BOOT_DONE,
+         {"steps": BOOT_STEPS, "hint": BOOT_HINT, "done": BOOT_DONE,
+         "tele": BOOT_TELE, "errors": BOOT_ERRORS,
+         "errTitle": BOOT_ERR_TITLE, "errBtn": BOOT_ERR_BTN,
          "minMs": BOOT_MIN_MS, "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
+    html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
+    html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
     html = html.replace("__VER__", APP_VERSION)
     html = html.replace("__DEFAULTS__", json.dumps(
         {k: DEFAULTS[k] for k, *_ in SLIDERS}))
@@ -2443,38 +2483,93 @@ body.t-light{
 .tbar .reveal{transform:none}
 .tbar .reveal.shown{transition:opacity .42s ease}
 
-#boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      gap:12px;padding:24px 18px;transition:opacity .45s ease}
+#boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);zoom:1.25;
+      transition:opacity .5s ease}
 #boot.gone{opacity:0;pointer-events:none}
-.bname{font-size:15px;font-weight:600;color:var(--row-fg)}
-.bmark{position:relative;width:140px;height:60px}
-.blay{position:absolute;inset:0;display:flex;align-items:center;
-      justify-content:center;overflow:hidden}
-.blay svg{width:140px;height:60px;flex:none}
-.bdim{opacity:.2}
-.blit{width:0;transition:width .18s linear}
-.bpct{font-size:10px;color:var(--foot);transition:opacity .3s ease}
+#boot .row,#boot .blk{all:unset}
+.bclose{position:absolute;top:15px;right:15px;width:18px;height:18px;
+        box-sizing:border-box;display:flex;align-items:center;
+        justify-content:center;border-radius:5px;color:var(--btn-fg);
+        border:1px solid var(--btn-line);background:var(--btn-bg);
+        -webkit-app-region:no-drag;cursor:default;
+        transition:background .15s ease,color .15s ease}
+.bclose:hover{background:var(--danger);border-color:var(--danger);color:#fff}
+.bclose svg{width:10px;height:10px}
+.btag{position:absolute;top:30px;left:0;right:0;display:flex;
+      justify-content:center;color:var(--logo-fg)}
+.btag svg{display:block;width:141px;height:20px}
+
+.bstage{position:absolute;left:0;right:0;
+        transition:opacity .45s ease,transform .45s ease}
+.bstage.leave{opacity:0;pointer-events:none}
+.bstage.enter{opacity:0;transform:translateY(16px);transition:none}
+.bstage.off{display:none !important}
+
+#bs-load{top:106px}
+.bmark{position:relative;width:292px;height:120px;margin:0 auto}
+.blay{position:absolute;top:0;left:0;display:block;overflow:hidden;
+      width:292px;height:120px}
+.blay svg{display:block;width:292px;height:120px}
+.bdim{color:var(--accent);opacity:.28}
+.blit{color:var(--accent);width:0;transition:width .1s linear}
+.bpct{margin-top:30px;text-align:center;font-size:10px;font-weight:500;
+      color:var(--row-fg)}
 .bpct b{color:var(--accent);font-weight:600}
-.bline{font-size:11px;color:var(--row-fg);min-height:14px;
-       transition:opacity .22s ease;text-align:center}
-.bline b{color:var(--accent);font-weight:600}
-.bnote{font-size:10px;color:var(--accent);min-height:13px;
-       transition:opacity .22s ease;text-align:center}
-.bhint{font-size:8px;color:var(--foot);transition:opacity .4s ease;text-align:center}
-.fade{opacity:0}
-.bdots{display:flex;align-items:center}
-.bdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent);
-      box-sizing:border-box;display:flex;align-items:center;justify-content:center;
-      transition:background .3s ease;flex:none}
+
+#bs-steps{top:90px}
+.bline{font-size:14px;font-weight:500;color:var(--row-fg);text-align:center;
+       line-height:1;transition:opacity .22s ease}
+.bline b{color:var(--accent);font-weight:600;margin-left:6px}
+.bdots{margin-top:26px;display:flex;align-items:center;justify-content:center;
+       gap:10px}
+.bnote{margin-top:30px;font-size:12px;font-weight:500;color:var(--accent);
+       text-align:center;line-height:1;transition:opacity .22s ease}
+.bnote.bad{color:var(--danger)}
+.bdot{width:28px;height:28px;border-radius:50%;box-sizing:border-box;flex:none;
+      border:2px solid var(--accent);display:flex;align-items:center;
+      justify-content:center;color:var(--accent-fg);
+      transition:background .3s ease,border-color .3s ease}
 .bdot.on{background:var(--accent)}
-.bdot svg{width:8px;height:8px;opacity:0;transition:opacity .3s ease}
-.bdot.on svg{opacity:1}
-.bdot path{stroke:var(--win-bg);stroke-width:2;fill:none;
-           stroke-linecap:round;stroke-linejoin:round}
-.bbar{width:20px;height:2px;background:var(--accent);opacity:.3;
-      transition:opacity .3s ease}
-.bbar.on{opacity:1}
+.bdot.bad{border-color:var(--danger)}
+.bdot.bad.hit{background:var(--danger)}
+.bdot svg{width:14px;height:10px;opacity:0;transition:opacity .3s ease}
+.bdot .x{width:12px;height:12px}
+.bdot.on .ok,.bdot.bad.hit .x{opacity:1}
+.bdot .x{display:none}
+.bdot.bad .ok{display:none}
+.bdot.bad .x{display:block}
+.bbar{width:24px;height:4px;border-radius:2px;background:var(--track);
+      flex:none;overflow:hidden}
+.bbar i{display:block;height:100%;width:0;border-radius:2px;
+        background:var(--accent);transition:width .4s ease}
+.bbar.bad{background:var(--danger)}
+
+#bs-tele{top:232px}
+.btele-t{font-size:10px;color:var(--row-fg);text-align:center;line-height:1}
+.bchips{margin-top:8px;display:flex;align-items:center;justify-content:center;
+        gap:8px}
+.bchip{height:24px;box-sizing:border-box;padding:0 11px;border-radius:7px;
+       border:1px solid var(--accent);display:flex;align-items:center;
+       font-size:10px;color:var(--row-fg);white-space:nowrap}
+.bchip b{color:var(--accent);font-weight:600;margin-left:4px}
+.bchips .bbtn{margin-left:2px}
+.btele-t+.bchips+.btele-t{margin-top:9px}
+.bbtn{height:24px;box-sizing:border-box;padding:0 13px;border-radius:7px;
+      border:0;background:var(--accent);color:var(--accent-fg);font-size:12px;
+      font-weight:600;font-family:inherit;cursor:default;white-space:nowrap;
+      transition:filter .15s ease}
+.bbtn:hover{filter:brightness(1.12)}
+
+#bs-err{top:266px;display:flex;align-items:center;justify-content:center;
+        gap:14px}
+.berr{width:244px;font-size:12px;color:var(--row-fg);line-height:1.45}
+
+.bhint{position:absolute;top:283px;left:0;right:0;text-align:center;
+       font-size:12px;color:var(--row-fg);transition:opacity .45s ease}
+.bhint.fade{opacity:0}
+.bfoot{position:absolute;top:319px;left:50px;right:50px;display:flex;
+       flex-direction:column;gap:3px}
+.bfoot span{font-size:6px;line-height:1.35;color:var(--foot);text-align:center}
 .rz{position:fixed;z-index:99}
 .rz[data-e=t]{top:0;left:14px;right:14px;height:5px;cursor:ns-resize}
 .rz[data-e=b]{bottom:0;left:14px;right:14px;height:6px;cursor:ns-resize}
@@ -2510,16 +2605,42 @@ body.t-light{
   </div>
 </div>
 <div id="boot">
-  <div class="bname">Steering assist.</div>
-  <div class="bmark">
-    <div class="blay bdim"><!--LOGO2--></div>
-    <div class="blay blit" id="boot-lit"><!--LOGO3--></div>
+  <span class="bclose" data-win="close"><!--ICON:close--></span>
+  <div class="btag"><!--ICON:applogotagline--></div>
+
+  <div class="bstage" id="bs-load">
+    <div class="bmark">
+      <span class="blay bdim"><!--ICON:logoappspline--></span>
+      <span class="blay blit" id="boot-lit"><!--ICON:logoappspline--></span>
+    </div>
+    <div class="bpct">Loading <b id="boot-pct">0%</b></div>
   </div>
-  <div class="bpct" id="boot-pct">Loading <b>0%</b></div>
-  <div class="bline" id="boot-line"></div>
-  <div class="bdots" id="boot-dots"></div>
-  <div class="bnote" id="boot-note"></div>
+
+  <div class="bstage off" id="bs-steps">
+    <div class="bline" id="boot-line"></div>
+    <div class="bdots" id="boot-dots"></div>
+    <div class="bnote" id="boot-note"></div>
+  </div>
+
+  <div class="bstage off" id="bs-tele">
+    <div class="btele-t" id="tele-top"></div>
+    <div class="bchips" id="tele-chips"></div>
+    <div class="btele-t" id="tele-bot"></div>
+  </div>
+
+  <div class="bstage off" id="bs-err">
+    <div class="berr" id="err-text"></div>
+    <button class="bbtn" id="err-btn"></button>
+  </div>
+
   <div class="bhint" id="boot-hint"></div>
+  <div class="bfoot">
+    <span>Steering Assist is an independent fan project. It is not affiliated
+      with, endorsed by or sponsored by Microsoft Corporation, Xbox Game
+      Studios, Playground Games or Turn 10 Studios.</span>
+    <span>Forza, Forza Horizon and Forza Motorsport are trademarks of Microsoft
+      Corporation. All other trademarks belong to their respective owners.</span>
+  </div>
 </div>
 <div class="rz" data-e="t"></div><div class="rz" data-e="b"></div><div class="rz" data-e="l"></div><div class="rz" data-e="r"></div><div class="rz" data-e="tl"></div><div class="rz" data-e="tr"></div><div class="rz" data-e="bl"></div><div class="rz" data-e="br"></div>
 <script>
@@ -2806,25 +2927,40 @@ async function poll(){
 }
 
 /* ---------------- boot ---------------- */
-const TICK = '<svg viewBox="0 0 12 12"><path d="M2.5 6.3L5 8.8L9.5 3.8"/></svg>';
-let bootPhase = 'load', bootT0 = 0, bootDoneAt = 0;
+const B_OK = __ICON_OK__, B_X = __ICON_X__;
+let bootPhase = 'load', bootT0 = 0, bootDoneAt = 0, bootSkip = false;
 
-function bootDots(active){
+/* the five stage dots with the connecting bars between them */
+function bootDots(done, bad){
   const el = $('#boot-dots');
   if (!el.dataset.built){
     let h = '';
     for (let i = 0; i < 5; i++){
-      if (i) h += '<span class="bbar" data-bar="' + i + '"></span>';
-      h += '<span class="bdot" data-dot="' + i + '">' + TICK + '</span>';
+      if (i) h += '<span class="bbar" data-bar="' + i + '"><i></i></span>';
+      h += '<span class="bdot" data-dot="' + i + '">' +
+           '<span class="ok">' + B_OK + '</span>' +
+           '<span class="x">' + B_X + '</span></span>';
     }
     el.innerHTML = h; el.dataset.built = '1';
   }
-  el.querySelectorAll('[data-dot]').forEach(d =>
-    d.classList.toggle('on', (+d.dataset.dot) < active));
-  el.querySelectorAll('[data-bar]').forEach(b =>
-    b.classList.toggle('on', (+b.dataset.bar) < active));
+  el.querySelectorAll('[data-dot]').forEach(d => {
+    const i = +d.dataset.dot;
+    d.classList.toggle('on', i < done);
+    d.classList.toggle('bad', bad >= 0 && i >= bad);
+    d.classList.toggle('hit', bad >= 0 && i === bad);
+  });
+  el.querySelectorAll('[data-bar]').forEach(b => {
+    const i = +b.dataset.bar;
+    b.classList.toggle('bad', bad >= 0 && i > bad);
+    /* the bar of the step in flight fills part way, as a progress cue */
+    /* up to the failed dot the track stays filled; past it it turns red */
+    b.querySelector('i').style.width =
+      (bad >= 0 ? (i <= bad ? 100 : 0)
+                : (i < done ? 100 : (i === done ? 45 : 0))) + '%';
+  });
 }
 
+/* one line swaps for another only after the first has fully faded */
 function swapText(el, html){
   if (!el || el.dataset.cur === html) return;
   el.dataset.cur = html;
@@ -2832,50 +2968,127 @@ function swapText(el, html){
   setTimeout(() => { el.innerHTML = html; el.classList.remove('fade'); }, 230);
 }
 
+function stageShow(id){
+  const el = $(id);
+  if (!el.classList.contains('off')) return;
+  el.classList.remove('off', 'leave');
+  el.classList.add('enter');
+  /* a timer, not rAF: the callback must fire even when the window is
+     hidden or the compositor is idle, or the stage stays offset */
+  setTimeout(() => el.classList.remove('enter'), 30);
+}
+
+function stageHide(id){
+  const el = $(id);
+  if (el.classList.contains('off') || el.classList.contains('leave')) return;
+  el.classList.add('leave');
+  setTimeout(() => el.classList.add('off'), 470);
+}
+
+function bootChips(){
+  const el = $('#tele-chips');
+  if (el.dataset.built) return;
+  el.innerHTML = BOOT.tele.chips.map(
+      c => '<span class="bchip">' + c[0] + ' - <b>' + c[1] + '</b></span>'
+    ).join('') + '<button class="bbtn" id="tele-btn">' +
+    BOOT.tele.btn + '</button>';
+  el.dataset.built = '1';
+  $('#tele-btn').addEventListener('click', () => { bootSkip = true; });
+}
+
+/* the boot screen fades out, then the app rises block by block */
 function revealApp(){
   bootPhase = 'app';
   $('#boot').classList.add('gone');
-  setTimeout(() => { $('#boot').style.display = 'none'; }, 480);
-  const items = [...$$('.tbar .reveal'), ...$$('#screen .reveal'),
-                 ...$$('.foot.reveal')];
-  items.forEach((el, i) => setTimeout(() => el.classList.add('shown'), 120 + i * 80));
+  setTimeout(() => { $('#boot').style.display = 'none'; }, 520);
   reportHeight();
+  const head = [...$$('.tbar .reveal')];
+  const body = [...$$('#screen .reveal'), ...$$('.foot.reveal')];
+  head.forEach((el, i) => setTimeout(() => el.classList.add('shown'),
+                                     260 + i * 60));
+  body.forEach((el, i) => setTimeout(() => el.classList.add('shown'),
+                                     260 + head.length * 60 + i * 90));
+}
+
+function bootError(code){
+  const e = BOOT.errors[code] || BOOT.errors.failed;
+  stageHide('#bs-load'); stageHide('#bs-tele'); stageShow('#bs-steps');
+  swapText($('#boot-line'), BOOT.errTitle);
+  swapText($('#boot-note'), e[0]);
+  $('#boot-note').classList.add('bad');
+  $('#boot-hint').classList.add('fade');
+  const t = $('#err-text');
+  if (t.dataset.cur !== e[1]){
+    t.dataset.cur = e[1];
+    t.textContent = e[1];
+    $('#err-btn').textContent = BOOT.errBtn;
+  }
+  stageShow('#bs-err');
+  bootDots(Math.max(0, (state.boot_step || 1) - 1), (state.boot_step || 1) - 1);
 }
 
 function bootTick(){
   if (bootPhase === 'app' || !state) return;
   const now = performance.now(), el = now - bootT0;
+
   if (bootPhase === 'load'){
     const pct = Math.min(100, Math.round(el / BOOT.minMs * 100));
     $('#boot-lit').style.width = pct + '%';
-    $('#boot-pct').innerHTML = 'Loading <b>' + pct + '%</b>';
+    $('#boot-pct').textContent = pct + '%';
     if (el < BOOT.minMs) return;
+    /* a repeat launch goes straight to the app once the loop is up */
     if (!state.first_run && !state.boot_error){
       if (state.boot_step >= 5) revealApp();
       return;
     }
     bootPhase = 'steps';
-    $('#boot-pct').classList.add('fade');
-    $('#boot-hint').innerHTML = BOOT.hint;
+    stageHide('#bs-load');
+    setTimeout(() => {
+      if (bootPhase === 'app') return;
+      stageShow('#bs-steps');
+      $('#boot-hint').innerHTML = BOOT.hint;
+    }, 300);
     return;
   }
+
   if (bootPhase === 'steps'){
+    if (state.boot_error){ bootError(state.boot_error); return; }
+    if ($('#bs-steps').classList.contains('off')) return;
     const step = Math.max(1, Math.min(5, state.boot_step || 1));
     const info = BOOT.steps[step - 1];
-    swapText($('#boot-line'), info.title + ': <b>Step ' + step + '</b>');
-    swapText($('#boot-note'), state.boot_error ? '' : info.note);
-    bootDots(state.boot_error ? step - 1 : step);
-    $('#boot-hint').classList.toggle('fade', step >= 5 || !!state.boot_error);
-    if (state.boot_error) return;
-    if (state.boot_step >= 5 && (state.recv || state.alive)){
+    swapText($('#boot-line'),
+             info.title + ': <b>Step ' + step + '</b>');
+    swapText($('#boot-note'), info.note);
+    bootDots(step - 1, -1);
+    /* on the last step the hint gives way to the telemetry instructions */
+    if (step >= 5){
+      $('#boot-hint').classList.add('fade');
+      bootChips();
+      $('#tele-top').textContent = BOOT.tele.top;
+      $('#tele-bot').textContent = BOOT.tele.bottom;
+      stageShow('#bs-tele');
+    }
+    if (state.boot_step >= 5 && (bootSkip || state.recv || state.alive)){
       bootPhase = 'done'; bootDoneAt = now;
-      swapText($('#boot-line'), BOOT.done);
-      swapText($('#boot-note'), ''); bootDots(5);
+      stageHide('#bs-tele');
+      swapText($('#boot-line'), BOOT.done.title);
+      swapText($('#boot-note'), BOOT.done.note);
+      bootDots(5, -1);
+      setTimeout(() => {
+        if (bootPhase !== 'done') return;
+        $('#boot-hint').innerHTML = BOOT.done.hint;
+        $('#boot-hint').classList.remove('fade');
+      }, 320);
     }
     return;
   }
+
   if (bootPhase === 'done' && now - bootDoneAt > BOOT.doneMs) revealApp();
 }
+
+$('#err-btn').addEventListener('click', () => {
+  try{ pywebview.api.boot_retry(); }catch(e){}
+});
 
 /* ---------------- window ---------------- */
 $$('[data-win]').forEach(b => b.addEventListener('click', () => {
@@ -2935,6 +3148,20 @@ class Api:
             self._window.destroy()
         except Exception:
             pass
+        return True
+
+    def boot_retry(self):
+        """Start over after a failed install: a fresh process re-runs the
+        whole sequence, and picks up drivers a reboot has just activated."""
+        try:
+            args = [sys.executable]
+            if not getattr(sys, "frozen", False):
+                args.append(os.path.abspath(__file__))
+            subprocess.Popen(args, close_fds=True,
+                             creationflags=0x08000000)
+        except Exception:
+            return False
+        self.win_close()
         return True
 
     def win_grip(self, edge="br"):
