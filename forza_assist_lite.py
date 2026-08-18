@@ -790,7 +790,8 @@ BOOT_TR = {
 BOOT_DEMO = os.environ.get("ASSIST_BOOT_DEMO", "")
 BOOT_DEMO_ERR = os.environ.get("ASSIST_BOOT_ERROR", "")
 
-BOOT_MIN_MS = 3500
+BOOT_MIN_MS = 8000
+BOOT_STEP_MS = 6000
 BOOT_DONE_MS = 6000
 
 PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
@@ -2198,7 +2199,8 @@ def build_html() -> str:
     html = html.replace("__PROFILES__", json.dumps(PROFILES))
     html = html.replace("__BOOT__", json.dumps(
          {"tr": BOOT_TR, "short": LANG_SHORT, "langs": LANG_ORDER,
-         "minMs": BOOT_MIN_MS, "doneMs": BOOT_DONE_MS}))
+         "minMs": BOOT_MIN_MS, "stepMs": BOOT_STEP_MS,
+         "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
@@ -2449,7 +2451,7 @@ body.t-light{
 .bbar{width:24px;height:4px;border-radius:2px;background:var(--track);
       flex:none;overflow:hidden}
 .bbar i{display:block;height:100%;width:0;border-radius:2px;
-        background:var(--accent);transition:width .4s ease}
+        background:var(--accent);transition:width .35s linear}
 .bbar.bad{background:var(--danger)}
 
 #bs-tele{top:232px}
@@ -2479,6 +2481,7 @@ body.t-light{
        flex-direction:column;gap:3px}
 .bfoot span{font-size:6px;line-height:1.35;color:var(--foot);text-align:center}
 .rz{position:fixed;z-index:99}
+html[data-boot] .rz{display:none}
 .rz[data-e=t]{top:0;left:14px;right:14px;height:5px;cursor:ns-resize}
 .rz[data-e=b]{bottom:0;left:14px;right:14px;height:6px;cursor:ns-resize}
 .rz[data-e=l]{left:0;top:14px;bottom:14px;width:5px;cursor:ew-resize}
@@ -2822,6 +2825,7 @@ function liveUpdate(){
 
 let lastH = 0;
 function reportHeight(){
+  if (bootPhase !== 'app') return;
   requestAnimationFrame(() => {
     const h = Math.round($('#zoom').offsetHeight * 1.25);
     if (h && Math.abs(h - lastH) > 2){
@@ -2849,6 +2853,9 @@ async function poll(){
 /* ---------------- boot ---------------- */
 const B_OK = __ICON_OK__, B_X = __ICON_X__;
 let bootPhase = 'load', bootT0 = 0, bootDoneAt = 0, bootSkip = false;
+/* the install is paced so every step can actually be read: the shown step
+   trails the real one and never advances faster than BOOT.stepMs */
+let bootShown = 0, bootShownAt = 0;
 let bootLang = 'en';
 
 /* the loading shape is drawn stroke-first, so it fills along its own
@@ -2895,7 +2902,7 @@ $('#boot-lang').addEventListener('click', () => {
 });
 
 /* the five stage dots with the connecting bars between them */
-function bootDots(done, bad){
+function bootDots(done, bad, fill){
   const el = $('#boot-dots');
   if (!el.dataset.built){
     let h = '';
@@ -2917,10 +2924,13 @@ function bootDots(done, bad){
     const i = +b.dataset.bar;
     b.classList.toggle('bad', bad >= 0 && i > bad);
     /* the bar of the step in flight fills part way, as a progress cue */
-    /* up to the failed dot the track stays filled; past it it turns red */
+    /* up to the failed dot the track stays filled; past it it turns red.
+       the bar of the step in flight creeps along with its own progress */
     b.querySelector('i').style.width =
       (bad >= 0 ? (i <= bad ? 100 : 0)
-                : (i < done ? 100 : (i === done ? 45 : 0))) + '%';
+                : (i < done ? 100
+                            : (i === done ? Math.round(100 * (fill || 0)) : 0)))
+      + '%';
   });
 }
 
@@ -2964,9 +2974,12 @@ function bootChips(){
 /* the boot screen fades out, then the app rises block by block */
 function revealApp(){
   bootPhase = 'app';
+  delete document.documentElement.dataset.boot;
   document.body.className = 't-' + (cfg ? cfg.theme : 'dark');
   $('#boot').classList.add('gone');
   setTimeout(() => { $('#boot').style.display = 'none'; }, 520);
+  try{ pywebview.api.boot_done(); }catch(e){}
+  lastH = 0;
   reportHeight();
   const head = [...$$('.tbar .reveal')];
   const body = [...$$('#screen .reveal'), ...$$('.foot.reveal')];
@@ -2991,7 +3004,8 @@ function bootError(code){
     $('#err-btn').textContent = t.errBtn;
   }
   stageShow('#bs-err');
-  bootDots(Math.max(0, (state.boot_step || 1) - 1), (state.boot_step || 1) - 1);
+  const at = Math.max(0, (state.boot_step || 1) - 1);
+  bootDots(at, at, 1);
 }
 
 function bootTick(){
@@ -3023,13 +3037,23 @@ function bootTick(){
   if (bootPhase === 'steps'){
     if (state.boot_error){ bootError(state.boot_error); return; }
     if ($('#bs-steps').classList.contains('off')) return;
-    const step = Math.max(1, Math.min(5, state.boot_step || 1));
+    const real = Math.max(1, Math.min(5, state.boot_step || 1));
+    if (!bootShown){ bootShown = 1; bootShownAt = now; }
+    if (real > bootShown && now - bootShownAt >= BOOT.stepMs){
+      bootShown += 1;
+      bootShownAt = now;
+    }
+    /* measured after the step may have changed, so a fresh step starts
+       from zero instead of inheriting the previous step's age */
+    const held = now - bootShownAt;
+    const step = bootShown;
+    const fill = Math.min(1, held / BOOT.stepMs);
     const t = BT();
     const info = t.steps[step - 1];
     swapText($('#boot-line'),
              info.title + ': <b>' + t.step + ' ' + step + '</b>');
     swapText($('#boot-note'), info.note);
-    bootDots(step - 1, -1);
+    bootDots(step - 1, -1, fill);
     /* on the last step the hint gives way to the telemetry instructions */
     if (step >= 5){
       $('#boot-hint').classList.add('fade');
@@ -3038,12 +3062,13 @@ function bootTick(){
       $('#tele-bot').textContent = t.tele.bottom;
       stageShow('#bs-tele');
     }
-    if (state.boot_step >= 5 && (bootSkip || state.recv || state.alive)){
+    if (step >= 5 && held >= BOOT.stepMs
+        && (bootSkip || state.recv || state.alive)){
       bootPhase = 'done'; bootDoneAt = now;
       stageHide('#bs-tele');
       swapText($('#boot-line'), t.done.title);
       swapText($('#boot-note'), t.done.note);
-      bootDots(5, -1);
+      bootDots(5, -1, 1);
       setTimeout(() => {
         if (bootPhase !== 'done') return;
         $('#boot-hint').innerHTML = BT().done.hint;
@@ -3077,6 +3102,7 @@ $$('.rz').forEach(z => z.addEventListener('pointerdown', e => {
 }));
 
 window.addEventListener('pywebviewready', () => {
+  document.documentElement.dataset.boot = '1';
   bootT0 = performance.now();
   poll();
   setInterval(bootTick, 60);
@@ -3087,7 +3113,7 @@ window.addEventListener('pywebviewready', () => {
 UI_SCALE = 1.25      # design pixels are small; everything is scaled once
 WIN_W = int(510 * UI_SCALE)
 WIN_MIN_H = int(360 * UI_SCALE)
-_WIN = {"hwnd": 0, "content_h": 770}
+_WIN = {"hwnd": 0, "content_h": 770, "boot": True}
 
 class MONITORINFO(ctypes.Structure):
     _fields_ = [("cbSize", ctypes.c_ulong),
@@ -3128,6 +3154,13 @@ def centre_window(hwnd, w, h):
 
 
 def _resize_keeping_centre(h):
+    """The boot window keeps the size the mockup gives it."""
+    if _WIN.get("boot"):
+        return True
+    return _resize_free(h)
+
+
+def _resize_free(h):
     """JS reports the natural height of the layout; the window follows it
     and grows around its own centre, so a window opened in the middle of
     the screen stays there as the boot screen gives way to the app."""
@@ -3180,6 +3213,11 @@ class Api:
             pass
         return True
 
+    def boot_done(self):
+        """The app is on screen: the window may follow its content again."""
+        _WIN["boot"] = False
+        return True
+
     def boot_retry(self):
         """Start over after a failed install: a fresh process re-runs the
         whole sequence, and picks up drivers a reboot has just activated."""
@@ -3195,10 +3233,11 @@ class Api:
         return True
 
     def win_grip(self, edge="br"):
-        """Frameless resize. Free on both axes, clamped so the window can
+        """Frameless resize. Disabled while the boot window is up. Free on both axes, clamped so the window can
         never go below the layout width or the shortest state's height."""
         hwnd = _WIN.get("hwnd")
-        if not hwnd or edge not in ("l", "r", "t", "b", "tl", "tr", "bl", "br"):
+        if _WIN.get("boot") or not hwnd or edge not in (
+                "l", "r", "t", "b", "tl", "tr", "bl", "br"):
             return True
 
         def loop():
@@ -3383,6 +3422,10 @@ def main():
         def wnd_proc(h, msg, wp, lp):
             if msg == 0x0214:
                 rect = ctypes.cast(lp, ctypes.POINTER(wintypes.RECT)).contents
+                if _WIN.get("boot"):
+                    rect.right = rect.left + WIN_W
+                    rect.bottom = rect.top + WIN_MIN_H
+                    return 1
                 if rect.right - rect.left < WIN_W:
                     if wp in (1, 4, 7):
                         rect.left = rect.right - WIN_W
