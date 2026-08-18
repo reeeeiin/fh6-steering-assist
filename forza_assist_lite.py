@@ -1443,7 +1443,6 @@ TR = {
         "assisted": "Assisted",
         "pad_status": "Controller",
         "mod_status": "Pad hiding",
-        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - On",
         "theme_dark": "Dark",
         "theme_light": "Light",
@@ -1521,7 +1520,6 @@ TR = {
         "assisted": "С ассистом",
         "pad_status": "Контроллер",
         "mod_status": "Скрытие пада",
-        "setup_where": "Настройки игры > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - Вкл",
         "theme_dark": "Тёмная",
         "theme_light": "Светлая",
@@ -1599,7 +1597,6 @@ TR = {
         "assisted": "Assisted",
         "pad_status": "Controller",
         "mod_status": "Pad hiding",
-        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - On",
         "theme_dark": "Dark",
         "theme_light": "Light",
@@ -1677,7 +1674,6 @@ TR = {
         "assisted": "Assisted",
         "pad_status": "Controller",
         "mod_status": "Pad hiding",
-        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - On",
         "theme_dark": "Dark",
         "theme_light": "Light",
@@ -1755,7 +1751,6 @@ TR = {
         "assisted": "Assisted",
         "pad_status": "Controller",
         "mod_status": "Pad hiding",
-        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - On",
         "theme_dark": "Dark",
         "theme_light": "Light",
@@ -1833,7 +1828,6 @@ TR = {
         "assisted": "Assisted",
         "pad_status": "Controller",
         "mod_status": "Pad hiding",
-        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - On",
         "theme_dark": "Dark",
         "theme_light": "Light",
@@ -1911,7 +1905,6 @@ TR = {
         "assisted": "Assisted",
         "pad_status": "Controller",
         "mod_status": "Pad hiding",
-        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - On",
         "theme_dark": "Dark",
         "theme_light": "Light",
@@ -1989,7 +1982,6 @@ TR = {
         "assisted": "Assisted",
         "pad_status": "Controller",
         "mod_status": "Pad hiding",
-        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - On",
         "theme_dark": "Dark",
         "theme_light": "Light",
@@ -2067,7 +2059,6 @@ TR = {
         "assisted": "Assisted",
         "pad_status": "Controller",
         "mod_status": "Pad hiding",
-        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - On",
         "theme_dark": "Dark",
         "theme_light": "Light",
@@ -2145,7 +2136,6 @@ TR = {
         "assisted": "Assisted",
         "pad_status": "Controller",
         "mod_status": "Pad hiding",
-        "setup_where": "Game settings > Hud & Gameplay > Telemetry:",
         "setup_dataout": "Data out - On",
         "theme_dark": "Dark",
         "theme_light": "Light",
@@ -2322,18 +2312,22 @@ body.t-light{
  --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 
-#zoom{width:100%;min-width:510px;zoom:1.25;
+#zoom{width:100%;min-width:510px;min-height:calc(100vh / 1.25);zoom:1.25;
       display:flex;flex-direction:column;padding:18px;gap:24px}
 
 /* ---------- title bar: components are 18 px tall, radius 5 ---------- */
-.tbar{display:flex;align-items:center;gap:8px;height:18px;flex:none}
+.tbar{display:flex;align-items:center;gap:8px;height:18px;flex:none;
+      position:relative}
+.tbar .drag{position:absolute;left:-18px;right:-18px;top:-18px;bottom:-12px;
+            z-index:0}
+.tbar > *:not(.drag){position:relative;z-index:1}
 .hbtn,.vbadge{-webkit-app-region:no-drag}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
 .hbtn{height:18px;border-radius:8px;-webkit-corner-smoothing:60%;
       corner-shape:squircle;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
       font-size:8px;font-weight:600;box-sizing:border-box;
-      background:var(--btn-bg);border:1.5px solid var(--btn-line);
+      background:var(--btn-bg);border:2.5px solid var(--btn-line);
       color:var(--btn-fg);
       transition:background .18s ease,border-color .18s ease,color .18s ease}
 .hbtn:hover{background:var(--btn-hov-bg);border-color:var(--accent);
@@ -2358,7 +2352,7 @@ body.t-light{
         -webkit-corner-smoothing:60%;corner-shape:squircle;display:flex;
         align-items:center;font-size:8px;font-weight:600;flex:none;
         color:var(--accent);background:var(--btn-hov-bg);
-        border:1.5px solid var(--accent)}
+        border:2.5px solid var(--accent)}
 .wbtns{display:flex;align-items:center;gap:3px;flex:none}
 .tabs{display:flex;align-items:center;gap:5px;flex:none}
 
@@ -2385,15 +2379,15 @@ body.t-light{
 
 /* ---------- segmented ---------- */
 .seg{display:flex;align-items:center;background:var(--card-2);
-     border-radius:8px;padding:0;gap:0;position:relative;flex:none;height:24px}
-.seg .pill{position:absolute;top:0;bottom:0;border-radius:8px;
+     border-radius:7px;padding:0;gap:0;position:relative;flex:none;height:24px}
+.seg .pill{position:absolute;top:0;bottom:0;border-radius:7px;
            -webkit-corner-smoothing:60%;corner-shape:squircle;
            background:var(--accent);
            transition:left .28s cubic-bezier(.4,0,.2,1),
                       width .28s cubic-bezier(.4,0,.2,1)}
 .seg span{position:relative;z-index:1;font-size:11px;font-weight:500;
           height:24px;line-height:24px;text-align:center;box-sizing:border-box;
-          padding:0 12px;min-width:67px;border-radius:8px;color:var(--muted);
+          padding:0 12px;min-width:67px;border-radius:7px;color:var(--muted);
           cursor:pointer;white-space:nowrap;transition:color .2s ease;
           -webkit-corner-smoothing:60%;corner-shape:squircle}
 .seg span:hover{color:var(--row-fg)}
@@ -2415,11 +2409,13 @@ body.t-light{
 .tstat{font-size:13px;font-weight:600;flex:none;transition:color .3s ease}
 .tstat.ok{color:var(--ok)} .tstat.wait{color:var(--muted)}
 .tstat.err{color:var(--danger)}
-.chip{font-size:11px;font-weight:600;color:var(--accent);flex:none}
+.chip{font-size:10px;font-weight:600;color:var(--accent);flex:none}
 .hintrow{display:flex;align-items:center;justify-content:space-between;
          gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
-.hintq{font-size:9px;line-height:1.35;color:var(--muted);max-width:150px}
-.hintchips{display:flex;align-items:center;gap:14px}
+.hintq{font-size:9px;line-height:1.35;color:var(--muted);flex:1 1 auto;
+       min-width:0}
+.hintchips{display:flex;align-items:center;gap:12px;flex:0 0 auto;
+           white-space:nowrap}
 .barwrap{padding:5px 0}
 .barlbl{font-size:9px;color:var(--muted);margin-bottom:3px}
 .bar{height:20px;border-radius:6px;background:var(--bar-bg);position:relative;
@@ -2434,7 +2430,10 @@ body.t-light{
 
 /* ---------- footer ---------- */
 .foot{display:flex;flex-direction:column;gap:6px;padding:0 4px;
-      margin-top:0}
+      margin-top:auto;position:relative}
+.foot .drag{position:absolute;left:-18px;right:-18px;top:-12px;bottom:-18px;
+            z-index:0;-webkit-app-region:drag}
+.foot span{position:relative;z-index:1}
 .foot span{font-size:6px;line-height:1.55;color:var(--foot)}
 
 /* ---------- screens ---------- */
@@ -2489,7 +2488,7 @@ body.t-light{
 .rz[data-e=br]{bottom:0;right:0;width:14px;height:14px;cursor:nwse-resize}
 </style></head><body class="t-dark">
 <div id="zoom">
-  <div class="tbar pywebview-drag-region">
+  <div class="tbar"><span class="drag pywebview-drag-region"></span>
     <div class="tdrag">
       <span class="hbtn sq back reveal" id="back"><!--ICON:arrowback--></span>
       <span class="logo reveal"><!--ICON:applogo--></span>
@@ -2507,7 +2506,7 @@ body.t-light{
     </div>
   </div>
   <div class="screen on" id="screen"></div>
-  <div class="foot reveal">
+  <div class="foot reveal"><span class="drag pywebview-drag-region"></span>
     <span>Steering Assist is an independent fan project. Not affiliated with or endorsed by Microsoft, Playground Games or Turn 10 Studios. Forza is a trademark of Microsoft Corporation. Created and published by reeeeiin.</span>
     <span>Steering Assist &#8482; 2026. Released under the MIT Licence.</span>
   </div>
