@@ -1430,7 +1430,7 @@ TR = {
         "paused": "in menu / paused",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
         "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -1507,7 +1507,7 @@ TR = {
         "paused": "в меню / на паузе",
         "setup_ip": "IP адрес - 127.0.0.1",
         "setup_port": "IP порт - 20777",
-        "setup_where": "Настройки игры > Hud & Gameplay / Telemetry:",
+        "setup_where": "Настройки игры >|Hud & Gameplay / Telemetry:",
         "st_recv": "Приём",
         "general_sec": "Основное",
         "tele_status": "Статус телеметрии",
@@ -1584,7 +1584,7 @@ TR = {
         "paused": "у меню / на паузі",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
         "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -1661,7 +1661,7 @@ TR = {
         "paused": "im Menü / pausiert",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
         "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -1738,7 +1738,7 @@ TR = {
         "paused": "dans le menu / en pause",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
         "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -1815,7 +1815,7 @@ TR = {
         "paused": "en menú / en pausa",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
         "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -1892,7 +1892,7 @@ TR = {
         "paused": "nel menu / in pausa",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
         "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -1969,7 +1969,7 @@ TR = {
         "paused": "w menu / pauza",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
         "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -2046,7 +2046,7 @@ TR = {
         "paused": "no menu / em pausa",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
         "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -2123,7 +2123,7 @@ TR = {
         "paused": "menüde / duraklatıldı",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings > Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
         "st_recv": "Reciving",
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -2323,11 +2323,10 @@ body.t-light{
 .tbar > *:not(.drag){position:relative;z-index:1}
 .hbtn,.vbadge{-webkit-app-region:no-drag}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
-.hbtn{height:18px;border-radius:8px;-webkit-corner-smoothing:60%;
-      corner-shape:squircle;display:flex;align-items:center;
+.hbtn{height:18px;border-radius:8px;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
       font-size:8px;font-weight:600;box-sizing:border-box;
-      background:var(--btn-bg);border:2.5px solid var(--btn-line);
+      background:var(--btn-bg);border:1.5px solid var(--btn-line);
       color:var(--btn-fg);
       transition:background .18s ease,border-color .18s ease,color .18s ease}
 .hbtn:hover{background:var(--btn-hov-bg);border-color:var(--accent);
@@ -2349,18 +2348,17 @@ body.t-light{
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none}
 .logo svg{display:block;width:99px;height:18px}
 .vbadge{height:18px;padding:0 6px;border-radius:8px;
-        -webkit-corner-smoothing:60%;corner-shape:squircle;display:flex;
+        display:flex;
         align-items:center;font-size:8px;font-weight:600;flex:none;
         color:var(--accent);background:var(--btn-hov-bg);
-        border:2.5px solid var(--accent)}
+        border:1.5px solid var(--accent)}
 .wbtns{display:flex;align-items:center;gap:3px;flex:none}
 .tabs{display:flex;align-items:center;gap:5px;flex:none}
 
 /* ---------- sections and cards ---------- */
 .sec{font-size:9px;font-weight:400;color:var(--muted);
      padding:0 4px 8px}
-.card{background:var(--card);border-radius:14px;padding:0 15px;flex:none;
-      -webkit-corner-smoothing:60%;corner-shape:squircle}
+.card{background:var(--card);border-radius:14px;padding:0 15px;flex:none;}
 .row{display:flex;align-items:center;gap:12px;min-height:42px;
      border-bottom:1px solid var(--line)}
 .card .row:last-child{border-bottom:none}
@@ -2379,17 +2377,16 @@ body.t-light{
 
 /* ---------- segmented ---------- */
 .seg{display:flex;align-items:center;background:var(--card-2);
-     border-radius:7px;padding:0;gap:0;position:relative;flex:none;height:24px}
-.seg .pill{position:absolute;top:0;bottom:0;border-radius:7px;
-           -webkit-corner-smoothing:60%;corner-shape:squircle;
+     border-radius:9px;padding:2px;gap:0;position:relative;flex:none;height:28px}
+.seg .pill{position:absolute;top:2px;bottom:2px;border-radius:7px;
+           
            background:var(--accent);
            transition:left .28s cubic-bezier(.4,0,.2,1),
                       width .28s cubic-bezier(.4,0,.2,1)}
 .seg span{position:relative;z-index:1;font-size:11px;font-weight:500;
           height:24px;line-height:24px;text-align:center;box-sizing:border-box;
           padding:0 12px;min-width:67px;border-radius:7px;color:var(--muted);
-          cursor:pointer;white-space:nowrap;transition:color .2s ease;
-          -webkit-corner-smoothing:60%;corner-shape:squircle}
+          cursor:pointer;white-space:nowrap;transition:color .2s ease;}
 .seg span:hover{color:var(--row-fg)}
 .seg span.on{color:var(--accent-fg)}
 
@@ -2412,8 +2409,8 @@ body.t-light{
 .chip{font-size:10px;font-weight:600;color:var(--accent);flex:none}
 .hintrow{display:flex;align-items:center;justify-content:space-between;
          gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
-.hintq{font-size:9px;line-height:1.35;color:var(--muted);flex:1 1 auto;
-       min-width:0}
+.hintq{font-size:9px;line-height:1.45;color:var(--muted);flex:1 1 auto;
+       min-width:0;display:flex;flex-direction:column}
 .hintchips{display:flex;align-items:center;gap:12px;flex:0 0 auto;
            white-space:nowrap}
 .barwrap{padding:5px 0}
@@ -2427,6 +2424,7 @@ body.t-light{
        background:var(--row-fg);opacity:.9;z-index:2;border-radius:1px}
 .barlbl{font-size:11px;color:var(--row-fg);margin-bottom:6px}
 .barwrap{padding:8px 0}
+.card .barwrap:last-child{padding-bottom:16px}
 
 /* ---------- footer ---------- */
 .foot{display:flex;flex-direction:column;gap:6px;padding:0 4px;
@@ -2588,7 +2586,7 @@ function screenMain(){
        '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
        '<span class="tstat" id="tstat">-</span></div>' +
        '<div class="hintrow" id="setuphint">' +
-       '<span class="hintq">' + t('setup_where') + '</span>' +
+       '<span class="hintq">' + t('setup_where').split('|').map(function(x){return '<span>'+x+'</span>';}).join('') + '</span>' +
        '<span class="hintchips"><span class="chip">' + t('setup_dataout') + '</span>' +
        '<span class="chip">' + t('setup_ip') + '</span>' +
        '<span class="chip">' + t('setup_port') + '</span></span></div>' +
