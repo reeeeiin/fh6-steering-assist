@@ -3207,6 +3207,7 @@ body.t-light{
           cursor:pointer;white-space:nowrap;transition:color .2s ease;}
 .seg span:hover{color:var(--row-fg)}
 [data-seg=lang] span{font-size:9px;padding:0 8px;min-width:0}
+[data-seg=ui_scale] span{padding:0 10px;min-width:0}
 .seg span.on{color:var(--accent-fg)}
 
 /* ---------- slider ---------- */
@@ -3682,7 +3683,7 @@ function bootTheme(){
 }
 
 const UI_BASE = 1.25;
-const UI_STEPS = [1, 1.25, 1.5];
+const UI_STEPS = [0.9, 1, 1.1, 1.25, 1.5];
 
 function uiZoom(){
   const step = cfg && UI_STEPS.indexOf(+cfg.ui_scale) >= 0 ? +cfg.ui_scale : 1;
@@ -4297,7 +4298,7 @@ window.addEventListener('pywebviewready', () => {
 
 
 UI_SCALE = 1.25      # design pixels are small; everything is scaled once
-UI_STEPS = (1.0, 1.25, 1.5)   # what the user can add on top of that
+UI_STEPS = (0.9, 1.0, 1.1, 1.25, 1.5)   # what the user adds on top
 
 DESIGN_W = 510
 DESIGN_BOOT_H = 360
@@ -4442,18 +4443,20 @@ def close_window(hwnd):
 
 
 def minimise_window(hwnd):
-    """Windows plays no minimise animation for a frameless window, so the
-    shrink is drawn here before handing over to the shell."""
+    """The shell plays no minimise animation for a frameless window, so the
+    shrink is drawn here. The window is put back to full size and opacity
+    while it is still invisible, before the shell is asked to minimise it:
+    minimising first would leave the shrunken size as the one to restore."""
     try:
         rect = wintypes.RECT()
         ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
         w, h = rect.right - rect.left, rect.bottom - rect.top
         _layered(hwnd, True)
         _grow(hwnd, rect.left, rect.top, w, h, CLOSE_MS, _ease_in, False)
-        ctypes.windll.user32.ShowWindow(hwnd, SW_MINIMIZE)
         _place(hwnd, rect.left, rect.top, w, h)
         _alpha(hwnd, 255)
         _layered(hwnd, False)
+        ctypes.windll.user32.ShowWindow(hwnd, SW_MINIMIZE)
     except Exception:
         pass
 
@@ -4461,6 +4464,37 @@ def minimise_window(hwnd):
 def centre_window(hwnd, w, h):
     l, t, r, b = _work_area(hwnd)
     _place(hwnd, l + (r - l - w) // 2, t + (b - t - h) // 2, w, h)
+
+
+HEIGHT_MS = 320.0
+_HEIGHT = {"target": 0, "running": False}
+
+
+def _height_worker(hwnd):
+    """Ease the window towards whatever height the page last asked for,
+    keeping its centre, so the frame grows with the content rather than
+    jumping ahead of it."""
+    try:
+        while True:
+            r = wintypes.RECT()
+            ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
+            start = r.bottom - r.top
+            centre = (r.top + r.bottom) // 2
+            w = r.right - r.left
+            if abs(_HEIGHT["target"] - start) <= 2:
+                return
+            t0 = time.perf_counter()
+            while True:
+                target = _HEIGHT["target"]
+                p = min(1.0, (time.perf_counter() - t0) * 1000.0 / HEIGHT_MS)
+                e = 1.0 - (1.0 - p) ** 3
+                h = int(round(start + (target - start) * e))
+                _place(hwnd, r.left, centre - h // 2, w, h)
+                if p >= 1.0:
+                    break
+                time.sleep(0.008)
+    finally:
+        _HEIGHT["running"] = False
 
 
 def _resize_keeping_centre(h):
@@ -4486,7 +4520,14 @@ def _resize_free(h):
         old_h = r.bottom - r.top
         if abs(h - old_h) <= 2 and w == r.right - r.left:
             return True
-        _place(hwnd, r.left, r.top - (h - old_h) // 2, w, h)
+        if w != r.right - r.left:
+            _place(hwnd, r.left, r.top - (h - old_h) // 2, w, h)
+            return True
+        _HEIGHT["target"] = h
+        if not _HEIGHT["running"]:
+            _HEIGHT["running"] = True
+            threading.Thread(target=_height_worker, args=(hwnd,),
+                             daemon=True).start()
     except (TypeError, ValueError):
         pass
     return True
