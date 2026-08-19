@@ -2736,7 +2736,7 @@ html[data-boot] .rz{display:none}
       <span class="vbadge reveal">v__VER__</span>
     </div>
     <div class="tabs">
-      <span class="hbtn tab sup reveal" data-nav="support">Support</span>
+      <span class="hbtn tab sup reveal" data-url="https://boosty.to/reeeeiin">Support</span>
       <span class="hbtn tab reveal" data-nav="settings"><!--ICON:settings-->Settings</span>
       <span class="hbtn tab reveal" data-nav="faq">FAQ</span>
       <span class="hbtn tab reveal" data-nav="about">About</span>
