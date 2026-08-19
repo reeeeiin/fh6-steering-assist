@@ -850,6 +850,66 @@ BOOT_TR = {
 BOOT_DEMO = os.environ.get("ASSIST_BOOT_DEMO", "")
 BOOT_DEMO_ERR = os.environ.get("ASSIST_BOOT_ERROR", "")
 
+FAQ_ITEMS = [
+    ('The assist does nothing in game', [
+        'Nine times out of ten it is the launch order. The game looks for controllers when it starts, so a virtual pad created afterwards is invisible to it.',
+        'Start Steering Assist first, then launch Forza. If the game is already open, just close and reopen it, the assist can keep running.',
+        'Also check that Steering is set to Simulation in the game. On the other settings the game steers on top of the assist and fights it.',
+    ]),
+    ('It worked, then started behaving erratically', [
+        'Usually a second controller appeared. Plugging in a wheel or waking a wireless pad gives the game another device to read, and it may not be the one the assist is driving.',
+        'Restarting the assist rebuilds the virtual pad and hides the physical one again, which puts everything back in order.',
+        'If the readings froze rather than the steering, the game stopped sending telemetry. Check Data Out is still enabled.',
+    ]),
+    ('Gear shifts do not register while I hold the handbrake', [
+        'The game reads buttons from one device at a time. While the assist holds the handbrake on its virtual pad, presses on your own pad can be ignored.',
+        'The assist yields the mirror for the whole press, so shifts get through. Measured on a real session it lands about eight times out of ten.',
+        'A wired pad is noticeably more reliable here than Bluetooth, which loses more of these presses.',
+    ]),
+    ('Button presses feel laggy or get dropped', [
+        'Bluetooth is the usual cause. The same pad on a cable responds quicker and drops far fewer presses.',
+        'Force feedback shares the channel with your input. The assist sends rumble about twice a second instead of sixty, which is thirty times less traffic, but a busy channel still costs something.',
+        'Close other controller software. Vendor drivers and remappers grab the device and interfere with the assist.',
+    ]),
+    ('The wheels barely turn', [
+        'Assist strength is probably low, or the Minimal profile is active. Raise the strength and try again.',
+        'Steering curve and grip limit reshape the middle of the stick travel. Set high, they eat most of it and leave little to steer with.',
+        'Make sure the game is on Simulation steering. The assisted setting applies its own correction on top and cancels much of this one.',
+    ]),
+    ('Nothing happens at low speed', [
+        'That is deliberate. Below the minimum speed the assist stays completely out of the way, so donuts and parking are still yours.',
+        'Lower the minimum speed in the settings if you want help earlier.',
+    ]),
+    ('The telemetry panel stays empty', [
+        'Open the game settings under HUD & Gameplay and set Data out to On, IP address to 127.0.0.1 and IP port to 20777.',
+        'Another racing app may already hold that port. Close it, or point it somewhere else.',
+        'A firewall can block the local packet. Allow Steering Assist on private networks if the panel stays empty with the settings right.',
+    ]),
+    ('The wheel twitches when I shift mid-drift', [
+        'Shifting hands the buttons back to your pad for a moment, and the steering picks up again right after. The seam is what you feel.',
+        'It is small and does not throw the car off. Raising smoothing softens it further.',
+    ]),
+    ('Clicking the app again does nothing', [
+        'Only one copy runs at a time. A second launch closes itself so the two cannot fight over the virtual pad.',
+        'The window you already have is on the taskbar, minimised or behind the game.',
+    ]),
+    ('My antivirus flags it', [
+        'The app installs drivers, creates a virtual controller and hides your real one from the game. That shape of behaviour is what heuristics look for.',
+        'It also ships unsigned, since code signing certificates are not free, and unsigned installers draw warnings on their own.',
+        'The source is open. If you would rather not trust the build, read it and compile your own.',
+    ]),
+    ('The window is blank or does not open', [
+        'The interface runs on WebView2, which ships with Windows 11. On an older system install the WebView2 Runtime from Microsoft.',
+        'The first launch needs administrator rights to install its drivers. If you refused the prompt, start it again and accept.',
+        'After the drivers install for the first time Windows may need a restart before they work.',
+    ]),
+    ('Does it modify the game?', [
+        'No. It reads the telemetry the game broadcasts itself through Data Out, and presents itself to Windows as an ordinary Xbox controller.',
+        'It does not touch game files, read or write game memory, inject code or interfere with anti-cheat.',
+        'Whether a third-party tool is acceptable in online play is for the publisher to decide, not for this project.',
+    ]),
+]
+
 LEGAL = {
     "how": [
         "Steering Assist reads the telemetry the game broadcasts itself "
@@ -1739,6 +1799,7 @@ TR = {
         "how_it_works": 'How it works',
         "trademarks": 'Trademarks',
         "about_sec": 'About',
+        "faq_sec": 'Frequently Asked Questions',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -1820,6 +1881,7 @@ TR = {
         "how_it_works": 'Как это работает',
         "trademarks": 'Товарные знаки',
         "about_sec": 'О приложении',
+        "faq_sec": 'Частые вопросы',
         "interface_sec": "Интерфейс", "theme": "Тема",
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -1901,6 +1963,7 @@ TR = {
         "how_it_works": 'So funktioniert es',
         "trademarks": 'Markenzeichen',
         "about_sec": 'Uber die App',
+        "faq_sec": 'Haufige Fragen',
         "interface_sec": "Oberfläche", "theme": "Design",
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -1982,6 +2045,7 @@ TR = {
         "how_it_works": 'Comment ca marche',
         "trademarks": 'Marques deposees',
         "about_sec": 'A propos',
+        "faq_sec": 'Questions frequentes',
         "interface_sec": "Interface", "theme": "Thème",
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2063,6 +2127,7 @@ TR = {
         "how_it_works": 'Como funciona',
         "trademarks": 'Marcas registradas',
         "about_sec": 'Acerca de',
+        "faq_sec": 'Preguntas frecuentes',
         "interface_sec": "Interfaz", "theme": "Tema",
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2144,6 +2209,7 @@ TR = {
         "how_it_works": '仕組み',
         "trademarks": '商標',
         "about_sec": 'このアプリについて',
+        "faq_sec": 'よくある質問',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2321,6 +2387,7 @@ def build_html() -> str:
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
     html = html.replace("__LEGAL__", json.dumps(LEGAL))
+    html = html.replace("__FAQ__", json.dumps(FAQ_ITEMS))
     html = html.replace("__VER__", APP_VERSION)
     html = html.replace("__DEFAULTS__", json.dumps(
         {k: DEFAULTS[k] for k, *_ in SLIDERS}))
@@ -2418,6 +2485,19 @@ body.t-light{
 .card{background:var(--card);border-radius:14px;padding:0 15px;flex:none;}
 .lname{font-size:8px;color:var(--row-fg);padding:15px 0 0}
 .prose{padding:15px 0;display:flex;flex-direction:column;gap:8px}
+.qa{padding:15px 0;display:flex;flex-direction:column;gap:8px}
+.card .qa:not(:last-child){border-bottom:1px solid var(--line)}
+.qa h4{margin:0;font-size:9px;font-weight:600;color:var(--accent);
+       text-transform:uppercase;letter-spacing:.02em}
+.qa p{margin:0;font-size:9px;line-height:1.6;color:var(--row-fg)}
+/* the one screen that scrolls: a hairline thumb, no arrows */
+#screen.scroll{max-height:640px;overflow-y:auto;overflow-x:hidden}
+#screen.scroll::-webkit-scrollbar{width:4px}
+#screen.scroll::-webkit-scrollbar-button{display:none}
+#screen.scroll::-webkit-scrollbar-track{background:transparent}
+#screen.scroll::-webkit-scrollbar-thumb{background:var(--track);
+                                        border-radius:2px}
+#screen.scroll::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .prose p{font-size:9px;line-height:1.6;color:var(--row-fg);margin:0}
 .bubs{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 15px}
 .card .bubs:not(:last-child){border-bottom:1px solid var(--line)}
@@ -2769,6 +2849,14 @@ function screenMain(){
 
 /* the About screen, carrying what the mockup calls Legal: the components
    this build ships with, grouped the way the design groups them */
+function screenFaq(){
+  return '<div class="reveal"><div class="sec">' + t('faq_sec') + '</div>' +
+    '<div class="card">' + FAQ.map((item, i) =>
+      '<div class="qa"><h4>' + (i + 1) + '. ' + item[0] + '</h4>' +
+      item[1].map(x => '<p>' + x + '</p>').join('') + '</div>').join('') +
+    '</div></div>';
+}
+
 function screenAbout(){
   const prose = (key, paras) =>
     '<div class="reveal"><div class="sec">' + t(key) + '</div>' +
@@ -2836,9 +2924,12 @@ function render(){
   const box = $('#screen');
   box.innerHTML = screen === 'settings' ? screenSettings()
                 : screen === 'about' ? screenAbout()
+                : screen === 'faq' ? screenFaq()
                 : screenMain();
   if (bootPhase === 'app')
     $$('#screen .reveal, .foot.reveal').forEach(e => e.classList.add('shown'));
+  box.classList.toggle('scroll', screen === 'faq');
+  if (screen === 'faq') box.scrollTop = 0;
   bindRows();
   refresh();
   reportHeight();
@@ -3039,6 +3130,7 @@ let bootPath = null, bootLen = 0;
 const LINE_GAP = 300;
 const THIRD = __THIRD__;
 const LEGAL = __LEGAL__;
+const FAQ = __FAQ__;
 
 function bootFill(p){
   if (!bootPath){
