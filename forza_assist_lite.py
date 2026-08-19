@@ -2622,14 +2622,18 @@ body.t-light{
 .reveal.shown{opacity:1;transform:none;
               transition:opacity .42s ease,transform .42s ease}
 .tbar .reveal{transform:none}
-/* the reveal rules below carry their own transition and would otherwise
-   drop the header's, leaving hovers and the folding arrow to jump */
+/* the reveal rules declare their own transition and transform and would
+   otherwise win over these, leaving the header to change in one frame */
 .tbar .hbtn{transition:background .2s ease,border-color .2s ease,
             color .2s ease,width .2s ease,min-width .2s ease,
-            margin .2s ease,opacity .2s ease}
-.tbar .hbtn.back.show{transition:background .2s ease,border-color .2s ease,
+            margin .2s ease,opacity .2s ease,transform .2s ease !important}
+/* the wordmark is pushed aside first; the arrow then rises into the gap */
+.tbar .hbtn.back{transform:translateY(5px) !important}
+.tbar .hbtn.back.show{transform:none !important;
+            transition:background .2s ease,border-color .2s ease,
             color .2s ease,width .2s ease,min-width .2s ease,
-            margin .2s ease,opacity .2s ease .12s}
+            margin .2s ease,opacity .2s ease .1s,
+            transform .2s ease .1s !important}
 .tbar .reveal.shown{transition:opacity .42s ease}
 
 #boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);zoom:1.25;
