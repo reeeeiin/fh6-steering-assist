@@ -2570,6 +2570,7 @@ body.t-light{
           padding:0 12px;min-width:67px;border-radius:7px;color:var(--muted);
           cursor:pointer;white-space:nowrap;transition:color .2s ease;}
 .seg span:hover{color:var(--row-fg)}
+[data-seg=lang] span{font-size:9px;padding:0 8px;min-width:0}
 .seg span.on{color:var(--accent-fg)}
 
 /* ---------- slider ---------- */
