@@ -192,6 +192,16 @@ Releases up to 1.3.0 stay under the MIT Licence.
 
 Third-party components keep their own licences, listed in [NOTICE.md](NOTICE.md).
 
+## Roadmap
+
+- **Forza Horizon 4 and 5.** They broadcast the same 324-byte packet at the
+  same offsets, so the assist itself should work. The car name table is
+  built from Horizon 6 ids, which differ between titles, so names have to
+  be keyed to the running game before this is offered.
+- **Forza Motorsport.** Its packets carry no padding after the sled block,
+  putting speed at a different offset, and FM7 is shorter than the length
+  check allows. Both need offsets chosen by packet length.
+
 ---
 
 <details>

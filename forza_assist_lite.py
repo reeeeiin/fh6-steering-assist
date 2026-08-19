@@ -44,7 +44,7 @@ except Exception as e:
            "Usually this means the ViGEmBus driver is missing.\n"
            "Reinstall with:  pip install --force-reinstall vgamepad")
 
-APP_VERSION = "2.0.0-dev"
+APP_VERSION = "2.0.0"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 INPUT_TAU_MAX = 0.25
@@ -1362,7 +1362,6 @@ THIRD_PARTY = {
         ("PyInstaller 6.21.0", "https://pyinstaller.org"),
     ],
     "grp_fonts": [
-        ("Oswald", "https://fonts.google.com/specimen/Oswald"),
         ("Chiron GoRound TC",
          "https://fonts.google.com/specimen/Chiron+GoRound+TC"),
     ],
@@ -3193,8 +3192,8 @@ body.t-light{
 .warn-b:hover{filter:brightness(1.12)}
 
 /* ---------- extended telemetry ---------- */
-/* the mockup fixes every box: two columns of 232 with a 10 gap, 160 tall
-   on the first row and 36 on the second, so nothing resizes with content */
+/* fixed geometry: two columns of 232 with a 10 gap, 160 tall on the first
+   row and 36 on the second, so no box resizes with its contents */
 .tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tgrid .telecard{height:160px;padding:0 15px;box-sizing:border-box}
 .tside{height:160px}
@@ -3424,8 +3423,8 @@ body.t-light{
       transition:filter .15s ease}
 .bbtn:hover{filter:brightness(1.12)}
 
-/* anchored to its foot, so a longer translation grows upwards instead of
-   walking into the footer */
+/* anchored to its foot: a longer translation grows upwards, clear of the
+   footer */
 #bs-err{top:auto;bottom:56px;display:flex;align-items:center;
         justify-content:center;gap:14px}
 .berr{width:244px;font-size:10px;color:var(--row-fg);line-height:1.5}
@@ -3626,8 +3625,8 @@ function screenMain(){
   return h + (cfg.ext_telemetry ? '</div>' : '') + '</div>';
 }
 
-/* the About screen, carrying what the mockup calls Legal: the components
-   this build ships with, grouped the way the design groups them */
+/* About: how the assist works, the components this build ships with, the
+   trademark notice and the authorship */
 function screenFaq(){
   return '<div class="reveal"><div class="sec">' + t('faq_sec') + '</div>' +
     '<div class="card faqwrap"><div class="faqbox">' + FQ().map((item, i) =>
@@ -4017,8 +4016,8 @@ let bootPhase = 'load', bootT0 = 0, bootDoneAt = 0, bootSkip = false;
    trails the real one and never advances faster than BOOT.stepMs */
 let bootShown = 0, bootShownAt = 0;
 /* the wording that titles each step, shuffled so no two launches read the
-   same; the first step always carries the wording from the mockup and the
-   last one keeps its own, since it announces the end of the install */
+   same; the first and last steps keep fixed wording, the last one because
+   it announces the end of the install */
 let bootPhrases = [];
 
 function bootPhraseList(){
@@ -4547,7 +4546,7 @@ def _height_worker(hwnd):
 
 
 def _resize_keeping_centre(h):
-    """The boot window keeps the size the mockup gives it."""
+    """The boot window keeps a fixed size."""
     if _WIN.get("boot"):
         return True
     return _resize_free(h)
@@ -4898,12 +4897,11 @@ def main():
         ctypes.windll.user32.ShowWindow(hwnd, 0)
         u = ctypes.windll.user32
         u.GetWindowLongW.restype = ctypes.c_long
-        # A frameless window still needs the system styles: without a caption
-        # and a sysmenu the compositor animates nothing, which is why the
-        # minimise and close had to be drawn by hand and looked wrong. The
-        # frame itself is taken away in WM_NCCALCSIZE below, the way Electron
-        # and the like do it, so the window stays borderless but behaves like
-        # an ordinary one - animations, shadow and rounded corners included.
+        # A frameless window still needs the system styles: the compositor
+        # animates nothing without a caption and a sysmenu. The frame itself
+        # is removed in WM_NCCALCSIZE below, leaving a borderless window that
+        # the shell still treats as an ordinary one, with its animations,
+        # shadow and rounded corners intact.
         open_window(hwnd, win_w(_WIN.get("cfg")),
                     win_min_h(_WIN.get("cfg")))
         try:

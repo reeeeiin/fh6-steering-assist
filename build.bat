@@ -24,8 +24,6 @@ if errorlevel 1 goto fail
 
 set EXTRA=
 if exist drivers set EXTRA=%EXTRA% --add-data "drivers;drivers"
-if exist Oswald-Medium.ttf set EXTRA=%EXTRA% --add-data "Oswald-Medium.ttf;."
-if exist Oswald-Regular.ttf set EXTRA=%EXTRA% --add-data "Oswald-Regular.ttf;."
 if exist assets set EXTRA=%EXTRA% --add-data "assets;assets"
 if exist licenses set EXTRA=%EXTRA% --add-data "licenses;licenses"
 if exist NOTICE.md set EXTRA=%EXTRA% --add-data "NOTICE.md;."

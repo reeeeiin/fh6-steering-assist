@@ -51,12 +51,6 @@ Hosts the interface in a WebView2 window.
 Used to build the executable. The exception explicitly permits the resulting
 application to carry any licence, including a proprietary one.
 
-## Oswald — SIL Open Font License 1.1
-
-<https://fonts.google.com/specimen/Oswald>
-
-A copy of the licence is included as `licenses/OFL-1.1.txt`.
-
 ## Chiron GoRound TC — SIL Open Font License 1.1
 
 <https://fonts.google.com/specimen/Chiron+GoRound+TC>

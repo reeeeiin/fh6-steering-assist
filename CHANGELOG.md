@@ -1,5 +1,49 @@
 # Changelog
 
+## v2.0.0
+
+A rebuilt interface, six languages, and a licence change.
+
+### Added
+
+- **A new interface**, laid out from the design rather than grown from the
+  old one: a loading and first-run sequence, settings, FAQ, About, and an
+  extended telemetry view with fixed-size readouts.
+- **Six languages** throughout: English, Russian, Spanish, French, German
+  and Japanese, including the loading screens, the FAQ and About.
+- **UI scale** at 90, 100, 110, 125 and 150 percent. One factor drives the
+  whole layout, so text, glyphs, strokes and radii grow together.
+- **Update check** against the project's latest release, with its own
+  states for looking, up to date, an update available and a failed check.
+- **Feedback button** in About that files a report with the diagnostics
+  already filled in: version, Windows build, mode, driver codes, telemetry
+  state and pad rate.
+- **Car names** in the telemetry view, read from a table of the game's car
+  ids.
+- **Launch-order warning** when the assist starts after the game.
+
+### Changed
+
+- **Licensed under the Elastic License 2.0** from this release. The visual
+  design and the branding are reserved separately. Releases up to 1.3.0
+  keep their MIT grant.
+- **Starting after the game no longer means restarting it.** Reconnecting
+  the controller is enough: the game rescans its inputs and finds the
+  assist.
+- **The window is a system window again.** It keeps the shell's styles and
+  removes only its frame, so minimise, restore and close animate the way
+  every other window does.
+- **The window follows its content**, easing to the height a screen needs
+  and no longer holding the tallest one it has shown.
+- Telemetry reports the rate the loop reaches rather than the one it aims
+  for, and raw input is smoothed a little more gently.
+
+### Removed
+
+- The Oswald font, the old theme artwork and the icons the rebuilt
+  interface no longer uses.
+
+
 ## v1.3.0
 
 Bug-fix release. Everything below was measured, not guessed — the app can now
