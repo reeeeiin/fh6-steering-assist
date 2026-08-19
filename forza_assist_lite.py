@@ -897,7 +897,7 @@ FAQ_ITEMS = {
     "en": [
     ('The assist does nothing in game', [
         'Nine times out of ten it is the launch order. The game looks for controllers when it starts, so a virtual pad created afterwards is invisible to it.',
-        'Start Steering Assist first, then launch Forza. If the game is already open, just close and reopen it, the assist can keep running.',
+        'If the game is already open you do not have to restart it: unplug your controller and plug it back in, or switch a wireless one off and on. The game rescans its inputs and picks the assist up.',
         'Also check that Steering is set to Simulation in the game. On the other settings the game steers on top of the assist and fights it.',
     ]),
     ('It worked, then started behaving erratically', [
@@ -956,7 +956,7 @@ FAQ_ITEMS = {
     "ru": [
         ('Ассист ничего не делает в игре', [
             'В девяти случаях из десяти дело в порядке запуска. Игра ищет контроллеры при старте, поэтому виртуальный геймпад, созданный позже, для неё не существует.',
-            'Сначала запустите Steering Assist, потом Forza. Если игра уже открыта, просто закройте и откройте её заново, ассист можно не трогать.',
+            'Если игра уже запущена, перезапускать её не нужно: отключите геймпад и подключите снова, а беспроводной выключите и включите. Игра пересканирует устройства и подхватит ассист.',
             'Проверьте, что в игре выбрано управление Simulation. На других настройках игра подруливает поверх ассиста и борется с ним.',
         ]),
         ('Работал, потом начал вести себя странно', [
@@ -1015,7 +1015,7 @@ FAQ_ITEMS = {
     "es": [
         ('El asistente no hace nada en el juego', [
             'Nueve de cada diez veces es el orden de arranque. El juego busca mandos al iniciarse, asi que un mando virtual creado despues le resulta invisible.',
-            'Abre Steering Assist primero y luego Forza. Si el juego ya esta abierto, cierralo y vuelve a abrirlo; el asistente puede seguir corriendo.',
+            'Si el juego ya esta abierto no hace falta reiniciarlo: desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico. El juego vuelve a buscar dispositivos y detecta el asistente.',
             'Comprueba tambien que la direccion este en Simulation. En los demas ajustes el juego dirige por encima del asistente y lo contrarresta.',
         ]),
         ('Funcionaba y luego empezo a comportarse de forma erratica', [
@@ -1074,7 +1074,7 @@ FAQ_ITEMS = {
     "fr": [
         ("L'assistance ne fait rien en jeu", [
             "Neuf fois sur dix, c'est l'ordre de lancement. Le jeu cherche les manettes a son demarrage, donc une manette virtuelle creee apres lui reste invisible.",
-            "Lancez Steering Assist d'abord, puis Forza. Si le jeu est deja ouvert, fermez-le et rouvrez-le, l'assistance peut continuer a tourner.",
+            'Si le jeu est deja ouvert, inutile de le relancer : debranchez la manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil. Le jeu rescanne ses entrees et prend l\'assistance en compte.',
             "Verifiez aussi que la direction est reglee sur Simulation. Sur les autres reglages, le jeu dirige par-dessus l'assistance et la contrarie.",
         ]),
         ("Cela marchait, puis c'est devenu erratique", [
@@ -1133,7 +1133,7 @@ FAQ_ITEMS = {
     "de": [
         ('Die Lenkhilfe tut im Spiel nichts', [
             'In neun von zehn Fallen liegt es an der Startreihenfolge. Das Spiel sucht beim Start nach Controllern, ein spater erzeugtes virtuelles Pad bleibt fur es unsichtbar.',
-            'Starte zuerst Steering Assist, dann Forza. Lauft das Spiel schon, schliesse und offne es einfach neu, die Lenkhilfe kann weiterlaufen.',
+            'Lauft das Spiel schon, musst du es nicht neu starten: ziehe den Controller ab und stecke ihn wieder an, oder schalte einen kabellosen aus und ein. Das Spiel sucht erneut und findet die Hilfe.',
             'Prufe ausserdem, ob die Lenkung im Spiel auf Simulation steht. Bei den anderen Einstellungen lenkt das Spiel uber die Hilfe hinweg und arbeitet gegen sie.',
         ]),
         ('Es lief, dann wurde es unberechenbar', [
@@ -1192,7 +1192,7 @@ FAQ_ITEMS = {
     "ja": [
         ('ゲーム内でアシストが効かない', [
             '十中八九は起動順です。ゲームは起動時にコントローラーを探すため、後から作られた仮想パッドは認識されません。',
-            '先に Steering Assist を起動し、次に Forza を起動してください。すでにゲームが開いている場合は、閉じて開き直すだけで大丈夫です。',
+            'ゲームがすでに開いている場合、再起動は不要です。コントローラーを抜き差しするか、無線なら電源を入れ直してください。ゲームが入力を再検出してアシストを認識します。',
             'ゲーム側のステアリングが Simulation になっているかも確認してください。他の設定ではゲームがアシストの上から操舵して打ち消してしまいます。',
         ]),
         ('動いていたのに挙動がおかしくなった', [
@@ -2254,6 +2254,7 @@ TR = {
         "scale": 'Scale',
         "scale_hint": 'Enlarges the whole interface, text and controls alike',
         "feedback": 'Send feedback',
+        "order_btn": 'Got it',
         "interface_sec": 'Interface', "theme": 'Appearance',
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2311,9 +2312,9 @@ TR = {
         "prof_heavy": "Heavy",
         "prof_minimal": "Minimal",
         "prof_custom": "Custom",
-        "order_title": "Wrong launch order",
-        "order_text": "Forza is already running. The game looks for controllers only while it starts, so it cannot see the assist's virtual pad.",
-        "order_hint": "Close the game and start it again — leave the assist running.",
+        "order_title": 'Started after the game',
+        "order_text": 'Forza was already running. It looks for controllers when it starts, so it may not see the assist\'s virtual pad yet.',
+        "order_hint": 'Unplug your controller and plug it back in, or switch a wireless one off and on. The game picks it up without a restart.',
         "st_drivers": "installing drivers…",
         "buttons_sec": "Buttons",
         "btn_handbrake": "Handbrake",
@@ -2360,6 +2361,7 @@ TR = {
         "scale": 'Масштаб',
         "scale_hint": 'Увеличивает весь интерфейс целиком, вместе с текстом и элементами',
         "feedback": 'Написать нам',
+        "order_btn": 'Понятно',
         "interface_sec": 'Интерфейс', "theme": 'Оформление',
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -2417,9 +2419,9 @@ TR = {
         "prof_heavy": "Сильный",
         "prof_minimal": "Минимум",
         "prof_custom": "Свой",
-        "order_title": "Неверный порядок запуска",
-        "order_text": "Forza уже запущена. Игра ищет контроллеры только в момент своего старта, поэтому виртуальный пад ассиста ей не виден.",
-        "order_hint": "Закрой игру и запусти её заново — ассист оставь открытым.",
+        "order_title": 'Запущен после игры',
+        "order_text": 'Forza уже была запущена. Игра ищет контроллеры при старте, поэтому виртуальный геймпад ассиста она может пока не видеть.',
+        "order_hint": 'Отключите геймпад и подключите снова, а беспроводной выключите и включите. Игра подхватит его без перезапуска.',
         "st_drivers": "ставлю драйверы…",
         "buttons_sec": "Кнопки",
         "btn_handbrake": "Ручник",
@@ -2466,6 +2468,7 @@ TR = {
         "scale": 'Skalierung',
         "scale_hint": 'Vergrossert die gesamte Oberflache samt Text und Bedienelementen',
         "feedback": 'Feedback senden',
+        "order_btn": 'Verstanden',
         "interface_sec": 'Oberflache', "theme": 'Darstellung',
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -2523,9 +2526,9 @@ TR = {
         "prof_heavy": "Stark",
         "prof_minimal": "Minimal",
         "prof_custom": "Eigenes",
-        "order_title": "Falsche Startreihenfolge",
-        "order_text": "Forza läuft bereits. Das Spiel sucht Controller nur beim Start, das virtuelle Pad des Assistenten sieht es daher nicht.",
-        "order_hint": "Schließe das Spiel und starte es erneut — Assistent laufen lassen.",
+        "order_title": 'Nach dem Spiel gestartet',
+        "order_text": 'Forza lief bereits. Das Spiel sucht Controller beim Start, daher sieht es das virtuelle Pad moglicherweise noch nicht.',
+        "order_hint": 'Ziehe den Controller ab und stecke ihn wieder an, oder schalte einen kabellosen aus und ein. Das Spiel erkennt ihn ohne Neustart.',
         "st_drivers": "installiere Treiber…",
         "buttons_sec": "Tasten",
         "btn_handbrake": "Handbremse",
@@ -2572,6 +2575,7 @@ TR = {
         "scale": 'Echelle',
         "scale_hint": 'Agrandit toute l\'interface, texte et controles compris',
         "feedback": 'Faire un retour',
+        "order_btn": 'Compris',
         "interface_sec": 'Interface', "theme": 'Apparence',
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2629,9 +2633,9 @@ TR = {
         "prof_heavy": "Fort",
         "prof_minimal": "Minimal",
         "prof_custom": "Perso",
-        "order_title": "Mauvais ordre de lancement",
-        "order_text": "Forza est déjà lancé. Le jeu ne cherche les manettes qu'à son démarrage : il ne voit donc pas la manette virtuelle.",
-        "order_hint": "Ferme le jeu et relance-le — laisse l'assistant ouvert.",
+        "order_title": 'Lance apres le jeu',
+        "order_text": 'Forza tournait deja. Le jeu cherche les manettes a son demarrage, il ne voit donc peut-etre pas encore la manette virtuelle.',
+        "order_hint": 'Debranchez la manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil. Le jeu la reprend sans redemarrer.',
         "st_drivers": "installation des pilotes…",
         "buttons_sec": "Boutons",
         "btn_handbrake": "Frein à main",
@@ -2678,6 +2682,7 @@ TR = {
         "scale": 'Escala',
         "scale_hint": 'Agranda toda la interfaz, texto y controles incluidos',
         "feedback": 'Enviar comentarios',
+        "order_btn": 'Entendido',
         "interface_sec": 'Interfaz', "theme": 'Apariencia',
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2735,9 +2740,9 @@ TR = {
         "prof_heavy": "Fuerte",
         "prof_minimal": "Mínimo",
         "prof_custom": "Propio",
-        "order_title": "Orden de inicio incorrecto",
-        "order_text": "Forza ya está abierto. El juego busca mandos solo al arrancar, así que no ve el mando virtual del asistente.",
-        "order_hint": "Cierra el juego y ábrelo de nuevo — deja el asistente abierto.",
+        "order_title": 'Iniciado despues del juego',
+        "order_text": 'Forza ya estaba abierto. Busca mandos al iniciarse, asi que puede que aun no vea el mando virtual del asistente.',
+        "order_hint": 'Desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico. El juego lo detecta sin reiniciar.',
         "st_drivers": "instalando controladores…",
         "buttons_sec": "Botones",
         "btn_handbrake": "Freno de mano",
@@ -2784,6 +2789,7 @@ TR = {
         "scale": '拡大率',
         "scale_hint": '文字も操作部もまとめて画面全体を拡大します',
         "feedback": 'フィードバック',
+        "order_btn": '了解',
         "interface_sec": 'インターフェース',
         "theme": '外観',
         "theme_hint": 'ウィンドウの配色',
@@ -2848,9 +2854,9 @@ TR = {
         "prof_heavy": '強め',
         "prof_minimal": '控えめ',
         "prof_custom": 'カスタム',
-        "order_title": '起動順が違います',
-        "order_text": 'Forza がすでに起動しています。ゲームは起動時にしかコントローラーを探さないため、アシストの仮想パッドが見えていません。',
-        "order_hint": 'ゲームを閉じて起動し直してください。アシストはそのままで大丈夫です。',
+        "order_title": 'ゲームより後に起動しました',
+        "order_text": 'Forza はすでに起動していました。ゲームは起動時にコントローラーを探すため、仮想パッドがまだ見えていない可能性があります。',
+        "order_hint": 'コントローラーを抜き差ししてください。無線の場合は電源を入れ直します。ゲームは再起動なしで認識します。',
         "st_drivers": 'ドライバーを導入中…',
         "buttons_sec": 'ボタン',
         "btn_handbrake": 'サイドブレーキ',
@@ -3165,6 +3171,27 @@ body.t-light{
 .rval{font-size:15px;font-weight:600;color:var(--row-fg);flex:none;
       min-width:30px;text-align:right}
 
+/* the launch-order warning sits over a blurred layout: nothing behind it
+   is worth touching until the game can see the pad */
+.warn-wrap{position:fixed;inset:0;z-index:40;display:flex;
+           align-items:center;justify-content:center;padding:24px;
+           background:rgba(0,0,0,.45);backdrop-filter:blur(7px);
+           -webkit-backdrop-filter:blur(7px);
+           transition:opacity .25s ease}
+.warn-wrap.off{opacity:0;pointer-events:none}
+.warn-card{width:330px;box-sizing:border-box;padding:18px;border-radius:14px;
+           background:var(--card);border:1px solid var(--line);
+           display:flex;flex-direction:column;gap:9px;text-align:center;
+           align-items:center}
+.warn-t{font-size:14px;font-weight:600;color:var(--warn)}
+.warn-x{font-size:10px;line-height:1.55;color:var(--row-fg)}
+.warn-h{font-size:10px;line-height:1.55;color:var(--muted)}
+.warn-b{margin-top:6px;height:24px;padding:0 14px;border:0;border-radius:7px;
+        background:var(--accent);color:var(--accent-fg);font-family:inherit;
+        font-size:11px;font-weight:600;cursor:pointer;
+        transition:filter .2s ease}
+.warn-b:hover{filter:brightness(1.12)}
+
 /* ---------- extended telemetry ---------- */
 /* the mockup fixes every box: two columns of 232 with a 10 gap, 160 tall
    on the first row and 36 on the second, so nothing resizes with content */
@@ -3438,6 +3465,14 @@ html[data-boot] .rz{display:none}
     </div>
   </div>
   <div class="screen on" id="screen"></div>
+  <div class="warn-wrap off" id="warn">
+    <div class="warn-card">
+      <div class="warn-t" id="warn-title"></div>
+      <div class="warn-x" id="warn-text"></div>
+      <div class="warn-h" id="warn-hint"></div>
+      <button class="warn-b" id="warn-ok"></button>
+    </div>
+  </div>
   <div class="foot reveal"><span class="drag pywebview-drag-region"></span>
     <span>Steering Assist is an independent fan project. Not affiliated with or endorsed by Microsoft, Playground Games or Turn 10 Studios.<br>Forza is a trademark of Microsoft Corporation. Created and published by reeeeiin.</span>
     <span>Steering Assist &#8482; 2026. Released under the Elastic License 2.0.</span>
@@ -3873,8 +3908,24 @@ function setBar(id, v){
   else { el.style.left = (50 + v*50) + '%'; el.style.width = (-v*50) + '%'; }
 }
 
+let warnSeen = false;
+
+function updateWarning(){
+  const el = $('#warn');
+  if (!el) return;
+  const show = !!state.bad_order && !warnSeen;
+  if (show && el.classList.contains('off')){
+    $('#warn-title').textContent = t('order_title');
+    $('#warn-text').textContent = t('order_text');
+    $('#warn-hint').textContent = t('order_hint');
+    $('#warn-ok').textContent = t('order_btn');
+  }
+  el.classList.toggle('off', !show);
+}
+
 function liveUpdate(){
   if (!state || !cfg) return;
+  updateWarning();
   const ts = $('#tstat');
   if (ts){
     let cls = 'wait', txt = t('st_waiting');
@@ -4308,6 +4359,10 @@ $$('[data-nav]').forEach(b => b.addEventListener('click', () => {
   goScreen((screen === b.dataset.nav) ? 'main' : b.dataset.nav);
 }));
 $('.logo').addEventListener('click', () => goScreen('main'));
+$('#warn-ok').addEventListener('click', () => {
+  warnSeen = true;
+  $('#warn').classList.add('off');
+});
 
 /* the outgoing rows fade away before the incoming ones start arriving */
 function goScreen(next){
