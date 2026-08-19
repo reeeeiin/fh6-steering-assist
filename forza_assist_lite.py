@@ -2521,7 +2521,7 @@ body.t-light{
 .prose p{font-size:9px;line-height:1.6;color:var(--row-fg);margin:0}
 .bubs{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 15px}
 .card .bubs:not(:last-child){border-bottom:1px solid var(--line)}
-.bub{height:22px;box-sizing:border-box;padding:0 11px;border-radius:8px;
+.bub{height:22px;box-sizing:border-box;padding:0 11px;border-radius:6px;
      display:flex;align-items:center;font-size:9px;font-weight:600;
      color:var(--row-fg);background:var(--card-2);cursor:default;
      border:1px solid var(--line);white-space:nowrap;
