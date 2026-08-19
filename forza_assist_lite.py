@@ -321,6 +321,21 @@ class Telemetry:
     yaw_rate: float
     sideslip: float
 
+_CARS = {}
+
+
+def _car_name(ordinal) -> str:
+    """Car ids to names, read once from the table beside the app."""
+    if not _CARS:
+        raw = _read_asset("cars.json")
+        try:
+            _CARS.update(json.loads(raw) if raw else {})
+        except ValueError:
+            pass
+        _CARS.setdefault("0", "")     # keeps a missing table from retrying
+    return _CARS.get(str(ordinal), "")
+
+
 class TelemetryListener:
     PACKET_SIZE = 324
     OFF_RACE_ON = 0
@@ -358,15 +373,18 @@ class TelemetryListener:
 
     @property
     def car_label(self) -> str:
-        """The game sends a numeric car id, not a name, so the class and
-        performance index are the most a build without a lookup table can
-        honestly show."""
+        """The game sends a numeric car id rather than a name, so the id is
+        looked up in the shipped table. Cars added after that table was made
+        fall back to their class and performance index."""
         ordinal, klass, pi = self.car
         if not ordinal:
             return ""
+        name = _car_name(ordinal)
+        if name:
+            return name
         names = ("D", "C", "B", "A", "S1", "S2", "X")
-        name = names[klass] if 0 <= klass < len(names) else "?"
-        return "%s %d" % (name, pi) if pi else name
+        klass_name = names[klass] if 0 <= klass < len(names) else "?"
+        return "%s %d" % (klass_name, pi) if pi else klass_name
 
     @property
     def alive(self) -> bool:
@@ -1859,7 +1877,7 @@ class Bridge:
             self._pad_packets += 1
         if now - self._pad_t0 >= 1.0:
             rate = self._pad_packets / max(1e-6, now - self._pad_t0)
-            self.pad_hz = round(max(rate, self.pad_hz * 0.6))
+            self.pad_hz = round(rate)
             self._pad_packets = 0
             self._pad_t0 = now
 
@@ -3172,9 +3190,11 @@ body.t-light{
 .trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .trow .rname{font-size:11px;color:var(--row-fg)}
 .tcar{height:18px;box-sizing:border-box;padding:0 9px;border-radius:5px;
-      display:flex;align-items:center;font-size:8px;font-weight:600;
+      display:block;line-height:16px;font-size:8px;font-weight:600;
       color:var(--row-fg);background:var(--card-2);
-      border:1px solid var(--line);white-space:nowrap}
+      border:1px solid var(--line);white-space:nowrap;
+      overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%}
+.tbot .trow .rname{flex:none}
 /* the same box, carrying the setup the game needs when nothing arrives */
 .tsetup{height:160px;box-sizing:border-box;padding:0 15px;
         display:flex;flex-direction:column;justify-content:center}
@@ -3248,7 +3268,8 @@ body.t-light{
 .barlbl{font-size:9px;color:var(--muted);margin-bottom:3px}
 .bar{height:20px;border-radius:6px;background:var(--bar-bg);position:relative;
      overflow:hidden;border:1px solid var(--btn-line)}
-.bar i{position:absolute;top:0;height:100%;background:var(--bar-fill);
+.bar i{position:absolute;top:2px;height:calc(100% - 4px);border-radius:4px;
+       background:var(--bar-fill);
        transition:left .12s linear,width .12s linear}
 .bar{overflow:visible}
 .bar u{position:absolute;left:50%;top:-3px;width:2px;height:calc(100% + 6px);
@@ -3870,7 +3891,7 @@ function liveUpdate(){
     render();
     return;
   }
-  sRaw += (state.raw - sRaw) * 0.35;
+  sRaw += (state.raw - sRaw) * 0.25;
   sOut += (state.out - sOut) * 0.35;
   setBar('rawbar', sRaw); setBar('outbar', sOut);
   const set = (id, val, unit, cls) => {
@@ -3890,7 +3911,10 @@ function liveUpdate(){
       'ms', age > 120 ? 'bad' : '');
   set('#w-latency', state.pad_hz || '—', 'Hz', '');
   const car = $('#w-car');
-  if (car) car.textContent = state.car || t('btn_none');
+  if (car){
+    car.textContent = state.car || t('btn_none');
+    car.title = state.car || '';
+  }
   const ps = $('#padstat');
   if (ps){
     const hidden = state.hh_code === 'hidden';

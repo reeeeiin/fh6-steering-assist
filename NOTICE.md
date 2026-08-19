@@ -65,6 +65,14 @@ Subset and embedded in the interface. Embedding is permitted by the OFL; the
 fonts are not sold or distributed on their own. A copy of the licence is
 included as `licenses/OFL-1.1.txt`.
 
+## Car name table
+
+`assets/cars.json` maps the numeric car ids the game broadcasts to readable
+names. It is built from the community ordinal list published at
+<https://gist.github.com/HDR/0659d1717bc61504bf83750628963f4f>, current to
+July 2026. These are factual model designations; the trademarks in them
+belong to their respective manufacturers.
+
 ## Forza
 
 Forza, Forza Horizon and Forza Motorsport are trademarks of Microsoft
