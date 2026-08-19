@@ -2222,7 +2222,7 @@ TR = {
         "sw_ip": 'IP address',
         "sw_port": 'IP port',
         "upd_looking": 'Looking for updates',
-        "upd_current": 'You are up to date',
+        "upd_current": 'Up to date',
         "upd_available": 'Update available',
         "upd_failed": 'Check failed',
         "interface_sec": "Interface", "theme": "Theme",
@@ -2325,7 +2325,7 @@ TR = {
         "sw_ip": 'IP адрес',
         "sw_port": 'IP порт',
         "upd_looking": 'Ищем обновления',
-        "upd_current": 'Установлена последняя',
+        "upd_current": 'Актуально',
         "upd_available": 'Есть обновление',
         "upd_failed": 'Не удалось проверить',
         "interface_sec": "Интерфейс", "theme": "Тема",
@@ -2428,7 +2428,7 @@ TR = {
         "sw_ip": 'IP-Adresse',
         "sw_port": 'IP-Port',
         "upd_looking": 'Suche nach Updates',
-        "upd_current": 'Alles aktuell',
+        "upd_current": 'Aktuell',
         "upd_available": 'Update verfugbar',
         "upd_failed": 'Prufung fehlgeschlagen',
         "interface_sec": "Oberfläche", "theme": "Design",
@@ -2531,7 +2531,7 @@ TR = {
         "sw_ip": 'Adresse IP',
         "sw_port": 'Port IP',
         "upd_looking": 'Recherche en cours',
-        "upd_current": 'Version a jour',
+        "upd_current": 'A jour',
         "upd_available": 'Mise a jour dispo',
         "upd_failed": 'Echec de la verification',
         "interface_sec": "Interface", "theme": "Thème",
@@ -2634,7 +2634,7 @@ TR = {
         "sw_ip": 'Direccion IP',
         "sw_port": 'Puerto IP',
         "upd_looking": 'Buscando actualizaciones',
-        "upd_current": 'Todo actualizado',
+        "upd_current": 'Actualizado',
         "upd_available": 'Actualizacion disponible',
         "upd_failed": 'Fallo la comprobacion',
         "interface_sec": "Interfaz", "theme": "Tema",
@@ -2737,7 +2737,7 @@ TR = {
         "sw_ip": 'IP アドレス',
         "sw_port": 'IP ポート',
         "upd_looking": '更新を確認中',
-        "upd_current": '最新版です',
+        "upd_current": '最新版',
         "upd_available": '更新があります',
         "upd_failed": '確認できません',
         "interface_sec": '外観',
@@ -3037,7 +3037,9 @@ body.t-light{
 .logo svg{display:block;width:94px;height:17px}
 /* update check: one button that carries every state, with a spinner or a
    download button appearing beside it */
-.updwrap{display:flex;align-items:center;gap:5px;flex:none}
+.updwrap{display:flex;align-items:center;gap:5px;flex:none;
+         transition:opacity .16s ease}
+.updwrap.swap{opacity:0}
 .updbtn{height:24px;box-sizing:border-box;padding:0 11px;border-radius:7px;
         display:flex;align-items:center;font-size:11px;font-weight:600;
         background:var(--accent);color:var(--accent-fg);white-space:nowrap;
@@ -3580,6 +3582,11 @@ let updBusy = false;
 function setUpdate(st, ver, url){
   const wrap = $('#updwrap');
   if (!wrap) return;
+  wrap.classList.add('swap');
+  setTimeout(() => paintUpdate(wrap, st, ver, url), 160);
+}
+
+function paintUpdate(wrap, st, ver, url){
   const label = st === 'checking' ? t('upd_looking')
               : st === 'current' ? t('upd_current')
               : st === 'available' ? t('upd_available')
@@ -3593,6 +3600,7 @@ function setUpdate(st, ver, url){
     (st === 'available'
       ? '<span class="upddl" id="btn-download" data-url="' +
         (url || '') + '">' + ARROW_DL + '</span>' : '');
+  wrap.classList.remove('swap');
   bindRows();
 }
 
