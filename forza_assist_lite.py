@@ -1708,6 +1708,9 @@ class HidHide:
             self.info = "HidHide is not installed - the pad is NOT hidden from the game"
             return False
         try:
+            # listing the whitelist is slow and can stall, so it runs off the
+            # boot path and only after the executable's own path has changed
+            threading.Thread(target=self.prune_stale_apps, daemon=True).start()
             self._run("--app-reg", sys.executable)
             self._apps.add(sys.executable.lower())
             self.whitelist_companions()
@@ -1724,6 +1727,50 @@ class HidHide:
             self.info = (f"error: {e}. If access is denied, "
                          "run the assist as administrator")
             return False
+
+    @staticmethod
+    def _dos_path(nt_path: str) -> str:
+        """HidHide reports volume paths such as \\Device\\HarddiskVolume3\\...
+        which no file call understands. Map the volume back to its letter."""
+        if not nt_path.startswith("\\Device\\"):
+            return nt_path
+        buf = ctypes.create_unicode_buffer(1024)
+        for letter in "CDEFGHIJKLMNOPQRSTUVWXYZAB":
+            drive = letter + ":"
+            if not ctypes.windll.kernel32.QueryDosDeviceW(drive, buf, 1024):
+                continue
+            target = buf.value
+            if nt_path.lower().startswith(target.lower() + "\\"):
+                return drive + nt_path[len(target):]
+        return nt_path
+
+    def prune_stale_apps(self):
+        """Every release carries a new file name, so each update leaves its
+        predecessor registered for a file that no longer exists. Only this
+        app's own dead entries are removed; anything else stays untouched."""
+        try:
+            listed = self._run("--app-list") or ""
+        except Exception:
+            return
+        if not listed:
+            return
+        # the CLI prints ready-made commands, not bare paths:
+        #   --app-reg "C:\path\to.exe"
+        entries = re.findall(r'"([^"]+)"', listed)
+        if not entries:
+            entries = [ln.strip() for ln in listed.splitlines() if ln.strip()]
+        mine = ("steeringassist", "forza_assist", "forzaassist")
+        for entry in entries:
+            path = self._dos_path(entry)
+            name = os.path.basename(path).lower()
+            if not any(tag in name for tag in mine):
+                continue
+            if os.path.isfile(path):
+                continue
+            try:
+                self._run("--app-unreg", entry)
+            except Exception:
+                pass
 
     def _present_paths(self) -> set:
         data = json.loads(self._run("--dev-gaming") or "[]")
