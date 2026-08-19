@@ -929,6 +929,8 @@ LEGAL = {
         "Forza Motorsport are trademarks of Microsoft Corporation.",
         "All other trademarks belong to their respective owners.",
     ],
+    "repo": ["Source on GitHub",
+             "https://github.com/reeeeiin/fh6-steering-assist"],
     "about": [
         "Steering Assist \u2122",
         "Created and maintained by Nikita (reeeeiin) Pakhtin.",
@@ -2520,6 +2522,7 @@ body.t-light{
 .faqbox::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .prose p{font-size:9px;line-height:1.6;color:var(--row-fg);margin:0}
 .bubs{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 15px}
+.bubs.repo{padding:4px 0 0}
 .card .bubs:not(:last-child){border-bottom:1px solid var(--line)}
 .bub{height:22px;box-sizing:border-box;padding:0 11px;border-radius:6px;
      display:flex;align-items:center;font-size:9px;font-weight:600;
@@ -2898,7 +2901,12 @@ function screenAbout(){
   });
   h += '</div></div>';
   h += prose('trademarks', LEGAL.marks);
-  h += prose('about_sec', LEGAL.about);
+  h += '<div class="reveal"><div class="sec">' + t('about_sec') + '</div>' +
+       '<div class="card"><div class="prose">' +
+       LEGAL.about.map(x => '<p>' + x + '</p>').join('') +
+       '<div class="bubs repo"><span class="bub" data-url="' +
+       LEGAL.repo[1] + '">' + LEGAL.repo[0] + '</span></div>' +
+       '</div></div></div>';
   return h;
 }
 
