@@ -3150,6 +3150,9 @@ body.t-light{
 .tstat.ok{color:var(--ok)} .tstat.wait{color:var(--muted)}
 .tstat.err{color:var(--danger)}
 .chip{font-size:10px;font-weight:600;color:var(--accent);flex:none}
+.chip b{color:var(--row-fg);font-weight:600}
+.telecard.idle .barlbl{color:var(--off)}
+.telecard.idle .bar{opacity:.5}
 .hintrow{display:flex;align-items:center;justify-content:space-between;
          gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .hintq{font-size:9px;line-height:1.45;color:var(--muted);flex:1 1 auto;
@@ -3446,9 +3449,18 @@ function screenMain(){
 
   h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>' +
        (cfg.ext_telemetry ? '<div class="tgrid">' : '') +
-       '<div class="card telecard">' +
+       '<div class="card telecard' + (live ? '' : ' idle') + '">' +
        '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
        '<span class="tstat" id="tstat">-</span></div>' +
+       (cfg.ext_telemetry || live ? '' :
+         '<div class="hintrow"><span class="hintq">' +
+         t('setup_where').split('|').map(function(x){
+           return '<span>' + x + '</span>'; }).join('') + '</span>' +
+         '<span class="hintchips">' +
+         '<span class="chip">' + t('sw_dataout') + ' - <b>On</b></span>' +
+         '<span class="chip">' + t('sw_ip') + ' - <b>127.0.0.1</b></span>' +
+         '<span class="chip">' + t('sw_port') +
+         ' - <b>20777</b></span></span></div>') +
        '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
        '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
        '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
@@ -3695,7 +3707,7 @@ function liveUpdate(){
     ts.textContent = txt;
   }
   const nowLive = !!(state.recv || state.alive);
-  if (cfg.ext_telemetry && nowLive !== wasLive){
+  if (nowLive !== wasLive){
     wasLive = nowLive;
     render();
     return;
