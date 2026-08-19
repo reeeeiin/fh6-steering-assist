@@ -851,7 +851,8 @@ BOOT_TR = {
 BOOT_DEMO = os.environ.get("ASSIST_BOOT_DEMO", "")
 BOOT_DEMO_ERR = os.environ.get("ASSIST_BOOT_ERROR", "")
 
-FAQ_ITEMS = [
+FAQ_ITEMS = {
+    "en": [
     ('The assist does nothing in game', [
         'Nine times out of ten it is the launch order. The game looks for controllers when it starts, so a virtual pad created afterwards is invisible to it.',
         'Start Steering Assist first, then launch Forza. If the game is already open, just close and reopen it, the assist can keep running.',
@@ -909,44 +910,416 @@ FAQ_ITEMS = [
         'It does not touch game files, read or write game memory, inject code or interfere with anti-cheat.',
         'Whether a third-party tool is acceptable in online play is for the publisher to decide, not for this project.',
     ]),
-]
-
-LEGAL = {
-    "how": [
-        "Steering Assist reads the telemetry the game broadcasts itself "
-        "through its built-in Data Out feature, and presents itself to "
-        "Windows as an ordinary Xbox controller.",
-        "It does not modify game files, read or write game memory, inject "
-        "code into the game process, or interfere with anti-cheat.",
-        "Whether any third-party tool is acceptable in online play is "
-        "decided by the game's publisher, not by this project. Using it is "
-        "your own decision and your own responsibility.",
+],
+    "ru": [
+        ('Ассист ничего не делает в игре', [
+            'В девяти случаях из десяти дело в порядке запуска. Игра ищет контроллеры при старте, поэтому виртуальный геймпад, созданный позже, для неё не существует.',
+            'Сначала запустите Steering Assist, потом Forza. Если игра уже открыта, просто закройте и откройте её заново, ассист можно не трогать.',
+            'Проверьте, что в игре выбрано управление Simulation. На других настройках игра подруливает поверх ассиста и борется с ним.',
+        ]),
+        ('Работал, потом начал вести себя странно', [
+            'Обычно в системе появился второй контроллер. Подключённый руль или проснувшийся беспроводной геймпад дают игре ещё одно устройство, и она может читать не то, которым управляет ассист.',
+            'Перезапуск ассиста пересоздаёт виртуальный геймпад и заново прячет физический, это возвращает всё на место.',
+            'Если замерли показания, а не руль, игра перестала слать телеметрию. Проверьте, что Data Out всё ещё включён.',
+        ]),
+        ('Передачи не переключаются, пока зажат ручник', [
+            'Игра читает кнопки с одного устройства за раз. Пока ассист держит ручник на своём виртуальном геймпаде, нажатия на вашем могут игнорироваться.',
+            'Ассист уступает зеркалирование на всё время нажатия, поэтому передачи проходят. На реальном заезде это срабатывает примерно восемь раз из десяти.',
+            'Проводной геймпад здесь заметно надёжнее Bluetooth, который теряет больше таких нажатий.',
+        ]),
+        ('Нажатия кнопок запаздывают или теряются', [
+            'Обычно виноват Bluetooth. Тот же геймпад на проводе отвечает быстрее и теряет куда меньше нажатий.',
+            'Вибрация делит канал с вашим вводом. Ассист шлёт отдачу примерно два раза в секунду вместо шестидесяти, это в тридцать раз меньше трафика, но загруженный канал всё равно чего-то стоит.',
+            'Закройте другие программы для геймпадов. Фирменные драйверы и ремапперы перехватывают устройство и мешают ассисту.',
+        ]),
+        ('Руль почти не поворачивается', [
+            'Скорее всего занижена сила ассиста или включён профиль Minimal. Поднимите силу и попробуйте снова.',
+            'Кривая руля и порог сцепления перестраивают середину хода стика. Выставленные высоко, они съедают большую её часть, и рулить почти нечем.',
+            'Убедитесь, что в игре стоит управление Simulation. Режим с ассистом накладывает свою коррекцию сверху и гасит нашу.',
+        ]),
+        ('На малой скорости ничего не происходит', [
+            'Так задумано. Ниже минимальной скорости ассист полностью убирает руки, чтобы пончики и парковка остались вашими.',
+            'Опустите минимальную скорость в настройках, если хотите помощь раньше.',
+        ]),
+        ('Панель телеметрии пустая', [
+            'Откройте настройки игры в разделе HUD & Gameplay и выставьте Data out в On, IP address 127.0.0.1 и IP port 20777.',
+            'Порт может быть уже занят другим гоночным приложением. Закройте его или переведите на другой порт.',
+            'Пакет может резать брандмауэр. Разрешите Steering Assist в частных сетях, если настройки верные, а панель пуста.',
+        ]),
+        ('Руль дёргается при переключении передачи в заносе', [
+            'Переключение на мгновение возвращает кнопки вашему геймпаду, и сразу после этого руление подхватывается снова. Этот стык вы и чувствуете.',
+            'Эффект небольшой и машину не сбивает. Увеличенное сглаживание делает его ещё мягче.',
+        ]),
+        ('Повторный клик по приложению ничего не делает', [
+            'Одновременно работает только одна копия. Второй запуск закрывает сам себя, чтобы две копии не делили виртуальный геймпад.',
+            'Уже открытое окно находится на панели задач, свёрнутое или за игрой.',
+        ]),
+        ('Антивирус ругается на приложение', [
+            'Приложение ставит драйверы, создаёт виртуальный контроллер и прячет ваш настоящий от игры. Именно такое поведение и ищут эвристики.',
+            'К тому же сборка не подписана: сертификаты подписи стоят денег, а неподписанные установщики сами по себе вызывают предупреждения.',
+            'Исходники открыты. Если не хотите доверять сборке, прочитайте их и соберите свою.',
+        ]),
+        ('Окно пустое или не открывается', [
+            'Интерфейс работает на WebView2, который входит в состав Windows 11. На более старой системе установите WebView2 Runtime от Microsoft.',
+            'Первому запуску нужны права администратора, чтобы поставить драйверы. Если вы отклонили запрос, запустите приложение снова и подтвердите.',
+            'После первой установки драйверов Windows может потребовать перезагрузку, прежде чем они заработают.',
+        ]),
+        ('Модифицирует ли приложение игру?', [
+            'Нет. Оно читает телеметрию, которую игра передаёт сама через Data Out, и представляется Windows обычным геймпадом Xbox.',
+            'Оно не трогает файлы игры, не читает и не пишет её память, не внедряет код и не вмешивается в античит.',
+            'Допустим ли сторонний инструмент в онлайне, решает издатель, а не этот проект.',
+        ]),
     ],
-    "marks": [
-        "This is an unofficial fan project. Not affiliated with, endorsed "
-        "by or sponsored by Microsoft Corporation, Xbox Game Studios, "
-        "Playground Games or Turn 10 Studios. Forza, Forza Horizon and "
-        "Forza Motorsport are trademarks of Microsoft Corporation.",
-        "All other trademarks belong to their respective owners.",
+    "es": [
+        ('El asistente no hace nada en el juego', [
+            'Nueve de cada diez veces es el orden de arranque. El juego busca mandos al iniciarse, asi que un mando virtual creado despues le resulta invisible.',
+            'Abre Steering Assist primero y luego Forza. Si el juego ya esta abierto, cierralo y vuelve a abrirlo; el asistente puede seguir corriendo.',
+            'Comprueba tambien que la direccion este en Simulation. En los demas ajustes el juego dirige por encima del asistente y lo contrarresta.',
+        ]),
+        ('Funcionaba y luego empezo a comportarse de forma erratica', [
+            'Normalmente ha aparecido un segundo mando. Conectar un volante o despertar un mando inalambrico le da al juego otro dispositivo, y puede no ser el que el asistente controla.',
+            'Reiniciar el asistente recrea el mando virtual y vuelve a ocultar el fisico, lo que deja todo en su sitio.',
+            'Si lo que se congelo fueron las lecturas y no la direccion, el juego dejo de enviar telemetria. Revisa que Data Out siga activado.',
+        ]),
+        ('Los cambios de marcha no responden con el freno de mano pulsado', [
+            'El juego lee los botones de un dispositivo cada vez. Mientras el asistente mantiene el freno de mano en su mando virtual, las pulsaciones del tuyo pueden ignorarse.',
+            'El asistente cede el espejo durante toda la pulsacion para que los cambios pasen. En una sesion real acierta unas ocho de cada diez veces.',
+            'Un mando por cable es bastante mas fiable aqui que Bluetooth, que pierde mas de estas pulsaciones.',
+        ]),
+        ('Las pulsaciones van con retraso o se pierden', [
+            'La causa habitual es Bluetooth. El mismo mando por cable responde antes y pierde muchas menos pulsaciones.',
+            'La vibracion comparte canal con tus mandos. El asistente envia la respuesta unas dos veces por segundo en lugar de sesenta, treinta veces menos trafico, pero un canal ocupado sigue costando algo.',
+            'Cierra otros programas de mandos. Los controladores del fabricante y los remapeadores toman el dispositivo e interfieren.',
+        ]),
+        ('Las ruedas apenas giran', [
+            'Probablemente la fuerza del asistente sea baja o este activo el perfil Minimal. Sube la fuerza y prueba de nuevo.',
+            'La curva de direccion y el limite de agarre reconfiguran el centro del recorrido del stick. Muy altos, se comen la mayor parte y queda poco con lo que girar.',
+            'Asegurate de que el juego este en direccion Simulation. El ajuste asistido aplica su propia correccion encima y anula gran parte de esta.',
+        ]),
+        ('A baja velocidad no pasa nada', [
+            'Es intencionado. Por debajo de la velocidad minima el asistente se aparta del todo, para que los trompos y el aparcamiento sigan siendo tuyos.',
+            'Baja la velocidad minima en los ajustes si quieres ayuda antes.',
+        ]),
+        ('El panel de telemetria sigue vacio', [
+            'Abre los ajustes del juego en HUD & Gameplay y pon Data out en On, la IP en 127.0.0.1 y el puerto en 20777.',
+            'Puede que otra aplicacion de carreras ya ocupe ese puerto. Cierrala o cambiala de puerto.',
+            'Un cortafuegos puede bloquear el paquete local. Permite Steering Assist en redes privadas si el panel sigue vacio con los ajustes correctos.',
+        ]),
+        ('El volante da un tiron al cambiar de marcha en pleno derrape', [
+            'Cambiar devuelve los botones a tu mando por un instante, y la direccion se retoma justo despues. Esa costura es lo que notas.',
+            'Es pequeno y no desestabiliza el coche. Subir el suavizado lo atenua aun mas.',
+        ]),
+        ('Hacer clic en la aplicacion otra vez no hace nada', [
+            'Solo se ejecuta una copia a la vez. El segundo arranque se cierra solo para que las dos no se disputen el mando virtual.',
+            'La ventana que ya tienes esta en la barra de tareas, minimizada o detras del juego.',
+        ]),
+        ('Mi antivirus lo marca', [
+            'La aplicacion instala controladores, crea un mando virtual y oculta el tuyo real al juego. Esa forma de comportarse es justo lo que buscan las heuristicas.',
+            'Ademas se distribuye sin firmar, porque los certificados de firma no son gratuitos, y los instaladores sin firma ya generan avisos por si solos.',
+            'El codigo es abierto. Si prefieres no confiar en la compilacion, leelo y compila la tuya.',
+        ]),
+        ('La ventana esta en blanco o no se abre', [
+            'La interfaz funciona sobre WebView2, incluido en Windows 11. En un sistema mas antiguo instala WebView2 Runtime de Microsoft.',
+            'El primer arranque necesita permisos de administrador para instalar sus controladores. Si rechazaste el aviso, vuelve a abrirlo y acepta.',
+            'Tras instalar los controladores por primera vez, Windows puede pedir un reinicio antes de que funcionen.',
+        ]),
+        ('Modifica el juego?', [
+            'No. Lee la telemetria que el propio juego emite por Data Out y se presenta a Windows como un mando de Xbox normal.',
+            'No toca archivos del juego, no lee ni escribe su memoria, no inyecta codigo ni interfiere con el anticheat.',
+            'Si una herramienta de terceros es aceptable en linea lo decide la editora, no este proyecto.',
+        ]),
     ],
-    "repo": ["Source on GitHub",
-             "https://github.com/reeeeiin/fh6-steering-assist"],
-    "about": [
-        "Steering Assist \u2122",
-        "Created and maintained by Nikita (reeeeiin) Pakhtin.",
-        "First release 5 August 2026.",
+    "fr": [
+        ("L'assistance ne fait rien en jeu", [
+            "Neuf fois sur dix, c'est l'ordre de lancement. Le jeu cherche les manettes a son demarrage, donc une manette virtuelle creee apres lui reste invisible.",
+            "Lancez Steering Assist d'abord, puis Forza. Si le jeu est deja ouvert, fermez-le et rouvrez-le, l'assistance peut continuer a tourner.",
+            "Verifiez aussi que la direction est reglee sur Simulation. Sur les autres reglages, le jeu dirige par-dessus l'assistance et la contrarie.",
+        ]),
+        ("Cela marchait, puis c'est devenu erratique", [
+            "En general, une seconde manette est apparue. Brancher un volant ou reveiller une manette sans fil donne au jeu un autre peripherique, qui n'est pas forcement celui que l'assistance pilote.",
+            "Redemarrer l'assistance recree la manette virtuelle et masque de nouveau la physique, ce qui remet tout en ordre.",
+            "Si ce sont les valeurs qui se sont figees et non la direction, le jeu a cesse d'envoyer la telemetrie. Verifiez que Data Out est toujours active.",
+        ]),
+        ('Les rapports ne passent pas quand je tiens le frein a main', [
+            "Le jeu lit les boutons d'un seul peripherique a la fois. Tant que l'assistance tient le frein a main sur sa manette virtuelle, vos appuis peuvent etre ignores.",
+            "L'assistance cede le miroir pendant toute la duree de l'appui pour que les rapports passent. Sur une session reelle, cela fonctionne environ huit fois sur dix.",
+            'Une manette filaire est nettement plus fiable ici que le Bluetooth, qui perd davantage de ces appuis.',
+        ]),
+        ('Les appuis sont en retard ou se perdent', [
+            "Le Bluetooth est la cause habituelle. La meme manette au cable repond plus vite et perd bien moins d'appuis.",
+            "Le retour de force partage le canal avec vos commandes. L'assistance envoie les vibrations environ deux fois par seconde au lieu de soixante, soit trente fois moins de trafic, mais un canal charge coute toujours quelque chose.",
+            "Fermez les autres logiciels de manette. Les pilotes constructeurs et les remappeurs accaparent le peripherique et genent l'assistance.",
+        ]),
+        ('Les roues tournent a peine', [
+            "La force de l'assistance est sans doute basse, ou le profil Minimal est actif. Augmentez la force et reessayez.",
+            "La courbe de direction et la limite d'adherence remodelent le centre de la course du stick. Reglees haut, elles en mangent l'essentiel et il reste peu pour diriger.",
+            'Assurez-vous que le jeu est en direction Simulation. Le reglage assiste applique sa propre correction par-dessus et annule une grande partie de celle-ci.',
+        ]),
+        ('Rien ne se passe a basse vitesse', [
+            "C'est voulu. En dessous de la vitesse minimale, l'assistance s'efface completement, pour que les donuts et le creneau restent les votres.",
+            "Baissez la vitesse minimale dans les reglages si vous voulez de l'aide plus tot.",
+        ]),
+        ('Le panneau de telemetrie reste vide', [
+            "Ouvrez les reglages du jeu dans HUD & Gameplay et mettez Data out sur On, l'adresse IP sur 127.0.0.1 et le port sur 20777.",
+            'Une autre application de course occupe peut-etre deja ce port. Fermez-la, ou changez son port.',
+            'Un pare-feu peut bloquer le paquet local. Autorisez Steering Assist sur les reseaux prives si le panneau reste vide avec les bons reglages.',
+        ]),
+        ('Le volant tressaute quand je change de rapport en plein drift', [
+            "Le changement rend les boutons a votre manette un instant, et la direction reprend juste apres. C'est cette jointure que vous sentez.",
+            "L'effet est faible et ne desequilibre pas la voiture. Augmenter le lissage l'adoucit encore.",
+        ]),
+        ("Recliquer sur l'application ne fait rien", [
+            'Une seule copie tourne a la fois. Le second lancement se ferme de lui-meme pour que les deux ne se disputent pas la manette virtuelle.',
+            'La fenetre que vous avez deja est dans la barre des taches, reduite ou derriere le jeu.',
+        ]),
+        ('Mon antivirus le signale', [
+            "L'application installe des pilotes, cree une manette virtuelle et masque la votre au jeu. C'est exactement le genre de comportement que les heuristiques recherchent.",
+            "Elle est aussi distribuee sans signature, les certificats n'etant pas gratuits, et un installeur non signe declenche deja des avertissements.",
+            'Le code est ouvert. Si vous preferez ne pas faire confiance a la version compilee, lisez-le et compilez la votre.',
+        ]),
+        ("La fenetre est vide ou ne s'ouvre pas", [
+            "L'interface repose sur WebView2, livre avec Windows 11. Sur un systeme plus ancien, installez le WebView2 Runtime de Microsoft.",
+            'Le premier lancement demande les droits administrateur pour installer ses pilotes. Si vous avez refuse, relancez et acceptez.',
+            "Apres la premiere installation des pilotes, Windows peut demander un redemarrage avant qu'ils fonctionnent.",
+        ]),
+        ('Est-ce que cela modifie le jeu ?', [
+            "Non. L'application lit la telemetrie que le jeu diffuse lui-meme via Data Out, et se presente a Windows comme une manette Xbox ordinaire.",
+            "Elle ne touche pas aux fichiers du jeu, ne lit ni n'ecrit sa memoire, n'injecte pas de code et n'interfere pas avec l'anti-triche.",
+            "C'est a l'editeur de decider si un outil tiers est acceptable en ligne, pas a ce projet.",
+        ]),
+    ],
+    "de": [
+        ('Die Lenkhilfe tut im Spiel nichts', [
+            'In neun von zehn Fallen liegt es an der Startreihenfolge. Das Spiel sucht beim Start nach Controllern, ein spater erzeugtes virtuelles Pad bleibt fur es unsichtbar.',
+            'Starte zuerst Steering Assist, dann Forza. Lauft das Spiel schon, schliesse und offne es einfach neu, die Lenkhilfe kann weiterlaufen.',
+            'Prufe ausserdem, ob die Lenkung im Spiel auf Simulation steht. Bei den anderen Einstellungen lenkt das Spiel uber die Hilfe hinweg und arbeitet gegen sie.',
+        ]),
+        ('Es lief, dann wurde es unberechenbar', [
+            'Meist ist ein zweiter Controller dazugekommen. Ein angestecktes Lenkrad oder ein aufgewachtes Funkpad gibt dem Spiel ein weiteres Gerat, und das muss nicht das sein, das die Hilfe steuert.',
+            'Ein Neustart der Lenkhilfe baut das virtuelle Pad neu auf und versteckt das physische wieder, damit ist alles zuruck an seinem Platz.',
+            'Sind die Anzeigen eingefroren und nicht die Lenkung, sendet das Spiel keine Telemetrie mehr. Prufe, ob Data Out noch aktiv ist.',
+        ]),
+        ('Gange schalten nicht, solange ich die Handbremse halte', [
+            'Das Spiel liest Tasten immer nur von einem Gerat. Solange die Hilfe die Handbremse auf ihrem virtuellen Pad halt, konnen Eingaben auf deinem ignoriert werden.',
+            'Die Hilfe gibt die Spiegelung fur die gesamte Dauer des Drucks frei, damit Schaltvorgange durchkommen. In einer echten Session klappt das etwa acht von zehn Mal.',
+            'Ein Pad am Kabel ist hier deutlich zuverlassiger als Bluetooth, das mehr dieser Eingaben verliert.',
+        ]),
+        ('Tastendrucke kommen verzogert oder gar nicht an', [
+            'Meist ist Bluetooth die Ursache. Dasselbe Pad am Kabel reagiert schneller und verliert weit weniger Eingaben.',
+            'Die Vibration teilt sich den Kanal mit deinen Eingaben. Die Hilfe sendet Ruckmeldung etwa zweimal pro Sekunde statt sechzigmal, also dreissigmal weniger Datenverkehr, doch ein belegter Kanal kostet trotzdem etwas.',
+            'Schliesse andere Controller-Software. Herstellertreiber und Remapper greifen sich das Gerat und storen die Hilfe.',
+        ]),
+        ('Die Rader schlagen kaum ein', [
+            'Wahrscheinlich ist die Starke niedrig oder das Profil Minimal aktiv. Erhohe die Starke und versuche es erneut.',
+            'Lenkkurve und Grip-Grenze formen die Mitte des Stickwegs um. Hoch eingestellt fressen sie den grossten Teil davon, und zum Lenken bleibt wenig ubrig.',
+            'Stelle sicher, dass das Spiel auf Simulation steht. Die unterstutzte Einstellung legt ihre eigene Korrektur daruber und hebt vieles davon auf.',
+        ]),
+        ('Bei niedriger Geschwindigkeit passiert nichts', [
+            'Das ist Absicht. Unterhalb der Mindestgeschwindigkeit halt sich die Hilfe vollstandig heraus, damit Donuts und Einparken dir gehoren.',
+            'Senke die Mindestgeschwindigkeit in den Einstellungen, wenn du fruher Hilfe mochtest.',
+        ]),
+        ('Das Telemetrie-Feld bleibt leer', [
+            'Offne die Spieleinstellungen unter HUD & Gameplay und setze Data out auf On, die IP-Adresse auf 127.0.0.1 und den Port auf 20777.',
+            'Moglicherweise belegt eine andere Rennsport-App den Port bereits. Schliesse sie oder weise ihr einen anderen zu.',
+            'Eine Firewall kann das lokale Paket blockieren. Erlaube Steering Assist in privaten Netzwerken, wenn das Feld trotz richtiger Einstellungen leer bleibt.',
+        ]),
+        ('Das Lenkrad zuckt, wenn ich mitten im Drift schalte', [
+            'Beim Schalten gehen die Tasten kurz an dein Pad zuruck, und direkt danach ubernimmt die Lenkung wieder. Diese Nahtstelle spurst du.',
+            'Der Effekt ist klein und bringt das Auto nicht aus der Bahn. Mehr Glattung mildert ihn weiter.',
+        ]),
+        ('Ein erneuter Klick auf die App bewirkt nichts', [
+            'Es lauft immer nur eine Kopie. Der zweite Start beendet sich selbst, damit sich beide nicht um das virtuelle Pad streiten.',
+            'Das vorhandene Fenster liegt in der Taskleiste, minimiert oder hinter dem Spiel.',
+        ]),
+        ('Mein Virenscanner schlagt an', [
+            'Die App installiert Treiber, erzeugt einen virtuellen Controller und versteckt deinen echten vor dem Spiel. Genau nach diesem Muster suchen Heuristiken.',
+            'Ausserdem ist sie unsigniert, denn Signaturzertifikate kosten Geld, und unsignierte Installer losen schon fur sich Warnungen aus.',
+            'Der Quelltext ist offen. Wenn du dem Build nicht traust, lies ihn und kompiliere deinen eigenen.',
+        ]),
+        ('Das Fenster ist leer oder offnet sich nicht', [
+            'Die Oberflache lauft auf WebView2, das Windows 11 mitbringt. Auf einem alteren System installiere die WebView2 Runtime von Microsoft.',
+            'Der erste Start braucht Administratorrechte, um seine Treiber zu installieren. Hast du die Abfrage abgelehnt, starte erneut und bestatige.',
+            'Nach der ersten Treiberinstallation kann Windows einen Neustart verlangen, bevor sie greifen.',
+        ]),
+        ('Verandert es das Spiel?', [
+            'Nein. Es liest die Telemetrie, die das Spiel selbst uber Data Out sendet, und meldet sich bei Windows als gewohnlicher Xbox-Controller.',
+            'Es fasst keine Spieldateien an, liest oder schreibt keinen Speicher, schleust keinen Code ein und greift nicht in den Anti-Cheat ein.',
+            'Ob ein Werkzeug von Dritten online zulassig ist, entscheidet der Publisher, nicht dieses Projekt.',
+        ]),
+    ],
+    "ja": [
+        ('ゲーム内でアシストが効かない', [
+            '十中八九は起動順です。ゲームは起動時にコントローラーを探すため、後から作られた仮想パッドは認識されません。',
+            '先に Steering Assist を起動し、次に Forza を起動してください。すでにゲームが開いている場合は、閉じて開き直すだけで大丈夫です。',
+            'ゲーム側のステアリングが Simulation になっているかも確認してください。他の設定ではゲームがアシストの上から操舵して打ち消してしまいます。',
+        ]),
+        ('動いていたのに挙動がおかしくなった', [
+            'たいていは二台目のコントローラーが増えています。ハンドルを接続したり、ワイヤレスパッドが復帰したりすると、ゲームが別の機器を読むことがあります。',
+            'アシストを再起動すると仮想パッドが作り直され、実機のパッドも隠し直されます。',
+            '操舵ではなく数値が止まった場合は、ゲームがテレメトリーの送信をやめています。Data Out が有効なままか確認してください。',
+        ]),
+        ('サイドブレーキを握るとギアが入らない', [
+            'ゲームは一度に一台の機器からしかボタンを読みません。アシストが仮想パッドでサイドブレーキを保持している間、手元のパッドの入力は無視されることがあります。',
+            'アシストは押している間ずっとミラーを譲るため、シフトは通ります。実走行では十回中およそ八回成功します。',
+            'ここでは有線パッドのほうが Bluetooth より明らかに確実で、Bluetooth は取りこぼしが増えます。',
+        ]),
+        ('ボタン入力が遅れる、または抜ける', [
+            '原因はたいてい Bluetooth です。同じパッドでも有線なら反応が速く、取りこぼしも大幅に減ります。',
+            '振動はあなたの入力と同じ帯域を使います。アシストは毎秒六十回ではなく二回ほどに抑えており、通信量は三十分の一ですが、混んだ帯域には代償があります。',
+            '他のコントローラー関連ソフトを終了してください。メーカー製ドライバーやリマッパーが機器を占有して干渉します。',
+        ]),
+        ('ハンドルがほとんど切れない', [
+            'アシスト強度が低いか、Minimal プロファイルが有効になっている可能性があります。強度を上げて試してください。',
+            'ステアリングカーブとグリップ制限はスティックの中央域を作り変えます。高く設定すると中央域の大半を使い切り、操舵に残る余地がわずかになります。',
+            'ゲームのステアリングが Simulation か確認してください。アシスト設定は独自の補正を上から掛け、こちらの効果を大きく打ち消します。',
+        ]),
+        ('低速では何も起きない', [
+            '仕様です。最低速度を下回るとアシストは完全に手を引くので、ドーナツターンや駐車はあなたのものになります。',
+            '早くから支援が欲しい場合は、設定で最低速度を下げてください。',
+        ]),
+        ('テレメトリー欄が空のまま', [
+            'ゲーム設定の HUD & Gameplay を開き、Data out を On、IP アドレスを 127.0.0.1、ポートを 20777 にしてください。',
+            '他のレース系アプリがそのポートを使っていることがあります。終了するか、別のポートに変更してください。',
+            'ファイアウォールがローカル通信を遮断している場合もあります。設定が正しいのに空のままなら、プライベートネットワークで Steering Assist を許可してください。',
+        ]),
+        ('ドリフト中にシフトすると挙動が乱れる', [
+            'シフトの瞬間だけボタンが手元のパッドに戻り、直後に操舵が再開します。その継ぎ目を感じています。',
+            '影響は小さく、車の姿勢は崩れません。スムージングを上げるとさらに和らぎます。',
+        ]),
+        ('アプリをもう一度クリックしても何も起きない', [
+            '同時に動くのは一つだけです。二つ目の起動は仮想パッドの取り合いを避けるため、自分で終了します。',
+            'すでに開いているウィンドウはタスクバーにあり、最小化されているかゲームの背面にあります。',
+        ]),
+        ('ウイルス対策ソフトが警告する', [
+            'このアプリはドライバーを導入し、仮想コントローラーを作り、実機のパッドをゲームから隠します。ヒューリスティックが探すのはまさにこの挙動です。',
+            'また署名がありません。署名証明書は有料で、未署名のインストーラーはそれだけで警告の対象になります。',
+            'ソースは公開されています。配布物を信用したくない場合は、内容を読んで自分でビルドしてください。',
+        ]),
+        ('ウィンドウが真っ白、または開かない', [
+            '画面は WebView2 で動作します。Windows 11 には同梱されていますが、それ以前の環境では Microsoft の WebView2 Runtime を導入してください。',
+            '初回起動はドライバー導入のために管理者権限が必要です。確認画面を拒否した場合は、もう一度起動して許可してください。',
+            '初回のドライバー導入後、有効になる前に Windows の再起動を求められることがあります。',
+        ]),
+        ('ゲームを改変しますか？', [
+            'いいえ。ゲームが Data Out で自ら送信するテレメトリーを読み取り、Windows には通常の Xbox コントローラーとして認識されます。',
+            'ゲームのファイルには触れず、メモリーの読み書きもせず、コードの注入もアンチチートへの干渉も行いません。',
+            'サードパーティ製ツールがオンラインで許容されるかを決めるのはパブリッシャーであり、このプロジェクトではありません。',
+        ]),
     ],
 }
 
+LEGAL_MARKS = [
+    "This is an unofficial fan project. Not affiliated with, endorsed "
+    "by or sponsored by Microsoft Corporation, Xbox Game Studios, "
+    "Playground Games or Turn 10 Studios. Forza, Forza Horizon and "
+    "Forza Motorsport are trademarks of Microsoft Corporation.",
+    "All other trademarks belong to their respective owners.",
+]
+
+# The trademark notice is deliberately left in English in every
+# language: translating it risks changing what it asserts.
+LEGAL = {
+    "en": {
+        "how": [
+            'Steering Assist reads the telemetry the game broadcasts itself through its built-in Data Out feature, and presents itself to Windows as an ordinary Xbox controller.',
+            'It does not modify game files, read or write game memory, inject code into the game process, or interfere with anti-cheat.',
+            "Whether any third-party tool is acceptable in online play is decided by the game's publisher, not by this project. Using it is your own decision and your own responsibility.",
+        ],
+        "marks": LEGAL_MARKS,
+        "about": [
+            "Steering Assist \u2122",
+            'Created and maintained by Nikita (reeeeiin) Pakhtin.',
+            'First release 5 August 2026.',
+        ],
+        "repo": ['Source on GitHub',
+                 "https://github.com/reeeeiin/fh6-steering-assist"],
+    },
+    "ru": {
+        "how": [
+            'Steering Assist читает телеметрию, которую игра передаёт сама через встроенную функцию Data Out, и представляется Windows обычным геймпадом Xbox.',
+            'Он не изменяет файлы игры, не читает и не пишет её память, не внедряет код в процесс игры и не вмешивается в работу античита.',
+            'Допустим ли сторонний инструмент в онлайне, решает издатель игры, а не этот проект. Использование остаётся вашим решением и вашей ответственностью.',
+        ],
+        "marks": LEGAL_MARKS,
+        "about": [
+            "Steering Assist \u2122",
+            'Создано и поддерживается Никитой (reeeeiin) Пахтиным.',
+            'Первый релиз 5 августа 2026 года.',
+        ],
+        "repo": ['Исходный код на GitHub',
+                 "https://github.com/reeeeiin/fh6-steering-assist"],
+    },
+    "es": {
+        "how": [
+            'Steering Assist lee la telemetria que el propio juego emite mediante su funcion Data Out, y se presenta a Windows como un mando de Xbox normal.',
+            'No modifica los archivos del juego, no lee ni escribe su memoria, no inyecta codigo en el proceso ni interfiere con el anticheat.',
+            'Si una herramienta de terceros es aceptable en linea lo decide la editora del juego, no este proyecto. Usarlo es tu decision y tu responsabilidad.',
+        ],
+        "marks": LEGAL_MARKS,
+        "about": [
+            "Steering Assist \u2122",
+            'Creado y mantenido por Nikita (reeeeiin) Pakhtin.',
+            'Primera version el 5 de agosto de 2026.',
+        ],
+        "repo": ['Codigo en GitHub',
+                 "https://github.com/reeeeiin/fh6-steering-assist"],
+    },
+    "fr": {
+        "how": [
+            'Steering Assist lit la telemetrie que le jeu diffuse lui-meme via sa fonction Data Out, et se presente a Windows comme une manette Xbox ordinaire.',
+            "Il ne modifie pas les fichiers du jeu, ne lit ni n'ecrit sa memoire, n'injecte pas de code dans le processus et n'interfere pas avec l'anti-triche.",
+            "C'est a l'editeur du jeu, et non a ce projet, de decider si un outil tiers est acceptable en ligne. L'utiliser reste votre decision et votre responsabilite.",
+        ],
+        "marks": LEGAL_MARKS,
+        "about": [
+            "Steering Assist \u2122",
+            'Cree et maintenu par Nikita (reeeeiin) Pakhtin.',
+            'Premiere version le 5 aout 2026.',
+        ],
+        "repo": ['Code source sur GitHub',
+                 "https://github.com/reeeeiin/fh6-steering-assist"],
+    },
+    "de": {
+        "how": [
+            'Steering Assist liest die Telemetrie, die das Spiel selbst uber seine Data-Out-Funktion sendet, und meldet sich bei Windows als gewohnlicher Xbox-Controller.',
+            'Es verandert keine Spieldateien, liest oder schreibt keinen Speicher, schleust keinen Code in den Spielprozess ein und greift nicht in den Anti-Cheat ein.',
+            'Ob ein Werkzeug von Dritten im Online-Spiel zulassig ist, entscheidet der Publisher, nicht dieses Projekt. Die Nutzung bleibt deine Entscheidung und deine Verantwortung.',
+        ],
+        "marks": LEGAL_MARKS,
+        "about": [
+            "Steering Assist \u2122",
+            'Erstellt und gepflegt von Nikita (reeeeiin) Pakhtin.',
+            'Erste Veroffentlichung am 5. August 2026.',
+        ],
+        "repo": ['Quellcode auf GitHub',
+                 "https://github.com/reeeeiin/fh6-steering-assist"],
+    },
+    "ja": {
+        "how": [
+            'Steering Assist はゲームが Data Out 機能で自ら送信するテレメトリーを読み取り、Windows には通常の Xbox コントローラーとして認識されます。',
+            'ゲームのファイルを変更したり、メモリーを読み書きしたり、プロセスにコードを注入したり、アンチチートに干渉したりすることはありません。',
+            'サードパーティ製ツールがオンラインで許容されるかを決めるのはゲームのパブリッシャーであり、このプロジェクトではありません。使用はご自身の判断と責任でお願いします。',
+        ],
+        "marks": LEGAL_MARKS,
+        "about": [
+            "Steering Assist \u2122",
+            '作成・保守: Nikita (reeeeiin) Pakhtin',
+            '初回リリース 2026年8月5日',
+        ],
+        "repo": ['GitHub のソースコード',
+                 "https://github.com/reeeeiin/fh6-steering-assist"],
+    },
+}
+
 THIRD_PARTY = {
-    "Software": [
+    "grp_sw": [
         ("vgamepad 0.1.0", "https://github.com/yannbouteiller/vgamepad"),
         ("HidHide 1.5.230", "https://github.com/nefarius/HidHide"),
         ("pywebview 6.2.1", "https://pywebview.flowrl.com"),
         ("pygame 2.6.1", "https://www.pygame.org"),
         ("PyInstaller 6.21.0", "https://pyinstaller.org"),
     ],
-    "Fonts": [
+    "grp_fonts": [
         ("Oswald", "https://fonts.google.com/specimen/Oswald"),
         ("Chiron GoRound TC",
          "https://fonts.google.com/specimen/Chiron+GoRound+TC"),
@@ -1816,6 +2189,8 @@ TR = {
         "nav_settings": 'Settings',
         "nav_faq": 'FAQ',
         "nav_about": 'About',
+        "grp_sw": 'Software',
+        "grp_fonts": 'Fonts',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -1902,6 +2277,8 @@ TR = {
         "nav_settings": 'Настройки',
         "nav_faq": 'Вопросы',
         "nav_about": 'О приложении',
+        "grp_sw": 'Программы',
+        "grp_fonts": 'Шрифты',
         "interface_sec": "Интерфейс", "theme": "Тема",
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -1988,6 +2365,8 @@ TR = {
         "nav_settings": 'Einstellungen',
         "nav_faq": 'FAQ',
         "nav_about": 'Uber',
+        "grp_sw": 'Software',
+        "grp_fonts": 'Schriften',
         "interface_sec": "Oberfläche", "theme": "Design",
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -2074,6 +2453,8 @@ TR = {
         "nav_settings": 'Reglages',
         "nav_faq": 'FAQ',
         "nav_about": 'A propos',
+        "grp_sw": 'Logiciels',
+        "grp_fonts": 'Polices',
         "interface_sec": "Interface", "theme": "Thème",
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2160,6 +2541,8 @@ TR = {
         "nav_settings": 'Ajustes',
         "nav_faq": 'FAQ',
         "nav_about": 'Acerca de',
+        "grp_sw": 'Software',
+        "grp_fonts": 'Fuentes',
         "interface_sec": "Interfaz", "theme": "Tema",
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2246,6 +2629,8 @@ TR = {
         "nav_settings": '設定',
         "nav_faq": 'FAQ',
         "nav_about": '概要',
+        "grp_sw": 'ソフトウェア',
+        "grp_fonts": 'フォント',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2423,7 +2808,8 @@ def build_html() -> str:
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
     html = html.replace("__LEGAL__", json.dumps(LEGAL))
-    html = html.replace("__FAQ__", json.dumps(FAQ_ITEMS))
+    html = html.replace("__FAQ__", json.dumps(FAQ_ITEMS,
+                                                ensure_ascii=False))
     html = html.replace("__VER__", APP_VERSION)
     html = html.replace("__DEFAULTS__", json.dumps(
         {k: DEFAULTS[k] for k, *_ in SLIDERS}))
@@ -2923,7 +3309,7 @@ function screenMain(){
    this build ships with, grouped the way the design groups them */
 function screenFaq(){
   return '<div class="reveal"><div class="sec">' + t('faq_sec') + '</div>' +
-    '<div class="card faqwrap"><div class="faqbox">' + FAQ.map((item, i) =>
+    '<div class="card faqwrap"><div class="faqbox">' + FQ().map((item, i) =>
       '<div class="qa"><h4>' + (i + 1) + '. ' + item[0] + '</h4>' +
       item[1].map(x => '<p>' + x + '</p>').join('') + '</div>').join('') +
     '</div></div></div>';
@@ -2935,23 +3321,23 @@ function screenAbout(){
     '<div class="card"><div class="prose">' +
     paras.map(x => '<p>' + x + '</p>').join('') + '</div></div></div>';
 
-  let h = prose('how_it_works', LEGAL.how);
+  let h = prose('how_it_works', LG().how);
   h += '<div class="reveal"><div class="sec">' + t('third_party') +
        '</div><div class="card">';
   Object.keys(THIRD).forEach(group => {
-    h += '<div class="lname">' + group + '</div><div class="bubs">' +
+    h += '<div class="lname">' + t(group) + '</div><div class="bubs">' +
          THIRD[group].map(n =>
            '<span class="bub" data-url="' + n[1] + '">' + n[0] + '</span>'
          ).join('') +
          '</div>';
   });
   h += '</div></div>';
-  h += prose('trademarks', LEGAL.marks);
+  h += prose('trademarks', LG().marks);
   h += '<div class="reveal"><div class="sec">' + t('about_sec') + '</div>' +
        '<div class="card"><div class="prose">' +
-       LEGAL.about.map(x => '<p>' + x + '</p>').join('') +
+       LG().about.map(x => '<p>' + x + '</p>').join('') +
        '<div class="bubs repo"><span class="bub" data-url="' +
-       LEGAL.repo[1] + '">' + LEGAL.repo[0] + '</span></div>' +
+       LG().repo[1] + '">' + LG().repo[0] + '</span></div>' +
        '</div></div></div>';
   return h;
 }
@@ -3212,8 +3598,10 @@ let bootLang = 'en';
 let bootPath = null, bootLen = 0, lastScreen = null;
 const LINE_GAP = 300;
 const THIRD = __THIRD__;
-const LEGAL = __LEGAL__;
-const FAQ = __FAQ__;
+const LEGAL_TR = __LEGAL__;
+function LG(){ return LEGAL_TR[cfg && cfg.lang] || LEGAL_TR.en; }
+const FAQ_TR = __FAQ__;
+function FQ(){ return FAQ_TR[cfg && cfg.lang] || FAQ_TR.en; }
 
 function bootFill(p){
   if (!bootPath){
