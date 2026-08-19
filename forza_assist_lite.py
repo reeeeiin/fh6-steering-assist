@@ -2459,6 +2459,12 @@ body.t-light{
 .tbar > *:not(.drag){position:relative;z-index:1}
 .hbtn,.vbadge{-webkit-app-region:no-drag}
 [data-toggle],[data-slider],[data-seg] [data-key],.bub,.hbtn{cursor:pointer}
+/* the controls are built of separate tracks, fills and knobs with gaps
+   between them that belong to the row, so the pointer flickered as it
+   crossed them: the whole row carries it instead */
+.row:has([data-toggle]),.row:has([data-slider]),
+.row:has([data-seg]){cursor:pointer}
+[data-toggle] *,[data-slider] *,[data-seg] [data-key] *{cursor:inherit}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
 .hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
