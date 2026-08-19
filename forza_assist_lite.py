@@ -2465,13 +2465,20 @@ body.t-light{
       background:var(--btn-bg);border:1.5px solid var(--btn-line);
       color:var(--btn-fg);
       transition:background .18s ease,border-color .18s ease,color .18s ease}
+.hbtn{transition:background .2s ease,border-color .2s ease,color .2s ease}
 .hbtn:hover{background:var(--btn-hov-bg);border-color:var(--accent);
             color:var(--accent)}
 .hbtn.on{background:var(--accent);border-color:var(--accent);
          color:var(--accent-fg)}
 .hbtn.tab{padding:0 8px}
 .hbtn.sq{width:18px;padding:0}
-.hbtn.back{display:none} .hbtn.back.show{display:flex}
+.hbtn.back{display:flex;width:0;min-width:0;padding:0;margin-right:0;
+           opacity:0;border-width:0;overflow:hidden;pointer-events:none;
+           transition:width .2s ease,margin .2s ease,opacity .2s ease}
+.hbtn.back.show{width:18px;min-width:18px;margin-right:5px;opacity:1;
+                border-width:1px;pointer-events:auto;
+                transition:width .2s ease,margin .2s ease,
+                           opacity .2s ease .12s}
 .hbtn.sup{background:var(--warn);border-color:var(--warn);color:#101010}
 .hbtn.sup:hover{filter:brightness(1.08)}
 .hbtn.close:hover{background:var(--danger-bg);border-color:var(--danger);
@@ -2528,7 +2535,7 @@ body.t-light{
      display:flex;align-items:center;font-size:9px;font-weight:600;
      color:var(--row-fg);background:var(--card-2);cursor:default;
      border:1px solid var(--line);white-space:nowrap;
-     transition:background .15s ease,color .15s ease,border-color .15s ease}
+     transition:background .2s ease,color .2s ease,border-color .2s ease}
 .bub:hover{background:var(--btn-hov-bg);border-color:var(--accent);
            color:var(--accent)}
 .row{display:flex;align-items:center;gap:12px;min-height:42px;
@@ -2610,6 +2617,8 @@ body.t-light{
 .screen{display:none;flex-direction:column;gap:10px}
 .screen.on{display:flex}
 .reveal{opacity:0;transform:translateY(10px)}
+#screen.leaving .reveal.shown{opacity:0;transform:translateY(-6px);
+                              transition:opacity .2s ease,transform .2s ease}
 .reveal.shown{opacity:1;transform:none;
               transition:opacity .42s ease,transform .42s ease}
 .tbar .reveal{transform:none}
@@ -2959,8 +2968,14 @@ function render(){
                 : screen === 'about' ? screenAbout()
                 : screen === 'faq' ? screenFaq()
                 : screenMain();
-  if (bootPhase === 'app')
-    $$('#screen .reveal, .foot.reveal').forEach(e => e.classList.add('shown'));
+  if (bootPhase === 'app'){
+    const rows = [...$$('#screen .reveal'), ...$$('.foot.reveal')];
+    const staged = screen !== lastScreen;
+    lastScreen = screen;
+    rows.forEach((el, i) => staged
+      ? setTimeout(() => el.classList.add('shown'), 40 + i * 55)
+      : el.classList.add('shown'));
+  }
   bindRows();
   refresh();
   reportHeight();
@@ -3157,7 +3172,7 @@ let bootLang = 'en';
 
 /* the loading shape is drawn stroke-first, so it fills along its own
    curve while the dim copy underneath keeps the whole outline visible */
-let bootPath = null, bootLen = 0;
+let bootPath = null, bootLen = 0, lastScreen = null;
 const LINE_GAP = 300;
 const THIRD = __THIRD__;
 const LEGAL = __LEGAL__;
@@ -3466,10 +3481,21 @@ document.addEventListener('click', e => {
   if (chip) try{ pywebview.api.open_url(chip.dataset.url); }catch(err){}
 });
 $$('[data-nav]').forEach(b => b.addEventListener('click', () => {
-  screen = (screen === b.dataset.nav) ? 'main' : b.dataset.nav;
-  render();
+  goScreen((screen === b.dataset.nav) ? 'main' : b.dataset.nav);
 }));
-$('#back').addEventListener('click', () => { screen = 'main'; render(); });
+$('#back').addEventListener('click', () => goScreen('main'));
+
+/* the outgoing rows fade away before the incoming ones start arriving */
+function goScreen(next){
+  if (next === screen) return;
+  const box = $('#screen');
+  box.classList.add('leaving');
+  setTimeout(() => {
+    box.classList.remove('leaving');
+    screen = next;
+    render();
+  }, 200);
+}
 $$('.rz').forEach(z => z.addEventListener('pointerdown', e => {
   e.preventDefault();
   try{ pywebview.api.win_grip(z.dataset.e); }catch(err){}
