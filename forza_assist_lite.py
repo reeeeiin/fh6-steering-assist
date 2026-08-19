@@ -2491,17 +2491,21 @@ body.t-light{
        text-transform:uppercase;letter-spacing:.02em}
 .qa p{margin:0;font-size:9px;line-height:1.6;color:var(--row-fg)}
 /* the only scrolling body in the app: the card keeps its size and its
-   corners while the questions move inside it, under a fixed heading.
-   The mask feathers both inner edges so the text dissolves instead of
-   being cut off, and the thumb sits inside the card, not beside it */
+   corners while the questions move inside it, under a fixed heading */
+.faqwrap{position:relative;padding:5px 5px 5px 0;overflow:hidden}
+/* the edges fade into the card's own colour, so the text softens against
+   the body rather than against whatever is behind it */
+.faqwrap::before,.faqwrap::after{content:"";position:absolute;left:0;right:0;
+    height:18px;pointer-events:none;z-index:2}
+.faqwrap::before{top:0;background:linear-gradient(to bottom,var(--card),
+    rgba(0,0,0,0))}
+.faqwrap::after{bottom:0;background:linear-gradient(to top,var(--card),
+    rgba(0,0,0,0))}
 .faqbox{height:560px;overflow-y:auto;overscroll-behavior:contain;
-        -webkit-mask-image:linear-gradient(to bottom,transparent 0,
-            #000 16px,#000 calc(100% - 16px),transparent 100%);
-        mask-image:linear-gradient(to bottom,transparent 0,
-            #000 16px,#000 calc(100% - 16px),transparent 100%)}
+        padding:0 15px}
 .faqbox::-webkit-scrollbar{width:4px}
 .faqbox::-webkit-scrollbar-button{display:none}
-.faqbox::-webkit-scrollbar-track{background:transparent;margin:14px 0}
+.faqbox::-webkit-scrollbar-track{background:transparent;margin:12px 0}
 .faqbox::-webkit-scrollbar-thumb{background:var(--track);border-radius:2px}
 .faqbox::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .prose p{font-size:9px;line-height:1.6;color:var(--row-fg);margin:0}
@@ -2857,10 +2861,10 @@ function screenMain(){
    this build ships with, grouped the way the design groups them */
 function screenFaq(){
   return '<div class="reveal"><div class="sec">' + t('faq_sec') + '</div>' +
-    '<div class="card faqbox">' + FAQ.map((item, i) =>
+    '<div class="card faqwrap"><div class="faqbox">' + FAQ.map((item, i) =>
       '<div class="qa"><h4>' + (i + 1) + '. ' + item[0] + '</h4>' +
       item[1].map(x => '<p>' + x + '</p>').join('') + '</div>').join('') +
-    '</div></div>';
+    '</div></div></div>';
 }
 
 function screenAbout(){
