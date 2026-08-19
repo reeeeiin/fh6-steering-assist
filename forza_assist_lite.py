@@ -947,7 +947,7 @@ THIRD_PARTY = {
     "Fonts": [
         ("Oswald", "https://fonts.google.com/specimen/Oswald"),
         ("Chiron GoRound TC",
-         "https://github.com/chiron-fonts/chiron-goround-tc"),
+         "https://fonts.google.com/specimen/Chiron+GoRound+TC"),
     ],
 }
 
