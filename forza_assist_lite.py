@@ -2633,6 +2633,7 @@ body.t-light{
 .reveal.shown{opacity:1;transform:none;
               transition:opacity .42s ease,transform .42s ease}
 .tbar .reveal{transform:none}
+.tbar .logo{position:relative;z-index:1}
 /* the reveal rules declare their own transition and transform and would
    otherwise win over these, leaving the header to change in one frame */
 .tbar .hbtn{transition:background .2s ease,border-color .2s ease,
@@ -2642,6 +2643,7 @@ body.t-light{
    only once the gap is open does the arrow fade in, on the spot. Leaving,
    it fades out first and the gap closes after */
 .tbar .hbtn.back{transform:none !important;
+            position:relative;z-index:2;
             transition:opacity .2s ease,
                        width .2s ease .2s,min-width .2s ease .2s,
                        margin .2s ease .2s !important}
