@@ -850,6 +850,31 @@ BOOT_TR = {
 BOOT_DEMO = os.environ.get("ASSIST_BOOT_DEMO", "")
 BOOT_DEMO_ERR = os.environ.get("ASSIST_BOOT_ERROR", "")
 
+LEGAL = {
+    "how": [
+        "Steering Assist reads the telemetry the game broadcasts itself "
+        "through its built-in Data Out feature, and presents itself to "
+        "Windows as an ordinary Xbox controller.",
+        "It does not modify game files, read or write game memory, inject "
+        "code into the game process, or interfere with anti-cheat.",
+        "Whether any third-party tool is acceptable in online play is "
+        "decided by the game's publisher, not by this project. Using it is "
+        "your own decision and your own responsibility.",
+    ],
+    "marks": [
+        "This is an unofficial fan project. Not affiliated with, endorsed "
+        "by or sponsored by Microsoft Corporation, Xbox Game Studios, "
+        "Playground Games or Turn 10 Studios. Forza, Forza Horizon and "
+        "Forza Motorsport are trademarks of Microsoft Corporation.",
+        "All other trademarks belong to their respective owners.",
+    ],
+    "about": [
+        "Steering Assist \u2122",
+        "Created and maintained by Nikita (reeeeiin) Pakhtin.",
+        "First release 5 August 2026.",
+    ],
+}
+
 THIRD_PARTY = {
     "Software": ["vgamepad 0.1.0", "pywebview 6.2.1", "pygame 2.6.1",
                  "PyInstaller 6.21.0"],
@@ -1711,6 +1736,9 @@ LANG_SHORT = {"en": "En", "ru": "Ру", "es": "Es",
 TR = {
     "en": {
         "third_party": 'Third-party Components',
+        "how_it_works": 'How it works',
+        "trademarks": 'Trademarks',
+        "about_sec": 'About',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -1789,6 +1817,9 @@ TR = {
     },
     "ru": {
         "third_party": 'Компоненты сторонних разработчиков',
+        "how_it_works": 'Как это работает',
+        "trademarks": 'Товарные знаки',
+        "about_sec": 'О приложении',
         "interface_sec": "Интерфейс", "theme": "Тема",
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -1867,6 +1898,9 @@ TR = {
     },
     "de": {
         "third_party": 'Komponenten von Drittanbietern',
+        "how_it_works": 'So funktioniert es',
+        "trademarks": 'Markenzeichen',
+        "about_sec": 'Uber die App',
         "interface_sec": "Oberfläche", "theme": "Design",
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -1945,6 +1979,9 @@ TR = {
     },
     "fr": {
         "third_party": 'Composants tiers',
+        "how_it_works": 'Comment ca marche',
+        "trademarks": 'Marques deposees',
+        "about_sec": 'A propos',
         "interface_sec": "Interface", "theme": "Thème",
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2023,6 +2060,9 @@ TR = {
     },
     "es": {
         "third_party": 'Componentes de terceros',
+        "how_it_works": 'Como funciona',
+        "trademarks": 'Marcas registradas',
+        "about_sec": 'Acerca de',
         "interface_sec": "Interfaz", "theme": "Tema",
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2101,6 +2141,9 @@ TR = {
     },
     "ja": {
         "third_party": 'サードパーティ製コンポーネント',
+        "how_it_works": '仕組み',
+        "trademarks": '商標',
+        "about_sec": 'このアプリについて',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2277,6 +2320,7 @@ def build_html() -> str:
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
+    html = html.replace("__LEGAL__", json.dumps(LEGAL))
     html = html.replace("__VER__", APP_VERSION)
     html = html.replace("__DEFAULTS__", json.dumps(
         {k: DEFAULTS[k] for k, *_ in SLIDERS}))
@@ -2373,6 +2417,8 @@ body.t-light{
      padding:0 4px 8px}
 .card{background:var(--card);border-radius:14px;padding:0 15px;flex:none;}
 .lname{font-size:8px;color:var(--row-fg);padding:15px 0 0}
+.prose{padding:15px 0;display:flex;flex-direction:column;gap:8px}
+.prose p{font-size:9px;line-height:1.6;color:var(--row-fg);margin:0}
 .bubs{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 15px}
 .card .bubs:not(:last-child){border-bottom:1px solid var(--line)}
 .bub{height:18px;box-sizing:border-box;padding:0 9px;border-radius:7px;
@@ -2724,15 +2770,23 @@ function screenMain(){
 /* the About screen, carrying what the mockup calls Legal: the components
    this build ships with, grouped the way the design groups them */
 function screenAbout(){
-  let h = '<div class="reveal"><div class="sec">' + t('third_party') +
-          '</div><div class="card">';
-  const keys = Object.keys(THIRD);
-  keys.forEach((group, i) => {
+  const prose = (key, paras) =>
+    '<div class="reveal"><div class="sec">' + t(key) + '</div>' +
+    '<div class="card"><div class="prose">' +
+    paras.map(x => '<p>' + x + '</p>').join('') + '</div></div></div>';
+
+  let h = prose('how_it_works', LEGAL.how);
+  h += '<div class="reveal"><div class="sec">' + t('third_party') +
+       '</div><div class="card">';
+  Object.keys(THIRD).forEach(group => {
     h += '<div class="lname">' + group + '</div><div class="bubs">' +
          THIRD[group].map(n => '<span class="bub">' + n + '</span>').join('') +
          '</div>';
   });
-  return h + '</div></div>';
+  h += '</div></div>';
+  h += prose('trademarks', LEGAL.marks);
+  h += prose('about_sec', LEGAL.about);
+  return h;
 }
 
 function screenSettings(){
@@ -2984,6 +3038,7 @@ let bootLang = 'en';
 let bootPath = null, bootLen = 0;
 const LINE_GAP = 300;
 const THIRD = __THIRD__;
+const LEGAL = __LEGAL__;
 
 function bootFill(p){
   if (!bootPath){
