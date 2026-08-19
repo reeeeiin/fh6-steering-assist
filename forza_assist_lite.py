@@ -583,6 +583,7 @@ DEFAULTS = {
     "rumble": True,
     "lang": "en",
     "theme": "dark",
+    "ui_scale": 1.0,
     "steer_in_general": False,
     "ext_telemetry": True,
     "profile": "default",
@@ -1406,6 +1407,11 @@ def sanitize_config(cfg: dict) -> dict:
         cfg["lang"] = DEFAULTS["lang"]
     if cfg.get("theme") not in THEMES:
         cfg["theme"] = DEFAULTS["theme"]
+    try:
+        if float(cfg.get("ui_scale", 1.0)) not in UI_STEPS:
+            cfg["ui_scale"] = DEFAULTS["ui_scale"]
+    except (TypeError, ValueError):
+        cfg["ui_scale"] = DEFAULTS["ui_scale"]
     if cfg.get("profile") not in PROFILE_ORDER:
         cfg["profile"] = DEFAULTS["profile"]
     snap = cfg.get("custom")
@@ -2225,6 +2231,8 @@ TR = {
         "upd_current": 'Up to date',
         "upd_available": 'Update available',
         "upd_failed": 'Check failed',
+        "scale": 'Scale',
+        "scale_hint": 'Enlarges the whole interface, text and controls alike',
         "interface_sec": 'Interface', "theme": 'Appearance',
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2328,6 +2336,8 @@ TR = {
         "upd_current": 'Актуально',
         "upd_available": 'Есть обновление',
         "upd_failed": 'Не удалось проверить',
+        "scale": 'Масштаб',
+        "scale_hint": 'Увеличивает весь интерфейс целиком, вместе с текстом и элементами',
         "interface_sec": 'Интерфейс', "theme": 'Оформление',
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -2431,6 +2441,8 @@ TR = {
         "upd_current": 'Aktuell',
         "upd_available": 'Update verfugbar',
         "upd_failed": 'Prufung fehlgeschlagen',
+        "scale": 'Skalierung',
+        "scale_hint": 'Vergrossert die gesamte Oberflache samt Text und Bedienelementen',
         "interface_sec": 'Oberflache', "theme": 'Darstellung',
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -2534,6 +2546,8 @@ TR = {
         "upd_current": 'A jour',
         "upd_available": 'Mise a jour dispo',
         "upd_failed": 'Echec de la verification',
+        "scale": 'Echelle',
+        "scale_hint": 'Agrandit toute l\'interface, texte et controles compris',
         "interface_sec": 'Interface', "theme": 'Apparence',
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2637,6 +2651,8 @@ TR = {
         "upd_current": 'Actualizado',
         "upd_available": 'Actualizacion disponible',
         "upd_failed": 'Fallo la comprobacion',
+        "scale": 'Escala',
+        "scale_hint": 'Agranda toda la interfaz, texto y controles incluidos',
         "interface_sec": 'Interfaz', "theme": 'Apariencia',
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2740,6 +2756,8 @@ TR = {
         "upd_current": '最新版',
         "upd_available": '更新があります',
         "upd_failed": '確認できません',
+        "scale": '拡大率',
+        "scale_hint": '文字も操作部もまとめて画面全体を拡大します',
         "interface_sec": 'インターフェース',
         "theme": '外観',
         "theme_hint": 'ウィンドウの配色',
@@ -2952,6 +2970,7 @@ HTML_PAGE = r"""<!doctype html>
 /*FONTS*/
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;
   -webkit-user-select:none;cursor:default}
+html{--uiz:1.25}
 html,body{width:100%;height:100%;overflow:hidden}
 body{background:var(--win-bg);
      font-family:'Chiron','Segoe UI',system-ui,sans-serif;
@@ -2989,7 +3008,10 @@ body.t-light{
  --hint-w:400; --hint-ro:6px; --hint-ri:5px;
 }
 
-#zoom{width:100%;min-width:510px;min-height:calc(100vh / 1.25);zoom:1.25;
+/* one factor drives the whole layout; CSS zoom carries it into text,
+   strokes and radii the same way Figma scales a frame */
+#zoom{width:100%;min-width:510px;min-height:calc(100vh / var(--uiz));
+      zoom:var(--uiz);
       display:flex;flex-direction:column;padding:18px;gap:24px}
 
 /* ---------- title bar: components are 18 px tall, radius 5 ---------- */
@@ -3254,7 +3276,8 @@ body.t-light{
 
 .tbar .reveal.shown{transition:opacity .42s ease}
 
-#boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);zoom:1.25;
+#boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);
+      zoom:var(--uiz);
       transition:opacity .5s ease}
 #boot.gone{opacity:0;pointer-events:none}
 #boot .row,#boot .blk{all:unset}
@@ -3631,6 +3654,10 @@ function screenSettings(){
        '</div>' +
        '<div class="row"><span class="rname">' + t('theme') + '</span>' +
        segEl('theme', THEMES.map(x => ({key: x, label: t('theme_' + x)})), cfg.theme) +
+       '</div><div class="row" data-hint="scale_hint">' +
+       '<span class="rname">' + t('scale') + '</span>' +
+       segEl('ui_scale', UI_STEPS.map(x => ({key: String(x),
+             label: Math.round(x * 100) + '%'})), String(cfg.ui_scale)) +
        '</div>' +
        toggleRow('steer_in_general', 'steer_in_general') +
        toggleRow('ext_telemetry', 'ext_telemetry') +
@@ -3652,6 +3679,18 @@ function screenSettings(){
 function bootTheme(){
   if (bootPhase !== 'app' && state && state.first_run)
     document.body.className = 't-dark';
+}
+
+const UI_BASE = 1.25;
+const UI_STEPS = [1, 1.25, 1.5];
+
+function uiZoom(){
+  const step = cfg && UI_STEPS.indexOf(+cfg.ui_scale) >= 0 ? +cfg.ui_scale : 1;
+  return UI_BASE * step;
+}
+
+function applyScale(){
+  document.documentElement.style.setProperty('--uiz', uiZoom());
 }
 
 function render(){
@@ -3692,7 +3731,10 @@ function refresh(){
     el.classList.toggle('on', !!cfg[el.dataset.toggle]));
   $$('[data-seg]').forEach(seg => {
     const id = seg.dataset.seg;
-    const cur = id === 'profile' ? cfg.profile : id === 'lang' ? cfg.lang : cfg.theme;
+    const cur = id === 'profile' ? cfg.profile
+              : id === 'lang' ? cfg.lang
+              : id === 'ui_scale' ? String(cfg.ui_scale)
+              : cfg.theme;
     const items = [...seg.querySelectorAll('[data-key]')];
     items.forEach(s => s.classList.toggle('on', s.dataset.key === cur));
     const act = items.find(s => s.dataset.key === cur) || items[0];
@@ -3739,6 +3781,12 @@ function segPick(id, key){
   try{ pywebview.api.set(id, key); }catch(e){}
   if (id === 'lang') render();
   if (id === 'theme') document.body.className = 't-' + key;
+  if (id === 'ui_scale'){
+    applyScale();
+    try{ pywebview.api.set_scale(key); }catch(e){}
+    lastH = 0;
+    setTimeout(reportHeight, 60);
+  }
 }
 
 function bindRows(){
@@ -3845,7 +3893,14 @@ let lastH = 0;
 function reportHeight(){
   if (bootPhase !== 'app') return;
   requestAnimationFrame(() => {
-    const h = Math.round($('#zoom').offsetHeight * 1.25);
+    /* #zoom is stretched to the window so the footer can sit at the bottom,
+       so its own height says nothing about what the content needs. Adding
+       the three blocks and the gaps between them does. */
+    const bar = $('.tbar'), scr = $('#screen'), ft = $('.foot');
+    if (!bar || !scr || !ft) return;
+    const natural = bar.offsetHeight + scr.offsetHeight + ft.offsetHeight +
+                    18 * 2 + 24 * 2;
+    const h = Math.round(natural * uiZoom());
     if (h && Math.abs(h - lastH) > 2){
       lastH = h;
       try{ pywebview.api.content_h(h); }catch(e){}
@@ -3859,6 +3914,7 @@ async function poll(){
     state = await pywebview.api.state();
     if (!cfg){
       cfg = state.cfg;
+      applyScale();
       bootLang = cfg.lang;
       bootRedraw();
       render();
@@ -4077,6 +4133,7 @@ function revealApp(){
   bootPhase = 'app';
   delete document.documentElement.dataset.boot;
   document.body.className = 't-' + (cfg ? cfg.theme : 'dark');
+  applyScale();
   $('#boot').classList.add('gone');
   const head = [...$$('.tbar .reveal')];
   const body = [...$$('#screen .reveal'), ...$$('.foot.reveal')];
@@ -4240,9 +4297,36 @@ window.addEventListener('pywebviewready', () => {
 
 
 UI_SCALE = 1.25      # design pixels are small; everything is scaled once
-WIN_W = int(510 * UI_SCALE)
-WIN_MIN_H = int(360 * UI_SCALE)
-_WIN = {"hwnd": 0, "content_h": 770, "boot": True}
+UI_STEPS = (1.0, 1.25, 1.5)   # what the user can add on top of that
+
+DESIGN_W = 510
+DESIGN_BOOT_H = 360
+
+
+def ui_zoom(cfg=None):
+    """The single factor everything is drawn at: the design scale times the
+    step the user picked. CSS zoom applies it to text, strokes and radii
+    alike, so the layout grows the way it does in Figma."""
+    try:
+        step = float((cfg or {}).get("ui_scale", 1.0))
+    except (TypeError, ValueError):
+        step = 1.0
+    if step not in UI_STEPS:
+        step = 1.0
+    return UI_SCALE * step
+
+
+def win_w(cfg=None):
+    return int(round(DESIGN_W * ui_zoom(cfg)))
+
+
+def win_min_h(cfg=None):
+    return int(round(DESIGN_BOOT_H * ui_zoom(cfg)))
+
+
+WIN_W = int(DESIGN_W * UI_SCALE)
+WIN_MIN_H = int(DESIGN_BOOT_H * UI_SCALE)
+_WIN = {"hwnd": 0, "content_h": 770, "boot": True, "cfg": None}
 
 class MONITORINFO(ctypes.Structure):
     _fields_ = [("cbSize", ctypes.c_ulong),
@@ -4287,7 +4371,7 @@ SW_MINIMIZE = 6
 
 OPEN_MS = 190.0
 CLOSE_MS = 150.0
-OPEN_FROM = 0.90
+OPEN_FROM = 0.86
 
 
 def _layered(hwnd, on):
@@ -4344,13 +4428,32 @@ def open_window(hwnd, w, h):
 
 
 def close_window(hwnd):
-    """Shrink and fade out, the reverse of the opening."""
+    """Shrink into its own centre and fade out. The window is hidden at the
+    end so Windows does not follow up with its own flight to the taskbar."""
     try:
         rect = wintypes.RECT()
         ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
         w, h = rect.right - rect.left, rect.bottom - rect.top
         _layered(hwnd, True)
         _grow(hwnd, rect.left, rect.top, w, h, CLOSE_MS, _ease_in, False)
+        ctypes.windll.user32.ShowWindow(hwnd, 0)
+    except Exception:
+        pass
+
+
+def minimise_window(hwnd):
+    """Windows plays no minimise animation for a frameless window, so the
+    shrink is drawn here before handing over to the shell."""
+    try:
+        rect = wintypes.RECT()
+        ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        w, h = rect.right - rect.left, rect.bottom - rect.top
+        _layered(hwnd, True)
+        _grow(hwnd, rect.left, rect.top, w, h, CLOSE_MS, _ease_in, False)
+        ctypes.windll.user32.ShowWindow(hwnd, SW_MINIMIZE)
+        _place(hwnd, rect.left, rect.top, w, h)
+        _alpha(hwnd, 255)
+        _layered(hwnd, False)
     except Exception:
         pass
 
@@ -4372,14 +4475,14 @@ def _resize_free(h):
     and grows around its own centre, so a window opened in the middle of
     the screen stays there as the boot screen gives way to the app."""
     try:
-        h = max(WIN_MIN_H, int(float(h)))
+        h = max(win_min_h(_WIN.get("cfg")), int(float(h)))
         _WIN["content_h"] = h
         hwnd = _WIN.get("hwnd")
         if not hwnd:
             return True
         r = wintypes.RECT()
         ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
-        w = max(WIN_W, r.right - r.left)
+        w = max(win_w(_WIN.get("cfg")), r.right - r.left)
         old_h = r.bottom - r.top
         if abs(h - old_h) <= 2 and w == r.right - r.left:
             return True
@@ -4401,7 +4504,7 @@ class Api:
         hwnd = _WIN.get("hwnd")
         try:
             if hwnd:
-                ctypes.windll.user32.ShowWindow(hwnd, SW_MINIMIZE)
+                minimise_window(hwnd)
             else:
                 self._window.minimize()
         except Exception:
@@ -4496,10 +4599,11 @@ class Api:
                     L, T, R, B = r.left, r.top, r.right, r.bottom
                     w, h = R - L, B - T
                     if "l" in edge:
-                        w = max(WIN_W, R - pt.x)
+                        w = max(win_w(_WIN.get("cfg")), R - pt.x)
                     elif "r" in edge:
-                        w = max(WIN_W, pt.x - L)
-                    floor = max(WIN_MIN_H, int(_WIN.get("content_h", WIN_MIN_H)))
+                        w = max(win_w(_WIN.get("cfg")), pt.x - L)
+                    floor = max(win_min_h(_WIN.get("cfg")),
+                    int(_WIN.get("content_h", WIN_MIN_H)))
                     if "t" in edge:
                         h = max(floor, B - pt.y)
                     elif "b" in edge:
@@ -4556,6 +4660,26 @@ class Api:
     def capture_button(self, on=True):
         self._b.captured = 0
         self._b.capture = bool(on)
+        return True
+
+    def set_scale(self, step):
+        """The step changes how wide the layout is, so the window has to
+        follow it; the height comes back from the page a moment later."""
+        try:
+            step = float(step)
+        except (TypeError, ValueError):
+            return True
+        if step not in UI_STEPS:
+            return True
+        self._b.cfg["ui_scale"] = step
+        save_config(self._b.cfg)
+        hwnd = _WIN.get("hwnd")
+        if hwnd:
+            r = wintypes.RECT()
+            ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
+            w = win_w(self._b.cfg)
+            h = max(win_min_h(self._b.cfg), r.bottom - r.top)
+            _place(hwnd, r.left - (w - (r.right - r.left)) // 2, r.top, w, h)
         return True
 
     def set(self, key, value):
@@ -4622,6 +4746,7 @@ def main():
     bridge = Bridge()
     bridge.start()
     api = Api(bridge)
+    _WIN["cfg"] = bridge.cfg
     window = webview.create_window("Steering Assist", html=build_html(),
                                    js_api=api,
                                    width=WIN_W, height=WIN_MIN_H,
@@ -4652,7 +4777,8 @@ def main():
         u.GetWindowLongW.restype = ctypes.c_long
         st = u.GetWindowLongW(hwnd, GWL_STYLE)
         u.SetWindowLongW(hwnd, GWL_STYLE, st | WS_MINIMIZEBOX)
-        open_window(hwnd, WIN_W, WIN_MIN_H)
+        open_window(hwnd, win_w(_WIN.get("cfg")),
+                    win_min_h(_WIN.get("cfg")))
         try:
             pref = ctypes.c_int(2)
             ctypes.windll.dwmapi.DwmSetWindowAttribute(
@@ -4678,15 +4804,16 @@ def main():
             if msg == 0x0214:
                 rect = ctypes.cast(lp, ctypes.POINTER(wintypes.RECT)).contents
                 if _WIN.get("boot"):
-                    rect.right = rect.left + WIN_W
-                    rect.bottom = rect.top + WIN_MIN_H
+                    rect.right = rect.left + win_w(_WIN.get("cfg"))
+                    rect.bottom = rect.top + win_min_h(_WIN.get("cfg"))
                     return 1
-                if rect.right - rect.left < WIN_W:
+                if rect.right - rect.left < win_w(_WIN.get("cfg")):
                     if wp in (1, 4, 7):
-                        rect.left = rect.right - WIN_W
+                        rect.left = rect.right - win_w(_WIN.get("cfg"))
                     else:
-                        rect.right = rect.left + WIN_W
-                floor = max(WIN_MIN_H, int(_WIN.get("content_h", WIN_MIN_H)))
+                        rect.right = rect.left + win_w(_WIN.get("cfg"))
+                floor = max(win_min_h(_WIN.get("cfg")),
+                    int(_WIN.get("content_h", WIN_MIN_H)))
                 if rect.bottom - rect.top < floor:
                     if wp in (3, 4, 5):
                         rect.top = rect.bottom - floor
