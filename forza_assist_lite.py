@@ -2632,12 +2632,16 @@ body.t-light{
 .tbar .hbtn{transition:background .2s ease,border-color .2s ease,
             color .2s ease,width .2s ease,min-width .2s ease,
             margin .2s ease,opacity .2s ease,transform .2s ease !important}
-/* the wordmark is pushed aside first, then the arrow fades into the gap */
-.tbar .hbtn.back{transform:none !important}
+/* the two moves are strictly sequential: the wordmark slides away, and
+   only once the gap is open does the arrow fade in, on the spot. Leaving,
+   it fades out first and the gap closes after */
+.tbar .hbtn.back{transform:none !important;
+            transition:opacity .2s ease,
+                       width .2s ease .2s,min-width .2s ease .2s,
+                       margin .2s ease .2s !important}
 .tbar .hbtn.back.show{transform:none !important;
-            transition:background .2s ease,border-color .2s ease,
-            color .2s ease,width .2s ease,min-width .2s ease,
-            margin .2s ease,opacity .2s ease .1s !important}
+            transition:width .2s ease,min-width .2s ease,margin .2s ease,
+                       opacity .2s ease .22s !important}
 .tbar .reveal.shown{transition:opacity .42s ease}
 
 #boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);zoom:1.25;
