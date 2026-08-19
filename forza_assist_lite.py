@@ -650,15 +650,15 @@ BOOT_TR = {
         "errTitle": 'Что-то пошло не так', "errBtn": 'Начать заново',
         "errors": {
             'failed': ['Ошибка при установке драйверов',
-             'Закройте программы вроде драйверов геймпадов, они могут мешать установке Steering Assist.'],
+             'Закройте драйверы геймпадов и похожие программы, они могут мешать установке.'],
             'noadmin': ['Нужны права администратора',
              'Закройте приложение и запустите снова, затем подтвердите запрос Windows.'],
             'reboot': ['Перезагрузите компьютер, чтобы завершить установку',
              'Драйверы установлены, для их активации нужна перезагрузка.'],
             'hide': ['Ошибка при скрытии геймпада',
-             'Закройте программы вроде драйверов геймпадов, они могут мешать установке Steering Assist.'],
+             'Закройте драйверы геймпадов и похожие программы, они могут мешать установке.'],
             'vigem': ['Ошибка при создании виртуального геймпада',
-             'Закройте программы вроде драйверов геймпадов, они могут мешать установке Steering Assist.'],
+             'Закройте драйверы геймпадов и похожие программы, они могут мешать установке.'],
         },
     },
     "es": {
@@ -2533,9 +2533,11 @@ body.t-light{
       transition:filter .15s ease}
 .bbtn:hover{filter:brightness(1.12)}
 
-#bs-err{top:266px;display:flex;align-items:center;justify-content:center;
-        gap:14px}
-.berr{width:244px;font-size:12px;color:var(--row-fg);line-height:1.45}
+/* anchored to its foot, so a longer translation grows upwards instead of
+   walking into the footer */
+#bs-err{top:auto;bottom:56px;display:flex;align-items:center;
+        justify-content:center;gap:14px}
+.berr{width:244px;font-size:10px;color:var(--row-fg);line-height:1.5}
 
 .bhint{position:absolute;top:283px;left:0;right:0;text-align:center;
        font-size:12px;color:var(--row-fg);transition:opacity .45s ease}
