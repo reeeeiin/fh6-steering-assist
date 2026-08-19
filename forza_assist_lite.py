@@ -2622,6 +2622,14 @@ body.t-light{
 .reveal.shown{opacity:1;transform:none;
               transition:opacity .42s ease,transform .42s ease}
 .tbar .reveal{transform:none}
+/* the reveal rules below carry their own transition and would otherwise
+   drop the header's, leaving hovers and the folding arrow to jump */
+.tbar .hbtn{transition:background .2s ease,border-color .2s ease,
+            color .2s ease,width .2s ease,min-width .2s ease,
+            margin .2s ease,opacity .2s ease}
+.tbar .hbtn.back.show{transition:background .2s ease,border-color .2s ease,
+            color .2s ease,width .2s ease,min-width .2s ease,
+            margin .2s ease,opacity .2s ease .12s}
 .tbar .reveal.shown{transition:opacity .42s ease}
 
 #boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);zoom:1.25;
