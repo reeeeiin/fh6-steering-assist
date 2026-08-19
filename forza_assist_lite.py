@@ -9,6 +9,7 @@ import re
 import socket
 import struct
 import subprocess
+import urllib.request
 import webbrowser
 import sys
 import threading
@@ -1347,6 +1348,10 @@ THIRD_PARTY = {
     ],
 }
 
+REPO = "reeeeiin/fh6-steering-assist"
+LATEST_API = "https://api.github.com/repos/%s/releases/latest" % REPO
+RELEASES_URL = "https://github.com/%s/releases/latest" % REPO
+
 BOOT_MIN_MS = 4000
 BOOT_STEP_MS = 6000
 BOOT_DONE_MS = 6000
@@ -2216,6 +2221,10 @@ TR = {
         "sw_dataout": 'Data out',
         "sw_ip": 'IP address',
         "sw_port": 'IP port',
+        "upd_looking": 'Looking for updates',
+        "upd_current": 'You are up to date',
+        "upd_available": 'Update available',
+        "upd_failed": 'Check failed',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2315,6 +2324,10 @@ TR = {
         "sw_dataout": 'Data out',
         "sw_ip": 'IP адрес',
         "sw_port": 'IP порт',
+        "upd_looking": 'Ищем обновления',
+        "upd_current": 'Установлена последняя',
+        "upd_available": 'Есть обновление',
+        "upd_failed": 'Не удалось проверить',
         "interface_sec": "Интерфейс", "theme": "Тема",
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -2414,6 +2427,10 @@ TR = {
         "sw_dataout": 'Data out',
         "sw_ip": 'IP-Adresse',
         "sw_port": 'IP-Port',
+        "upd_looking": 'Suche nach Updates',
+        "upd_current": 'Alles aktuell',
+        "upd_available": 'Update verfugbar',
+        "upd_failed": 'Prufung fehlgeschlagen',
         "interface_sec": "Oberfläche", "theme": "Design",
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -2513,6 +2530,10 @@ TR = {
         "sw_dataout": 'Data out',
         "sw_ip": 'Adresse IP',
         "sw_port": 'Port IP',
+        "upd_looking": 'Recherche en cours',
+        "upd_current": 'Version a jour',
+        "upd_available": 'Mise a jour dispo',
+        "upd_failed": 'Echec de la verification',
         "interface_sec": "Interface", "theme": "Thème",
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2612,6 +2633,10 @@ TR = {
         "sw_dataout": 'Data out',
         "sw_ip": 'Direccion IP',
         "sw_port": 'Puerto IP',
+        "upd_looking": 'Buscando actualizaciones',
+        "upd_current": 'Todo actualizado',
+        "upd_available": 'Actualizacion disponible',
+        "upd_failed": 'Fallo la comprobacion',
         "interface_sec": "Interfaz", "theme": "Tema",
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2711,6 +2736,10 @@ TR = {
         "sw_dataout": 'Data out',
         "sw_ip": 'IP アドレス',
         "sw_port": 'IP ポート',
+        "upd_looking": '更新を確認中',
+        "upd_current": '最新版です',
+        "upd_available": '更新があります',
+        "upd_failed": '確認できません',
         "interface_sec": '外観',
         "theme": 'テーマ',
         "theme_hint": 'ウィンドウの配色',
@@ -2906,6 +2935,7 @@ def build_html() -> str:
          "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
+    html = html.replace("__ICON_DL__", json.dumps(_icon("downloadarrow")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
     html = html.replace("__LEGAL__", json.dumps(LEGAL))
@@ -3005,6 +3035,28 @@ body.t-light{
 .hbtn.sq[data-win=min] svg{width:10px;height:2px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none;margin-right:3px}
 .logo svg{display:block;width:94px;height:17px}
+/* update check: one button that carries every state, with a spinner or a
+   download button appearing beside it */
+.updwrap{display:flex;align-items:center;gap:5px;flex:none}
+.updbtn{height:24px;box-sizing:border-box;padding:0 11px;border-radius:7px;
+        display:flex;align-items:center;font-size:11px;font-weight:600;
+        background:var(--accent);color:var(--accent-fg);white-space:nowrap;
+        cursor:pointer;transition:background .2s ease,color .2s ease,
+        filter .2s ease}
+.updbtn:hover{filter:brightness(1.12)}
+.updbtn.warn{background:var(--warn);color:#101010}
+.updbtn.bad{background:var(--danger);color:#fff}
+.updbtn.busy{cursor:default}
+.upddl{width:24px;height:24px;box-sizing:border-box;border-radius:7px;
+       display:flex;align-items:center;justify-content:center;flex:none;
+       background:var(--warn);color:#101010;cursor:pointer;
+       transition:filter .2s ease}
+.upddl:hover{filter:brightness(1.12)}
+.upddl svg{display:block;width:10px;height:13px}
+.updspin{width:16px;height:16px;flex:none;border-radius:50%;
+         border:2px solid var(--accent);border-top-color:transparent;
+         animation:updspin .8s linear infinite}
+@keyframes updspin{to{transform:rotate(360deg)}}
 .vbadge{height:18px;padding:0 6px;border-radius:5px;
         display:flex;
         align-items:center;font-size:8px;font-weight:600;flex:none;
@@ -3521,6 +3573,39 @@ function screenAbout(){
   return h;
 }
 
+/* the button carries the state; the spinner and the download button come
+   and go beside it */
+let updBusy = false;
+
+function setUpdate(st, ver, url){
+  const wrap = $('#updwrap');
+  if (!wrap) return;
+  const label = st === 'checking' ? t('upd_looking')
+              : st === 'current' ? t('upd_current')
+              : st === 'available' ? t('upd_available')
+              : st === 'error' ? t('upd_failed')
+              : t('check');
+  const cls = st === 'available' ? ' warn' : st === 'error' ? ' bad' : '';
+  wrap.innerHTML =
+    '<span class="updbtn' + cls + (st === 'checking' ? ' busy' : '') +
+    '" id="btn-update">' + label + '</span>' +
+    (st === 'checking' ? '<span class="updspin"></span>' : '') +
+    (st === 'available'
+      ? '<span class="upddl" id="btn-download" data-url="' +
+        (url || '') + '">' + ARROW_DL + '</span>' : '');
+  bindRows();
+}
+
+async function checkUpdate(){
+  if (updBusy) return;
+  updBusy = true;
+  setUpdate('checking');
+  let r = {state: 'error'};
+  try{ r = await pywebview.api.check_update(); }catch(e){}
+  updBusy = false;
+  setUpdate(r.state, r.version, r.url);
+}
+
 function screenSettings(){
   let h = '<div class="reveal"><div class="sec">' + t('settings_sec') + '</div>' +
           '<div class="card">' +
@@ -3548,7 +3633,9 @@ function screenSettings(){
        '<div class="row"><span class="rname">' + t('cur_version') + '</span>' +
        '<span class="vbadge">v' + VER + '</span></div>' +
        '<div class="row"><span class="rname">' + t('check_updates') + '</span>' +
-       '<span class="tab" id="btn-update">' + t('check') + '</span></div>' +
+       '<span class="updwrap" id="updwrap">' +
+       '<span class="updbtn" id="btn-update">' + t('check') + '</span>' +
+       '</span></div>' +
        '</div></div>';
   return h;
 }
@@ -3682,7 +3769,11 @@ function bindRows(){
     el.addEventListener('pointerup', () => { el.onpointermove = null; });
   });
   const up = $('#btn-update');
-  if (up) up.addEventListener('click', () => { up.textContent = t('checking'); });
+  if (up) up.addEventListener('click', checkUpdate);
+  const dl = $('#btn-download');
+  if (dl) dl.addEventListener('click', () => {
+    try{ pywebview.api.open_url(dl.dataset.url); }catch(e){}
+  });
 }
 
 /* ---------------- live state ---------------- */
@@ -3802,6 +3893,7 @@ let bootLang = 'en';
 let bootPath = null, bootLen = 0, lastScreen = null;
 const LINE_GAP = 300;
 const THIRD = __THIRD__;
+const ARROW_DL = __ICON_DL__;
 const LEGAL_TR = __LEGAL__;
 function LG(){ return LEGAL_TR[cfg && cfg.lang] || LEGAL_TR.en; }
 const FAQ_TR = __FAQ__;
@@ -4337,6 +4429,26 @@ class Api:
             except Exception:
                 return False
         return True
+
+    def check_update(self):
+        """Ask GitHub for the newest release. Runs on the call from the page,
+        which is already off the UI thread, so a slow network only delays
+        the button."""
+        try:
+            req = urllib.request.Request(LATEST_API, headers={
+                "User-Agent": "SteeringAssist/" + APP_VERSION,
+                "Accept": "application/vnd.github+json"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = json.loads(r.read().decode("utf-8", "replace"))
+        except Exception:
+            return {"state": "error"}
+        tag = str(data.get("tag_name") or "").lstrip("vV")
+        if not tag:
+            return {"state": "error"}
+        if _version_tuple(tag) > _version_tuple(APP_VERSION):
+            return {"state": "available", "version": tag,
+                    "url": str(data.get("html_url") or RELEASES_URL)}
+        return {"state": "current", "version": tag}
 
     def boot_done(self):
         """The app is on screen: the window may follow its content again."""
