@@ -1812,6 +1812,10 @@ TR = {
         "trademarks": 'Trademarks',
         "about_sec": 'About',
         "faq_sec": 'Frequently Asked Questions',
+        "nav_support": 'Support',
+        "nav_settings": 'Settings',
+        "nav_faq": 'FAQ',
+        "nav_about": 'About',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -1894,6 +1898,10 @@ TR = {
         "trademarks": 'Товарные знаки',
         "about_sec": 'О приложении',
         "faq_sec": 'Частые вопросы',
+        "nav_support": 'Поддержать',
+        "nav_settings": 'Настройки',
+        "nav_faq": 'Вопросы',
+        "nav_about": 'О приложении',
         "interface_sec": "Интерфейс", "theme": "Тема",
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -1976,6 +1984,10 @@ TR = {
         "trademarks": 'Markenzeichen',
         "about_sec": 'Uber die App',
         "faq_sec": 'Haufige Fragen',
+        "nav_support": 'Unterstutzen',
+        "nav_settings": 'Einstellungen',
+        "nav_faq": 'FAQ',
+        "nav_about": 'Uber',
         "interface_sec": "Oberfläche", "theme": "Design",
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -2058,6 +2070,10 @@ TR = {
         "trademarks": 'Marques deposees',
         "about_sec": 'A propos',
         "faq_sec": 'Questions frequentes',
+        "nav_support": 'Soutenir',
+        "nav_settings": 'Reglages',
+        "nav_faq": 'FAQ',
+        "nav_about": 'A propos',
         "interface_sec": "Interface", "theme": "Thème",
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2140,6 +2156,10 @@ TR = {
         "trademarks": 'Marcas registradas',
         "about_sec": 'Acerca de',
         "faq_sec": 'Preguntas frecuentes',
+        "nav_support": 'Apoyar',
+        "nav_settings": 'Ajustes',
+        "nav_faq": 'FAQ',
+        "nav_about": 'Acerca de',
         "interface_sec": "Interfaz", "theme": "Tema",
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2222,6 +2242,10 @@ TR = {
         "trademarks": '商標',
         "about_sec": 'このアプリについて',
         "faq_sec": 'よくある質問',
+        "nav_support": '支援',
+        "nav_settings": '設定',
+        "nav_faq": 'FAQ',
+        "nav_about": '概要',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2478,6 +2502,7 @@ body.t-light{
 .hbtn.on{background:var(--accent);border-color:var(--accent);
          color:var(--accent-fg)}
 .hbtn.tab{padding:0 8px}
+.hbtn i{font-style:normal}
 .hbtn.sq{width:18px;padding:0}
 .hbtn.sup{background:var(--warn);border-color:var(--warn);color:#101010}
 .tbar .hbtn.sup{transition:background .2s ease,border-color .2s ease,
@@ -2757,10 +2782,10 @@ html[data-boot] .rz{display:none}
       <span class="vbadge reveal">v__VER__</span>
     </div>
     <div class="tabs">
-      <span class="hbtn tab sup reveal" data-url="https://boosty.to/reeeeiin">Support</span>
-      <span class="hbtn tab reveal" data-nav="settings"><!--ICON:settings-->Settings</span>
-      <span class="hbtn tab reveal" data-nav="faq">FAQ</span>
-      <span class="hbtn tab reveal" data-nav="about">About</span>
+      <span class="hbtn tab sup reveal" data-url="https://boosty.to/reeeeiin" data-tr="nav_support">Support</span>
+      <span class="hbtn tab reveal" data-nav="settings"><!--ICON:settings--><i data-tr="nav_settings">Settings</i></span>
+      <span class="hbtn tab reveal" data-nav="faq" data-tr="nav_faq">FAQ</span>
+      <span class="hbtn tab reveal" data-nav="about" data-tr="nav_about">About</span>
     </div>
     <div class="wbtns">
       <span class="hbtn sq reveal" data-win="min"><!--ICON:minimize--></span>
@@ -2974,6 +2999,7 @@ function render(){
   document.body.className = 't-' + (THEMES.includes(cfg.theme) ? cfg.theme : 'dark');
   $$('[data-nav]').forEach(b =>
     b.classList.toggle('on', b.dataset.nav === screen));
+  $$('[data-tr]').forEach(e => { e.textContent = t(e.dataset.tr); });
   const box = $('#screen');
   box.innerHTML = screen === 'settings' ? screenSettings()
                 : screen === 'about' ? screenAbout()
