@@ -9,6 +9,7 @@ import re
 import socket
 import struct
 import subprocess
+import urllib.parse
 import urllib.request
 import webbrowser
 import sys
@@ -1352,6 +1353,7 @@ THIRD_PARTY = {
 REPO = "reeeeiin/fh6-steering-assist"
 LATEST_API = "https://api.github.com/repos/%s/releases/latest" % REPO
 RELEASES_URL = "https://github.com/%s/releases/latest" % REPO
+ISSUES_URL = "https://github.com/%s/issues/new" % REPO
 
 BOOT_MIN_MS = 4000
 BOOT_STEP_MS = 6000
@@ -2233,6 +2235,7 @@ TR = {
         "upd_failed": 'Check failed',
         "scale": 'Scale',
         "scale_hint": 'Enlarges the whole interface, text and controls alike',
+        "feedback": 'Send feedback',
         "interface_sec": 'Interface', "theme": 'Appearance',
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2338,6 +2341,7 @@ TR = {
         "upd_failed": 'Не удалось проверить',
         "scale": 'Масштаб',
         "scale_hint": 'Увеличивает весь интерфейс целиком, вместе с текстом и элементами',
+        "feedback": 'Написать нам',
         "interface_sec": 'Интерфейс', "theme": 'Оформление',
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -2443,6 +2447,7 @@ TR = {
         "upd_failed": 'Prufung fehlgeschlagen',
         "scale": 'Skalierung',
         "scale_hint": 'Vergrossert die gesamte Oberflache samt Text und Bedienelementen',
+        "feedback": 'Feedback senden',
         "interface_sec": 'Oberflache', "theme": 'Darstellung',
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -2548,6 +2553,7 @@ TR = {
         "upd_failed": 'Echec de la verification',
         "scale": 'Echelle',
         "scale_hint": 'Agrandit toute l\'interface, texte et controles compris',
+        "feedback": 'Faire un retour',
         "interface_sec": 'Interface', "theme": 'Apparence',
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2653,6 +2659,7 @@ TR = {
         "upd_failed": 'Fallo la comprobacion',
         "scale": 'Escala',
         "scale_hint": 'Agranda toda la interfaz, texto y controles incluidos',
+        "feedback": 'Enviar comentarios',
         "interface_sec": 'Interfaz', "theme": 'Apariencia',
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2758,6 +2765,7 @@ TR = {
         "upd_failed": '確認できません',
         "scale": '拡大率',
         "scale_hint": '文字も操作部もまとめて画面全体を拡大します',
+        "feedback": 'フィードバック',
         "interface_sec": 'インターフェース',
         "theme": '外観',
         "theme_hint": 'ウィンドウの配色',
@@ -3594,7 +3602,9 @@ function screenAbout(){
        '<div class="card"><div class="prose">' +
        LG().about.map(x => '<p>' + x + '</p>').join('') +
        '<div class="bubs repo"><span class="bub" data-url="' +
-       LG().repo[1] + '">' + LG().repo[0] + '</span></div>' +
+       LG().repo[1] + '">' + LG().repo[0] + '</span>' +
+       '<span class="bub" id="btn-feedback">' + t('feedback') +
+       '</span></div>' +
        '</div></div></div>';
   return h;
 }
@@ -4265,7 +4275,10 @@ $$('[data-win]').forEach(b => b.addEventListener('click', () => {
 }));
 document.addEventListener('click', e => {
   const chip = e.target.closest('[data-url]');
-  if (chip) try{ pywebview.api.open_url(chip.dataset.url); }catch(err){}
+  if (chip){ try{ pywebview.api.open_url(chip.dataset.url); }catch(err){} }
+  if (e.target.closest('#btn-feedback')){
+    try{ pywebview.api.feedback(); }catch(err){}
+  }
 });
 $$('[data-nav]').forEach(b => b.addEventListener('click', () => {
   goScreen((screen === b.dataset.nav) ? 'main' : b.dataset.nav);
@@ -4534,6 +4547,42 @@ class Api:
                 webbrowser.open(url)
             except Exception:
                 return False
+        return True
+
+    def feedback(self):
+        """Open a new issue with the machine's own answers already filled in.
+        Everything here is about this build and this hardware; nothing
+        identifies the user, and it is all visible before they press send."""
+        b = self._b
+        try:
+            win = "%d.%d.%d" % sys.getwindowsversion()[:3]
+        except Exception:
+            win = "unknown"
+        tele = ("receiving" if b.telemetry.receiving else
+                "none" if not b.telemetry.error else b.telemetry.error)
+        lines = [
+            "App: %s" % APP_VERSION,
+            "Windows: %s" % win,
+            "Mode: %s" % (b.mode_info or ("HID" if b.hid_mode else "wired")),
+            "Drivers: %s" % (b.drivers.code or "-"),
+            "Pad hiding: %s" % (b.hidhide.code or "-"),
+            "Telemetry: %s" % tele,
+            "Pad rate: %s Hz" % (b.pad_hz or "-"),
+            "Preset: %s" % b.cfg.get("profile", "-"),
+            "Language: %s" % b.cfg.get("lang", "-"),
+            "Scale: %s" % b.cfg.get("ui_scale", 1.0),
+        ]
+        body = ("### What happened\n\n\n"
+                "### What you expected\n\n\n"
+                "### Steps to reproduce\n\n\n"
+                "---\n<details><summary>Diagnostics</summary>\n\n```\n" +
+                "\n".join(lines) + "\n```\n</details>\n")
+        url = ISSUES_URL + "?" + urllib.parse.urlencode(
+            {"title": "", "body": body})
+        try:
+            webbrowser.open(url)
+        except Exception:
+            return False
         return True
 
     def check_update(self):
