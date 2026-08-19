@@ -2458,6 +2458,7 @@ body.t-light{
             z-index:0}
 .tbar > *:not(.drag){position:relative;z-index:1}
 .hbtn,.vbadge{-webkit-app-region:no-drag}
+[data-toggle],[data-slider],[data-seg] [data-key],.bub,.hbtn{cursor:pointer}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
 .hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
@@ -2480,6 +2481,10 @@ body.t-light{
                 transition:width .2s ease,margin .2s ease,
                            opacity .2s ease .12s}
 .hbtn.sup{background:var(--warn);border-color:var(--warn);color:#101010}
+.tbar .hbtn.sup{transition:background .2s ease,border-color .2s ease,
+                color .2s ease,box-shadow .2s ease !important}
+.hbtn.sup:hover{background:var(--warn);border-color:var(--warn);
+                color:#101010;box-shadow:0 3px 10px rgba(255,204,0,.25)}
 .hbtn.sup:hover{filter:brightness(1.08)}
 .hbtn.close:hover{background:var(--danger-bg);border-color:var(--danger);
                   color:var(--danger)}
@@ -2627,13 +2632,12 @@ body.t-light{
 .tbar .hbtn{transition:background .2s ease,border-color .2s ease,
             color .2s ease,width .2s ease,min-width .2s ease,
             margin .2s ease,opacity .2s ease,transform .2s ease !important}
-/* the wordmark is pushed aside first; the arrow then rises into the gap */
-.tbar .hbtn.back{transform:translateY(5px) !important}
+/* the wordmark is pushed aside first, then the arrow fades into the gap */
+.tbar .hbtn.back{transform:none !important}
 .tbar .hbtn.back.show{transform:none !important;
             transition:background .2s ease,border-color .2s ease,
             color .2s ease,width .2s ease,min-width .2s ease,
-            margin .2s ease,opacity .2s ease .1s,
-            transform .2s ease .1s !important}
+            margin .2s ease,opacity .2s ease .1s !important}
 .tbar .reveal.shown{transition:opacity .42s ease}
 
 #boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);zoom:1.25;
