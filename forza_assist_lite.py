@@ -330,6 +330,10 @@ class TelemetryListener:
     OFF_SLIP_RL = 172
     OFF_SLIP_RR = 176
     OFF_SPEED = 256
+    # identity lives in the sled block, before the dash offset shift
+    OFF_CAR_ORDINAL = 212
+    OFF_CAR_CLASS = 216
+    OFF_CAR_PI = 220
     F32 = struct.Struct("<f")
     S32 = struct.Struct("<i")
 
@@ -340,6 +344,7 @@ class TelemetryListener:
         self._t_last = 0.0
         self._t_race = 0.0
         self.error = ""
+        self.car = (0, 0, 0)
         self._run = threading.Event()
 
     def start(self):
@@ -348,6 +353,18 @@ class TelemetryListener:
 
     def stop(self):
         self._run.clear()
+
+    @property
+    def car_label(self) -> str:
+        """The game sends a numeric car id, not a name, so the class and
+        performance index are the most a build without a lookup table can
+        honestly show."""
+        ordinal, klass, pi = self.car
+        if not ordinal:
+            return ""
+        names = ("D", "C", "B", "A", "S1", "S2", "X")
+        name = names[klass] if 0 <= klass < len(names) else "?"
+        return "%s %d" % (name, pi) if pi else name
 
     @property
     def alive(self) -> bool:
@@ -391,6 +408,10 @@ class TelemetryListener:
                 rr = self.F32.unpack_from(pkt, self.OFF_SLIP_RR)[0]
                 yaw = self.F32.unpack_from(pkt, self.OFF_YAW)[0]
                 spd = self.F32.unpack_from(pkt, self.OFF_SPEED)[0]
+                self.car = (
+                    self.S32.unpack_from(pkt, self.OFF_CAR_ORDINAL)[0],
+                    self.S32.unpack_from(pkt, self.OFF_CAR_CLASS)[0],
+                    self.S32.unpack_from(pkt, self.OFF_CAR_PI)[0])
                 vx = self.F32.unpack_from(pkt, self.OFF_VEL_X)[0]
                 vz = self.F32.unpack_from(pkt, self.OFF_VEL_Z)[0]
                 if all(map(math.isfinite, (fl, fr, rl, rr, yaw, spd, vx, vz))):
@@ -2218,7 +2239,7 @@ TR = {
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
         "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
-        "st_recv": "Reciving",
+        "st_recv": 'Receiving',
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -2235,13 +2256,13 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": "Show steering settings here",
         "ext_telemetry": "Show extended telemetry",
-        "st_waiting": "Waiting",
+        "st_waiting": 'Waiting',
         "st_ingame": "In game",
         "st_inmenu": "In menu",
-        "st_notele": "No telemetry",
-        "st_port": "Port busy",
+        "st_notele": 'No signal',
+        "st_port": 'Port busy',
         "st_error": "Error",
-        "hh_idle": "Idle",
+        "hh_idle": 'Waiting',
         "profile": "Preset",
         "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
         "prof_default": "Default",
@@ -2260,12 +2281,19 @@ TR = {
         "press_button": "press…",
         "btn_none": "none",
         "tele_port": "port {p} busy",
-        "st_starting": "starting…", "st_no_pad": "controller not found (XInput)", "st_pad_lost": "controller disconnected — waiting…", "st_vigem": "ViGEmBus driver missing — installer opened, install it and restart", "hh_hidden": "pad hidden from the game", "hh_install": "installer opened — install it and restart the app", "hh_disabled": "auto-hide is off", "hh_error": "HidHide error — try running as administrator",
+        "st_starting": "starting…", "st_no_pad": "controller not found (XInput)", "st_pad_lost": "controller disconnected — waiting…", "st_vigem": "ViGEmBus driver missing — installer opened, install it and restart", "hh_hidden": 'Hidden', "hh_install": 'Installing', "hh_disabled": 'Visible', "hh_error": 'Error',
         "setup_title": "First run — enable telemetry in the game:",
         "setup_1": "Game Settings → HUD & Gameplay → Data Out: ON",
         "setup_2": "IP address: 127.0.0.1 · Port: 20777",
         "setup_3": "Controls → Steering: Simulation",
         "setup_wait": "This panel will come alive once data flows…",
+        "mode_status": 'Mode status',
+        "w_speed": 'Speed',
+        "w_callback": 'Callback',
+        "w_latency": 'Latency',
+        "w_car": 'Current car',
+        "st_driving": 'Driving',
+        "st_menu": 'In menu',
     },
     "ru": {
         "third_party": 'Компоненты сторонних разработчиков',
@@ -2306,7 +2334,7 @@ TR = {
         "setup_ip": "IP адрес - 127.0.0.1",
         "setup_port": "IP порт - 20777",
         "setup_where": "Настройки игры >|Hud & Gameplay / Telemetry:",
-        "st_recv": "Приём",
+        "st_recv": 'Приём',
         "general_sec": "Основное",
         "tele_status": "Статус телеметрии",
         "version_sec": "Версия",
@@ -2323,13 +2351,13 @@ TR = {
         "theme_light": "Светлая",
         "steer_in_general": "Показывать настройки руля здесь",
         "ext_telemetry": "Расширенная телеметрия",
-        "st_waiting": "Ожидание",
+        "st_waiting": 'Ожидание',
         "st_ingame": "В игре",
         "st_inmenu": "В меню",
-        "st_notele": "Нет телеметрии",
-        "st_port": "Порт занят",
+        "st_notele": 'Нет данных',
+        "st_port": 'Порт занят',
         "st_error": "Ошибка",
-        "hh_idle": "Не запускался",
+        "hh_idle": 'Ожидание',
         "profile": "Пресет",
         "profile_hint": "Готовые наборы. Любое движение ползунка переключает на «Свой» и сохраняет твои значения — к ним всегда можно вернуться.",
         "prof_default": "Обычный",
@@ -2348,12 +2376,19 @@ TR = {
         "press_button": "нажми…",
         "btn_none": "нет",
         "tele_port": "порт {p} занят",
-        "st_starting": "запуск…", "st_no_pad": "контроллер не найден (XInput)", "st_pad_lost": "контроллер отключился — жду…", "st_vigem": "нет драйвера ViGEmBus — открыл установщик, поставь и перезапусти", "hh_hidden": "пад скрыт от игры", "hh_install": "открыл установщик — поставь и перезапусти", "hh_disabled": "авто-скрытие выключено", "hh_error": "ошибка HidHide — попробуй запуск от администратора",
+        "st_starting": "запуск…", "st_no_pad": "контроллер не найден (XInput)", "st_pad_lost": "контроллер отключился — жду…", "st_vigem": "нет драйвера ViGEmBus — открыл установщик, поставь и перезапусти", "hh_hidden": 'Скрыт', "hh_install": 'Установка', "hh_disabled": 'Виден', "hh_error": 'Ошибка',
         "setup_title": "Первый запуск — включи телеметрию в игре:",
         "setup_1": "Настройки игры → HUD и геймплей → Data Out: ВКЛ",
         "setup_2": "IP-адрес: 127.0.0.1 · Порт: 20777",
         "setup_3": "Управление → Руление: Симуляция",
         "setup_wait": "Панель оживёт сама, как только пойдут данные…",
+        "mode_status": 'Режим',
+        "w_speed": 'Скорость',
+        "w_callback": 'Отклик',
+        "w_latency": 'Частота',
+        "w_car": 'Машина',
+        "st_driving": 'В игре',
+        "st_menu": 'В меню',
     },
     "de": {
         "third_party": 'Komponenten von Drittanbietern',
@@ -2394,7 +2429,7 @@ TR = {
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
         "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
-        "st_recv": "Reciving",
+        "st_recv": 'Empfang',
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -2411,13 +2446,13 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": "Show steering settings here",
         "ext_telemetry": "Show extended telemetry",
-        "st_waiting": "Waiting",
+        "st_waiting": 'Wartet',
         "st_ingame": "In game",
         "st_inmenu": "In menu",
-        "st_notele": "No telemetry",
-        "st_port": "Port busy",
+        "st_notele": 'Kein Signal',
+        "st_port": 'Port belegt',
         "st_error": "Error",
-        "hh_idle": "Idle",
+        "hh_idle": 'Wartet',
         "profile": "Profil",
         "profile_hint": "Fertige Voreinstellungen. Jeder Reglerzug wechselt auf Eigenes und behält deine Werte, du kommst also immer zurück.",
         "prof_default": "Standard",
@@ -2436,12 +2471,19 @@ TR = {
         "press_button": "drücken…",
         "btn_none": "keine",
         "tele_port": "Port {p} belegt",
-        "st_starting": "Start…", "st_no_pad": "Controller nicht gefunden (XInput)", "st_pad_lost": "Controller getrennt — warte…", "st_vigem": "ViGEmBus-Treiber fehlt — Installer geöffnet, installieren und neu starten", "hh_hidden": "Pad vor dem Spiel verborgen", "hh_install": "Installer geöffnet — installieren und neu starten", "hh_disabled": "Auto-Verbergen ist aus", "hh_error": "HidHide-Fehler — als Administrator starten",
+        "st_starting": "Start…", "st_no_pad": "Controller nicht gefunden (XInput)", "st_pad_lost": "Controller getrennt — warte…", "st_vigem": "ViGEmBus-Treiber fehlt — Installer geöffnet, installieren und neu starten", "hh_hidden": 'Versteckt', "hh_install": 'Installiert', "hh_disabled": 'Sichtbar', "hh_error": 'Fehler',
         "setup_title": "Erster Start — Telemetrie im Spiel aktivieren:",
         "setup_1": "Spieleinstellungen → HUD → Data Out: AN",
         "setup_2": "IP-Adresse: 127.0.0.1 · Port: 20777",
         "setup_3": "Steuerung → Lenkung: Simulation",
         "setup_wait": "Dieses Panel erwacht, sobald Daten fließen…",
+        "mode_status": 'Modus',
+        "w_speed": 'Tempo',
+        "w_callback": 'Antwort',
+        "w_latency": 'Frequenz',
+        "w_car": 'Fahrzeug',
+        "st_driving": 'Im Rennen',
+        "st_menu": 'Im Menu',
     },
     "fr": {
         "third_party": 'Composants tiers',
@@ -2482,7 +2524,7 @@ TR = {
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
         "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
-        "st_recv": "Reciving",
+        "st_recv": 'Reception',
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -2499,13 +2541,13 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": "Show steering settings here",
         "ext_telemetry": "Show extended telemetry",
-        "st_waiting": "Waiting",
+        "st_waiting": 'Attente',
         "st_ingame": "In game",
         "st_inmenu": "In menu",
-        "st_notele": "No telemetry",
-        "st_port": "Port busy",
+        "st_notele": 'Pas de signal',
+        "st_port": 'Port occupe',
         "st_error": "Error",
-        "hh_idle": "Idle",
+        "hh_idle": 'Attente',
         "profile": "Profil",
         "profile_hint": "Réglages prêts à l'emploi. Bouger un curseur passe sur Perso et conserve tes valeurs, tu peux toujours y revenir.",
         "prof_default": "Défaut",
@@ -2524,12 +2566,19 @@ TR = {
         "press_button": "appuie…",
         "btn_none": "aucun",
         "tele_port": "port {p} occupé",
-        "st_starting": "démarrage…", "st_no_pad": "manette introuvable (XInput)", "st_pad_lost": "manette déconnectée — attente…", "st_vigem": "pilote ViGEmBus manquant — installeur ouvert, installez et relancez", "hh_hidden": "manette masquée au jeu", "hh_install": "installeur ouvert — installez et relancez", "hh_disabled": "masquage auto désactivé", "hh_error": "erreur HidHide — lancez en administrateur",
+        "st_starting": "démarrage…", "st_no_pad": "manette introuvable (XInput)", "st_pad_lost": "manette déconnectée — attente…", "st_vigem": "pilote ViGEmBus manquant — installeur ouvert, installez et relancez", "hh_hidden": 'Masque', "hh_install": 'Installation', "hh_disabled": 'Visible', "hh_error": 'Erreur',
         "setup_title": "Premier lancement — activez la télémétrie en jeu :",
         "setup_1": "Réglages du jeu → HUD → Data Out : ON",
         "setup_2": "Adresse IP : 127.0.0.1 · Port : 20777",
         "setup_3": "Commandes → Direction : Simulation",
         "setup_wait": "Ce panneau s'animera dès que les données arriveront…",
+        "mode_status": 'Mode',
+        "w_speed": 'Vitesse',
+        "w_callback": 'Reponse',
+        "w_latency": 'Frequence',
+        "w_car": 'Voiture',
+        "st_driving": 'En piste',
+        "st_menu": 'Menu',
     },
     "es": {
         "third_party": 'Componentes de terceros',
@@ -2570,7 +2619,7 @@ TR = {
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
         "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
-        "st_recv": "Reciving",
+        "st_recv": 'Recibiendo',
         "general_sec": "General",
         "tele_status": "Telemetry status",
         "version_sec": "Version",
@@ -2587,13 +2636,13 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": "Show steering settings here",
         "ext_telemetry": "Show extended telemetry",
-        "st_waiting": "Waiting",
+        "st_waiting": 'Esperando',
         "st_ingame": "In game",
         "st_inmenu": "In menu",
-        "st_notele": "No telemetry",
-        "st_port": "Port busy",
+        "st_notele": 'Sin senal',
+        "st_port": 'Puerto ocupado',
         "st_error": "Error",
-        "hh_idle": "Idle",
+        "hh_idle": 'Esperando',
         "profile": "Perfil",
         "profile_hint": "Ajustes listos. Mover cualquier control cambia a Propio y guarda tus valores, siempre puedes volver a ellos.",
         "prof_default": "Normal",
@@ -2612,12 +2661,19 @@ TR = {
         "press_button": "pulsa…",
         "btn_none": "ninguno",
         "tele_port": "puerto {p} ocupado",
-        "st_starting": "iniciando…", "st_no_pad": "mando no encontrado (XInput)", "st_pad_lost": "mando desconectado — esperando…", "st_vigem": "falta el driver ViGEmBus — instalador abierto, instala y reinicia", "hh_hidden": "mando oculto al juego", "hh_install": "instalador abierto — instala y reinicia", "hh_disabled": "ocultado automático desactivado", "hh_error": "error de HidHide — ejecuta como administrador",
+        "st_starting": "iniciando…", "st_no_pad": "mando no encontrado (XInput)", "st_pad_lost": "mando desconectado — esperando…", "st_vigem": "falta el driver ViGEmBus — instalador abierto, instala y reinicia", "hh_hidden": 'Oculto', "hh_install": 'Instalando', "hh_disabled": 'Visible', "hh_error": 'Error',
         "setup_title": "Primer inicio — activa la telemetría en el juego:",
         "setup_1": "Ajustes del juego → HUD → Data Out: ON",
         "setup_2": "Dirección IP: 127.0.0.1 · Puerto: 20777",
         "setup_3": "Controles → Dirección: Simulación",
         "setup_wait": "Este panel cobrará vida cuando lleguen datos…",
+        "mode_status": 'Modo',
+        "w_speed": 'Velocidad',
+        "w_callback": 'Respuesta',
+        "w_latency": 'Frecuencia',
+        "w_car": 'Coche',
+        "st_driving": 'En pista',
+        "st_menu": 'En menu',
     },
     "ja": {
         "third_party": 'サードパーティ製コンポーネント',
@@ -2688,7 +2744,7 @@ TR = {
         "st_notele": '受信なし',
         "st_port": 'ポート使用中',
         "st_error": 'エラー',
-        "hh_idle": '待機',
+        "hh_idle": '待機中',
         "profile": 'プリセット',
         "profile_hint": '既製の設定です。スライダーを動かすとカスタムに切り替わり、あなたの値はそのまま残るので、いつでも戻せます。',
         "prof_default": '標準',
@@ -2711,15 +2767,22 @@ TR = {
         "st_no_pad": 'コントローラーが見つかりません (XInput)',
         "st_pad_lost": 'コントローラーが切断されました — 待機中…',
         "st_vigem": 'ViGEmBus ドライバーがありません — インストーラーを開きました。導入後に再起動してください',
-        "hh_hidden": 'パッドをゲームから隠しました',
-        "hh_install": 'インストーラーを開きました — 導入後にアプリを再起動してください',
-        "hh_disabled": '自動的な隠蔽は無効です',
-        "hh_error": 'HidHide のエラー — 管理者として実行してみてください',
+        "hh_hidden": '非表示',
+        "hh_install": '導入中',
+        "hh_disabled": '表示',
+        "hh_error": 'エラー',
         "setup_title": '初回起動 — ゲーム側でテレメトリーを有効にしてください:',
         "setup_1": 'Game Settings → HUD & Gameplay → Data Out: ON',
         "setup_2": 'IP アドレス: 127.0.0.1 · ポート: 20777',
         "setup_3": 'Controls → Steering: Simulation',
         "setup_wait": 'データが流れ始めるとこの欄が動き出します…',
+        "mode_status": 'モード',
+        "w_speed": '速度',
+        "w_callback": '応答',
+        "w_latency": '周波数',
+        "w_car": '車両',
+        "st_driving": '走行中',
+        "st_menu": 'メニュー',
     },
 }
 
@@ -2970,8 +3033,37 @@ body.t-light{
      border-bottom:1px solid var(--line)}
 .card .row:last-child{border-bottom:none}
 .rname{font-size:13px;font-weight:400;color:var(--row-fg);flex:1;min-width:0}
+.rval.ok{color:var(--ok)}
+.rval.bad{color:var(--danger)}
+.rval.off{color:var(--off)}
 .rval{font-size:15px;font-weight:600;color:var(--row-fg);flex:none;
       min-width:30px;text-align:right}
+
+/* ---------- extended telemetry ---------- */
+.tgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+       gap:12px;align-items:stretch}
+/* the status card and its bars hold the left half, the readouts the
+   right, exactly as the mockup lays them out */
+.tgrid .telecard{grid-column:span 2;grid-row:span 2;padding:0 15px}
+.tgrid .card{padding:12px 14px;display:flex;flex-direction:column;
+             justify-content:space-between}
+.tw2{grid-column:span 2}
+.tw{min-height:74px}
+.twval{font-size:19px;font-weight:600;color:var(--row-fg);line-height:1.1;
+       white-space:nowrap}
+.twval u{text-decoration:none;font-size:13px;font-weight:500;
+         color:var(--muted);margin-left:4px}
+.twval.ok{color:var(--ok)} .twval.warn{color:var(--warn)}
+.twval.bad{color:var(--danger)} .twval.off{color:var(--off)}
+.twlbl{font-size:9px;color:var(--muted);padding-top:9px;margin-top:9px;
+       border-top:1px solid var(--line)}
+.trow{display:flex;align-items:center;justify-content:space-between;gap:12px;
+      min-height:42px}
+.trow .rname{font-size:13px;color:var(--row-fg)}
+.tcar{height:22px;box-sizing:border-box;padding:0 11px;border-radius:6px;
+      display:flex;align-items:center;font-size:9px;font-weight:600;
+      color:var(--row-fg);background:var(--card-2);
+      border:1px solid var(--line);white-space:nowrap}
 
 /* ---------- toggle ---------- */
 .tg{width:28px;height:14px;border-radius:7px;flex:none;cursor:pointer;
@@ -3302,7 +3394,8 @@ function screenMain(){
   h += '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>' +
-       '<div class="card">' +
+       (cfg.ext_telemetry ? '<div class="tgrid">' : '') +
+       '<div class="card telecard">' +
        '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
        '<span class="tstat" id="tstat">-</span></div>' +
        '<div class="hintrow" id="setuphint">' +
@@ -3314,13 +3407,20 @@ function screenMain(){
        '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
        '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
        '<div class="bar"><i id="outbar"></i><u></u></div></div>';
+  h += '</div>';
   if (cfg.ext_telemetry){
-    h += '<div class="row"><span class="rname">' + t('pad_status') + '</span>' +
-         '<span class="rval" id="padstat">-</span></div>' +
-         '<div class="row"><span class="rname">' + t('mod_status') + '</span>' +
-         '<span class="rval" id="modstat">-</span></div>';
+    const w = (id, lbl) => '<div class="card tw"><div class="twval" id="' +
+      id + '">-</div><div class="twlbl">' + t(lbl) + '</div></div>';
+    h += w('w-mode', 'mode_status') + w('w-speed', 'w_speed') +
+         w('w-callback', 'w_callback') + w('w-latency', 'w_latency') +
+         '<div class="card tw2"><div class="trow">' +
+         '<span class="rname">' + t('w_car') + '</span>' +
+         '<span class="tcar" id="w-car">-</span></div></div>' +
+         '<div class="card tw2"><div class="trow">' +
+         '<span class="rname">' + t('pad_status') + '</span>' +
+         '<span class="rval" id="padstat">-</span></div></div>';
   }
-  return h + '</div></div>';
+  return h + (cfg.ext_telemetry ? '</div>' : '') + '</div>';
 }
 
 /* the About screen, carrying what the mockup calls Legal: the components
@@ -3550,11 +3650,31 @@ function liveUpdate(){
   sRaw += (state.raw - sRaw) * 0.35;
   sOut += (state.out - sOut) * 0.35;
   setBar('rawbar', sRaw); setBar('outbar', sOut);
+  const set = (id, val, unit, cls) => {
+    const el = $(id);
+    if (!el) return;
+    el.className = 'twval' + (cls ? ' ' + cls : '');
+    el.innerHTML = val + (unit ? '<u>' + unit + '</u>' : '');
+  };
+  set('#w-mode', state.alive ? t('st_driving')
+        : state.recv ? t('st_menu') : t('st_waiting'), '',
+      state.alive ? 'ok' : state.recv ? 'warn' : 'off');
+  set('#w-speed', state.recv || state.alive ? state.speed : '—', 'km/h',
+      state.alive ? 'warn' : '');
+  const age = (state.age === undefined || state.age === null) ? null
+              : state.age;
+  set('#w-callback', (age !== null && (state.recv || state.alive)) ? age : '—',
+      'ms', age > 120 ? 'bad' : '');
+  set('#w-latency', state.pad_hz || '—', 'Hz', '');
+  const car = $('#w-car');
+  if (car) car.textContent = state.car || t('btn_none');
   const ps = $('#padstat');
-  if (ps) ps.textContent = state.code === 'ok'
-    ? (state.pad_hz || '—') + ' Hz' : t('st_' + state.code);
-  const ms = $('#modstat');
-  if (ms) ms.textContent = t('hh_' + (state.hh_code || 'idle'));
+  if (ps){
+    const hidden = state.hh_code === 'hidden';
+    ps.className = 'rval ' + (hidden ? 'ok' : state.hh_code === 'error'
+                              ? 'bad' : 'off');
+    ps.textContent = t('hh_' + (state.hh_code || 'idle'));
+  }
 }
 
 let lastH = 0;
@@ -4220,6 +4340,7 @@ class Api:
             "hz": round(b.hz),
             "pad_hz": b.pad_hz,
             "age": round(min(999.0, b.telemetry.age_ms)),
+            "car": b.telemetry.car_label,
             "alive": b.telemetry.alive,
             "recv": b.telemetry.receiving,
             "tele_err": b.telemetry.error,
