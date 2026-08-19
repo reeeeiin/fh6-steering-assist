@@ -9,6 +9,7 @@ import re
 import socket
 import struct
 import subprocess
+import webbrowser
 import sys
 import threading
 import time
@@ -936,9 +937,18 @@ LEGAL = {
 }
 
 THIRD_PARTY = {
-    "Software": ["vgamepad 0.1.0", "pywebview 6.2.1", "pygame 2.6.1",
-                 "PyInstaller 6.21.0"],
-    "Fonts": ["Oswald", "Chiron GoRound TC"],
+    "Software": [
+        ("vgamepad 0.1.0", "https://github.com/yannbouteiller/vgamepad"),
+        ("HidHide 1.5.230", "https://github.com/nefarius/HidHide"),
+        ("pywebview 6.2.1", "https://pywebview.flowrl.com"),
+        ("pygame 2.6.1", "https://www.pygame.org"),
+        ("PyInstaller 6.21.0", "https://pyinstaller.org"),
+    ],
+    "Fonts": [
+        ("Oswald", "https://fonts.google.com/specimen/Oswald"),
+        ("Chiron GoRound TC",
+         "https://github.com/chiron-fonts/chiron-goround-tc"),
+    ],
 }
 
 BOOT_MIN_MS = 8000
@@ -2511,10 +2521,13 @@ body.t-light{
 .prose p{font-size:9px;line-height:1.6;color:var(--row-fg);margin:0}
 .bubs{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 15px}
 .card .bubs:not(:last-child){border-bottom:1px solid var(--line)}
-.bub{height:18px;box-sizing:border-box;padding:0 9px;border-radius:7px;
-     display:flex;align-items:center;font-size:8px;font-weight:600;
-     color:var(--row-fg);background:var(--card-2);
-     border:1px solid var(--line);white-space:nowrap}
+.bub{height:22px;box-sizing:border-box;padding:0 11px;border-radius:8px;
+     display:flex;align-items:center;font-size:9px;font-weight:600;
+     color:var(--row-fg);background:var(--card-2);cursor:default;
+     border:1px solid var(--line);white-space:nowrap;
+     transition:background .15s ease,color .15s ease,border-color .15s ease}
+.bub:hover{background:var(--btn-hov-bg);border-color:var(--accent);
+           color:var(--accent)}
 .row{display:flex;align-items:center;gap:12px;min-height:42px;
      border-bottom:1px solid var(--line)}
 .card .row:last-child{border-bottom:none}
@@ -2878,7 +2891,9 @@ function screenAbout(){
        '</div><div class="card">';
   Object.keys(THIRD).forEach(group => {
     h += '<div class="lname">' + group + '</div><div class="bubs">' +
-         THIRD[group].map(n => '<span class="bub">' + n + '</span>').join('') +
+         THIRD[group].map(n =>
+           '<span class="bub" data-url="' + n[1] + '">' + n[0] + '</span>'
+         ).join('') +
          '</div>';
   });
   h += '</div></div>';
@@ -3438,6 +3453,10 @@ $$('[data-win]').forEach(b => b.addEventListener('click', () => {
   try{ if (a === 'close') pywebview.api.win_close();
        else pywebview.api.win_min(); }catch(e){}
 }));
+document.addEventListener('click', e => {
+  const chip = e.target.closest('[data-url]');
+  if (chip) try{ pywebview.api.open_url(chip.dataset.url); }catch(err){}
+});
 $$('[data-nav]').forEach(b => b.addEventListener('click', () => {
   screen = (screen === b.dataset.nav) ? 'main' : b.dataset.nav;
   render();
@@ -3645,6 +3664,15 @@ class Api:
             self._window.destroy()
         except Exception:
             pass
+        return True
+
+    def open_url(self, url):
+        """Component links belong in the user's browser, not in this window."""
+        if isinstance(url, str) and url.startswith("https://"):
+            try:
+                webbrowser.open(url)
+            except Exception:
+                return False
         return True
 
     def boot_done(self):
