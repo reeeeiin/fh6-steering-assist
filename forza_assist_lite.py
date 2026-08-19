@@ -4366,6 +4366,11 @@ GWL_EXSTYLE = -20
 GWL_STYLE = -16
 WS_EX_LAYERED = 0x00080000
 WS_MINIMIZEBOX = 0x00020000
+WS_CAPTION = 0x00C00000
+WS_THICKFRAME = 0x00040000
+WS_SYSMENU = 0x00080000
+WS_MAXIMIZEBOX = 0x00010000
+WM_NCCALCSIZE = 0x0083
 LWA_ALPHA = 0x00000002
 SW_SHOWNA = 8
 SW_MINIMIZE = 6
@@ -4392,73 +4397,25 @@ def _ease_out(p):
     return 1.0 - (1.0 - p) ** 3
 
 
-def _ease_in(p):
-    return p * p * p
-
-
-def _grow(hwnd, x, y, w, h, ms, ease, opening):
-    """Windows 11 opens and closes a window by scaling it about its centre
-    while it fades. The frame is animated rather than the layout, so the
-    page inside is never asked to reflow mid-flight."""
-    t0 = time.perf_counter()
-    while True:
-        p = min(1.0, (time.perf_counter() - t0) * 1000.0 / ms)
-        e = ease(p)
-        f = e if opening else 1.0 - e
-        k = OPEN_FROM + (1.0 - OPEN_FROM) * f
-        cw, ch = max(1, int(w * k)), max(1, int(h * k))
-        ctypes.windll.user32.SetWindowPos(
-            hwnd, 0, int(x + (w - cw) // 2), int(y + (h - ch) // 2),
-            cw, ch, 0x0014)
-        _alpha(hwnd, 255.0 * f)
-        if p >= 1.0:
-            return
-        time.sleep(0.008)
-
-
 def open_window(hwnd, w, h):
-    """Show the window centred, growing and fading in."""
+    """Show the window centred, fading in. Only the opacity is animated:
+    scaling the frame would crop the page rather than scale it, since the
+    web view inside redraws at whatever size it is given."""
     l, t, r, b = _work_area(hwnd)
     x, y = l + (r - l - w) // 2, t + (b - t - h) // 2
     _layered(hwnd, True)
     _alpha(hwnd, 0)
+    _place(hwnd, x, y, w, h)
     ctypes.windll.user32.ShowWindow(hwnd, SW_SHOWNA)
-    _grow(hwnd, x, y, w, h, OPEN_MS, _ease_out, True)
+    t0 = time.perf_counter()
+    while True:
+        f = min(1.0, (time.perf_counter() - t0) * 1000.0 / OPEN_MS)
+        _alpha(hwnd, 255.0 * _ease_out(f))
+        if f >= 1.0:
+            break
+        time.sleep(0.008)
     _layered(hwnd, False)
     ctypes.windll.user32.SetForegroundWindow(hwnd)
-
-
-def close_window(hwnd):
-    """Shrink into its own centre and fade out. The window is hidden at the
-    end so Windows does not follow up with its own flight to the taskbar."""
-    try:
-        rect = wintypes.RECT()
-        ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
-        w, h = rect.right - rect.left, rect.bottom - rect.top
-        _layered(hwnd, True)
-        _grow(hwnd, rect.left, rect.top, w, h, CLOSE_MS, _ease_in, False)
-        ctypes.windll.user32.ShowWindow(hwnd, 0)
-    except Exception:
-        pass
-
-
-def minimise_window(hwnd):
-    """The shell plays no minimise animation for a frameless window, so the
-    shrink is drawn here. The window is put back to full size and opacity
-    while it is still invisible, before the shell is asked to minimise it:
-    minimising first would leave the shrunken size as the one to restore."""
-    try:
-        rect = wintypes.RECT()
-        ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
-        w, h = rect.right - rect.left, rect.bottom - rect.top
-        _layered(hwnd, True)
-        _grow(hwnd, rect.left, rect.top, w, h, CLOSE_MS, _ease_in, False)
-        _place(hwnd, rect.left, rect.top, w, h)
-        _alpha(hwnd, 255)
-        _layered(hwnd, False)
-        ctypes.windll.user32.ShowWindow(hwnd, SW_MINIMIZE)
-    except Exception:
-        pass
 
 
 def centre_window(hwnd, w, h):
@@ -4545,7 +4502,7 @@ class Api:
         hwnd = _WIN.get("hwnd")
         try:
             if hwnd:
-                minimise_window(hwnd)
+                ctypes.windll.user32.ShowWindow(hwnd, SW_MINIMIZE)
             else:
                 self._window.minimize()
         except Exception:
@@ -4565,9 +4522,6 @@ class Api:
 
     def win_close(self):
         try:
-            hwnd = _WIN.get("hwnd")
-            if hwnd:
-                close_window(hwnd)
             self._window.destroy()
         except Exception:
             pass
@@ -4816,8 +4770,12 @@ def main():
         ctypes.windll.user32.ShowWindow(hwnd, 0)
         u = ctypes.windll.user32
         u.GetWindowLongW.restype = ctypes.c_long
-        st = u.GetWindowLongW(hwnd, GWL_STYLE)
-        u.SetWindowLongW(hwnd, GWL_STYLE, st | WS_MINIMIZEBOX)
+        # A frameless window still needs the system styles: without a caption
+        # and a sysmenu the compositor animates nothing, which is why the
+        # minimise and close had to be drawn by hand and looked wrong. The
+        # frame itself is taken away in WM_NCCALCSIZE below, the way Electron
+        # and the like do it, so the window stays borderless but behaves like
+        # an ordinary one - animations, shadow and rounded corners included.
         open_window(hwnd, win_w(_WIN.get("cfg")),
                     win_min_h(_WIN.get("cfg")))
         try:
@@ -4842,6 +4800,8 @@ def main():
         old_proc = user32.GetWindowLongPtrW(hwnd, -4)
 
         def wnd_proc(h, msg, wp, lp):
+            if msg == WM_NCCALCSIZE and wp:
+                return 0
             if msg == 0x0214:
                 rect = ctypes.cast(lp, ctypes.POINTER(wintypes.RECT)).contents
                 if _WIN.get("boot"):
@@ -4866,6 +4826,12 @@ def main():
         proc = WNDPROC(wnd_proc)
         main._proc = proc
         user32.SetWindowLongPtrW(hwnd, -4, ctypes.cast(proc, ctypes.c_void_p))
+
+        st = u.GetWindowLongW(hwnd, GWL_STYLE)
+        st = (st | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU |
+              WS_MINIMIZEBOX) & ~WS_MAXIMIZEBOX
+        u.SetWindowLongW(hwnd, GWL_STYLE, st)
+        u.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0037)
 
     webview.start(func=setup_window)
     flush_config(bridge.cfg)
