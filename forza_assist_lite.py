@@ -850,6 +850,12 @@ BOOT_TR = {
 BOOT_DEMO = os.environ.get("ASSIST_BOOT_DEMO", "")
 BOOT_DEMO_ERR = os.environ.get("ASSIST_BOOT_ERROR", "")
 
+THIRD_PARTY = {
+    "Software": ["vgamepad 0.1.0", "pywebview 6.2.1", "pygame 2.6.1",
+                 "PyInstaller 6.21.0"],
+    "Fonts": ["Oswald", "Chiron GoRound TC"],
+}
+
 BOOT_MIN_MS = 8000
 BOOT_STEP_MS = 6000
 BOOT_DONE_MS = 6000
@@ -1704,6 +1710,7 @@ LANG_SHORT = {"en": "En", "ru": "Ру", "es": "Es",
 
 TR = {
     "en": {
+        "third_party": 'Third-party Components',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -1781,6 +1788,7 @@ TR = {
         "setup_wait": "This panel will come alive once data flows…",
     },
     "ru": {
+        "third_party": 'Компоненты сторонних разработчиков',
         "interface_sec": "Интерфейс", "theme": "Тема",
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -1858,6 +1866,7 @@ TR = {
         "setup_wait": "Панель оживёт сама, как только пойдут данные…",
     },
     "de": {
+        "third_party": 'Komponenten von Drittanbietern',
         "interface_sec": "Oberfläche", "theme": "Design",
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -1935,6 +1944,7 @@ TR = {
         "setup_wait": "Dieses Panel erwacht, sobald Daten fließen…",
     },
     "fr": {
+        "third_party": 'Composants tiers',
         "interface_sec": "Interface", "theme": "Thème",
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2012,6 +2022,7 @@ TR = {
         "setup_wait": "Ce panneau s'animera dès que les données arriveront…",
     },
     "es": {
+        "third_party": 'Componentes de terceros',
         "interface_sec": "Interfaz", "theme": "Tema",
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2089,6 +2100,7 @@ TR = {
         "setup_wait": "Este panel cobrará vida cuando lleguen datos…",
     },
     "ja": {
+        "third_party": 'サードパーティ製コンポーネント',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2264,6 +2276,7 @@ def build_html() -> str:
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
+    html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
     html = html.replace("__VER__", APP_VERSION)
     html = html.replace("__DEFAULTS__", json.dumps(
         {k: DEFAULTS[k] for k, *_ in SLIDERS}))
@@ -2359,6 +2372,13 @@ body.t-light{
 .sec{font-size:9px;font-weight:400;color:var(--muted);
      padding:0 4px 8px}
 .card{background:var(--card);border-radius:14px;padding:0 15px;flex:none;}
+.lname{font-size:8px;color:var(--row-fg);padding:15px 0 0}
+.bubs{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 15px}
+.card .bubs:not(:last-child){border-bottom:1px solid var(--line)}
+.bub{height:18px;box-sizing:border-box;padding:0 9px;border-radius:7px;
+     display:flex;align-items:center;font-size:8px;font-weight:600;
+     color:var(--row-fg);background:var(--card-2);
+     border:1px solid var(--line);white-space:nowrap}
 .row{display:flex;align-items:center;gap:12px;min-height:42px;
      border-bottom:1px solid var(--line)}
 .card .row:last-child{border-bottom:none}
@@ -2701,6 +2721,20 @@ function screenMain(){
   return h + '</div></div>';
 }
 
+/* the About screen, carrying what the mockup calls Legal: the components
+   this build ships with, grouped the way the design groups them */
+function screenAbout(){
+  let h = '<div class="reveal"><div class="sec">' + t('third_party') +
+          '</div><div class="card">';
+  const keys = Object.keys(THIRD);
+  keys.forEach((group, i) => {
+    h += '<div class="lname">' + group + '</div><div class="bubs">' +
+         THIRD[group].map(n => '<span class="bub">' + n + '</span>').join('') +
+         '</div>';
+  });
+  return h + '</div></div>';
+}
+
 function screenSettings(){
   let h = '<div class="reveal"><div class="sec">' + t('settings_sec') + '</div>' +
           '<div class="card">' +
@@ -2746,7 +2780,9 @@ function render(){
   $$('[data-nav]').forEach(b =>
     b.classList.toggle('on', b.dataset.nav === screen));
   const box = $('#screen');
-  box.innerHTML = screen === 'settings' ? screenSettings() : screenMain();
+  box.innerHTML = screen === 'settings' ? screenSettings()
+                : screen === 'about' ? screenAbout()
+                : screenMain();
   if (bootPhase === 'app')
     $$('#screen .reveal, .foot.reveal').forEach(e => e.classList.add('shown'));
   bindRows();
@@ -2947,6 +2983,7 @@ let bootLang = 'en';
    curve while the dim copy underneath keeps the whole outline visible */
 let bootPath = null, bootLen = 0;
 const LINE_GAP = 300;
+const THIRD = __THIRD__;
 
 function bootFill(p){
   if (!bootPath){
