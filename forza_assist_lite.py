@@ -2490,14 +2490,20 @@ body.t-light{
 .qa h4{margin:0;font-size:9px;font-weight:600;color:var(--accent);
        text-transform:uppercase;letter-spacing:.02em}
 .qa p{margin:0;font-size:9px;line-height:1.6;color:var(--row-fg)}
-/* the one screen that scrolls: a hairline thumb, no arrows */
-#screen.scroll{max-height:640px;overflow-y:auto;overflow-x:hidden}
-#screen.scroll::-webkit-scrollbar{width:4px}
-#screen.scroll::-webkit-scrollbar-button{display:none}
-#screen.scroll::-webkit-scrollbar-track{background:transparent}
-#screen.scroll::-webkit-scrollbar-thumb{background:var(--track);
-                                        border-radius:2px}
-#screen.scroll::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+/* the only scrolling body in the app: the card keeps its size and its
+   corners while the questions move inside it, under a fixed heading.
+   The mask feathers both inner edges so the text dissolves instead of
+   being cut off, and the thumb sits inside the card, not beside it */
+.faqbox{height:560px;overflow-y:auto;overscroll-behavior:contain;
+        -webkit-mask-image:linear-gradient(to bottom,transparent 0,
+            #000 16px,#000 calc(100% - 16px),transparent 100%);
+        mask-image:linear-gradient(to bottom,transparent 0,
+            #000 16px,#000 calc(100% - 16px),transparent 100%)}
+.faqbox::-webkit-scrollbar{width:4px}
+.faqbox::-webkit-scrollbar-button{display:none}
+.faqbox::-webkit-scrollbar-track{background:transparent;margin:14px 0}
+.faqbox::-webkit-scrollbar-thumb{background:var(--track);border-radius:2px}
+.faqbox::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .prose p{font-size:9px;line-height:1.6;color:var(--row-fg);margin:0}
 .bubs{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 15px}
 .card .bubs:not(:last-child){border-bottom:1px solid var(--line)}
@@ -2851,7 +2857,7 @@ function screenMain(){
    this build ships with, grouped the way the design groups them */
 function screenFaq(){
   return '<div class="reveal"><div class="sec">' + t('faq_sec') + '</div>' +
-    '<div class="card">' + FAQ.map((item, i) =>
+    '<div class="card faqbox">' + FAQ.map((item, i) =>
       '<div class="qa"><h4>' + (i + 1) + '. ' + item[0] + '</h4>' +
       item[1].map(x => '<p>' + x + '</p>').join('') + '</div>').join('') +
     '</div></div>';
@@ -2928,8 +2934,6 @@ function render(){
                 : screenMain();
   if (bootPhase === 'app')
     $$('#screen .reveal, .foot.reveal').forEach(e => e.classList.add('shown'));
-  box.classList.toggle('scroll', screen === 'faq');
-  if (screen === 'faq') box.scrollTop = 0;
   bindRows();
   refresh();
   reportHeight();
