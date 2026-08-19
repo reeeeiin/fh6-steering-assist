@@ -3150,7 +3150,7 @@ function bootError(code){
     $('#err-btn').textContent = t.errBtn;
   }
   stageShow('#bs-err');
-  const at = Math.max(0, (state.boot_step || 1) - 1);
+  const at = Math.max(0, (bootShown || state.boot_step || 1) - 1);
   bootDots(at, at, 1);
 }
 
@@ -3182,7 +3182,6 @@ function bootTick(){
   }
 
   if (bootPhase === 'steps'){
-    if (state.boot_error){ bootError(state.boot_error); return; }
     if ($('#bs-steps').classList.contains('off')) return;
     const real = Math.max(1, Math.min(5, state.boot_step || 1));
     if (!bootShown){ bootShown = 1; bootShownAt = now; }
@@ -3195,6 +3194,12 @@ function bootTick(){
     const held = now - bootShownAt;
     const step = bootShown;
     const fill = Math.min(1, held / BOOT.stepMs);
+    /* the failure waits for the interface to reach the step that failed,
+       so the steps before it are still played out one by one */
+    if (state.boot_error && step >= real){
+      bootError(state.boot_error);
+      return;
+    }
     const t = BT();
     const info = t.steps[step - 1];
     swapText($('#boot-line'),
