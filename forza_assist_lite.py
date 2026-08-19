@@ -2479,13 +2479,6 @@ body.t-light{
          color:var(--accent-fg)}
 .hbtn.tab{padding:0 8px}
 .hbtn.sq{width:18px;padding:0}
-.hbtn.back{display:flex;width:0;min-width:0;padding:0;margin-right:0;
-           opacity:0;border-width:0;overflow:hidden;pointer-events:none;
-           transition:width .2s ease,margin .2s ease,opacity .2s ease}
-.hbtn.back.show{width:18px;min-width:18px;margin-right:5px;opacity:1;
-                border-width:1px;pointer-events:auto;
-                transition:width .2s ease,margin .2s ease,
-                           opacity .2s ease .12s}
 .hbtn.sup{background:var(--warn);border-color:var(--warn);color:#101010}
 .tbar .hbtn.sup{transition:background .2s ease,border-color .2s ease,
                 color .2s ease,box-shadow .2s ease !important}
@@ -2498,7 +2491,6 @@ body.t-light{
 .hbtn.tab svg{width:10px;height:8px}
 .hbtn.sq svg{width:10px;height:10px}
 .hbtn.sq[data-win=min] svg{width:10px;height:2px}
-.hbtn.back svg{width:6px;height:10px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none}
 .logo svg{display:block;width:99px;height:18px}
 .vbadge{height:18px;padding:0 6px;border-radius:5px;
@@ -2633,23 +2625,15 @@ body.t-light{
 .reveal.shown{opacity:1;transform:none;
               transition:opacity .42s ease,transform .42s ease}
 .tbar .reveal{transform:none}
-.tbar .logo{position:relative;z-index:1}
+.tbar .logo{position:relative;z-index:1;cursor:pointer;
+            transition:opacity .2s ease}
+.tbar .logo:hover{opacity:.7}
 /* the reveal rules declare their own transition and transform and would
    otherwise win over these, leaving the header to change in one frame */
 .tbar .hbtn{transition:background .2s ease,border-color .2s ease,
             color .2s ease,width .2s ease,min-width .2s ease,
             margin .2s ease,opacity .2s ease,transform .2s ease !important}
-/* the two moves are strictly sequential: the wordmark slides away, and
-   only once the gap is open does the arrow fade in, on the spot. Leaving,
-   it fades out first and the gap closes after */
-.tbar .hbtn.back{transform:none !important;
-            position:relative;z-index:2;
-            transition:opacity .2s ease,
-                       width .2s ease .2s,min-width .2s ease .2s,
-                       margin .2s ease .2s !important}
-.tbar .hbtn.back.show{transform:none !important;
-            transition:width .2s ease,min-width .2s ease,margin .2s ease,
-                       opacity .2s ease .22s !important}
+
 .tbar .reveal.shown{transition:opacity .42s ease}
 
 #boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);zoom:1.25;
@@ -2768,7 +2752,6 @@ html[data-boot] .rz{display:none}
 <div id="zoom">
   <div class="tbar"><span class="drag pywebview-drag-region"></span>
     <div class="tdrag">
-      <span class="hbtn sq back reveal" id="back"><!--ICON:arrowback--></span>
       <span class="logo reveal"><!--ICON:applogo--></span>
       <span class="vbadge reveal">v__VER__</span>
     </div>
@@ -2988,7 +2971,6 @@ function bootTheme(){
 function render(){
   if (!cfg) return;
   document.body.className = 't-' + (THEMES.includes(cfg.theme) ? cfg.theme : 'dark');
-  $('#back').classList.toggle('show', screen !== 'main');
   $$('[data-nav]').forEach(b =>
     b.classList.toggle('on', b.dataset.nav === screen));
   const box = $('#screen');
@@ -3511,7 +3493,7 @@ document.addEventListener('click', e => {
 $$('[data-nav]').forEach(b => b.addEventListener('click', () => {
   goScreen((screen === b.dataset.nav) ? 'main' : b.dataset.nav);
 }));
-$('#back').addEventListener('click', () => goScreen('main'));
+$('.logo').addEventListener('click', () => goScreen('main'));
 
 /* the outgoing rows fade away before the incoming ones start arriving */
 function goScreen(next){
