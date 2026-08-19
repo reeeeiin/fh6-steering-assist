@@ -60,8 +60,27 @@ def copy_vigem() -> dict:
         print(f"ViGEmBus: {name} already present")
     return {"file": name, "version": "", "source": "bundled with vgamepad"}
 
+def have_everything() -> bool:
+    """The installers and their manifest are all the build needs. Checking
+    for them first keeps the build working without a network, and keeps a
+    version query from failing a build that has nothing left to download."""
+    path = os.path.join(DEST, "manifest.json")
+    if not os.path.isfile(path):
+        return False
+    try:
+        with io.open(path, encoding="utf-8") as f:
+            manifest = json.load(f)
+        return all(os.path.isfile(os.path.join(DEST, item["file"]))
+                   for item in manifest.values())
+    except (ValueError, KeyError, TypeError):
+        return False
+
+
 def main():
     os.makedirs(DEST, exist_ok=True)
+    if have_everything():
+        print("drivers already fetched, nothing to download")
+        return 0
     manifest = {"vigembus": copy_vigem(), "hidhide": fetch_hidhide()}
     with io.open(os.path.join(DEST, "manifest.json"), "w",
                  encoding="utf-8") as f:

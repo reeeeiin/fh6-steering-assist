@@ -19,30 +19,41 @@ from ctypes import wintypes
 from dataclasses import dataclass
 
 def _fatal(msg: str):
-    print("=" * 60)
-    print(msg)
-    print("=" * 60)
+    """The windowed build has no console and no stdin, so a message box is
+    the only way a fatal error reaches the user."""
     try:
-        input("Press Enter to close...")
-    except EOFError:
+        print(msg)
+    except Exception:
+        pass
+    try:
+        ctypes.windll.user32.MessageBoxW(0, msg, "Steering Assist", 0x10)
+    except Exception:
         pass
     raise SystemExit(1)
 
 
-try:
-    import vgamepad as vg
-except ImportError:
-    _fatal("vgamepad is not installed in THIS Python.\n"
-           "Use run.bat, or build the exe with build.bat.\n"
-           "Double-clicking the .py may pick another interpreter.\n"
-           "From PowerShell:\n"
-           "    cd $HOME\\Documents\\ForzaAssistLite\n"
-           "    pip install vgamepad\n"
-           "    python forza_assist_lite.py")
-except Exception as e:
-    _fatal(f"vgamepad is present but failed to start: {type(e).__name__}: {e}\n"
-           "Usually this means the ViGEmBus driver is missing.\n"
-           "Reinstall with:  pip install --force-reinstall vgamepad")
+# vgamepad connects to the ViGEmBus driver the moment it is imported, and
+# that driver is one of the things this app installs on first run. Importing
+# it at start-up would therefore fail on exactly the machines the installer
+# exists for, so it is loaded once the drivers are in place.
+vg = None
+
+
+def load_vgamepad():
+    global vg
+    if vg is not None:
+        return vg
+    try:
+        import vgamepad
+    except ImportError:
+        _fatal("vgamepad is not installed in this Python.\n\n"
+               "Run the app through run.bat, or build the exe with "
+               "build.bat.")
+        return None
+    except Exception as e:
+        return e
+    vg = vgamepad
+    return vg
 
 APP_VERSION = "2.0.0"
 UPDATE_HZ = 60.0
@@ -1581,7 +1592,8 @@ class DriverSetup:
     @staticmethod
     def _vigem_fallback() -> str | None:
         try:
-            base = os.path.join(os.path.dirname(vg.__file__),
+            import vgamepad
+            base = os.path.join(os.path.dirname(vgamepad.__file__),
                                 "win", "vigem", "install")
         except Exception:
             return None
@@ -2063,6 +2075,15 @@ class Bridge:
 
             self.boot_step = 4
             before = xinput_connected_slots()
+            loaded = load_vgamepad()
+            if isinstance(loaded, Exception) or vg is None:
+                self.status_code = "vigem"
+                self.status_detail = str(loaded)[:60]
+                # A driver installed moments ago often needs a restart before
+                # it answers, so say that rather than blame the driver.
+                self.boot_error = ("reboot" if self.drivers.installed
+                                   else "vigem")
+                return
             try:
                 pad = vg.VX360Gamepad()
             except Exception as e:
