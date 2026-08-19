@@ -2212,6 +2212,10 @@ TR = {
         "nav_about": 'About',
         "grp_sw": 'Software',
         "grp_fonts": 'Fonts',
+        "setup_apply": 'Apply settings',
+        "sw_dataout": 'Data out',
+        "sw_ip": 'IP address',
+        "sw_port": 'IP port',
         "interface_sec": "Interface", "theme": "Theme",
         "theme_hint": "Window colour theme",
         "reaction": "Steering response",
@@ -2238,7 +2242,7 @@ TR = {
         "paused": "in menu / paused",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings|Hud & Gameplay / Telemetry:",
         "st_recv": 'Receiving',
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -2307,6 +2311,10 @@ TR = {
         "nav_about": 'Инфо',
         "grp_sw": 'Программы',
         "grp_fonts": 'Шрифты',
+        "setup_apply": 'Примените настройки',
+        "sw_dataout": 'Data out',
+        "sw_ip": 'IP адрес',
+        "sw_port": 'IP порт',
         "interface_sec": "Интерфейс", "theme": "Тема",
         "theme_hint": "Тема оформления окна",
         "reaction": "Реакция на руль",
@@ -2333,7 +2341,7 @@ TR = {
         "paused": "в меню / на паузе",
         "setup_ip": "IP адрес - 127.0.0.1",
         "setup_port": "IP порт - 20777",
-        "setup_where": "Настройки игры >|Hud & Gameplay / Telemetry:",
+        "setup_where": "Настройки игры|Hud & Gameplay / Telemetry:",
         "st_recv": 'Приём',
         "general_sec": "Основное",
         "tele_status": "Статус телеметрии",
@@ -2402,6 +2410,10 @@ TR = {
         "nav_about": 'Uber',
         "grp_sw": 'Software',
         "grp_fonts": 'Schriften',
+        "setup_apply": 'Einstellungen setzen',
+        "sw_dataout": 'Data out',
+        "sw_ip": 'IP-Adresse',
+        "sw_port": 'IP-Port',
         "interface_sec": "Oberfläche", "theme": "Design",
         "theme_hint": "Farbschema des Fensters",
         "reaction": "Lenkreaktion",
@@ -2428,7 +2440,7 @@ TR = {
         "paused": "im Menü / pausiert",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings|Hud & Gameplay / Telemetry:",
         "st_recv": 'Empfang',
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -2497,6 +2509,10 @@ TR = {
         "nav_about": 'A propos',
         "grp_sw": 'Logiciels',
         "grp_fonts": 'Polices',
+        "setup_apply": 'Appliquez ces reglages',
+        "sw_dataout": 'Data out',
+        "sw_ip": 'Adresse IP',
+        "sw_port": 'Port IP',
         "interface_sec": "Interface", "theme": "Thème",
         "theme_hint": "Thème de couleurs de la fenêtre",
         "reaction": "Réponse au volant",
@@ -2523,7 +2539,7 @@ TR = {
         "paused": "dans le menu / en pause",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings|Hud & Gameplay / Telemetry:",
         "st_recv": 'Reception',
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -2592,6 +2608,10 @@ TR = {
         "nav_about": 'Acerca de',
         "grp_sw": 'Software',
         "grp_fonts": 'Fuentes',
+        "setup_apply": 'Aplica los ajustes',
+        "sw_dataout": 'Data out',
+        "sw_ip": 'Direccion IP',
+        "sw_port": 'Puerto IP',
         "interface_sec": "Interfaz", "theme": "Tema",
         "theme_hint": "Tema de color de la ventana",
         "reaction": "Respuesta al volante",
@@ -2618,7 +2638,7 @@ TR = {
         "paused": "en menú / en pausa",
         "setup_ip": "IP address - 127.0.0.1",
         "setup_port": "IP port - 20777",
-        "setup_where": "Navigate to game settings >|Hud & Gameplay / Telemetry:",
+        "setup_where": "Navigate to game settings|Hud & Gameplay / Telemetry:",
         "st_recv": 'Recibiendo',
         "general_sec": "General",
         "tele_status": "Telemetry status",
@@ -2687,6 +2707,10 @@ TR = {
         "nav_about": '概要',
         "grp_sw": 'ソフトウェア',
         "grp_fonts": 'フォント',
+        "setup_apply": '設定を適用',
+        "sw_dataout": 'Data out',
+        "sw_ip": 'IP アドレス',
+        "sw_port": 'IP ポート',
         "interface_sec": '外観',
         "theme": 'テーマ',
         "theme_hint": 'ウィンドウの配色',
@@ -2720,7 +2744,7 @@ TR = {
         "paused": 'メニュー / 停止中',
         "setup_ip": 'IP アドレス - 127.0.0.1',
         "setup_port": 'IP ポート - 20777',
-        "setup_where": 'ゲーム設定 >|Hud & Gameplay / Telemetry へ:',
+        "setup_where": 'ゲーム設定|Hud & Gameplay / Telemetry へ:',
         "st_recv": '受信中',
         "general_sec": '全般',
         "tele_status": 'テレメトリー状態',
@@ -3040,30 +3064,45 @@ body.t-light{
       min-width:30px;text-align:right}
 
 /* ---------- extended telemetry ---------- */
-.tgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-       gap:12px;align-items:stretch}
-/* the status card and its bars hold the left half, the readouts the
-   right, exactly as the mockup lays them out */
-.tgrid .telecard{grid-column:span 2;grid-row:span 2;padding:0 15px}
-.tgrid .card{padding:12px 14px;display:flex;flex-direction:column;
-             justify-content:space-between}
-.tw2{grid-column:span 2}
-.tw{min-height:74px}
-.twval{font-size:19px;font-weight:600;color:var(--row-fg);line-height:1.1;
-       white-space:nowrap}
-.twval u{text-decoration:none;font-size:13px;font-weight:500;
+/* the mockup fixes every box: two columns of 232 with a 10 gap, 160 tall
+   on the first row and 36 on the second, so nothing resizes with content */
+.tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tgrid .telecard{height:160px;padding:0 15px;box-sizing:border-box}
+.tside{height:160px}
+.tside.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+             grid-template-rows:repeat(2,minmax(0,1fr));gap:10px;
+             background:none;border-radius:0;padding:0}
+.tside.tiles .card{padding:11px 13px;display:flex;flex-direction:column;
+                   justify-content:space-between;box-sizing:border-box}
+.tbot{height:36px;display:flex;align-items:center;padding:0 15px;
+      box-sizing:border-box}
+.tbot .trow{flex:1}
+.twval{font-size:17px;font-weight:600;color:var(--row-fg);line-height:1.05;
+       white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.twval u{text-decoration:none;font-size:12px;font-weight:500;
          color:var(--muted);margin-left:4px}
 .twval.ok{color:var(--ok)} .twval.warn{color:var(--warn)}
 .twval.bad{color:var(--danger)} .twval.off{color:var(--off)}
-.twlbl{font-size:9px;color:var(--muted);padding-top:9px;margin-top:9px;
+.twlbl{font-size:8px;color:var(--muted);padding-top:7px;
        border-top:1px solid var(--line)}
-.trow{display:flex;align-items:center;justify-content:space-between;gap:12px;
-      min-height:42px}
-.trow .rname{font-size:13px;color:var(--row-fg)}
-.tcar{height:22px;box-sizing:border-box;padding:0 11px;border-radius:6px;
-      display:flex;align-items:center;font-size:9px;font-weight:600;
+.trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.trow .rname{font-size:11px;color:var(--row-fg)}
+.tcar{height:18px;box-sizing:border-box;padding:0 9px;border-radius:5px;
+      display:flex;align-items:center;font-size:8px;font-weight:600;
       color:var(--row-fg);background:var(--card-2);
       border:1px solid var(--line);white-space:nowrap}
+/* the same box, carrying the setup the game needs when nothing arrives */
+.tsetup{height:160px;box-sizing:border-box;padding:0 15px;
+        display:flex;flex-direction:column;justify-content:center}
+.tsetup .shead{display:flex;align-items:flex-start;justify-content:space-between;
+               gap:10px;padding-bottom:10px}
+.tsetup .shead q{quotes:none;font-size:8px;line-height:1.45;color:var(--muted)}
+.tsetup .shead b{font-size:9px;font-weight:500;color:var(--row-fg);
+                 white-space:nowrap}
+.tsetup .srow{display:flex;align-items:center;justify-content:space-between;
+              gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.tsetup .srow span{font-size:9px;font-weight:500;color:var(--accent)}
+.tsetup .srow b{font-size:12px;font-weight:600;color:var(--row-fg)}
 
 /* ---------- toggle ---------- */
 .tg{width:28px;height:14px;border-radius:7px;flex:none;cursor:pointer;
@@ -3393,30 +3432,40 @@ function screenMain(){
   sliders.forEach(k => { h += sliderRow(k); });
   h += '</div></div>';
 
+  const live = state && (state.recv || state.alive);
+  const tile = (id, lbl) => '<div class="card"><div class="twval" id="' +
+    id + '">-</div><div class="twlbl">' + t(lbl) + '</div></div>';
+  const setup =
+    '<div class="card tsetup"><div class="shead">' +
+    '<q>' + t('setup_where').split('|').join('<br>') + '</q>' +
+    '<b>' + t('setup_apply') + '</b></div>' +
+    '<div class="srow"><span>' + t('sw_dataout') + '</span><b>On</b></div>' +
+    '<div class="srow"><span>' + t('sw_ip') + '</span><b>127.0.0.1</b></div>' +
+    '<div class="srow"><span>' + t('sw_port') + '</span><b>20777</b></div>' +
+    '</div>';
+
   h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>' +
        (cfg.ext_telemetry ? '<div class="tgrid">' : '') +
        '<div class="card telecard">' +
        '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
        '<span class="tstat" id="tstat">-</span></div>' +
-       '<div class="hintrow" id="setuphint">' +
-       '<span class="hintq">' + t('setup_where').split('|').map(function(x){return '<span>'+x+'</span>';}).join('') + '</span>' +
-       '<span class="hintchips"><span class="chip">' + t('setup_dataout') + '</span>' +
-       '<span class="chip">' + t('setup_ip') + '</span>' +
-       '<span class="chip">' + t('setup_port') + '</span></span></div>' +
        '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
        '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
        '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
-       '<div class="bar"><i id="outbar"></i><u></u></div></div>';
-  h += '</div>';
+       '<div class="bar"><i id="outbar"></i><u></u></div></div>' +
+       '</div>';
   if (cfg.ext_telemetry){
-    const w = (id, lbl) => '<div class="card tw"><div class="twval" id="' +
-      id + '">-</div><div class="twlbl">' + t(lbl) + '</div></div>';
-    h += w('w-mode', 'mode_status') + w('w-speed', 'w_speed') +
-         w('w-callback', 'w_callback') + w('w-latency', 'w_latency') +
-         '<div class="card tw2"><div class="trow">' +
+    /* the readouts have nothing to say without telemetry, so the box tells
+       the player how to turn it on instead */
+    h += live
+      ? '<div class="tside tiles">' + tile('w-mode', 'mode_status') +
+        tile('w-speed', 'w_speed') + tile('w-callback', 'w_callback') +
+        tile('w-latency', 'w_latency') + '</div>'
+      : '<div class="tside">' + setup + '</div>';
+    h += '<div class="card tbot"><div class="trow">' +
          '<span class="rname">' + t('w_car') + '</span>' +
          '<span class="tcar" id="w-car">-</span></div></div>' +
-         '<div class="card tw2"><div class="trow">' +
+         '<div class="card tbot"><div class="trow">' +
          '<span class="rname">' + t('pad_status') + '</span>' +
          '<span class="rval" id="padstat">-</span></div></div>';
   }
@@ -3625,7 +3674,7 @@ function bindRows(){
 }
 
 /* ---------------- live state ---------------- */
-let sRaw = 0, sOut = 0;
+let sRaw = 0, sOut = 0, wasLive = null;
 function setBar(id, v){
   const el = document.getElementById(id); if (!el) return;
   v = Math.max(-1, Math.min(1, v));
@@ -3645,8 +3694,12 @@ function liveUpdate(){
     ts.className = 'tstat ' + cls;
     ts.textContent = txt;
   }
-  const hint = $('#setuphint');
-  if (hint) hint.style.display = (state.recv || state.alive) ? 'none' : '';
+  const nowLive = !!(state.recv || state.alive);
+  if (cfg.ext_telemetry && nowLive !== wasLive){
+    wasLive = nowLive;
+    render();
+    return;
+  }
   sRaw += (state.raw - sRaw) * 0.35;
   sOut += (state.out - sOut) * 0.35;
   setBar('rawbar', sRaw); setBar('outbar', sOut);
