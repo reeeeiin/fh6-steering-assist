@@ -2916,8 +2916,8 @@ body.t-light{
 .hbtn.tab svg{width:10px;height:8px}
 .hbtn.sq svg{width:10px;height:10px}
 .hbtn.sq[data-win=min] svg{width:10px;height:2px}
-.logo{display:flex;align-items:center;color:var(--logo-fg);flex:none}
-.logo svg{display:block;width:99px;height:18px}
+.logo{display:flex;align-items:center;color:var(--logo-fg);flex:none;margin-right:3px}
+.logo svg{display:block;width:94px;height:17px}
 .vbadge{height:18px;padding:0 6px;border-radius:5px;
         display:flex;
         align-items:center;font-size:8px;font-weight:600;flex:none;
@@ -2975,11 +2975,15 @@ body.t-light{
 
 /* ---------- toggle ---------- */
 .tg{width:28px;height:14px;border-radius:7px;flex:none;cursor:pointer;
-    background:var(--off);position:relative;transition:background .22s ease}
+    background:var(--off);position:relative;
+    transition:background .24s cubic-bezier(.4,0,.2,1)}
 .tg.on{background:var(--accent)}
 .tg i{position:absolute;top:2px;left:2px;width:16px;height:10px;
       border-radius:999px;background:#fff;
-      transition:transform .22s cubic-bezier(.4,0,.2,1)}
+      transition:transform .24s cubic-bezier(.4,0,.2,1),
+                 width .24s cubic-bezier(.4,0,.2,1)}
+.tg:active i{width:19px}
+.tg.on:active i{width:19px;transform:translateX(5px)}
 .tg.on i{transform:translateX(8px)}
 
 /* ---------- segmented ---------- */
@@ -3492,7 +3496,8 @@ function bindRows(){
       cfg[f] = !cfg[f];
       refresh();
       try{ pywebview.api.set(f, cfg[f]); }catch(e){}
-      if (f === 'steer_in_general' || f === 'ext_telemetry') render();
+      if (f === 'steer_in_general' || f === 'ext_telemetry')
+        setTimeout(render, 240);
     });
   });
   $$('[data-slider]').forEach(el => {
