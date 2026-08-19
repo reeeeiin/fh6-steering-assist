@@ -177,6 +177,21 @@ stream and emulates a standard controller. Use at your own discretion.
   [HidHide](https://github.com/nefarius/HidHide) by Nefarius Software Solutions
 - [Oswald](https://fonts.google.com/specimen/Oswald) font (SIL OFL)
 
+## Licence
+
+From version 2.0 the source is available under the
+[Elastic License 2.0](LICENSE): use it, modify it, build it yourself. You may
+not offer it to others as a hosted service, strip its notices, or work around
+its licensing.
+
+The interface design, icons, logo and wordmark are **not** covered by that
+grant and remain all rights reserved. A modified copy passed on to others has
+to carry its own name and its own branding.
+
+Releases up to 1.3.0 stay under the MIT Licence.
+
+Third-party components keep their own licences, listed in [NOTICE.md](NOTICE.md).
+
 ---
 
 <details>

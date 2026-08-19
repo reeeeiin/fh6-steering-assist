@@ -27,6 +27,9 @@ if exist drivers set EXTRA=%EXTRA% --add-data "drivers;drivers"
 if exist Oswald-Medium.ttf set EXTRA=%EXTRA% --add-data "Oswald-Medium.ttf;."
 if exist Oswald-Regular.ttf set EXTRA=%EXTRA% --add-data "Oswald-Regular.ttf;."
 if exist assets set EXTRA=%EXTRA% --add-data "assets;assets"
+if exist licenses set EXTRA=%EXTRA% --add-data "licenses;licenses"
+if exist NOTICE.md set EXTRA=%EXTRA% --add-data "NOTICE.md;."
+if exist LICENSE set EXTRA=%EXTRA% --add-data "LICENSE;."
 if exist steering.ico set EXTRA=%EXTRA% --icon steering.ico
 
 python -m PyInstaller --onefile --noconsole --uac-admin --name SteeringAssist-%VER% --collect-all vgamepad --collect-all webview --collect-all pygame %EXTRA% forza_assist_lite.py
