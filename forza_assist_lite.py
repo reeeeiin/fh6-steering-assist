@@ -3441,6 +3441,13 @@ body.t-light{
       transition:opacity .5s ease}
 #boot.gone{opacity:0;pointer-events:none}
 #boot .row,#boot .blk{all:unset}
+/* the whole backdrop drags the window. Nothing on the boot screen is
+   interactive except its buttons, so the rest lets the pointer through to
+   the drag layer underneath; the size stays fixed either way */
+.bdrag{position:absolute;inset:0;z-index:0;-webkit-app-region:drag}
+#boot > *:not(.bdrag){position:absolute;z-index:1;pointer-events:none}
+#boot .bclose,#boot .blang{pointer-events:auto;-webkit-app-region:no-drag}
+#boot .bbtn,#boot .upddl{pointer-events:auto;-webkit-app-region:no-drag}
 .bclose{position:absolute;top:15px;right:15px;width:18px;height:18px;
         box-sizing:border-box;display:flex;align-items:center;
         justify-content:center;border-radius:5px;color:var(--btn-fg);
@@ -3593,6 +3600,7 @@ html[data-boot] .rz{display:none}
   </div>
 </div>
 <div id="boot">
+  <span class="bdrag pywebview-drag-region"></span>
   <span class="blang" id="boot-lang"></span>
   <span class="bclose" data-win="close"><!--ICON:close--></span>
   <div class="btag"><!--ICON:applogotagline--></div>
