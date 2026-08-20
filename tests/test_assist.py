@@ -257,21 +257,21 @@ def test_version_compare_ignores_component_count():
     assert fa._version_tuple("v1.5.230.0") == fa._version_tuple("1.5.230")
 
 def test_working_drivers_are_not_reinstalled():
-    """A driver that answers is left alone. One whose device node is missing
-    has to be reinstalled however complete it looks in the registry: a
-    service with no node is a half-finished install, and treating it as
-    present is what leaves the app stuck repeating the same failure."""
+    """Installed drivers are left alone. Only a driver that publishes a
+    named device link may be judged by it: ViGEmBus exposes an interface by
+    GUID and never answers there, so requiring it to would condemn a
+    perfectly healthy bus to being reinstalled on every launch."""
     d = fa.DriverSetup()
-    working = []
+    present = []
     for label, reg, svc, _key in fa.DriverSetup.ITEMS:
         have = d._current(reg, svc)
-        node = fa.device_present(svc)
-        assert bool(have) == node, (
-            f"{label}: device node present={node} but detection says "
-            f"{have!r}; the two must agree")
-        if node:
-            working.append(label)
-    if len(working) < len(fa.DriverSetup.ITEMS):
+        if svc in fa.DriverSetup.NAMED_DEVICES and have:
+            assert fa.device_present(svc), (
+                f"{label} is reported installed but does not answer on its "
+                f"device link")
+        if have:
+            present.append(label)
+    if len(present) < len(fa.DriverSetup.ITEMS):
         return          # nothing to assert about installing on this machine
     d.ensure()
     assert d.code == "done", f"{d.code}: {d.info}"

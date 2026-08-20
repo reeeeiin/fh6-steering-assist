@@ -1610,9 +1610,9 @@ def service_exists(name: str) -> bool:
         return False
 
 def device_present(name: str) -> bool:
-    """A driver can have its service registered and its file in place while
-    its device node was never created - what a half-finished install looks
-    like. Opening the node is the only answer that counts."""
+    """True when a driver answers on its named device link. Only drivers
+    that publish one can be checked this way: ViGEmBus exposes an interface
+    by GUID instead, and never answers here however healthy it is."""
     k32 = ctypes.windll.kernel32
     k32.CreateFileW.restype = ctypes.c_void_p
     k32.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD,
@@ -1658,12 +1658,14 @@ class DriverSetup:
               "vigembus"),
              ("HidHide", "HidHide", "HidHide", "hidhide"))
 
+    NAMED_DEVICES = ("HidHide",)
+
     @staticmethod
     def _current(reg_name: str, service: str) -> str | None:
-        # The device node decides. A service without one means the installer
-        # stopped half way, and reinstalling is exactly what is needed - the
-        # old check called that "installed" and left the app stuck.
-        if not device_present(service):
+        # A driver that answers on its device link is working, whatever the
+        # registry says. One that does not answer, yet has a service and no
+        # uninstall entry, stopped half way through installing.
+        if service in DriverSetup.NAMED_DEVICES and not device_present(service):
             return None
         found = installed_version(reg_name)
         if found is not None:
@@ -1721,6 +1723,25 @@ class DriverSetup:
                             capture_output=True, text=True,
                             creationflags=0x08000000, timeout=600)
         return cp.returncode
+
+    def reinstall_bus(self) -> bool:
+        """Put ViGEmBus back when it is registered but will not answer. The
+        bus cannot be probed directly, so a failed pad is the signal."""
+        manifest = self._manifest()
+        entry = manifest.get("vigembus", {})
+        msi = self._bundled(str(entry.get("file", ""))) or self._vigem_fallback()
+        if not msi or not is_admin():
+            return False
+        try:
+            rc = self._install(msi)
+        except (OSError, subprocess.SubprocessError):
+            return False
+        if rc in (0, 3010):
+            self.installed.append("ViGEmBus")
+            if rc == 3010:
+                self.code = "reboot"
+            return True
+        return False
 
     def ensure(self, on_install=None) -> None:
         manifest = self._manifest()
@@ -2230,6 +2251,11 @@ class Bridge:
             self.boot_step = 4
             before = xinput_connected_slots()
             loaded = load_vgamepad()
+            if isinstance(loaded, Exception) or vg is None:
+                # present but not answering: repair it once, then retry
+                if not self.drivers.installed and self.drivers.reinstall_bus():
+                    self.boot_installed = list(self.drivers.installed)
+                    loaded = load_vgamepad()
             if isinstance(loaded, Exception) or vg is None:
                 self.status_code = "vigem"
                 self.status_detail = str(loaded)[:60]
