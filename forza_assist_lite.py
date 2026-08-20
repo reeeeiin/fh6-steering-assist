@@ -655,6 +655,8 @@ BOOT_TR = {
         "done": {"title": 'You all set!',
                  "note": 'Enjoy drifting on the streets of Horizon.',
                  "hint": "Don't forget to support if you enjoyed the app"},
+        "pendTitle": 'One more step', "btnRestart": 'Restart now',
+        "btnSkip": 'Skip',
         "errTitle": 'Something went wrong', "errBtn": 'Start over',
         "errors": {
             'failed': ['An error occurred while installing the drivers',
@@ -662,7 +664,7 @@ BOOT_TR = {
             'noadmin': ['Administrator rights are needed to install the drivers',
              'Close the app and start it again, then confirm the Windows prompt.'],
             'reboot': ['Restart your PC to finish the driver installation',
-             'The drivers are installed, a restart is needed to activate them.'],
+             'Restart to finish the setup. Windows switches the drivers on as it comes back, and the assist is ready straight away.'],
             'hide': ['An error occurred while hiding your controller',
              'Try to close apps like controller drivers and etc, it might interfere with Steering Assist installation.'],
             'vigem': ['An error occurred while creating the virtual controller',
@@ -701,6 +703,8 @@ BOOT_TR = {
         "done": {"title": 'Все готово!',
                  "note": 'Приятного дрифта на улицах Horizon.',
                  "hint": 'Если приложение понравилось, поддержите проект'},
+        "pendTitle": 'Остался один шаг', "btnRestart": 'Перезагрузить',
+        "btnSkip": 'Позже',
         "errTitle": 'Что-то пошло не так', "errBtn": 'Начать заново',
         "errors": {
             'failed': ['Ошибка при установке драйверов',
@@ -708,7 +712,7 @@ BOOT_TR = {
             'noadmin': ['Нужны права администратора',
              'Закройте приложение и запустите снова, затем подтвердите запрос Windows.'],
             'reboot': ['Перезагрузите компьютер, чтобы завершить установку',
-             'Драйверы установлены, для их активации нужна перезагрузка.'],
+             'Перезагрузите компьютер, чтобы завершить установку. Windows включит драйверы при запуске, и ассист сразу будет готов.'],
             'hide': ['Ошибка при скрытии геймпада',
              'Закройте драйверы геймпадов и похожие программы, они могут мешать установке.'],
             'vigem': ['Ошибка при создании виртуального геймпада',
@@ -747,6 +751,8 @@ BOOT_TR = {
         "done": {"title": 'Todo listo!',
                  "note": 'Disfruta derrapando por las calles de Horizon.',
                  "hint": 'Si te gusta la app, no olvides apoyarla'},
+        "pendTitle": 'Queda un paso', "btnRestart": 'Reiniciar ahora',
+        "btnSkip": 'Ahora no',
         "errTitle": 'Algo ha salido mal', "errBtn": 'Empezar de nuevo',
         "errors": {
             'failed': ['Error al instalar los controladores',
@@ -754,7 +760,7 @@ BOOT_TR = {
             'noadmin': ['Se necesitan permisos de administrador',
              'Cierra la app y vuelve a abrirla, luego confirma el aviso de Windows.'],
             'reboot': ['Reinicia el PC para terminar la instalacion',
-             'Los controladores estan instalados, hace falta reiniciar para activarlos.'],
+             'Reinicia para terminar la instalacion. Windows activa los controladores al arrancar y el asistente queda listo.'],
             'hide': ['Error al ocultar tu mando',
              'Cierra apps como controladores de mando, pueden interferir con la instalacion de Steering Assist.'],
             'vigem': ['Error al crear el mando virtual',
@@ -793,6 +799,8 @@ BOOT_TR = {
         "done": {"title": 'Tout est pret !',
                  "note": 'Bon drift dans les rues de Horizon.',
                  "hint": "Si l'app vous plait, pensez a la soutenir"},
+        "pendTitle": 'Encore une etape', "btnRestart": 'Redemarrer',
+        "btnSkip": 'Plus tard',
         "errTitle": 'Une erreur est survenue', "errBtn": 'Recommencer',
         "errors": {
             'failed': ["Erreur lors de l'installation des pilotes",
@@ -800,7 +808,7 @@ BOOT_TR = {
             'noadmin': ['Droits administrateur requis',
              "Fermez l'app et relancez-la, puis confirmez l'invite Windows."],
             'reboot': ["Redemarrez le PC pour terminer l'installation",
-             'Les pilotes sont installes, un redemarrage est necessaire pour les activer.'],
+             "Redemarrez pour terminer l'installation. Windows active les pilotes au demarrage et l'assistance est prete aussitot."],
             'hide': ['Erreur lors du masquage de la manette',
              "Fermez les applications de pilotes de manette, elles peuvent gener l'installation de Steering Assist."],
             'vigem': ['Erreur lors de la creation de la manette virtuelle',
@@ -839,6 +847,8 @@ BOOT_TR = {
         "done": {"title": 'Alles bereit!',
                  "note": 'Viel Spass beim Driften in den Strassen von Horizon.',
                  "hint": 'Wenn dir die App gefaellt, unterstuetze sie gern'},
+        "pendTitle": 'Noch ein Schritt', "btnRestart": 'Jetzt neu starten',
+        "btnSkip": 'Spaeter',
         "errTitle": 'Etwas ist schiefgelaufen', "errBtn": 'Neu starten',
         "errors": {
             'failed': ['Fehler bei der Treiberinstallation',
@@ -846,7 +856,7 @@ BOOT_TR = {
             'noadmin': ['Administratorrechte werden benoetigt',
              'Schliesse die App und starte sie neu, bestaetige dann die Windows-Abfrage.'],
             'reboot': ['Starte den PC neu, um die Installation abzuschliessen',
-             'Die Treiber sind installiert, ein Neustart aktiviert sie.'],
+             'Starte neu, um die Einrichtung abzuschliessen. Windows aktiviert die Treiber beim Hochfahren, danach ist die Hilfe sofort bereit.'],
             'hide': ['Fehler beim Verstecken des Controllers',
              'Schliesse Apps wie Controller-Treiber, sie koennen die Installation von Steering Assist stoeren.'],
             'vigem': ['Fehler beim Erstellen des virtuellen Controllers',
@@ -885,6 +895,8 @@ BOOT_TR = {
         "done": {"title": '準備完了!',
                  "note": 'Horizon の街でドリフトをお楽しみください。',
                  "hint": 'アプリが気に入ったら応援をお願いします'},
+        "pendTitle": 'あと一歩です', "btnRestart": '今すぐ再起動',
+        "btnSkip": '後で',
         "errTitle": '問題が発生しました', "errBtn": 'やり直す',
         "errors": {
             'failed': ['ドライバーのインストールに失敗しました',
@@ -892,7 +904,7 @@ BOOT_TR = {
             'noadmin': ['管理者権限が必要です',
              'アプリを終了して再起動し、Windows の確認画面で許可してください。'],
             'reboot': ['インストールを完了するには PC を再起動してください',
-             'ドライバーはインストール済みです。有効化には再起動が必要です。'],
+             '再起動すると設定が完了します。Windows の起動時にドライバーが有効になり、アシストはすぐに使えます。'],
             'hide': ['コントローラーを隠せませんでした',
              'コントローラードライバーなどのアプリを終了してください。Steering Assist のインストールを妨げることがあります。'],
             'vigem': ['仮想コントローラーを作成できませんでした',
@@ -3454,6 +3466,7 @@ body.t-light{
 .bnote{margin-top:30px;font-size:12px;font-weight:500;color:var(--accent);
        text-align:center;line-height:1;transition:opacity .22s ease}
 .bnote.bad{color:var(--danger)}
+.bnote.warn{color:var(--warn)}
 .bline.fade,.bnote.fade{opacity:0}
 .bdot{position:relative;width:28px;height:28px;border-radius:50%;
       box-sizing:border-box;flex:none;border:2px solid var(--accent);
@@ -3462,11 +3475,17 @@ body.t-light{
 .bdot.on{background:var(--accent)}
 .bdot.bad{border-color:var(--danger)}
 .bdot.bad.hit{background:var(--danger)}
-.bdot .ok,.bdot .x{position:absolute;inset:0;display:flex;
+/* a step waiting on a restart is an instruction, not a failure */
+.bdot.warn{border-color:var(--warn)}
+.bdot.warn.hit{background:var(--warn)}
+.bdot .ok,.bdot .x,.bdot .bang{position:absolute;inset:0;display:flex;
                    align-items:center;justify-content:center;opacity:0;
                    transition:opacity .3s ease}
+.bdot .bang{font-size:15px;font-weight:600;line-height:1;color:#101010}
 .bdot.on .ok{opacity:1}
 .bdot.bad.hit .x{opacity:1}
+.bdot.warn.hit .bang{opacity:1}
+.bdot.warn .ok,.bdot.warn .x{display:none}
 .bdot .ok svg{display:block;width:14px;height:10px}
 .bdot .x svg{display:block;width:12px;height:12px}
 .bbar{width:24px;height:4px;border-radius:2px;background:var(--track);
@@ -3474,6 +3493,7 @@ body.t-light{
 .bbar i{display:block;height:100%;width:0;border-radius:2px;
         background:var(--accent);transition:width .35s linear}
 .bbar.bad{background:var(--danger)}
+.bbar.warn{background:var(--warn)}
 
 #bs-tele{top:232px}
 .btele-t{font-size:10px;color:var(--row-fg);text-align:center;line-height:1}
@@ -3490,6 +3510,9 @@ body.t-light{
       font-weight:600;font-family:inherit;cursor:default;white-space:nowrap;
       transition:filter .15s ease}
 .bbtn:hover{filter:brightness(1.12)}
+.bbtn.sec{background:transparent;color:var(--muted);
+          border:1px solid var(--btn-line)}
+.bbtn.sec:hover{color:var(--row-fg);border-color:var(--muted);filter:none}
 
 /* anchored to its foot: a longer translation grows upwards, clear of the
    footer */
@@ -4204,7 +4227,8 @@ $('#boot-lang').addEventListener('click', () => {
 });
 
 /* the five stage dots with the connecting bars between them */
-function bootDots(done, bad, fill){
+function bootDots(done, bad, fill, kind){
+  const tone = kind === 'warn' ? 'warn' : 'bad';
   const el = $('#boot-dots');
   if (!el.dataset.built){
     let h = '';
@@ -4212,19 +4236,23 @@ function bootDots(done, bad, fill){
       if (i) h += '<span class="bbar" data-bar="' + i + '"><i></i></span>';
       h += '<span class="bdot" data-dot="' + i + '">' +
            '<span class="ok">' + B_OK + '</span>' +
-           '<span class="x">' + B_X + '</span></span>';
+           '<span class="x">' + B_X + '</span>' +
+           '<span class="bang">!</span></span>';
     }
     el.innerHTML = h; el.dataset.built = '1';
   }
   el.querySelectorAll('[data-dot]').forEach(d => {
     const i = +d.dataset.dot;
+    const marked = bad >= 0 && i >= bad;
     d.classList.toggle('on', i < done);
-    d.classList.toggle('bad', bad >= 0 && i >= bad);
+    d.classList.toggle('bad', marked && tone === 'bad');
+    d.classList.toggle('warn', marked && tone === 'warn');
     d.classList.toggle('hit', bad >= 0 && i === bad);
   });
   el.querySelectorAll('[data-bar]').forEach(b => {
     const i = +b.dataset.bar;
-    b.classList.toggle('bad', bad >= 0 && i > bad);
+    b.classList.toggle('bad', bad >= 0 && i > bad && tone === 'bad');
+    b.classList.toggle('warn', bad >= 0 && i > bad && tone === 'warn');
     /* the bar of the step in flight fills part way, as a progress cue */
     /* up to the failed dot the track stays filled; past it it turns red.
        the bar of the step in flight creeps along with its own progress */
@@ -4309,20 +4337,36 @@ function revealApp(){
 function bootError(code){
   const t = BT();
   const e = t.errors[code] || t.errors.failed;
+  /* a pending restart is a step of the setup, not a fault: amber, with the
+     restart offered rather than a retry */
+  const pending = code === 'reboot';
   stageHide('#bs-load'); stageHide('#bs-tele'); stageShow('#bs-steps');
-  swapText($('#boot-line'), t.errTitle);
+  swapText($('#boot-line'), pending ? t.pendTitle : t.errTitle);
   swapText($('#boot-note'), e[0], LINE_GAP);
-  $('#boot-note').classList.add('bad');
+  $('#boot-note').classList.toggle('bad', !pending);
+  $('#boot-note').classList.toggle('warn', pending);
   $('#boot-hint').classList.add('fade');
-  const box = $('#err-text');
-  if (box.dataset.cur !== e[1]){
-    box.dataset.cur = e[1];
-    box.textContent = e[1];
-    $('#err-btn').textContent = t.errBtn;
+  const box = $('#bs-err');
+  if (box.dataset.cur !== code){
+    box.dataset.cur = code;
+    box.innerHTML =
+      '<div class="berr">' + e[1] + '</div>' +
+      '<button class="bbtn" id="err-btn">' +
+      (pending ? t.btnRestart : t.errBtn) + '</button>' +
+      (pending ? '<button class="bbtn sec" id="err-skip">' + t.btnSkip +
+                 '</button>' : '');
+    $('#err-btn').addEventListener('click', () => {
+      try{
+        if (pending) pywebview.api.restart_pc();
+        else pywebview.api.boot_retry();
+      }catch(err){}
+    });
+    const skip = $('#err-skip');
+    if (skip) skip.addEventListener('click', revealApp);
   }
   stageShow('#bs-err');
   const at = Math.max(0, (bootShown || state.boot_step || 1) - 1);
-  bootDots(at, at, 1);
+  bootDots(at, at, 1, pending ? 'warn' : 'bad');
 }
 
 function bootTick(){
@@ -4754,6 +4798,18 @@ class Api:
     def boot_done(self):
         """The app is on screen: the window may follow its content again."""
         _WIN["boot"] = False
+        return True
+
+    def restart_pc(self):
+        """Ask Windows to restart with a notice and a delay, so anything else
+        that is open gets its chance to object. shutdown /a cancels it."""
+        try:
+            subprocess.Popen(
+                ["shutdown", "/r", "/t", "20", "/c",
+                 "Steering Assist: restarting to finish the driver setup"],
+                creationflags=0x08000000)
+        except Exception:
+            return False
         return True
 
     def boot_retry(self):
