@@ -1539,6 +1539,24 @@ def service_exists(name: str) -> bool:
     except OSError:
         return False
 
+def device_present(name: str) -> bool:
+    """A driver can have its service registered and its file in place while
+    its device node was never created - what a half-finished install looks
+    like. Opening the node is the only answer that counts."""
+    k32 = ctypes.windll.kernel32
+    k32.CreateFileW.restype = ctypes.c_void_p
+    k32.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD,
+                                wintypes.DWORD, ctypes.c_void_p,
+                                wintypes.DWORD, wintypes.DWORD,
+                                ctypes.c_void_p]
+    handle = k32.CreateFileW("\\\\.\\" + name, 0xC0000000, 0, None,
+                             3, 0, None)
+    if not handle or handle == ctypes.c_void_p(-1).value:
+        return False
+    k32.CloseHandle(ctypes.c_void_p(handle))
+    return True
+
+
 def installed_version(name_part: str) -> str | None:
     import winreg
     branches = (r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
@@ -1566,11 +1584,17 @@ def installed_version(name_part: str) -> str | None:
 
 class DriverSetup:
 
-    ITEMS = (("ViGEmBus", "Virtual Gamepad Emulation", "ViGEmBus", "vigembus"),
+    ITEMS = (("ViGEmBus", "Virtual Gamepad Emulation", "ViGEmBus",
+              "vigembus"),
              ("HidHide", "HidHide", "HidHide", "hidhide"))
 
     @staticmethod
     def _current(reg_name: str, service: str) -> str | None:
+        # The device node decides. A service without one means the installer
+        # stopped half way, and reinstalling is exactly what is needed - the
+        # old check called that "installed" and left the app stuck.
+        if not device_present(service):
+            return None
         found = installed_version(reg_name)
         if found is not None:
             return found
@@ -4387,6 +4411,13 @@ function bootTick(){
     }
     bootPhase = 'steps';
     bootPhrases = bootPhraseList();
+    /* nothing needed installing this run, so the first four steps have
+       nothing to report: open on the one that waits for the game. This is
+       what the launch after a restart looks like. */
+    if (!(state.boot_installed && state.boot_installed.length)){
+      bootShown = 5;
+      bootShownAt = now;
+    }
     stageHide('#bs-load');
     setTimeout(() => {
       if (bootPhase === 'app') return;
