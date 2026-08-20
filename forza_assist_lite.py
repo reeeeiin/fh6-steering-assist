@@ -591,7 +591,7 @@ class Assist:
         return self.angle
 
 
-CONFIG_VERSION = 8
+CONFIG_VERSION = 9
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
@@ -619,6 +619,7 @@ DEFAULTS = {
     "profile": "default",
     "custom": {},
     "telemetry_seen": False,
+    "setup_done": False,
 }
 
 THEMES = ("dark", "light")
@@ -636,6 +637,12 @@ BOOT_TR = {
              "note": 'Creating the virtual controller'},
             {"title": 'Almost ready',
              "note": 'Steering Assist needs the game telemetry'},
+        ],
+        "checks": [
+            'Checking the drivers are in place',
+            'Checking ViGEmBus and HidHide',
+            'Checking your controller is hidden',
+            'Checking the virtual controller',
         ],
         "hint": 'It might take a while, please wait',
         "phrases": [
@@ -685,6 +692,12 @@ BOOT_TR = {
             {"title": 'Почти готово',
              "note": 'Steering Assist нужна телеметрия игры'},
         ],
+        "checks": [
+            'Проверяем, на месте ли драйверы',
+            'Проверяем ViGEmBus и HidHide',
+            'Проверяем, скрыт ли геймпад',
+            'Проверяем виртуальный геймпад',
+        ],
         "hint": 'Это может занять время, подождите',
         "phrases": [
             'Немного терпения, почти готово',
@@ -732,6 +745,12 @@ BOOT_TR = {
              "note": 'Creando el mando virtual'},
             {"title": 'Casi listo',
              "note": 'Steering Assist necesita la telemetria del juego'},
+        ],
+        "checks": [
+            'Comprobando que los controladores esten',
+            'Comprobando ViGEmBus y HidHide',
+            'Comprobando que tu mando este oculto',
+            'Comprobando el mando virtual',
         ],
         "hint": 'Puede tardar un poco, espera por favor',
         "phrases": [
@@ -781,6 +800,12 @@ BOOT_TR = {
             {"title": 'Presque pret',
              "note": 'Steering Assist a besoin de la telemetrie du jeu'},
         ],
+        "checks": [
+            'Verification des pilotes',
+            'Verification de ViGEmBus et HidHide',
+            'Verification du masquage de la manette',
+            'Verification de la manette virtuelle',
+        ],
         "hint": 'Cela peut prendre un moment, patientez',
         "phrases": [
             "Encore un peu de patience, c'est presque fini",
@@ -829,6 +854,12 @@ BOOT_TR = {
             {"title": 'Fast fertig',
              "note": 'Steering Assist braucht die Telemetrie des Spiels'},
         ],
+        "checks": [
+            'Treiber werden geprueft',
+            'ViGEmBus und HidHide werden geprueft',
+            'Verstecken des Controllers wird geprueft',
+            'Virtueller Controller wird geprueft',
+        ],
         "hint": 'Das kann etwas dauern, bitte warten',
         "phrases": [
             'Noch ein wenig Geduld, gleich geschafft',
@@ -876,6 +907,12 @@ BOOT_TR = {
              "note": '仮想コントローラーを作成しています'},
             {"title": 'もうすぐ完了',
              "note": 'Steering Assist にはゲームのテレメトリーが必要です'},
+        ],
+        "checks": [
+            'ドライバーの有無を確認しています',
+            'ViGEmBus と HidHide を確認しています',
+            'コントローラーが隠れているか確認しています',
+            '仮想コントローラーを確認しています',
         ],
         "hint": '少し時間がかかります。お待ちください',
         "phrases": [
@@ -1397,6 +1434,7 @@ ISSUES_URL = "https://github.com/%s/issues/new" % REPO
 
 BOOT_MIN_MS = 4000
 BOOT_STEP_MS = 6000
+BOOT_CHECK_MS = 1400
 BOOT_DONE_MS = 6000
 
 PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
@@ -1434,8 +1472,8 @@ def sanitize_config(cfg: dict) -> dict:
         except (KeyError, TypeError, ValueError):
             v = float(DEFAULTS[key])
         cfg[key] = clamp(v, lo, hi) if math.isfinite(v) else float(DEFAULTS[key])
-    for key in ("enabled", "auto_hide", "telemetry_seen", "rumble",
-                "steer_in_general", "ext_telemetry"):
+    for key in ("enabled", "auto_hide", "telemetry_seen", "setup_done",
+                "rumble", "steer_in_general", "ext_telemetry"):
         cfg[key] = bool(cfg.get(key, DEFAULTS[key]))
     for key in ("btn_handbrake", "btn_clutch"):
         try:
@@ -1879,6 +1917,7 @@ class Bridge:
         self.telemetry = TelemetryListener()
         self.drivers = DriverSetup()
         self.hidhide = HidHide()
+        self.first_run = not self.cfg.get("setup_done", False)
         self.bad_order = False
         self.boot_step = 0
         self.boot_error = ""
@@ -2197,6 +2236,9 @@ class Bridge:
             self.physical_slot = min(before) if before else None
             self.boot_step = 5
             self.status_code = "ok"
+            if not self.cfg.get("setup_done"):
+                self.cfg["setup_done"] = True
+                save_config(self.cfg)
 
             if RUMBLE_FORWARD:
                 def on_rumble(client, target, large_motor, small_motor,
@@ -3085,7 +3127,7 @@ def build_html() -> str:
     html = html.replace("__BOOT__", json.dumps(
          {"tr": BOOT_TR, "short": LANG_SHORT, "langs": LANG_ORDER,
          "minMs": BOOT_MIN_MS, "stepMs": BOOT_STEP_MS,
-         "doneMs": BOOT_DONE_MS}))
+         "checkMs": BOOT_CHECK_MS, "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_DL__", json.dumps(_icon("downloadarrow")))
@@ -4419,13 +4461,6 @@ function bootTick(){
     }
     bootPhase = 'steps';
     bootPhrases = bootPhraseList();
-    /* nothing needed installing this run, so the first four steps have
-       nothing to report: open on the one that waits for the game. This is
-       what the launch after a restart looks like. */
-    if (!(state.boot_installed && state.boot_installed.length)){
-      bootShown = 5;
-      bootShownAt = now;
-    }
     stageHide('#bs-load');
     setTimeout(() => {
       if (bootPhase === 'app') return;
@@ -4438,8 +4473,12 @@ function bootTick(){
   if (bootPhase === 'steps'){
     if ($('#bs-steps').classList.contains('off')) return;
     const real = Math.max(1, Math.min(5, state.boot_step || 1));
+    /* nothing was installed this run, so these steps are confirming what is
+       already there: quicker, and worded as checks rather than work */
+    const verifying = !(state.boot_installed && state.boot_installed.length);
+    const stepMs = verifying ? BOOT.checkMs : BOOT.stepMs;
     if (!bootShown){ bootShown = 1; bootShownAt = now; }
-    if (real > bootShown && now - bootShownAt >= BOOT.stepMs){
+    if (real > bootShown && now - bootShownAt >= stepMs){
       bootShown += 1;
       bootShownAt = now;
     }
@@ -4447,7 +4486,7 @@ function bootTick(){
        from zero instead of inheriting the previous step's age */
     const held = now - bootShownAt;
     const step = bootShown;
-    const fill = Math.min(1, held / BOOT.stepMs);
+    const fill = Math.min(1, held / stepMs);
     /* the failure waits for the interface to reach the step that failed,
        so the steps before it are still played out one by one */
     if (state.boot_error && step >= real){
@@ -4458,7 +4497,9 @@ function bootTick(){
     const info = t.steps[step - 1];
     swapText($('#boot-line'),
              bootTitle(step) + ': <b>' + t.step + ' ' + step + '</b>');
-    swapText($('#boot-note'), info.note, LINE_GAP);
+    swapText($('#boot-note'),
+             (verifying && step <= 4 && t.checks) ? t.checks[step - 1]
+                                                  : info.note, LINE_GAP);
     bootDots(step - 1, -1, fill);
     /* on the last step the hint gives way to the telemetry instructions */
     if (step >= 5){
@@ -4931,8 +4972,7 @@ class Api:
             "boot_step": b.boot_step,
             "boot_error": b.boot_error,
             "boot_installed": b.boot_installed,
-            "first_run": bool(BOOT_DEMO) or bool(b.boot_installed)
-                         or not b.cfg["telemetry_seen"],
+            "first_run": bool(BOOT_DEMO) or b.first_run,
             "drv_code": b.drivers.code,
             "drv_info": b.drivers.info,
             "hh_code": b.hidhide.code,
