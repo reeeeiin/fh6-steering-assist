@@ -12,7 +12,9 @@ import subprocess
 import urllib.parse
 import urllib.request
 import webbrowser
+import shutil
 import sys
+import tempfile
 import threading
 import time
 from ctypes import wintypes
@@ -90,6 +92,36 @@ def _app_dir() -> str:
     if getattr(sys, "frozen", False):
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
+
+def sweep_stale_unpacks():
+    """A single-file build unpacks itself into %TEMP% on every launch and
+    clears it on a clean exit. A crash, a kill or a power cut leaves some
+    40 MB there for good. Those this app left are swept on the way in; a
+    folder belonging to a running copy keeps its files locked and simply
+    refuses to go, which is exactly the behaviour wanted."""
+    if not getattr(sys, "frozen", False):
+        return
+    current = os.path.normcase(getattr(sys, "_MEIPASS", ""))
+    try:
+        temp = tempfile.gettempdir()
+        names = os.listdir(temp)
+    except OSError:
+        return
+    for name in names:
+        if not name.startswith("_MEI"):
+            continue
+        path = os.path.join(temp, name)
+        if os.path.normcase(path) == current or not os.path.isdir(path):
+            continue
+        # A bundled virtual pad driver marks our leftovers without touching
+        # another frozen program's. Releases before 2.0 shipped no car
+        # table, so the driver, not the table, is what identifies them.
+        ours = (os.path.isdir(os.path.join(path, "vgamepad")) or
+                os.path.isfile(os.path.join(path, "assets", "cars.json")))
+        if not ours:
+            continue
+        shutil.rmtree(path, ignore_errors=True)
+
 
 def _config_path() -> str:
     base = os.path.join(os.environ.get("APPDATA", _app_dir()),
@@ -5066,6 +5098,7 @@ def _ensure_single_instance():
                "If no window is visible:  taskkill /F /IM python.exe")
 
 def main():
+    threading.Thread(target=sweep_stale_unpacks, daemon=True).start()
     _kill_stale_instances()
     _ensure_single_instance()
     bridge = Bridge()
