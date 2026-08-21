@@ -60,12 +60,10 @@ def load_vgamepad():
 APP_VERSION = "2.0.0"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
-INPUT_TAU_MAX = 0.9
-# The slider is cubed on its way to the filter. Linear, everything useful
-# happened in the first tenth of the travel and the rest felt identical;
-# cubed, the lower half carries the range where the wheel resists being
-# overridden and the upper half stays as direct as it ever was.
-INPUT_TAU_SHAPE = 3.0
+CURVE_MIN = 0.2      # below this the wheel would snap to full lock
+CURVE_MAX = 4.0
+
+
 STEER_PER_SLIP = 0.234
 # The telemetry filter is fixed. As a slider it spanned 0.0 to 0.99 and
 # moved the output wobble by a quarter while leaving lag and strength
@@ -550,22 +548,13 @@ class Assist:
         spd_kmh = tm.speed_mps * 3.6
         speed_gate = clamp((spd_kmh - c["min_speed"]) / 25.0, 0.0, 1.0)
 
-        curve = c.get("steer_curve", 1.0)
-        if curve > 1.001 and self._shape > 0.001:
+        # 1.0 is linear, 2.0 a parabola, below 1.0 sharpens the centre.
+        # The exponent only takes hold as the car goes sideways, so normal
+        # driving keeps whatever feel the game already has.
+        curve = clamp(c.get("steer_curve", 1.0), CURVE_MIN, CURVE_MAX)
+        if abs(curve - 1.0) > 0.001 and self._shape > 0.001:
             k = 1.0 + (curve - 1.0) * self._shape
             stick_x = math.copysign(abs(stick_x) ** k, stick_x)
-
-        # the slider is halved on its way in: what used to sit at the
-        # midpoint now sits at the top, so the whole travel is firmer
-        resp = clamp(c.get("reaction", 1.0), 0.0, 1.0) * 0.5
-        tau_in = (INPUT_TAU_MAX * (1.0 - resp) ** INPUT_TAU_SHAPE
-                  * self._slide)
-        if tau_in > 1e-4:
-            a_in = 1.0 - math.exp(-dt / tau_in)
-            self._stick_f += a_in * (stick_x - self._stick_f)
-            stick_x = self._stick_f
-        else:
-            self._stick_f = stick_x
 
         tau = TELEMETRY_TAU
         alpha = 1.0 - math.exp(-dt / tau) if tau > 1e-4 else 1.0
@@ -651,7 +640,6 @@ DEFAULTS = {
     "auto_hide": True,
     "counter_gain": 60.0,
     "gyro": 0.4,
-    "reaction": 0.2,
     "steer_lag": 0.04,
     "steer_curve": 1.0,
     "deadband": 0.2,
@@ -1491,21 +1479,20 @@ BOOT_DONE_MS = 6000
 PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
 
 PROFILES = {
-    "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0,
-                "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0},
-    "heavy": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0,
-               "reaction": 0.05, "deadband": 0.2, "min_speed": 10.0},
-    "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 2.5,
-                "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0},
+    "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0, "deadband": 0.2, "min_speed": 15.0},
+    "heavy": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0, "deadband": 0.2, "min_speed": 10.0},
+    # Below 1.0 the stick wins more of the argument, which is what a preset
+    # named Minimal should do. It sat at 2.5 because the curve ignored
+    # anything under 1.0, so the value could not say what it meant.
+    "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 0.6, "deadband": 1.2, "min_speed": 15.0},
 }
 YIELD_MODES = ("pulse", "hold", "off")
 
 CONFIG_RANGES = {
     "counter_gain": (0.0, 120.0),
     "gyro":         (0.0, 1.5),
-    "reaction":     (0.0, 1.0),
     "steer_lag":    (0.0, 0.25),
-    "steer_curve":  (1.0, 3.0),
+    "steer_curve":  (0.0, 4.0),
     "deadband":     (0.0, 6.0),
     "min_speed":    (0.0, 100.0),
     "speed_sens":   (0.0, 100.0),
@@ -2483,8 +2470,6 @@ TR = {
         "order_btn": 'Got it',
         "interface_sec": 'Interface', "theme": 'Appearance',
         "theme_hint": "Window colour theme",
-        "reaction": "Steering response",
-        "reaction_hint": "How the assist treats YOUR corrections mid-slide: 1 = passes them through instantly, 0 = smooths twitchy micro-steering",
         "assist_sec": "Assistant", "settings_sec": "Settings",
         "telemetry_sec": "Telemetry",
         "helper": "Assistant", "lang": "Language",
@@ -2588,8 +2573,6 @@ TR = {
         "order_btn": 'Понятно',
         "interface_sec": 'Интерфейс', "theme": 'Оформление',
         "theme_hint": "Тема оформления окна",
-        "reaction": "Реакция на руль",
-        "reaction_hint": "Как ассист воспринимает ТВОИ коррекции в заносе: 1 = мгновенно, 0 = максимально сглаживает подруливания",
         "assist_sec": "Ассистент", "settings_sec": "Настройки",
         "telemetry_sec": "Телеметрия",
         "helper": "Помощник", "lang": "Язык",
@@ -2693,8 +2676,6 @@ TR = {
         "order_btn": 'Verstanden',
         "interface_sec": 'Oberflache', "theme": 'Darstellung',
         "theme_hint": "Farbschema des Fensters",
-        "reaction": "Lenkreaktion",
-        "reaction_hint": "Wie der Assistent DEINE Korrekturen im Drift behandelt: 1 = sofort, 0 = glättet nervöses Nachlenken",
         "assist_sec": "Assistent", "settings_sec": "Einstellungen",
         "telemetry_sec": "Telemetrie",
         "helper": "Assistent", "lang": "Sprache",
@@ -2798,8 +2779,6 @@ TR = {
         "order_btn": 'Compris',
         "interface_sec": 'Interface', "theme": 'Apparence',
         "theme_hint": "Thème de couleurs de la fenêtre",
-        "reaction": "Réponse au volant",
-        "reaction_hint": "Réaction de l'assistant à TES corrections en glisse : 1 = immédiate, 0 = lisse les à-coups",
         "assist_sec": "Assistant", "settings_sec": "Réglages",
         "telemetry_sec": "Télémétrie",
         "helper": "Assistant", "lang": "Langue",
@@ -2903,8 +2882,6 @@ TR = {
         "order_btn": 'Entendido',
         "interface_sec": 'Interfaz', "theme": 'Apariencia',
         "theme_hint": "Tema de color de la ventana",
-        "reaction": "Respuesta al volante",
-        "reaction_hint": "Cómo trata el asistente TUS correcciones en derrape: 1 = inmediata, 0 = suaviza los toques nerviosos",
         "assist_sec": "Asistente", "settings_sec": "Ajustes",
         "telemetry_sec": "Telemetría",
         "helper": "Asistente", "lang": "Idioma",
@@ -3009,8 +2986,6 @@ TR = {
         "interface_sec": 'インターフェース',
         "theme": '外観',
         "theme_hint": 'ウィンドウの配色',
-        "reaction": '操舵の反応',
-        "reaction_hint": '滑走中のあなた自身の修正舵をどう扱うか。1 はそのまま即座に通し、0 は細かい震えをならします',
         "assist_sec": 'アシスト',
         "settings_sec": '設定',
         "telemetry_sec": 'テレメトリー',
@@ -3107,8 +3082,7 @@ TR = {
 SLIDERS = [
     ("counter_gain", 0.0, 120.0, 1.2,    0, "%"),
     ("gyro",         0.0, 1.5,   0.015,  2, "%"),
-    ("steer_curve",  1.0, 3.0,   0.02,   2, "%"),
-    ("reaction",     0.0, 1.0,   0.01,   2, "%"),
+    ("steer_curve",  0.0, 4.0,   0.1,    1, ""),
     ("deadband",     0.0, 6.0,   0.06,   2, "%"),
     ("min_speed",    0.0, 100.0, 1.0,    0, ""),
 ]

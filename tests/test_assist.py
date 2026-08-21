@@ -103,7 +103,7 @@ def test_speed_gate_disables_assist():
 
 def test_sanitize_clamps_dangerous_values():
     cfg = dict(fa.DEFAULTS)
-    cfg["steer_curve"] = 0.0
+    cfg["steer_curve"] = 40.0        # 0.0 is a valid setting now, 40 is not
     cfg["counter_gain"] = 1e9
     cfg["gyro"] = float("nan")
     cfg["min_speed"] = -50.0
@@ -111,7 +111,7 @@ def test_sanitize_clamps_dangerous_values():
     cfg["theme"] = "../../etc"
     cfg["enabled"] = "yes"
     fa.sanitize_config(cfg)
-    assert cfg["steer_curve"] == 1.0, cfg["steer_curve"]
+    assert cfg["steer_curve"] == 4.0, cfg["steer_curve"]
     assert cfg["counter_gain"] == 120.0, cfg["counter_gain"]
     assert cfg["gyro"] == fa.DEFAULTS["gyro"], cfg["gyro"]
     assert cfg["min_speed"] == 0.0, cfg["min_speed"]
@@ -585,18 +585,24 @@ def test_first_run_starts_on_default_and_remembers_the_choice():
     assert cfg["profile"] == "default"
 
 
+OWN_UNITS = {"min_speed": (0.0, 100.0, 1.0),    # km/h
+             "steer_curve": (0.0, 4.0, 0.1)}    # an exponent, tenths
+
 def test_every_slider_reads_zero_to_a_hundred():
-    """One scale for everything. Each step of a slider must move the shown
-    number by exactly one, otherwise the readout skips or repeats values."""
+    """Percentage sliders share one scale, and each step must move the shown
+    number by exactly one or the readout skips values. Two sliders show
+    real quantities instead, and those carry their own range."""
     for key, lo, hi, res, _dec, unit in fa.SLIDERS:
         steps = (hi - lo) / res
         if unit == "%":
             assert abs(steps - 100) < 0.5, (
                 f"{key}: {steps:.1f} steps across the range, expected 100")
         else:
-            assert lo == 0.0 and hi == 100.0, (
-                f"{key} is shown in its own units, so the range itself has to "
-                f"be 0..100, got {lo}..{hi}")
+            expected = OWN_UNITS.get(key)
+            assert expected is not None, (
+                f"{key} shows its own units but is not listed as doing so")
+            assert (lo, hi, res) == expected, (
+                f"{key}: range {lo}..{hi} step {res}, expected {expected}")
 
 
 def test_speed_is_shown_in_real_units():
@@ -622,46 +628,38 @@ def test_every_profile_covers_every_slider():
             f"and has extra {set(values) - keys}")
 
 
-def _how_far_the_stick_gets(reaction, frames=10):
-    """Settle the car into a slide first - the filter only bites once the
-    car is sideways - then shove the stick and see how much of it survives.
-    """
+def _wheel_with_curve(curve, stick=0.5, frames=150):
+    """Hold the stick at one amount through a slide and see where the wheel
+    settles. The curve reshapes the stick, so this is what it changes."""
     cfg = dict(fa.DEFAULTS)
-    cfg["reaction"] = reaction
-    cfg["counter_gain"] = 0.0        # the assist itself must not colour this
-    cfg["gyro"] = 0.0
+    cfg["steer_curve"] = curve
     a = fa.Assist(cfg)
-    tm = fa.Telemetry(120 / 3.6, 0.0, 0.6, 1.0, 0.5)
-    for _ in range(120):             # two seconds of sliding, stick centred
-        a.update(0.0, tm, 1 / 60, brake=0.0, telemetry_alive=True)
     out = 0.0
-    for _ in range(frames):          # now the driver fights it
-        out = a.update(1.0, tm, 1 / 60, brake=0.0, telemetry_alive=True)
-    return abs(out)
+    for i in range(frames):
+        lvl = 0.0 if i < 20 else 0.7
+        tm = fa.Telemetry(120 / 3.6, 0.0, lvl, lvl * 1.6, lvl * 0.8)
+        out = a.update(stick, tm, 1 / 60, brake=0.0, telemetry_alive=True)
+    return out
 
 
-def test_response_slider_spreads_across_its_travel():
-    """Low settings must make the wheel genuinely hard to override, and the
-    difference has to be spread over the slider rather than crammed into its
-    first tenth, which is what a linear mapping did."""
-    low = _how_far_the_stick_gets(0.0)
-    third = _how_far_the_stick_gets(0.3)
-    mid = _how_far_the_stick_gets(0.5)
-    high = _how_far_the_stick_gets(1.0)
+def test_curve_spans_its_whole_travel():
+    """Every part of the slider has to do something. Below 1.0 the stick
+    should win more of the argument, above it the assist should - and the
+    lower half used to be ignored outright."""
+    sharp = _wheel_with_curve(0.0)
+    linear = _wheel_with_curve(1.0)
+    soft = _wheel_with_curve(2.0)
+    softest = _wheel_with_curve(4.0)
 
-    assert low < third < mid < high, (
-        f"the slider is not monotonic: {low:.3f} {third:.3f} "
-        f"{mid:.3f} {high:.3f}")
-    # the slider is deliberately halved on its way in, so even the top of
-    # the travel keeps some weight rather than passing everything straight
-    assert 0.6 < high < 0.95, (
-        f"the top of the travel should be firm but responsive: {high:.3f}")
-    assert low < 0.35 * high, (
-        f"at zero the input barely resists the assist: {low:.3f} vs "
-        f"{high:.3f}")
-    assert third > 1.5 * low, (
-        f"a third of the way up should feel clearly different from zero: "
-        f"{third:.3f} vs {low:.3f}")
+    assert sharp > linear > soft > softest, (
+        f"the curve is not monotonic: {sharp:.3f} {linear:.3f} "
+        f"{soft:.3f} {softest:.3f}")
+    assert sharp - linear > 0.2, (
+        f"below 1.0 the curve barely registers: {sharp:.3f} vs "
+        f"{linear:.3f}")
+    assert linear - softest > 0.5, (
+        f"the top of the travel should hand the wheel to the assist: "
+        f"{linear:.3f} vs {softest:.3f}")
 
 
 def main():
