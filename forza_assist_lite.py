@@ -67,7 +67,11 @@ INPUT_TAU_MAX = 0.9
 # overridden and the upper half stays as direct as it ever was.
 INPUT_TAU_SHAPE = 3.0
 STEER_PER_SLIP = 0.234
-SMOOTH_TAU_MAX = 0.05
+# The telemetry filter is fixed. As a slider it spanned 0.0 to 0.99 and
+# moved the output wobble by a quarter while leaving lag and strength
+# untouched, because the same value also set the look-ahead that put the
+# filtered noise straight back. 0.8 is what it always defaulted to.
+TELEMETRY_TAU = 0.8 * 0.05
 YIELD_TAU = 0.05
 YIELD_STRENGTH = 0.85
 YAW_TAU = 0.012
@@ -556,7 +560,7 @@ class Assist:
         else:
             self._stick_f = stick_x
 
-        tau = c["smoothing"] * SMOOTH_TAU_MAX
+        tau = TELEMETRY_TAU
         alpha = 1.0 - math.exp(-dt / tau) if tau > 1e-4 else 1.0
         a_yaw = 1.0 - math.exp(-dt / YAW_TAU)
         self._front_f += alpha * (tm.front_slip - self._front_f)
@@ -644,7 +648,6 @@ DEFAULTS = {
     "deadband": 0.2,
     "min_speed": 15.0,
     "speed_sens": 0.0,
-    "smoothing": 0.8,
     "corr_slew": 2.5,
     "btn_handbrake": 0x1000,
     "btn_clutch": 0x0100,
@@ -1030,7 +1033,7 @@ FAQ_ITEMS = {
     ]),
     ('The wheel twitches when I shift mid-drift', [
         'Shifting hands the buttons back to your pad for a moment, and the steering picks up again right after. The seam is what you feel.',
-        'It is small and does not throw the car off. Raising smoothing softens it further.',
+        'It is small and does not throw the car off.',
     ]),
     ('Clicking the app again does nothing', [
         'Only one copy runs at a time. A second launch closes itself so the two cannot fight over the virtual pad.',
@@ -1480,14 +1483,11 @@ PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
 
 PROFILES = {
     "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0,
-                "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0,
-                "smoothing": 0.8},
+                "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0},
     "heavy": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0,
-               "reaction": 0.05, "deadband": 0.2, "min_speed": 10.0,
-               "smoothing": 0.8},
+               "reaction": 0.05, "deadband": 0.2, "min_speed": 10.0},
     "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 2.5,
-                "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0,
-                "smoothing": 0.8},
+                "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0},
 }
 YIELD_MODES = ("pulse", "hold", "off")
 
@@ -1500,7 +1500,6 @@ CONFIG_RANGES = {
     "deadband":     (0.0, 2.0),
     "min_speed":    (0.0, 100.0),
     "speed_sens":   (0.0, 100.0),
-    "smoothing":    (0.0, 0.99),
     "corr_slew":    (0.3, 20.0),
 }
 
@@ -2491,8 +2490,6 @@ TR = {
         "deadband_hint": "Soft engagement: help starts from the very first degree of slide, stays tiny below this level and grows with angle",
         "min_speed": "Min speed (km/h)",
         "min_speed_hint": "Assist fully off below this speed — donuts!",
-        "smoothing": "Smoothing",
-        "smoothing_hint": "Telemetry filter: higher = smoother but laggier",
         "steer_curve": "Steering curve",
         "steer_curve_hint": "In a slide only: widens the stick centre for finer corrections while drifting",
         "speed": "Speed", "slip": "Slip", "no_telemetry": "no telemetry",
@@ -2598,8 +2595,6 @@ TR = {
         "deadband_hint": "Мягкий порог: помощь есть с первого градуса заноса, ниже этого уровня она придушена и нарастает с углом",
         "min_speed": "Мин. скорость (км/ч)",
         "min_speed_hint": "Ниже этой скорости ассист выключен — пончики!",
-        "smoothing": "Сглаживание",
-        "smoothing_hint": "Фильтр телеметрии: больше — плавнее, но с запаздыванием",
         "steer_curve": "Кривая руля",
         "steer_curve_hint": "Только в заносе: растягивает центр стика для тонких коррекций в дрифте",
         "speed": "Скорость", "slip": "Снос", "no_telemetry": "нет телеметрии",
@@ -2705,8 +2700,6 @@ TR = {
         "deadband_hint": "Weiche Schwelle: Hilfe ab dem ersten Grad Drift, unterhalb dieses Werts stark gedrosselt, mit dem Winkel wachsend",
         "min_speed": "Min. Tempo (km/h)",
         "min_speed_hint": "Darunter ist der Assistent ganz aus — Donuts!",
-        "smoothing": "Glättung",
-        "smoothing_hint": "Telemetriefilter: mehr = weicher, aber träger",
         "steer_curve": "Lenkkurve",
         "steer_curve_hint": "Nur im Drift: weitet die Stickmitte für feinere Korrekturen",
         "speed": "Tempo", "slip": "Schlupf", "no_telemetry": "keine Telemetrie",
@@ -2812,8 +2805,6 @@ TR = {
         "deadband_hint": "Seuil doux : l'aide agit dès le premier degré de glisse, infime sous ce niveau et croissante avec l'angle",
         "min_speed": "Vitesse min (km/h)",
         "min_speed_hint": "En dessous, assistant coupé — donuts !",
-        "smoothing": "Lissage",
-        "smoothing_hint": "Filtre télémétrie : plus = plus doux mais plus lent",
         "steer_curve": "Courbe de direction",
         "steer_curve_hint": "En glisse uniquement : centre du stick élargi pour des corrections fines",
         "speed": "Vitesse", "slip": "Glisse", "no_telemetry": "pas de télémétrie",
@@ -2919,8 +2910,6 @@ TR = {
         "deadband_hint": "Umbral suave: la ayuda actúa desde el primer grado de derrape, mínima bajo este nivel y creciente con el ángulo",
         "min_speed": "Vel. mínima (km/h)",
         "min_speed_hint": "Por debajo, asistente apagado — ¡trompos!",
-        "smoothing": "Suavizado",
-        "smoothing_hint": "Filtro de telemetría: más = más suave pero lento",
         "steer_curve": "Curva de dirección",
         "steer_curve_hint": "Solo en derrape: ensancha el centro del stick para correcciones finas",
         "speed": "Velocidad", "slip": "Derrape", "no_telemetry": "sin telemetría",
@@ -3031,8 +3020,6 @@ TR = {
         "deadband_hint": '穏やかな介入。滑り始めた最初の一度から働き、この値まではごくわずかに、角度が増えるほど強くなります',
         "min_speed": '最低速度 (km/h)',
         "min_speed_hint": 'この速度を下回るとアシストは完全に切れます。ドーナツターン用',
-        "smoothing": 'スムージング',
-        "smoothing_hint": 'テレメトリーのフィルター。上げるほど滑らかですが遅れます',
         "steer_curve": 'ステアリングカーブ',
         "steer_curve_hint": '滑走中のみ、スティック中央域を広げてドリフト中の微調整をしやすくします',
         "speed": '速度',
@@ -3115,7 +3102,6 @@ SLIDERS = [
     ("reaction",     0.0, 1.0,   0.01,   2, "%"),
     ("deadband",     0.0, 2.0,   0.02,   2, "%"),
     ("min_speed",    0.0, 100.0, 1.0,    0, ""),
-    ("smoothing",    0.0, 0.99,  0.0099, 2, "%"),
 ]
 
 def _res_dir() -> str:
