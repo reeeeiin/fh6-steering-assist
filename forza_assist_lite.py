@@ -1817,8 +1817,16 @@ class HidHide:
         self.hidden = set()
         self.allowed = set()
         self._apps = set()
+        # the CLI talks to the driver one caller at a time; overlapping
+        # invocations fail, which reads as "an error occurred while hiding
+        # your controller" on a launch that was otherwise fine
+        self._cli_lock = threading.Lock()
 
     def _run(self, *args) -> str:
+        with self._cli_lock:
+            return self._run_locked(*args)
+
+    def _run_locked(self, *args) -> str:
         cp = subprocess.run([self.cli, *args], capture_output=True, text=True,
                             creationflags=self.CREATE_NO_WINDOW, timeout=10)
         if cp.returncode != 0:
@@ -1835,9 +1843,6 @@ class HidHide:
             self.info = "HidHide is not installed - the pad is NOT hidden from the game"
             return False
         try:
-            # listing the whitelist is slow and can stall, so it runs off the
-            # boot path and only after the executable's own path has changed
-            threading.Thread(target=self.prune_stale_apps, daemon=True).start()
             self._run("--app-reg", sys.executable)
             self._apps.add(sys.executable.lower())
             self.whitelist_companions()
@@ -1848,6 +1853,9 @@ class HidHide:
             self.active = True
             self.code, self.arg = "hidden", len(self.hidden)
             self.info = f"pad hidden from the game ({len(self.hidden)} devices)"
+            # tidying the whitelist is slow and matters to nobody waiting, so
+            # it follows the hiding rather than competing with it
+            threading.Thread(target=self.prune_stale_apps, daemon=True).start()
             return True
         except Exception as e:
             self.code = "error"
