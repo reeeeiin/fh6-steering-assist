@@ -60,7 +60,12 @@ def load_vgamepad():
 APP_VERSION = "2.0.0"
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
-INPUT_TAU_MAX = 0.25
+INPUT_TAU_MAX = 0.9
+# The slider is cubed on its way to the filter. Linear, everything useful
+# happened in the first tenth of the travel and the rest felt identical;
+# cubed, the lower half carries the range where the wheel resists being
+# overridden and the upper half stays as direct as it ever was.
+INPUT_TAU_SHAPE = 3.0
 STEER_PER_SLIP = 0.234
 SMOOTH_TAU_MAX = 0.05
 YIELD_TAU = 0.05
@@ -85,7 +90,7 @@ BUTTON_NAMES = {
 }
 VIRTUAL_NO_BUTTONS = True
 MENU_NEUTRAL = True
-BUTTON_DEBOUNCE_MS = 30
+BUTTON_DEBOUNCE_MS = 60   # a hand cannot press faster; a contact can
 DEBUG_LOG = os.environ.get("ASSIST_DEBUG_LOG") == "1"
 
 def _app_dir() -> str:
@@ -541,7 +546,9 @@ class Assist:
             k = 1.0 + (curve - 1.0) * self._shape
             stick_x = math.copysign(abs(stick_x) ** k, stick_x)
 
-        tau_in = (1.0 - c.get("reaction", 1.0)) * INPUT_TAU_MAX * self._slide
+        resp = clamp(c.get("reaction", 1.0), 0.0, 1.0)
+        tau_in = (INPUT_TAU_MAX * (1.0 - resp) ** INPUT_TAU_SHAPE
+                  * self._slide)
         if tau_in > 1e-4:
             a_in = 1.0 - math.exp(-dt / tau_in)
             self._stick_f += a_in * (stick_x - self._stick_f)
