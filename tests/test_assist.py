@@ -662,6 +662,48 @@ def test_curve_spans_its_whole_travel():
         f"{linear:.3f} vs {softest:.3f}")
 
 
+def _how_far_the_stick_gets(reaction, frames=10):
+    """Settle the car into a slide first - the filter only bites once the
+    car is sideways - then shove the stick and see how much of it survives.
+    """
+    cfg = dict(fa.DEFAULTS)
+    cfg["reaction"] = reaction
+    cfg["counter_gain"] = 0.0        # the assist itself must not colour this
+    cfg["gyro"] = 0.0
+    a = fa.Assist(cfg)
+    tm = fa.Telemetry(120 / 3.6, 0.0, 0.6, 1.0, 0.5)
+    for _ in range(120):             # two seconds of sliding, stick centred
+        a.update(0.0, tm, 1 / 60, brake=0.0, telemetry_alive=True)
+    out = 0.0
+    for _ in range(frames):          # now the driver fights it
+        out = a.update(1.0, tm, 1 / 60, brake=0.0, telemetry_alive=True)
+    return abs(out)
+
+
+def test_response_slider_spreads_across_its_travel():
+    """Low settings must make the wheel genuinely hard to override, and the
+    difference has to be spread over the slider rather than crammed into its
+    first tenth, which is what a linear mapping did."""
+    low = _how_far_the_stick_gets(0.0)
+    third = _how_far_the_stick_gets(0.3)
+    mid = _how_far_the_stick_gets(0.5)
+    high = _how_far_the_stick_gets(1.0)
+
+    assert low < third < mid < high, (
+        f"the slider is not monotonic: {low:.3f} {third:.3f} "
+        f"{mid:.3f} {high:.3f}")
+    # the slider is deliberately halved on its way in, so even the top of
+    # the travel keeps some weight rather than passing everything straight
+    assert 0.6 < high < 0.95, (
+        f"the top of the travel should be firm but responsive: {high:.3f}")
+    assert low < 0.35 * high, (
+        f"at zero the input barely resists the assist: {low:.3f} vs "
+        f"{high:.3f}")
+    assert third > 1.5 * low, (
+        f"a third of the way up should feel clearly different from zero: "
+        f"{third:.3f} vs {low:.3f}")
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

@@ -63,6 +63,12 @@ PREDICT_EXTRA = 0.02
 CURVE_MIN = 0.2      # below this the wheel would snap to full lock
 CURVE_MAX = 4.0
 
+INPUT_TAU_MAX = 0.9
+# Cubed on the way to the filter, and halved on the way in, so the firm end
+# of the travel is where the wheel resists being overridden and the top
+# stays quick. Linear, everything useful sat in the first tenth.
+INPUT_TAU_SHAPE = 3.0
+
 
 STEER_PER_SLIP = 0.234
 # The telemetry filter is fixed. As a slider it spanned 0.0 to 0.99 and
@@ -556,6 +562,16 @@ class Assist:
             k = 1.0 + (curve - 1.0) * self._shape
             stick_x = math.copysign(abs(stick_x) ** k, stick_x)
 
+        resp = clamp(c.get("reaction", 1.0), 0.0, 1.0) * 0.5
+        tau_in = (INPUT_TAU_MAX * (1.0 - resp) ** INPUT_TAU_SHAPE
+                  * self._slide)
+        if tau_in > 1e-4:
+            a_in = 1.0 - math.exp(-dt / tau_in)
+            self._stick_f += a_in * (stick_x - self._stick_f)
+            stick_x = self._stick_f
+        else:
+            self._stick_f = stick_x
+
         tau = TELEMETRY_TAU
         alpha = 1.0 - math.exp(-dt / tau) if tau > 1e-4 else 1.0
         a_yaw = 1.0 - math.exp(-dt / YAW_TAU)
@@ -642,6 +658,7 @@ DEFAULTS = {
     "gyro": 0.4,
     "steer_lag": 0.04,
     "steer_curve": 1.0,
+    "reaction": 0.2,
     "deadband": 0.2,
     "min_speed": 15.0,
     "speed_sens": 0.0,
@@ -1479,12 +1496,12 @@ BOOT_DONE_MS = 6000
 PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
 
 PROFILES = {
-    "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0, "deadband": 0.2, "min_speed": 15.0},
-    "heavy": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0, "deadband": 0.2, "min_speed": 10.0},
+    "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0, "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0},
+    "heavy": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0, "reaction": 0.05, "deadband": 0.2, "min_speed": 10.0},
     # Below 1.0 the stick wins more of the argument, which is what a preset
     # named Minimal should do. It sat at 2.5 because the curve ignored
     # anything under 1.0, so the value could not say what it meant.
-    "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 0.6, "deadband": 1.2, "min_speed": 15.0},
+    "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 0.6, "reaction": 0.5, "deadband": 1.2, "min_speed": 15.0},
 }
 YIELD_MODES = ("pulse", "hold", "off")
 
@@ -1493,6 +1510,7 @@ CONFIG_RANGES = {
     "gyro":         (0.0, 1.5),
     "steer_lag":    (0.0, 0.25),
     "steer_curve":  (0.0, 4.0),
+    "reaction":     (0.0, 1.0),
     "deadband":     (0.0, 6.0),
     "min_speed":    (0.0, 100.0),
     "speed_sens":   (0.0, 100.0),
@@ -2468,6 +2486,8 @@ TR = {
         "scale_hint": 'Enlarges the whole interface, text and controls alike',
         "feedback": 'Send feedback',
         "order_btn": 'Got it',
+        "reaction": "Steering response",
+"reaction_hint": "How the assist treats YOUR corrections mid-slide: 1 = passes them through instantly, 0 = smooths twitchy micro-steering",
         "interface_sec": 'Interface', "theme": 'Appearance',
         "theme_hint": "Window colour theme",
         "assist_sec": "Assistant", "settings_sec": "Settings",
@@ -2571,6 +2591,8 @@ TR = {
         "scale_hint": 'Увеличивает весь интерфейс целиком, вместе с текстом и элементами',
         "feedback": 'Написать нам',
         "order_btn": 'Понятно',
+        "reaction": "Реакция на руль",
+"reaction_hint": "Как ассист воспринимает ТВОИ коррекции в заносе: 1 = мгновенно, 0 = максимально сглаживает подруливания",
         "interface_sec": 'Интерфейс', "theme": 'Оформление',
         "theme_hint": "Тема оформления окна",
         "assist_sec": "Ассистент", "settings_sec": "Настройки",
@@ -2674,6 +2696,8 @@ TR = {
         "scale_hint": 'Vergrossert die gesamte Oberflache samt Text und Bedienelementen',
         "feedback": 'Feedback senden',
         "order_btn": 'Verstanden',
+        "reaction": "Lenkreaktion",
+"reaction_hint": "Wie der Assistent DEINE Korrekturen im Drift behandelt: 1 = sofort, 0 = glättet nervöses Nachlenken",
         "interface_sec": 'Oberflache', "theme": 'Darstellung',
         "theme_hint": "Farbschema des Fensters",
         "assist_sec": "Assistent", "settings_sec": "Einstellungen",
@@ -2777,6 +2801,8 @@ TR = {
         "scale_hint": 'Agrandit toute l\'interface, texte et controles compris',
         "feedback": 'Faire un retour',
         "order_btn": 'Compris',
+        "reaction": "Réponse au volant",
+"reaction_hint": "Réaction de l'assistant à TES corrections en glisse : 1 = immédiate, 0 = lisse les à-coups",
         "interface_sec": 'Interface', "theme": 'Apparence',
         "theme_hint": "Thème de couleurs de la fenêtre",
         "assist_sec": "Assistant", "settings_sec": "Réglages",
@@ -2880,6 +2906,8 @@ TR = {
         "scale_hint": 'Agranda toda la interfaz, texto y controles incluidos',
         "feedback": 'Enviar comentarios',
         "order_btn": 'Entendido',
+        "reaction": "Respuesta al volante",
+"reaction_hint": "Cómo trata el asistente TUS correcciones en derrape: 1 = inmediata, 0 = suaviza los toques nerviosos",
         "interface_sec": 'Interfaz', "theme": 'Apariencia',
         "theme_hint": "Tema de color de la ventana",
         "assist_sec": "Asistente", "settings_sec": "Ajustes",
@@ -2983,6 +3011,8 @@ TR = {
         "scale_hint": '文字も操作部もまとめて画面全体を拡大します',
         "feedback": 'フィードバック',
         "order_btn": '了解',
+        "reaction": '操舵の反応',
+"reaction_hint": '滑走中のあなた自身の修正舵をどう扱うか。1 はそのまま即座に通し、0 は細かい震えをならします',
         "interface_sec": 'インターフェース',
         "theme": '外観',
         "theme_hint": 'ウィンドウの配色',
@@ -3083,6 +3113,7 @@ SLIDERS = [
     ("counter_gain", 0.0, 120.0, 1.2,    0, "%"),
     ("gyro",         0.0, 1.5,   0.015,  2, "%"),
     ("steer_curve",  0.0, 4.0,   0.1,    1, ""),
+    ("reaction",     0.0, 1.0,   0.01,   2, "%"),
     ("deadband",     0.0, 6.0,   0.06,   2, "%"),
     ("min_speed",    0.0, 100.0, 1.0,    0, ""),
 ]
