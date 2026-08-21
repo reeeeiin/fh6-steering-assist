@@ -500,7 +500,12 @@ def clamp(v, lo, hi):
 
 SLIDE_RAMP = 1.2
 SLIDE_RELEASE = 0.25
-SLIDE_ATTACK = 0.18
+SLIDE_ATTACK = 0.10
+# A slide that arrives suddenly may be answered faster than one that creeps
+# in. Without this the correction ramps at one fixed rate, and catching a
+# snap took three tenths of a second whatever the car was doing.
+SLEW_URGENT = 1.6
+DSLIP_URGENT = 12.0
 SHAPE_TAU = 0.9
 
 class Assist:
@@ -550,7 +555,9 @@ class Assist:
             k = 1.0 + (curve - 1.0) * self._shape
             stick_x = math.copysign(abs(stick_x) ** k, stick_x)
 
-        resp = clamp(c.get("reaction", 1.0), 0.0, 1.0)
+        # the slider is halved on its way in: what used to sit at the
+        # midpoint now sits at the top, so the whole travel is firmer
+        resp = clamp(c.get("reaction", 1.0), 0.0, 1.0) * 0.5
         tau_in = (INPUT_TAU_MAX * (1.0 - resp) ** INPUT_TAU_SHAPE
                   * self._slide)
         if tau_in > 1e-4:
@@ -620,7 +627,9 @@ class Assist:
         else:
             self._corr_lag = corr
 
-        slew = max(0.01, c["corr_slew"]) * dt
+        urgency = clamp(abs(self._dslip_f) / DSLIP_URGENT, 0.0, 1.0)
+        slew = (max(0.01, c["corr_slew"]) * (1.0 + SLEW_URGENT * urgency)
+                * dt)
         self._corr = clamp(self._corr_lag, self._corr - slew, self._corr + slew)
 
         self.angle = clamp(stick_x + self._corr, -1.0, 1.0)
@@ -648,7 +657,7 @@ DEFAULTS = {
     "deadband": 0.2,
     "min_speed": 15.0,
     "speed_sens": 0.0,
-    "corr_slew": 2.5,
+    "corr_slew": 5.0,
     "btn_handbrake": 0x1000,
     "btn_clutch": 0x0100,
     "yield_mode": "hold",
@@ -1497,7 +1506,7 @@ CONFIG_RANGES = {
     "reaction":     (0.0, 1.0),
     "steer_lag":    (0.0, 0.25),
     "steer_curve":  (1.0, 3.0),
-    "deadband":     (0.0, 2.0),
+    "deadband":     (0.0, 6.0),
     "min_speed":    (0.0, 100.0),
     "speed_sens":   (0.0, 100.0),
     "corr_slew":    (0.3, 20.0),
@@ -3100,7 +3109,7 @@ SLIDERS = [
     ("gyro",         0.0, 1.5,   0.015,  2, "%"),
     ("steer_curve",  1.0, 3.0,   0.02,   2, "%"),
     ("reaction",     0.0, 1.0,   0.01,   2, "%"),
-    ("deadband",     0.0, 2.0,   0.02,   2, "%"),
+    ("deadband",     0.0, 6.0,   0.06,   2, "%"),
     ("min_speed",    0.0, 100.0, 1.0,    0, ""),
 ]
 

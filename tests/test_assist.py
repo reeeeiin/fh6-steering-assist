@@ -454,11 +454,42 @@ def test_at_maximum_damping_the_driver_can_at_least_neutralise():
 
 
 def test_slew_setting_bounds_the_rate():
+    """The setting still caps how fast the correction may move. A slide
+    arriving suddenly is allowed up to SLEW_URGENT times that, so the cap
+    the test checks is the setting times its urgency headroom - without a
+    ceiling of some kind a snap would be answered with a jerk."""
     cfg = dict(fa.DEFAULTS)
     cfg["corr_slew"] = 0.6
     out = _slide_entry(cfg)
     worst = max(abs(b - a) for a, b in zip(out, out[1:]))
-    assert worst <= 0.6 / 60.0 + 1e-6, f"slew setting ignored, got {worst:.4f}"
+    ceiling = 0.6 * (1.0 + fa.SLEW_URGENT) / 60.0 + 1e-6
+    assert worst <= ceiling, f"slew setting ignored, got {worst:.4f}"
+
+
+def test_a_sudden_slide_is_caught_faster_than_a_gentle_one():
+    """Urgency is what buys back the delay: the same correction has to
+    arrive sooner when the car snaps than when it drifts out slowly."""
+    def frames_to_half(ramp_frames):
+        a = fa.Assist(dict(fa.DEFAULTS))
+        out = []
+        for i in range(180):
+            if i < 20:
+                lvl = 0.0
+            elif ramp_frames <= 1:
+                lvl = 0.9
+            else:
+                lvl = 0.9 * min(1.0, (i - 20) / ramp_frames)
+            tm = fa.Telemetry(120 / 3.6, 0.0, lvl, lvl * 1.6, lvl * 0.8)
+            out.append(a.update(0.0, tm, 1 / 60, brake=0.0,
+                                telemetry_alive=True))
+        peak = max(abs(v) for v in out)
+        return next(i for i, v in enumerate(out) if abs(v) >= peak * 0.5)
+
+    snap = frames_to_half(1)
+    gentle = frames_to_half(45)
+    assert snap < gentle, (
+        f"a snap took {snap} frames, a gentle slide {gentle}: urgency is "
+        f"not being applied")
 
 
 def test_prediction_no_longer_leads_at_the_very_start():
@@ -621,7 +652,10 @@ def test_response_slider_spreads_across_its_travel():
     assert low < third < mid < high, (
         f"the slider is not monotonic: {low:.3f} {third:.3f} "
         f"{mid:.3f} {high:.3f}")
-    assert high > 0.9, f"at full response the input should pass: {high:.3f}"
+    # the slider is deliberately halved on its way in, so even the top of
+    # the travel keeps some weight rather than passing everything straight
+    assert 0.6 < high < 0.95, (
+        f"the top of the travel should be firm but responsive: {high:.3f}")
     assert low < 0.35 * high, (
         f"at zero the input barely resists the assist: {low:.3f} vs "
         f"{high:.3f}")
