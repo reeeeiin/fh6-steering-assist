@@ -534,11 +534,12 @@ def _done(api):
 def test_profile_applies_its_values():
     api = _api()
     try:
-        got = api.set_profile("heavy")
-        for key, value in fa.PROFILES["heavy"].items():
+        api.set("counter_gain", 111.0)
+        got = api.set_profile("default")
+        for key, value in fa.PROFILES["default"].items():
             assert api._b.cfg[key] == value, key
             assert got[key] == value, key
-        assert api._b.cfg["profile"] == "heavy"
+        assert api._b.cfg["profile"] == "default"
     finally:
         _done(api)
 
@@ -560,8 +561,8 @@ def test_custom_values_survive_a_round_trip():
     try:
         api.set("counter_gain", 117.0)
         api.set("gyro", 1.25)
-        api.set_profile("minimal")
-        assert api._b.cfg["counter_gain"] == fa.PROFILES["minimal"]["counter_gain"]
+        api.set_profile("default")
+        assert api._b.cfg["counter_gain"] == fa.PROFILES["default"]["counter_gain"]
         api.set_profile("custom")
         assert api._b.cfg["counter_gain"] == 117.0
         assert api._b.cfg["gyro"] == 1.25
@@ -582,9 +583,9 @@ def test_unknown_profile_is_rejected():
 def test_first_run_starts_on_default_and_remembers_the_choice():
     assert fa.DEFAULTS["profile"] == "default"
     cfg = dict(fa.DEFAULTS)
-    cfg["profile"] = "heavy"
+    cfg["profile"] = "custom"
     fa.sanitize_config(cfg)
-    assert cfg["profile"] == "heavy", "a saved profile must survive load"
+    assert cfg["profile"] == "custom", "a saved profile must survive load"
     cfg["profile"] = "nonsense"
     fa.sanitize_config(cfg)
     assert cfg["profile"] == "default"
@@ -824,6 +825,89 @@ def test_steering_against_the_correction_still_backs_it_off():
     assert fought[0] < free * 0.8, fought
     assert fought[0] > fought[1] > fought[2], fought
     assert fought[2] < free * 0.2, fought
+
+
+def test_save_fills_the_next_free_slot_and_selects_it():
+    api = _api()
+    try:
+        api.set("counter_gain", 101.0)
+        r = api.save_slot("")
+        assert r["name"] == "custom1", r
+        assert api._b.cfg["profile"] == "custom1"
+        assert r["slots"]["custom1"]["counter_gain"] == 101.0
+
+        api.set("counter_gain", 102.0)
+        assert api.save_slot("")["name"] == "custom2"
+        api.set("counter_gain", 103.0)
+        assert api.save_slot("")["name"] == "custom3"
+        # nowhere left to put a fourth
+        assert api.save_slot("") == {}
+    finally:
+        _done(api)
+
+
+def test_editing_a_saved_preset_keeps_it_selected():
+    """Otherwise Save could never mean update this one, only make another."""
+    api = _api()
+    try:
+        api.set("counter_gain", 90.0)
+        api.save_slot("")
+        api.set("counter_gain", 95.0)
+        assert api._b.cfg["profile"] == "custom1"
+        assert api._b.cfg["slots"]["custom1"]["counter_gain"] == 90.0
+        api.save_slot("custom1")
+        assert api._b.cfg["slots"]["custom1"]["counter_gain"] == 95.0
+    finally:
+        _done(api)
+
+
+def test_deleting_a_preset_leaves_the_car_driving_the_same():
+    api = _api()
+    try:
+        api.set("counter_gain", 88.0)
+        api.save_slot("")
+        r = api.delete_slot("custom1")
+        assert "custom1" not in r["slots"]
+        assert r["profile"] == "custom"
+        assert api._b.cfg["counter_gain"] == 88.0, "deleting must not retune"
+        assert api.delete_slot("custom1") == {}
+    finally:
+        _done(api)
+
+
+def test_a_saved_preset_survives_being_written_out_and_read_back():
+    cfg = dict(fa.DEFAULTS)
+    cfg["slots"] = {"custom2": {k: fa.DEFAULTS[k] for k, *_ in fa.SLIDERS}}
+    cfg["slots"]["custom2"]["gyro"] = 99.0      # out of range on purpose
+    cfg["profile"] = "custom2"
+    fa.sanitize_config(cfg)
+    assert cfg["profile"] == "custom2"
+    assert cfg["slots"]["custom2"]["gyro"] == fa.CONFIG_RANGES["gyro"][1]
+
+
+def test_selecting_a_preset_that_is_gone_does_not_strand_the_page():
+    cfg = dict(fa.DEFAULTS)
+    cfg["profile"] = "custom3"
+    cfg["slots"] = {}
+    fa.sanitize_config(cfg)
+    assert cfg["profile"] == "custom"
+
+
+def test_the_dropped_presets_do_not_take_the_tuning_with_them():
+    """Heavy and Minimal are gone; whoever was on one keeps their numbers."""
+    import io as _io
+    import json
+    backup = _io.open(fa.CONFIG_FILE, encoding="utf-8").read()
+    try:
+        _io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(json.dumps({
+            "version": 10, "profile": "heavy", "counter_gain": 80.0,
+            "gyro": 0.8, "steer_curve": 2.0}))
+        cfg = fa.load_config()
+        assert cfg["profile"] == "custom", cfg["profile"]
+        assert cfg["counter_gain"] == 80.0 and cfg["gyro"] == 0.8
+        assert cfg["custom"]["counter_gain"] == 80.0
+    finally:
+        _io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(backup)
 
 
 def main():

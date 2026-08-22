@@ -729,7 +729,7 @@ class Assist:
         return self.angle
 
 
-CONFIG_VERSION = 10
+CONFIG_VERSION = 11
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
@@ -755,6 +755,7 @@ DEFAULTS = {
     "ext_telemetry": True,
     "profile": "default",
     "custom": {},
+    "slots": {},
     "telemetry_seen": False,
     "setup_done": False,
 }
@@ -1574,15 +1575,13 @@ BOOT_STEP_MS = 6000
 BOOT_CHECK_MS = 1400
 BOOT_DONE_MS = 6000
 
-PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
+# Slots the driver saves into. Three is enough to keep a car, a road and a
+# wet setting apart without turning the row into a list to read.
+SLOT_KEYS = ("custom1", "custom2", "custom3")
+PROFILE_ORDER = ("custom", "default") + SLOT_KEYS
 
 PROFILES = {
     "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0, "reaction": 0.2, "min_speed": 15.0},
-    "heavy": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0, "reaction": 0.05, "min_speed": 10.0},
-    # Below 1.0 the stick wins more of the argument, which is what a preset
-    # named Minimal should do. It sat at 2.5 because the curve ignored
-    # anything under 1.0, so the value could not say what it meant.
-    "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 0.6, "reaction": 0.5, "min_speed": 15.0},
 }
 YIELD_MODES = ("pulse", "hold", "off")
 
@@ -1636,6 +1635,23 @@ def sanitize_config(cfg: dict) -> dict:
             except (KeyError, TypeError, ValueError):
                 pass
     cfg["custom"] = clean
+    slots = cfg.get("slots")
+    kept = {}
+    if isinstance(slots, dict):
+        for name in SLOT_KEYS:
+            got = slots.get(name)
+            if not isinstance(got, dict):
+                continue
+            values = {}
+            for key, lo, hi, *_ in SLIDERS:
+                try:
+                    values[key] = clamp(float(got[key]), lo, hi)
+                except (KeyError, TypeError, ValueError):
+                    values[key] = float(DEFAULTS[key])
+            kept[name] = values
+    cfg["slots"] = kept
+    if cfg.get("profile") in SLOT_KEYS and cfg["profile"] not in kept:
+        cfg["profile"] = "custom"
     return cfg
 
 def load_config() -> dict:
@@ -1646,6 +1662,12 @@ def load_config() -> dict:
             return dict(DEFAULTS)
         cfg = {**DEFAULTS, **{k: data[k] for k in DEFAULTS
                               if k in data and k != "version"}}
+        if data.get("version", 1) < 11 and cfg.get("profile") in (
+                "heavy", "minimal"):
+            # Those presets are gone, but whatever they were driving with
+            # is already loaded, so keep the values and unpin the name.
+            cfg["custom"] = {k: cfg[k] for k, *_ in SLIDERS}
+            cfg["profile"] = "custom"
         if data.get("version", 1) < 10:
             cfg["game_dz"] = DEFAULTS["game_dz"]
         if data.get("version", 1) < 5:
@@ -2630,9 +2652,11 @@ TR = {
         "profile": "Preset",
         "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
         "prof_default": "Default",
-        "prof_heavy": "Heavy",
-        "prof_minimal": "Minimal",
         "prof_custom": "Custom",
+        "slot_row": "Custom preset",
+        "slot_row_hint": "Save what is on the sliders as a preset of your own. Three of them fit, and deleting one leaves the sliders where they are",
+        "btn_save": "Save",
+        "btn_delete": "Delete",
         "order_title": 'Started after the game',
         "order_text": 'Forza was already running. It looks for controllers when it starts, so it may not see the assist\'s virtual pad yet.',
         "order_hint": 'Unplug your controller and plug it back in, or switch a wireless one off and on. The game picks it up without a restart.',
@@ -2735,9 +2759,11 @@ TR = {
         "profile": "Пресет",
         "profile_hint": "Готовые наборы. Любое движение ползунка переключает на «Свой» и сохраняет твои значения — к ним всегда можно вернуться.",
         "prof_default": "Обычный",
-        "prof_heavy": "Сильный",
-        "prof_minimal": "Минимум",
         "prof_custom": "Свой",
+        "slot_row": "Свой пресет",
+        "slot_row_hint": "Сохранить текущие значения как свой пресет. Их помещается три, а удаление пресета не двигает ползунки",
+        "btn_save": "Сохранить",
+        "btn_delete": "Удалить",
         "order_title": 'Запущен после игры',
         "order_text": 'Forza уже была запущена. Игра ищет контроллеры при старте, поэтому виртуальный геймпад ассиста она может пока не видеть.',
         "order_hint": 'Отключите геймпад и подключите снова, а беспроводной выключите и включите. Игра подхватит его без перезапуска.',
@@ -2840,9 +2866,11 @@ TR = {
         "profile": "Profil",
         "profile_hint": "Fertige Voreinstellungen. Jeder Reglerzug wechselt auf Eigenes und behält deine Werte, du kommst also immer zurück.",
         "prof_default": "Standard",
-        "prof_heavy": "Stark",
-        "prof_minimal": "Minimal",
         "prof_custom": "Eigenes",
+        "slot_row": "Eigene Vorgabe",
+        "slot_row_hint": "Die aktuellen Werte als eigene Vorgabe sichern. Drei passen hinein, und Löschen verstellt die Regler nicht",
+        "btn_save": "Sichern",
+        "btn_delete": "Löschen",
         "order_title": 'Nach dem Spiel gestartet',
         "order_text": 'Forza lief bereits. Das Spiel sucht Controller beim Start, daher sieht es das virtuelle Pad moglicherweise noch nicht.',
         "order_hint": 'Ziehe den Controller ab und stecke ihn wieder an, oder schalte einen kabellosen aus und ein. Das Spiel erkennt ihn ohne Neustart.',
@@ -2945,9 +2973,11 @@ TR = {
         "profile": "Profil",
         "profile_hint": "Réglages prêts à l'emploi. Bouger un curseur passe sur Perso et conserve tes valeurs, tu peux toujours y revenir.",
         "prof_default": "Défaut",
-        "prof_heavy": "Fort",
-        "prof_minimal": "Minimal",
         "prof_custom": "Perso",
+        "slot_row": "Préréglage perso",
+        "slot_row_hint": "Enregistre les valeurs actuelles comme préréglage. Il y a trois places, et supprimer n'y touche pas aux curseurs",
+        "btn_save": "Enregistrer",
+        "btn_delete": "Supprimer",
         "order_title": 'Lance apres le jeu',
         "order_text": 'Forza tournait deja. Le jeu cherche les manettes a son demarrage, il ne voit donc peut-etre pas encore la manette virtuelle.',
         "order_hint": 'Debranchez la manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil. Le jeu la reprend sans redemarrer.',
@@ -3050,9 +3080,11 @@ TR = {
         "profile": "Perfil",
         "profile_hint": "Ajustes listos. Mover cualquier control cambia a Propio y guarda tus valores, siempre puedes volver a ellos.",
         "prof_default": "Normal",
-        "prof_heavy": "Fuerte",
-        "prof_minimal": "Mínimo",
         "prof_custom": "Propio",
+        "slot_row": "Ajuste propio",
+        "slot_row_hint": "Guarda los valores actuales como ajuste propio. Caben tres, y borrar uno no mueve los deslizadores",
+        "btn_save": "Guardar",
+        "btn_delete": "Borrar",
         "order_title": 'Iniciado despues del juego',
         "order_text": 'Forza ya estaba abierto. Busca mandos al iniciarse, asi que puede que aun no vea el mando virtual del asistente.',
         "order_hint": 'Desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico. El juego lo detecta sin reiniciar.',
@@ -3162,9 +3194,11 @@ TR = {
         "profile": 'プリセット',
         "profile_hint": '既製の設定です。スライダーを動かすとカスタムに切り替わり、あなたの値はそのまま残るので、いつでも戻せます。',
         "prof_default": '標準',
-        "prof_heavy": '強め',
-        "prof_minimal": '控えめ',
         "prof_custom": 'カスタム',
+        "slot_row": 'カスタムプリセット',
+        "slot_row_hint": '現在の値を自分のプリセットとして保存します。3つまで保存でき、削除してもスライダーは動きません',
+        "btn_save": '保存',
+        "btn_delete": '削除',
         "order_title": 'ゲームより後に起動しました',
         "order_text": 'Forza はすでに起動していました。ゲームは起動時にコントローラーを探すため、仮想パッドがまだ見えていない可能性があります。',
         "order_hint": 'コントローラーを抜き差ししてください。無線の場合は電源を入れ直します。ゲームは再起動なしで認識します。',
@@ -3306,6 +3340,7 @@ def build_html() -> str:
          "minMs": BOOT_MIN_MS, "stepMs": BOOT_STEP_MS,
          "checkMs": BOOT_CHECK_MS, "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
+    html = html.replace("__SLOT_KEYS__", json.dumps(list(SLOT_KEYS)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_DL__", json.dumps(_icon("downloadarrow")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
@@ -3423,6 +3458,22 @@ body.t-light{
         cursor:pointer;transition:background .2s ease,color .2s ease,
         filter .2s ease}
 .updbtn:hover{filter:brightness(1.12)}
+.pbtns{display:flex;gap:8px;margin-left:auto}
+.pbtn{height:24px;box-sizing:border-box;padding:0 13px;border-radius:7px;
+      display:flex;align-items:center;font-size:11px;font-weight:600;
+      background:var(--accent);color:var(--accent-fg);white-space:nowrap;
+      cursor:pointer;border:1px solid transparent;
+      transition:background .2s ease,color .2s ease,border-color .2s ease,
+      filter .2s ease,opacity .2s ease}
+.pbtn:hover{filter:brightness(1.12)}
+.pbtn.danger{background:transparent;color:var(--danger);
+             border-color:var(--danger)}
+.pbtn.danger:hover{background:var(--danger);color:#fff;filter:none}
+/* Nothing to save, or nothing of yours to delete: the button says so by
+   going quiet rather than by disappearing and moving the row about. */
+.pbtn.off{opacity:.35;cursor:default;filter:none}
+.pbtn.off:hover{filter:none}
+.pbtn.danger.off:hover{background:transparent;color:var(--danger)}
 .updbtn.warn{background:var(--warn);color:#101010}
 .updbtn.bad{background:var(--danger);color:#fff}
 .updbtn.busy{cursor:default}
@@ -3869,6 +3920,7 @@ const DEF = __DEFAULTS__;
 const LANGS = __LANGS__;
 const PROFILES = __PROFILES__;
 const PROF_ORDER = __PROF_ORDER__;
+const SLOT_KEYS = __SLOT_KEYS__;
 const BOOT = __BOOT__;
 const VER = "__VER__";
 const THEMES = ['dark','light'];
@@ -3916,8 +3968,7 @@ function screenMain(){
           '<div class="card">' + toggleRow('helper', 'enabled') +
           '<div class="row" data-hint="profile_hint">' +
             '<span class="rname">' + t('profile') + '</span>' +
-            segEl('profile', PROF_ORDER.map(p => ({key: p, label: t('prof_' + p)})),
-                  cfg.profile) + '</div>';
+            segEl('profile', profItems(), cfg.profile) + '</div>';
   sliders.forEach(k => { h += sliderRow(k); });
   h += '</div></div>';
 
@@ -4053,9 +4104,9 @@ function screenSettings(){
           '<div class="card">' +
           '<div class="row" data-hint="profile_hint">' +
           '<span class="rname">' + t('profile') + '</span>' +
-          segEl('profile', PROF_ORDER.map(p => ({key: p, label: t('prof_' + p)})),
-                cfg.profile) + '</div>';
+          segEl('profile', profItems(), cfg.profile) + '</div>';
   SLIDERS.forEach(s => { h += sliderRow(s[0]); });
+  h += slotRow();
   h += '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('interface_sec') + '</div>' +
@@ -4104,6 +4155,87 @@ function applyScale(){
   document.documentElement.style.setProperty('--uiz', uiZoom());
 }
 
+/* ---------------- presets ---------------- */
+function slotLabel(key){
+  return t('prof_custom') + ' ' + (SLOT_KEYS.indexOf(key) + 1);
+}
+
+function profItems(){
+  const items = [{key: 'custom', label: t('prof_custom')},
+                 {key: 'default', label: t('prof_default')}];
+  SLOT_KEYS.forEach(k => {
+    if ((cfg.slots || {})[k]) items.push({key: k, label: slotLabel(k)});
+  });
+  return items;
+}
+
+function storedFor(name){
+  if (name === 'custom') return cfg.custom || {};
+  if (SLOT_KEYS.indexOf(name) >= 0) return (cfg.slots || {})[name] || {};
+  return PROFILES[name] || {};
+}
+
+function sameAs(src){
+  return SLIDERS.every(s => {
+    const v = src[s[0]];
+    return v !== undefined && Math.abs(v - cfg[s[0]]) < 1e-6;
+  });
+}
+
+function freeSlot(){
+  return SLOT_KEYS.find(k => !(cfg.slots || {})[k]) || '';
+}
+
+/* Save either updates the preset you are sitting on, or fills the next
+   free slot - and says nothing doing when there is neither. */
+function canSave(){
+  if (SLOT_KEYS.indexOf(cfg.profile) >= 0)
+    return !sameAs(storedFor(cfg.profile));
+  if (!freeSlot()) return false;
+  // Nothing is worth saving if these exact numbers are already a preset,
+  // Default included - that would only make a copy under another name.
+  if (sameAs(PROFILES['default'] || {})) return false;
+  return !SLOT_KEYS.some(k => (cfg.slots || {})[k] && sameAs(cfg.slots[k]));
+}
+
+function canDelete(){ return SLOT_KEYS.indexOf(cfg.profile) >= 0; }
+
+function slotRow(){
+  return '<div class="row" data-hint="slot_row_hint">' +
+    '<span class="rname">' + t('slot_row') + '</span>' +
+    '<span class="pbtns">' +
+      '<span class="pbtn" id="btn-slot-save">' + t('btn_save') + '</span>' +
+      '<span class="pbtn danger" id="btn-slot-del">' + t('btn_delete') +
+      '</span></span></div>';
+}
+
+function refreshSlots(){
+  const sv = document.getElementById('btn-slot-save');
+  const dl = document.getElementById('btn-slot-del');
+  if (sv) sv.classList.toggle('off', !canSave());
+  if (dl) dl.classList.toggle('off', !canDelete());
+}
+
+function bindSlots(){
+  const sv = document.getElementById('btn-slot-save');
+  const dl = document.getElementById('btn-slot-del');
+  if (sv) sv.addEventListener('click', () => {
+    if (!canSave()) return;
+    const target = SLOT_KEYS.indexOf(cfg.profile) >= 0 ? cfg.profile : '';
+    try{ pywebview.api.save_slot(target).then(r => {
+      if (!r || !r.name) return;
+      cfg.slots = r.slots; cfg.profile = r.name; render();
+    }); }catch(e){}
+  });
+  if (dl) dl.addEventListener('click', () => {
+    if (!canDelete()) return;
+    try{ pywebview.api.delete_slot(cfg.profile).then(r => {
+      if (!r || !r.slots) return;
+      cfg.slots = r.slots; cfg.profile = r.profile; render();
+    }); }catch(e){}
+  });
+}
+
 function render(){
   if (!cfg) return;
   document.body.className = 't-' + (THEMES.includes(cfg.theme) ? cfg.theme : 'dark');
@@ -4124,6 +4256,7 @@ function render(){
       : el.classList.add('shown'));
   }
   bindRows();
+  bindSlots();
   refresh();
   reportHeight();
 }
@@ -4140,6 +4273,7 @@ function refresh(){
   });
   $$('[data-toggle]').forEach(el =>
     el.classList.toggle('on', !!cfg[el.dataset.toggle]));
+  refreshSlots();
   $$('[data-seg]').forEach(seg => {
     const id = seg.dataset.seg;
     const cur = id === 'profile' ? cfg.profile
@@ -4166,7 +4300,7 @@ function applyProfile(name){
   const from = {}; SLIDERS.forEach(s => from[s[0]] = cfg[s[0]]);
   if (cfg.profile === 'custom' && name !== 'custom')
     cfg.custom = Object.assign({}, from);
-  const src = name === 'custom' ? (cfg.custom || {}) : (PROFILES[name] || {});
+  const src = storedFor(name);
   const to = Object.assign({}, from, src);
   cfg.profile = name;
   refresh();
@@ -4226,7 +4360,8 @@ function bindRows(){
       v = Math.max(r[1], Math.min(r[2], Math.round(v / r[3]) * r[3]));
       v = +v.toFixed(4);
       stopProfAnim();
-      cfg[key] = v; cfg.profile = 'custom';
+      cfg[key] = v;
+      if (SLOT_KEYS.indexOf(cfg.profile) < 0) cfg.profile = 'custom';
       refresh();
       try{ pywebview.api.set(key, v); }catch(e){}
     };
@@ -5192,8 +5327,11 @@ class Api:
             cfg = self._b.cfg
             cfg[key] = value
             if any(key == k for k, *_ in SLIDERS):
-                cfg["profile"] = "custom"
-                cfg["custom"] = {k: cfg[k] for k, *_ in SLIDERS}
+                # A saved preset stays selected while it is edited - that
+                # difference is what lets Save mean "update this one".
+                if cfg.get("profile") not in SLOT_KEYS:
+                    cfg["profile"] = "custom"
+                    cfg["custom"] = {k: cfg[k] for k, *_ in SLIDERS}
             sanitize_config(cfg)
             save_config_soon(cfg)
         return True
@@ -5206,6 +5344,10 @@ class Api:
             return {}
         if name == "custom":
             values = dict(cfg.get("custom") or {})
+        elif name in SLOT_KEYS:
+            values = dict((cfg.get("slots") or {}).get(name) or {})
+            if not values:
+                return {}
         else:
             values = dict(PROFILES.get(name, {}))
         if cfg.get("profile") == "custom" and name != "custom":
@@ -5215,6 +5357,39 @@ class Api:
         sanitize_config(cfg)
         save_config_soon(cfg)
         return {k: cfg[k] for k, *_ in SLIDERS}
+
+    def save_slot(self, name=""):
+        """Write what is on the sliders into a slot. Without a name it
+        takes the first free one, which is what the Save button does when
+        nothing of the driver's own is selected."""
+        cfg = self._b.cfg
+        slots = dict(cfg.get("slots") or {})
+        if name not in SLOT_KEYS:
+            name = next((k for k in SLOT_KEYS if k not in slots), "")
+            if not name:
+                return {}
+        slots[name] = {k: cfg[k] for k, *_ in SLIDERS}
+        cfg["slots"] = slots
+        cfg["profile"] = name
+        sanitize_config(cfg)
+        save_config_soon(cfg)
+        return {"name": name, "slots": cfg["slots"]}
+
+    def delete_slot(self, name):
+        """Drop a saved slot. The values stay on the sliders - deleting a
+        preset should not also change how the car drives."""
+        cfg = self._b.cfg
+        slots = dict(cfg.get("slots") or {})
+        if name not in slots:
+            return {}
+        del slots[name]
+        cfg["slots"] = slots
+        if cfg.get("profile") == name:
+            cfg["custom"] = {k: cfg[k] for k, *_ in SLIDERS}
+            cfg["profile"] = "custom"
+        sanitize_config(cfg)
+        save_config_soon(cfg)
+        return {"slots": cfg["slots"], "profile": cfg["profile"]}
 
 
 _instance_mutex = None
