@@ -63,6 +63,43 @@ def jerk_report(rows, top=4, window=6):
     return "\n".join(lines)
 
 
+BOUNCE_MS = 120.0
+
+
+def bounce_report(rows):
+    """Two presses of one button closer together than a hand can manage.
+
+    This is the line that decides where a double press comes from. The
+    column is what the pad handed the assist, before anything of ours: a
+    pair 40 ms apart is the pad or its driver sending two presses. If every
+    gap here is human-sized and the game still acts twice, the second one is
+    not coming through this program at all - the game is reading both pads.
+    """
+    when = {}
+    prev = 0
+    for r in rows:
+        cur = int(r["btn_phys"])
+        t = float(r["t"]) * 1000.0
+        for bit, name in BUTTON_NAMES.items():
+            if cur & bit and not prev & bit:
+                when.setdefault(name, []).append(t)
+        prev = cur
+
+    out = []
+    for name, times in sorted(when.items()):
+        gaps = [b - a for a, b in zip(times, times[1:])]
+        close = [g for g in gaps if g < BOUNCE_MS]
+        if close:
+            out.append("   %-8s %d of %d presses, closest %.0f ms apart"
+                       % (name, len(close), len(times), min(close)))
+    if not out:
+        return ("No two presses of the same button landed within %.0f ms "
+                "of each other. The pad is handing over one press per press."
+                % BOUNCE_MS)
+    return ("Presses too close together to be a hand (under %.0f ms):\n"
+            % BOUNCE_MS) + "\n".join(out)
+
+
 def default_path():
     base = os.environ.get("APPDATA", "")
     return os.path.join(base, "ForzaAssistLite", "assist_log.csv")
@@ -140,6 +177,9 @@ def main(path):
             extra = "   (while holding: " + ", ".join(
                 f"{k}x{v}" for k, v in sorted(held.items(), key=lambda kv: -kv[1])) + ")"
         print(f"   {name:<8} {n:4d}{extra}")
+
+    print()
+    print(bounce_report(rows))
 
     hold_mask = 0
     for r in rows:
