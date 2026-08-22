@@ -1,8 +1,9 @@
 # Changelog
 
-## v2.0.0
+## v2.0.116
 
-A rebuilt interface, six languages, and a licence change.
+A rebuilt interface, six languages, an assist that answers the moment the
+car steps out, and a licence change.
 
 ### Added
 
@@ -21,9 +22,38 @@ A rebuilt interface, six languages, and a licence change.
 - **Car names** in the telemetry view, read from a table of the game's car
   ids.
 - **Launch-order warning** when the assist starts after the game.
+- **Presets of your own**, up to three. Save keeps whatever is on the
+  sliders, and updates that preset later if you change your mind; Delete
+  removes it without touching how the car drives. Each one appears in the
+  row beside Default.
+- **Build numbers.** The window shows the series, 2.0, while Settings and
+  the update check carry the full number, so a screenshot or a bug report
+  says exactly which build it came from.
 
 ### Changed
 
+- **The assist no longer sleeps through the entry.** The game applies its
+  own dead area to the stick before it steers the car, and everything asked
+  for below that never reached the road: at the default setting the wheel
+  first moved four degrees into a slide, and half of the early correction
+  was thrown away. That mapping is now undone on the way out, so what the
+  assist asks for is what the car gets, from the first degree.
+- **The first degrees of a slide are answered properly.** The demand used
+  to grow from almost nothing - three degrees of slide asked for four
+  percent of lock, which no hand can feel - so the help seemed to arrive
+  late and all at once. Deep slides land where they always did.
+- **Holding opposite lock no longer costs you the assist.** Authority fell
+  away with any lock being held, whichever way it pointed, so counter-
+  steering - the one input that agrees with the assist completely - was
+  read as fighting it. At three quarters of a turn only half the help was
+  left. Steering against it still hands the wheel back exactly as before.
+- **Snap entries get the predictive term.** It used to be scaled by how far
+  the car had already gone, so it was quietest exactly when the car went
+  quickest. A handbrake pull now gets help after four degrees instead of
+  six.
+- **New defaults**, settled by driving rather than by guessing: assist
+  strength 45, alignment 25, steering curve 2.0, response 50, minimum speed
+  10 km/h.
 - **Licensed under the Elastic License 2.0** from this release. The visual
   design and the branding are reserved separately. Releases up to 1.3.0
   keep their MIT grant.
@@ -40,6 +70,13 @@ A rebuilt interface, six languages, and a licence change.
 
 ### Removed
 
+- **Grip limit and Smoothing.** Grip limit set where the response curve
+  bent; the new curve has no such bend, and the setting people found
+  comfortable was the one that removed it. Smoothing's value also set how
+  far ahead the assist looked, so turning it up put back the very noise it
+  was filtering.
+- **The Heavy and Minimal presets**, in favour of the three you save
+  yourself. Anyone driving on one keeps their numbers.
 - The Oswald font, the old theme artwork and the icons the rebuilt
   interface no longer uses.
 

@@ -66,9 +66,12 @@ python forza_assist_lite.py
 build.bat
 ```
 
-Result: `dist\SteeringAssist-<version>.exe` (version is read from
-`APP_VERSION` in the script). Requests admin rights at launch (needed for
-HidHide control and for installing the drivers).
+Result: `dist\SteeringAssist-<version>.exe`. The version is the series from
+`APP_SERIES` in the script joined to a build number, which is the commit
+count read by `toolsuild_id.py` - so build after committing, and the
+number then names exactly the source it was built from. A build off a side
+branch carries that branch's letter. Requests admin rights at launch
+(needed for HidHide control and for installing the drivers).
 
 The build first runs `tools\fetch_drivers.py`, which fills `drivers\` with the
 ViGEmBus installer (taken from the installed `vgamepad` package) and the latest
