@@ -305,7 +305,11 @@ def test_axes_keep_flowing_when_no_race():
     virt = b._write_report(pad, gp, out_x=-0.5, alive=False, now=1.0)
 
     assert virt == 0, "outside a race buttons must not be sent, they double the confirm"
-    assert pad.report.sThumbLX == int(-0.5 * 32767), pad.report.sThumbLX
+    # the game deadzone is undone on the way out, so the car receives
+    # the half lock that was asked for rather than what is left of it
+    dz = fa.DEFAULTS["game_dz"] / 100.0
+    want = int(-(dz + (1 - dz) * 0.5) * 32767)
+    assert pad.report.sThumbLX == want, pad.report.sThumbLX
     assert pad.report.sThumbLY == 111 and pad.report.sThumbRX == 222
     assert pad.report.sThumbRY == 333
     assert pad.report.bLeftTrigger == 44 and pad.report.bRightTrigger == 55
@@ -317,7 +321,8 @@ def test_hold_buttons_still_mirrored_during_race():
     gp.wButtons = A
     virt = b._write_report(pad, gp, out_x=0.25, alive=True, now=1.0)
     assert virt == A, "during a race the handbrake must be mirrored"
-    assert pad.report.sThumbLX == int(0.25 * 32767)
+    dz = fa.DEFAULTS["game_dz"] / 100.0
+    assert pad.report.sThumbLX == int((dz + (1 - dz) * 0.25) * 32767)
 
 def _slide_entry(cfg=None, frames=90, sign=1.0):
     a = fa.Assist(cfg or dict(fa.DEFAULTS))
@@ -702,6 +707,53 @@ def test_response_slider_spreads_across_its_travel():
     assert third > 1.5 * low, (
         f"a third of the way up should feel clearly different from zero: "
         f"{third:.3f} vs {low:.3f}")
+
+
+def _compensate(out, dz):
+    """The mapping _write_report applies on the way to the virtual pad."""
+    out = fa.clamp(out, -1.0, 1.0)
+    if dz > 0.001 and abs(out) > 1e-4:
+        return math.copysign(dz + (1.0 - dz) * abs(out), out)
+    return out
+
+
+def _game_sees(x, dz):
+    """What the game is left with after its own inner deadzone."""
+    return 0.0 if abs(x) <= dz else (abs(x) - dz) / (1.0 - dz)
+
+
+def test_deadzone_compensation_is_an_exact_round_trip():
+    """Whatever the assist asks for is what the car must end up getting."""
+    for dz in (0.0, 0.05, 0.10, 0.25):
+        for want in (0.004, 0.02, 0.05, 0.3, 0.8, 1.0):
+            got = _game_sees(_compensate(want, dz), dz)
+            assert abs(got - want) < 1e-9, f"dz {dz}, want {want}, got {got}"
+
+
+def test_a_small_correction_survives_the_game_deadzone():
+    """A correction below the deadzone used to vanish before the car saw it."""
+    small = 0.03
+    assert _game_sees(small, 0.10) == 0.0
+    assert _game_sees(_compensate(small, 0.10), 0.10) > 0.029
+
+
+def test_centred_stick_sends_nothing_through_the_compensation():
+    """The offset must not appear out of nowhere and steer the car."""
+    assert _compensate(0.0, 0.10) == 0.0
+
+
+def test_stick_deadzone_does_not_clip_real_input():
+    assert fa.STICK_DZ < 0.06
+    full = (1.0 - fa.STICK_DZ) / (1.0 - fa.STICK_DZ)
+    assert abs(full - 1.0) < 1e-9
+
+
+def test_game_deadzone_is_not_touched_by_profiles():
+    """It describes the rig, so switching driving profiles must not move it."""
+    keys = {k for k, *_ in fa.SLIDERS}
+    assert "game_dz" not in keys
+    for name, prof in fa.PROFILES.items():
+        assert "game_dz" not in prof, name
 
 
 def main():

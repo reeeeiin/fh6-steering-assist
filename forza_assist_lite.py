@@ -677,6 +677,7 @@ DEFAULTS = {
     "steer_curve": 1.0,
     "reaction": 0.2,
     "min_speed": 15.0,
+    "game_dz": 10.0,
     "speed_sens": 0.0,
     "corr_slew": 5.0,
     "btn_handbrake": 0x1000,
@@ -1528,6 +1529,7 @@ CONFIG_RANGES = {
     "steer_curve":  (0.0, 4.0),
     "reaction":     (0.0, 1.0),
     "min_speed":    (0.0, 100.0),
+    "game_dz":      (0.0, 25.0),
     "speed_sens":   (0.0, 100.0),
     "corr_slew":    (0.3, 20.0),
 }
@@ -2124,7 +2126,11 @@ class Bridge:
         r.wButtons = virt
         r.bLeftTrigger = gp.bLeftTrigger
         r.bRightTrigger = gp.bRightTrigger
-        r.sThumbLX = int(clamp(out_x, -1.0, 1.0) * 32767)
+        out_x = clamp(out_x, -1.0, 1.0)
+        dz = clamp(self.cfg.get("game_dz", 0.0) / 100.0, 0.0, 0.25)
+        if dz > 0.001 and abs(out_x) > 1e-4:
+            out_x = math.copysign(dz + (1.0 - dz) * abs(out_x), out_x)
+        r.sThumbLX = int(out_x * 32767)
         r.sThumbLY = gp.sThumbLY
         r.sThumbRX = gp.sThumbRX
         r.sThumbRY = gp.sThumbRY
@@ -2383,6 +2389,11 @@ class Bridge:
                             break
 
                 stick_x = gp.sThumbLX / (32768.0 if gp.sThumbLX < 0 else 32767.0)
+                if abs(stick_x) <= STICK_DZ:
+                    stick_x = 0.0
+                else:
+                    stick_x = math.copysign(
+                        (abs(stick_x) - STICK_DZ) / (1.0 - STICK_DZ), stick_x)
                 self.last_raw = stick_x
                 self._hz_frames += 1
                 if now - self._hz_t0 >= 1.0:
@@ -2517,6 +2528,8 @@ TR = {
         "gyro_hint": "Damps car rotation like a shock absorber",
         "min_speed": "Min speed (km/h)",
         "min_speed_hint": "Assist fully off below this speed — donuts!",
+        "game_dz": "Game deadzone",
+        "game_dz_hint": "Must match Steering Deadzone Inside in the game settings. The game throws away small stick movement, so small corrections never reach the car - this puts them back",
         "steer_curve": "Steering curve",
         "steer_curve_hint": "In a slide only: widens the stick centre for finer corrections while drifting",
         "speed": "Speed", "slip": "Slip", "no_telemetry": "no telemetry",
@@ -2620,6 +2633,8 @@ TR = {
         "gyro_hint": "Гасит вращение машины, как амортизатор",
         "min_speed": "Мин. скорость (км/ч)",
         "min_speed_hint": "Ниже этой скорости ассист выключен — пончики!",
+        "game_dz": "Мёртвая зона игры",
+        "game_dz_hint": "Должна совпадать с Steering Deadzone Inside в настройках игры. Игра отбрасывает малые отклонения стика, и слабые коррекции до машины не доходят — здесь мы их возвращаем",
         "steer_curve": "Кривая руля",
         "steer_curve_hint": "Только в заносе: растягивает центр стика для тонких коррекций в дрифте",
         "speed": "Скорость", "slip": "Снос", "no_telemetry": "нет телеметрии",
@@ -2723,6 +2738,8 @@ TR = {
         "gyro_hint": "Dämpft die Fahrzeugrotation wie ein Stoßdämpfer",
         "min_speed": "Min. Tempo (km/h)",
         "min_speed_hint": "Darunter ist der Assistent ganz aus — Donuts!",
+        "game_dz": "Totzone des Spiels",
+        "game_dz_hint": "Muss mit Steering Deadzone Inside in den Spieleinstellungen übereinstimmen. Das Spiel verwirft kleine Stickbewegungen, damit kommen schwache Korrekturen nie am Auto an - das gleichen wir hier aus",
         "steer_curve": "Lenkkurve",
         "steer_curve_hint": "Nur im Drift: weitet die Stickmitte für feinere Korrekturen",
         "speed": "Tempo", "slip": "Schlupf", "no_telemetry": "keine Telemetrie",
@@ -2826,6 +2843,8 @@ TR = {
         "gyro_hint": "Amortit la rotation de la voiture, tel un amortisseur",
         "min_speed": "Vitesse min (km/h)",
         "min_speed_hint": "En dessous, assistant coupé — donuts !",
+        "game_dz": "Zone morte du jeu",
+        "game_dz_hint": "Doit correspondre à Steering Deadzone Inside dans les réglages du jeu. Le jeu ignore les petits mouvements du stick, donc les corrections faibles n'atteignent jamais la voiture - on les rétablit ici",
         "steer_curve": "Courbe de direction",
         "steer_curve_hint": "En glisse uniquement : centre du stick élargi pour des corrections fines",
         "speed": "Vitesse", "slip": "Glisse", "no_telemetry": "pas de télémétrie",
@@ -2929,6 +2948,8 @@ TR = {
         "gyro_hint": "Amortigua la rotación del coche, como un amortiguador",
         "min_speed": "Vel. mínima (km/h)",
         "min_speed_hint": "Por debajo, asistente apagado — ¡trompos!",
+        "game_dz": "Zona muerta del juego",
+        "game_dz_hint": "Debe coincidir con Steering Deadzone Inside en los ajustes del juego. El juego descarta los movimientos pequeños del stick, así que las correcciones suaves nunca llegan al coche - aquí se las devolvemos",
         "steer_curve": "Curva de dirección",
         "steer_curve_hint": "Solo en derrape: ensancha el centro del stick para correcciones finas",
         "speed": "Velocidad", "slip": "Derrape", "no_telemetry": "sin telemetría",
@@ -3037,6 +3058,8 @@ TR = {
         "gyro_hint": '車体の回転をダンパーのように抑えます',
         "min_speed": '最低速度 (km/h)',
         "min_speed_hint": 'この速度を下回るとアシストは完全に切れます。ドーナツターン用',
+        "game_dz": 'ゲームのデッドゾーン',
+        "game_dz_hint": 'ゲーム設定の Steering Deadzone Inside と同じ値にしてください。ゲームはスティックのわずかな動きを切り捨てるため、小さな補正が車に届きません。ここで元に戻します',
         "steer_curve": 'ステアリングカーブ',
         "steer_curve_hint": '滑走中のみ、スティック中央域を広げてドリフト中の微調整をしやすくします',
         "speed": '速度',
@@ -3111,6 +3134,16 @@ TR = {
     },
 }
 
+
+# The game applies its own dead area to the stick before it steers the
+# car, so a small correction we send is thrown away before it can do
+# anything - which is most of why the assist felt asleep. We undo that
+# mapping on the way out, and the value has to match the game or the undo
+# is wrong, so it lives here and not in a driving profile.
+RIG = [
+    ("game_dz",      0.0, 25.0,  0.5,    0, ""),
+]
+STICK_DZ = 0.03
 
 SLIDERS = [
     ("counter_gain", 0.0, 120.0, 1.2,    0, "%"),
@@ -3196,6 +3229,7 @@ def build_html() -> str:
     html = html.replace("<!--LOGO-->", logo)
     html = html.replace("__TR__", json.dumps(TR, ensure_ascii=False))
     html = html.replace("__SLIDERS__", json.dumps(SLIDERS))
+    html = html.replace("__RIG__", json.dumps(RIG))
     html = html.replace("__ARROW__", json.dumps(ARROW_SVG))
     html = html.replace("__LANGS__", json.dumps(LANG_ORDER))
     html = html.replace("__PROFILES__", json.dumps(PROFILES))
@@ -3760,6 +3794,8 @@ html[data-boot] .rz{display:none}
 <script>
 const TR = __TR__;
 const SLIDERS = __SLIDERS__;
+const RIG = __RIG__;
+const ALLS = SLIDERS.concat(RIG);
 const DEF = __DEFAULTS__;
 const LANGS = __LANGS__;
 const PROFILES = __PROFILES__;
@@ -3774,7 +3810,7 @@ const $$ = q => [...document.querySelectorAll(q)];
 const t = k => (TR[cfg && cfg.lang] || TR.en)[k] || (TR.en[k] || k);
 
 function shown(key, v){
-  const r = SLIDERS.find(x => x[0] === key);
+  const r = ALLS.find(x => x[0] === key);
   const lo = r[1], hi = r[2], dec = r[4], unit = r[5];
   if (unit === '%') return String(Math.round((v - lo) / (hi - lo) * 100));
   return dec === 0 ? String(Math.round(v)) : (+v).toFixed(dec);
@@ -3951,6 +3987,7 @@ function screenSettings(){
           segEl('profile', PROF_ORDER.map(p => ({key: p, label: t('prof_' + p)})),
                 cfg.profile) + '</div>';
   SLIDERS.forEach(s => { h += sliderRow(s[0]); });
+  RIG.forEach(s => { h += sliderRow(s[0]); });
   h += '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('interface_sec') + '</div>' +
@@ -4026,7 +4063,7 @@ function render(){
 function refresh(){
   $$('[data-slider]').forEach(el => {
     const key = el.dataset.slider;
-    const r = SLIDERS.find(x => x[0] === key);
+    const r = ALLS.find(x => x[0] === key);
     const p = (cfg[key] - r[1]) / (r[2] - r[1]);
     el.querySelector('.fil').style.width = (p * 100) + '%';
     el.querySelector('.knb').style.left = (p * 100) + '%';
@@ -4112,7 +4149,7 @@ function bindRows(){
   });
   $$('[data-slider]').forEach(el => {
     const key = el.dataset.slider;
-    const r = SLIDERS.find(x => x[0] === key);
+    const r = ALLS.find(x => x[0] === key);
     const drag = e => {
       const b = el.getBoundingClientRect();
       let p = (e.clientX - b.left) / b.width;
