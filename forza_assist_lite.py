@@ -665,7 +665,7 @@ class Assist:
         return self.angle
 
 
-CONFIG_VERSION = 9
+CONFIG_VERSION = 10
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
@@ -677,7 +677,7 @@ DEFAULTS = {
     "steer_curve": 1.0,
     "reaction": 0.2,
     "min_speed": 15.0,
-    "game_dz": 10.0,
+    "game_dz": 25.0,
     "speed_sens": 0.0,
     "corr_slew": 5.0,
     "btn_handbrake": 0x1000,
@@ -1582,6 +1582,8 @@ def load_config() -> dict:
             return dict(DEFAULTS)
         cfg = {**DEFAULTS, **{k: data[k] for k in DEFAULTS
                               if k in data and k != "version"}}
+        if data.get("version", 1) < 10:
+            cfg["game_dz"] = DEFAULTS["game_dz"]
         if data.get("version", 1) < 5:
             for key in ("yield_mode", "rumble"):
                 cfg[key] = DEFAULTS[key]
@@ -3138,8 +3140,10 @@ TR = {
 # The game applies its own dead area to the stick before it steers the
 # car, so a small correction we send is thrown away before it can do
 # anything - which is most of why the assist felt asleep. We undo that
-# mapping on the way out, and the value has to match the game or the undo
-# is wrong, so it lives here and not in a driving profile.
+# mapping on the way out. The figure was settled by driving rather than by
+# reading it off the game, so it is fixed and no longer shown; it stays a
+# named row because the moment it has to differ per rig it needs a control
+# again, and it must never live in a driving profile.
 RIG = [
     ("game_dz",      0.0, 25.0,  0.5,    0, ""),
 ]
@@ -3987,7 +3991,6 @@ function screenSettings(){
           segEl('profile', PROF_ORDER.map(p => ({key: p, label: t('prof_' + p)})),
                 cfg.profile) + '</div>';
   SLIDERS.forEach(s => { h += sliderRow(s[0]); });
-  RIG.forEach(s => { h += sliderRow(s[0]); });
   h += '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('interface_sec') + '</div>' +
