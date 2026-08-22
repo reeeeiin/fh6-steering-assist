@@ -927,6 +927,62 @@ def test_the_dropped_presets_do_not_take_the_tuning_with_them():
         _io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(backup)
 
 
+def _hid_bridge(slots, virtual=frozenset({1})):
+    """A bridge reading its pad over HID, with `slots` on XInput."""
+    b = _bridge()
+    b.hid_mode = True
+    b.mirror_all = True
+    b.virtual_slots = set(virtual)
+    b._btn_state = 0
+    b._btn_lock_until = [0.0] * 16
+    b.mode_info = ""
+    real = fa.xinput_connected_slots
+    fa.xinput_connected_slots = lambda: set(slots)
+    try:
+        b._recheck_mirror()
+    finally:
+        fa.xinput_connected_slots = real
+    return b
+
+
+def test_a_pad_only_on_hid_has_every_button_mirrored():
+    """Nothing else is delivering them, so the mirror is the only way the
+    game hears about a press at all."""
+    b = _hid_bridge(slots={1})          # only our own virtual pad
+    assert b.mirror_all is True
+    assert b._virtual_buttons(X | LB, alive=True, now=10.0) == X | LB
+
+
+def test_a_pad_also_on_xinput_gets_only_its_holds_mirrored():
+    """The game reads that pad directly, so mirroring its buttons would
+    deliver every press twice - which is what a double press is."""
+    b = _hid_bridge(slots={0, 1})       # the pad turned up on XInput as well
+    assert b.mirror_all is False
+    sent = b._virtual_buttons(X | LB, alive=True, now=10.0)
+    assert sent & X == 0, "an event button must not be mirrored"
+
+
+def test_the_mirror_comes_back_when_the_pad_leaves_xinput():
+    b = _hid_bridge(slots={0, 1})
+    assert b.mirror_all is False
+    real = fa.xinput_connected_slots
+    fa.xinput_connected_slots = lambda: {1}
+    try:
+        b._recheck_mirror()
+    finally:
+        fa.xinput_connected_slots = real
+    assert b.mirror_all is True
+
+
+def test_xinput_mode_is_unaffected_by_the_recheck():
+    b = _bridge()
+    b.hid_mode = False
+    b.mirror_all = False
+    b.virtual_slots = set()
+    b._recheck_mirror()
+    assert b.mirror_all is False
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

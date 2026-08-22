@@ -2138,6 +2138,11 @@ class Bridge:
         self.hid_ctrl = None
         self.hid_joy = None
         self.hid_mode = False
+        # Mirroring every button is only safe while the game cannot see the
+        # pad itself. It can, the moment the pad turns up on XInput, and
+        # then every press it makes arrives twice.
+        self.mirror_all = False
+        self.virtual_slots = set()
         self.mode_info = "starting"
         self.hz = 0.0
         self.pad_hz = 0
@@ -2206,7 +2211,7 @@ class Bridge:
             self._pad_t0 = now
 
     def _virtual_buttons(self, buttons: int, alive: bool, now: float) -> int:
-        if self.hid_mode:
+        if self.hid_mode and self.mirror_all:
             return self._debounce(buttons, now)
         if MENU_NEUTRAL and not alive:
             return 0
@@ -2300,6 +2305,7 @@ class Bridge:
                     return
                 if self.bad_order and not game_running():
                     self.bad_order = False
+                self._recheck_mirror()
                 time.sleep(1.0)
             if self.cfg.get("auto_hide"):
                 self.hidhide.sweep()
@@ -2310,6 +2316,28 @@ class Bridge:
         if th is not None:
             th.join(timeout=3.0)
         self._dump_log()
+
+    def _recheck_mirror(self):
+        """A pad read over HID may also be sitting on XInput, where the game
+        reads it directly - a wireless pad that had not enumerated yet when
+        we started is the usual way this happens. Mirroring its buttons then
+        doubles every press, so the mirror drops back to holds only, and
+        picks up again if the pad leaves XInput."""
+        if not self.hid_mode:
+            return
+        try:
+            physical = xinput_connected_slots() - self.virtual_slots
+        except Exception:
+            return
+        want = not physical
+        if want == self.mirror_all:
+            return
+        self.mirror_all = want
+        self._btn_state = 0
+        self._btn_lock_until = [0.0] * 16
+        self.mode_info = ("hid mode: axes and buttons mirrored" if want else
+                          "hid mode: the pad is on XInput too, so only "
+                          "holds are mirrored")
 
     def _try_hid_mode(self) -> bool:
         if not HAVE_PYGAME:
@@ -2426,6 +2454,9 @@ class Bridge:
             time.sleep(1.0)
             self.hidhide.snapshot_allowed()
             virtual = xinput_connected_slots() - before
+            self.virtual_slots = set(virtual)
+            self.mirror_all = self.hid_mode
+            self._recheck_mirror()
 
             while self._run.is_set() and not before and not self.hid_mode:
                 self.status_code = "no_pad"
