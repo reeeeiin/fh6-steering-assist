@@ -3376,7 +3376,7 @@ body.t-dark{
  --win-bg:#111111; --app-bg:#111111; --card:#1C1C1C; --card-2:#242424;
  --row-fg:#FFFFFF; --muted:#8A8A8A; --foot:#5A5A5A;
  --line:#2A2A2A; --track:#3A3A3A; --knob:#FFFFFF;
- --accent:#0492F8; --accent-fg:#FFFFFF;
+ --accent:#0492F8; --accent-fg:#FFFFFF; --accent-lit:#52CBFF;
  --warn:#FFCC00; --danger:#E91F1F; --ok:#0DDE64; --off:#848484;
  --panel-bg:#1C1C1C; --panel-fg:#FFFFFF;
  --sec-bg:transparent; --sec-fg:#8A8A8A;
@@ -3392,7 +3392,7 @@ body.t-light{
  --win-bg:#F2F2F2; --app-bg:#F2F2F2; --card:#FFFFFF; --card-2:#F7F7F7;
  --row-fg:#101010; --muted:#6E6E6E; --foot:#9A9A9A;
  --line:#E4E4E4; --track:#DCDCDC; --knob:#FFFFFF;
- --accent:#0492F8; --accent-fg:#FFFFFF;
+ --accent:#0492F8; --accent-fg:#FFFFFF; --accent-lit:#52CBFF;
  --warn:#FFCC00; --danger:#E91F1F; --ok:#0DDE64; --off:#848484;
  --panel-bg:#FFFFFF; --panel-fg:#101010;
  --sec-bg:transparent; --sec-fg:#6E6E6E;
@@ -3464,21 +3464,26 @@ body.t-light{
         filter .2s ease}
 .updbtn:hover{filter:brightness(1.12)}
 .pbtns{display:flex;gap:8px;margin-left:auto}
-.pbtn{height:24px;box-sizing:border-box;padding:0 13px;border-radius:7px;
-      display:flex;align-items:center;font-size:11px;font-weight:600;
-      background:var(--accent);color:var(--accent-fg);white-space:nowrap;
-      cursor:pointer;border:1px solid transparent;
+.pbtn{height:24px;box-sizing:border-box;padding:0 12px;border-radius:6px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;
+      background:var(--accent);color:var(--accent-fg);
+      border:1px solid transparent;
       transition:background .2s ease,color .2s ease,border-color .2s ease,
-      filter .2s ease,opacity .2s ease}
-.pbtn:hover{filter:brightness(1.12)}
+                 opacity .2s ease}
+.pbtn:hover{background:linear-gradient(180deg,var(--accent),var(--accent-lit))}
+/* Nothing to save, or nothing of yours to delete. The button steps back to
+   an outline of itself at half strength rather than vanishing, which would
+   move the row about, or dimming, which reads as broken rather than idle. */
+.pbtn.off{background:var(--btn-hov-bg);border-color:var(--accent);
+          color:var(--accent);opacity:.5;cursor:default}
+.pbtn.off:hover{background:var(--btn-hov-bg)}
 .pbtn.danger{background:transparent;color:var(--danger);
              border-color:var(--danger)}
-.pbtn.danger:hover{background:var(--danger);color:#fff;filter:none}
-/* Nothing to save, or nothing of yours to delete: the button says so by
-   going quiet rather than by disappearing and moving the row about. */
-.pbtn.off{opacity:.35;cursor:default;filter:none}
-.pbtn.off:hover{filter:none}
-.pbtn.danger.off:hover{background:transparent;color:var(--danger)}
+.pbtn.danger:hover{background:var(--danger);color:#fff}
+.pbtn.danger.off{background:var(--danger-bg);border-color:var(--danger);
+                 color:var(--danger);opacity:.5}
+.pbtn.danger.off:hover{background:var(--danger-bg);color:var(--danger)}
 .updbtn.warn{background:var(--warn);color:#101010}
 .updbtn.bad{background:var(--danger);color:#fff}
 .updbtn.busy{cursor:default}
