@@ -13,10 +13,10 @@ set SERIES=
 for /f tokens^=2^ delims^=^" %%v in ('findstr /b /c:"APP_SERIES" forza_assist_lite.py') do set SERIES=%%v
 if "%SERIES%"=="" set SERIES=0.0
 set BUILDID=
-for /f %%v in ('python toolsuild_id.py') do set BUILDID=%%v
+for /f %%v in ('python tools\build_id.py') do set BUILDID=%%v
 if "%BUILDID%"=="" set BUILDID=dev
 if not exist assets mkdir assets
-> assetsuild.txt echo %BUILDID%
+> assets\build.txt echo %BUILDID%
 set VER=%SERIES%.%BUILDID%
 echo Building version %VER%
 
