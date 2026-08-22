@@ -794,6 +794,38 @@ def test_a_letter_on_the_build_does_not_confuse_the_update_check():
     assert fa._version_tuple("2.0.108b") == fa._version_tuple("2.0.108")
 
 
+def _held_lock(stick, deg=15.0, oppose=False, secs=2.5):
+    """Settle into a slide while the driver holds `stick` of lock, and
+    report how much correction the assist is still asking for."""
+    a = fa.Assist(dict(fa.DEFAULTS))
+    rad, prev, dt = math.radians(deg), 0.0, 1 / 60
+    for i in range(int(secs / dt)):
+        beta = rad * min(1.0, i * dt / 0.8)
+        yaw = (beta - prev) / dt * 0.6 + beta * 0.8
+        prev = beta
+        a.update(stick if oppose else -stick,
+                 fa.Telemetry(120 / 3.6, beta * 0.5, beta * 1.6, yaw, beta),
+                 dt, brake=0.0, telemetry_alive=True)
+    return abs(a._corr)
+
+
+def test_holding_lock_into_the_slide_costs_no_help():
+    """Counter-steering is the same correction by hand, not an argument
+    with the assist - and it is what a coasting drift is made of."""
+    free = _held_lock(0.0)
+    for lock in (0.3, 0.6, 0.9):
+        assert abs(_held_lock(lock) - free) < 1e-6, lock
+
+
+def test_steering_against_the_correction_still_backs_it_off():
+    """The driver must always be able to take the wheel back."""
+    free = _held_lock(0.0)
+    fought = [_held_lock(x, oppose=True) for x in (0.3, 0.6, 0.9)]
+    assert fought[0] < free * 0.8, fought
+    assert fought[0] > fought[1] > fought[2], fought
+    assert fought[2] < free * 0.2, fought
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

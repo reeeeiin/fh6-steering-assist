@@ -678,12 +678,22 @@ class Assist:
             sf = 1.0 - (c["speed_sens"] / 100.0) * (spd_kmh / 300.0)
             stick_x *= max(max(0.15, sf), self._shape)
 
-        authority = max(0.0, 1.0 - stick_x * stick_x)
+        # Authority used to fall away with any lock the driver was holding,
+        # whichever way it pointed. But holding lock into a slide is not an
+        # argument with the assist, it is the same correction by hand - and
+        # it is what you are doing for the whole of a coasting drift, which
+        # is where the help went missing. Only the part of the input that
+        # points against the correction takes authority away; the driver
+        # steering along with it keeps all of it. Input that genuinely
+        # opposes is still handled, further down, by the yield.
+        want = -math.copysign(1.0, slip_pred) if slip_pred else 0.0
+        against = clamp(-stick_x * want, 0.0, 1.0)
+        authority = max(0.0, 1.0 - against * against)
         gyro_force = -self._yaw_f * c["gyro"] * self._slide
 
         magnitude = min(1.0, (c["counter_gain"] / 100.0)
                         * excess * STEER_PER_SLIP)
-        counter = magnitude * -math.copysign(1.0, slip_pred) if slip_pred else 0.0
+        counter = magnitude * want
         counter *= (1.0 - brake * BRAKE_SUPPRESS) * speed_gate * authority
         self.rumble_power = clamp(excess / SLIDE_RAMP,
                                   0.0, 1.0) * speed_gate
