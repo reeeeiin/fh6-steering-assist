@@ -1,13 +1,3 @@
-r"""Разбор assist_log.csv: сколько нажатий кнопок дошло ДО АССИСТА.
-
-Отвечает на один вопрос: если передача не защёлкнулась, то нажатие
-потерялось по дороге от пада к нам — или дошло, а не отработала уже игра.
-
-    python tools\analyze_log.py [путь к assist_log.csv]
-
-Без аргумента берётся %APPDATA%\ForzaAssistLite\assist_log.csv
-"""
-
 import csv
 import os
 import sys
@@ -22,6 +12,57 @@ BUTTON_NAMES = {
 }
 
 
+def jerk_report(rows, top=4, window=6):
+    """Find the sharpest jumps in what the game received and split each one
+    into the driver's own stick, our reshaping of it, and the assist term."""
+    f = lambda r, k: float(r[k])
+    steps = []
+    for i in range(1, len(rows)):
+        if f(rows[i], "kmh") < 20:
+            continue
+        steps.append((abs(f(rows[i], "out") - f(rows[i - 1], "out")), i))
+    if not steps:
+        return "No moving frames in this log."
+    steps.sort(reverse=True)
+
+    lines = ["Sharpest jumps in the signal the game received:", ""]
+    used = []
+    for size, i in steps:
+        if any(abs(i - j) < window * 2 for j in used):
+            continue
+        used.append(i)
+        if len(used) > top:
+            break
+        a, b = rows[i - 1], rows[i]
+        d_out = f(b, "out") - f(a, "out")
+        d_raw = f(b, "raw") - f(a, "raw")
+        d_shaped = f(b, "stick") - f(a, "stick")
+        d_corr = f(b, "corr") - f(a, "corr")
+        d_reshape = d_shaped - d_raw
+        lines.append(f"  t={f(b, 't'):7.2f}s  {f(b, 'kmh'):3.0f} km/h   "
+                     f"output jumped {d_out:+.4f} in one frame")
+        lines.append(f"      driver moved the stick   {d_raw:+.4f}")
+        lines.append(f"      our reshaping of it      {d_reshape:+.4f}")
+        lines.append(f"      assist correction        {d_corr:+.4f}")
+        biggest = max((abs(d_raw), "the driver"),
+                      (abs(d_reshape), "our reshaping"),
+                      (abs(d_corr), "the assist"))[1]
+        lines.append(f"      -> dominated by {biggest}")
+        lines.append("")
+
+        lo, hi = max(0, i - window), min(len(rows), i + window + 1)
+        lines.append("      frame    raw   shaped    corr     out   slide  shape")
+        for k in range(lo, hi):
+            r = rows[k]
+            mark = "  <<<" if k == i else ""
+            lines.append(f"      {k - i:+5d} {f(r,'raw'):+6.3f} "
+                         f"{f(r,'stick'):+7.3f} {f(r,'corr'):+7.3f} "
+                         f"{f(r,'out'):+7.3f} {f(r,'slide'):6.3f} "
+                         f"{f(r,'shape'):6.3f}{mark}")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def default_path():
     base = os.environ.get("APPDATA", "")
     return os.path.join(base, "ForzaAssistLite", "assist_log.csv")
@@ -29,40 +70,40 @@ def default_path():
 
 def main(path):
     if not os.path.isfile(path):
-        print(f"нет файла: {path}")
-        print("Сыграй с run_debug.bat и закрой приложение — лог пишется на выходе.")
+        print(f"no such file: {path}")
+        print("Play once via run_debug.bat, then close the app - the log is")
+        print("written on exit.")
         return 1
 
     rows = list(csv.DictReader(open(path, encoding="utf-8")))
     if not rows:
-        print("лог пустой")
+        print("the log is empty")
         return 1
     if "btn_phys" not in rows[0]:
-        print("Это лог СТАРОГО формата, без колонок кнопок.")
-        print("Пересними через run_debug.bat на текущей версии.")
+        print("This log is in the OLD format, without the button columns.")
+        print("Record a new one with run_debug.bat on the current version.")
         return 1
 
     dur = float(rows[-1]["t"])
-    print(f"лог: {len(rows)} кадров, {dur:.1f} с, "
-          f"средняя частота {len(rows)/max(dur, 1e-6):.1f} Гц\n")
+    print(f"log: {len(rows)} frames, {dur:.1f} s, "
+          f"average rate {len(rows)/max(dur, 1e-6):.1f} Hz\n")
 
-    # Проверка на самый коварный конфаунд: тест провели на СТОЯЩЕЙ машине.
-    # Тогда ни ассист, ни переключение передач вниз ничего не делают, и любой
-    # результат такого заезда объясняется чем угодно, только не тем, что ищем.
     def peak(col):
         return max(abs(float(r[col])) for r in rows)
 
     motion = {c: peak(c) for c in ("beta_f", "yaw_raw", "slide", "stick")}
     if all(v < 1e-3 for v in motion.values()):
-        print("Машина стояла: занос, рыскание и руль по всему логу — ровно 0.")
-        print("    Арбитраж кнопок так проверять МОЖНО (зеркало работает")
-        print("    независимо от скорости), а вот контрруль и его срывы — нет:")
-        print("    ассист выключен скоростными воротами.\n")
+        print("The car never moved: slip, yaw and steering are all exactly 0.")
+        print("    Button arbitration CAN be checked this way - the mirror")
+        print("    works regardless of speed. Countersteer behaviour cannot:")
+        print("    the assist is switched off by the speed gate.\n")
     elif motion["slide"] < 1e-3:
-        print("Внимание: скольжения в логе нет — ассист всё время был в нуле.")
-        print("    Кнопки проверять можно, поведение контрруля — нет.\n")
+        print("Note: no sliding in this log, the assist stayed at zero.")
+        print("    Buttons can be checked, countersteer behaviour cannot.\n")
 
-    # фронты нажатий по каждой кнопке: отдельно всего и отдельно "под удержанием"
+    if "raw" in rows[0] and "corr" in rows[0]:
+        print(jerk_report(rows))
+
     prev = 0
     presses = {}
     hold_ctx = {}
@@ -84,27 +125,22 @@ def main(path):
         prev = cur
 
     if not presses:
-        print("НИ ОДНОГО нажатия кнопок в логе.")
-        print("Значит до ассиста они вообще не доходили — вопрос к паду/драйверу.")
+        print("NO button presses at all in this log.")
+        print("They never reached the assist - that points at the pad or its")
+        print("driver, not at the game.")
         return 0
 
-    print("Нажатий дошло до ассиста:")
+    print("Presses that reached the assist:")
     for name, n in sorted(presses.items(), key=lambda kv: -kv[1]):
         extra = ""
         if name in hold_ctx:
             held = {}
             for h in hold_ctx[name]:
                 held[h] = held.get(h, 0) + 1
-            extra = "   (из них при зажатых: " + ", ".join(
-                f"{k}×{v}" for k, v in sorted(held.items(), key=lambda kv: -kv[1])) + ")"
+            extra = "   (while holding: " + ", ".join(
+                f"{k}x{v}" for k, v in sorted(held.items(), key=lambda kv: -kv[1])) + ")"
         print(f"   {name:<8} {n:4d}{extra}")
 
-    # Главный диагностический признак: зеркало отпустило и ЗАНОВО нажало
-    # кнопку-удержание прямо посреди чужого нажатия. Для игры это новое
-    # событие на виртуальном паде в тот момент, когда событийная кнопка зажата
-    # на физическом, — и нажатие может осиротеть.
-    # Маску удержаний восстанавливаем из самого лога: то, что вообще
-    # появлялось на виртуальном паде, и есть зеркалимые кнопки.
     hold_mask = 0
     for r in rows:
         hold_mask |= int(r["btn_virt"])
@@ -117,13 +153,13 @@ def main(path):
     for r in rows:
         p, v = int(r["btn_phys"]), int(r["btn_virt"])
         ev = p & ~hold_mask
-        if ev and not prev_ev:                 # фронт событийной кнопки
+        if ev and not prev_ev:
             windows += 1
             held_before = prev_v
             frames = []
         if frames is not None:
             frames.append(v)
-            if not ev:                         # нажатие кончилось
+            if not ev:
                 if (held_before
                         and any(x != held_before for x in frames)
                         and frames[-1] == held_before):
@@ -131,27 +167,43 @@ def main(path):
                 frames = None
         prev_ev, prev_v = ev, v
     if windows:
-        print(f"\nНажатий событийных кнопок: {windows}")
-        print(f"   из них с ПЕРЕНАЖАТИЕМ удержания посреди нажатия: {blinks}")
+        print(f"\nEvent-button presses: {windows}")
+        print(f"   of those, a held button was RE-PRESSED mid-press: {blinks}")
         if blinks:
-            print("   Это дефект: игра видит новое событие на виртуальном паде")
-            print("   ровно тогда, когда ты держишь передачу на физическом.")
-            print("   Лечится переключателем «Уступка кнопкам» в положение «выкл».")
+            print("   That is a defect: the game sees a fresh event on the")
+            print("   virtual pad exactly while you hold a gear on the physical")
+            print("   one. It can double-fire the held button.")
 
-    # провалы частоты цикла: если пад отдаёт репорты рывками, короткое
-    # нажатие может физически не попасть ни в один наш кадр
+    moves = 0
+    prev_stick = None
+    active = 0
+    for r in rows:
+        s = float(r["stick"])
+        if abs(s) > 0.02:
+            active += 1
+            if prev_stick is not None and abs(s - prev_stick) > 1e-4:
+                moves += 1
+        prev_stick = s
+    if active > 30:
+        secs = active / 60.0
+        print(f"\nThe stick changed {moves} times over {secs:.1f} s of steering")
+        print(f"   that is about {moves/max(secs, 1e-6):.0f} updates per second")
+        print("   For reference: cable and dongle ~125, Bluetooth notably less.")
+        print("   Our loop runs at 60 Hz, so below 60 the assist starts")
+        print("   working from a stale stick position on some frames.")
+
     if gaps:
         worst = sorted(gaps, reverse=True)[:5]
         long_gaps = [g for g in gaps if g > 0.05]
-        print(f"\nПровалы цикла: {len(long_gaps)} шт длиннее 50 мс")
-        print("   худшие паузы, мс: " +
+        print(f"\nLoop stalls: {len(long_gaps)} longer than 50 ms")
+        print("   worst pauses, ms: " +
               ", ".join(f"{g*1000:.0f}" for g in worst))
         if long_gaps:
-            print("   Такие паузы сами по себе могут съедать короткие нажатия.")
+            print("   Stalls like these can swallow short presses on their own.")
 
-    print("\nКак читать: посчитай, сколько раз ты нажал передачу в заезде.")
-    print("Столько же в таблице — нажатия доходят, теряет их игра.")
-    print("Меньше — теряются до нас, значит дело в паде или в нашем чтении.")
+    print("\nHow to read this: count how many times you pressed the gear.")
+    print("Same number here - the presses arrive and the game drops them.")
+    print("Fewer - they are lost before us, so it is the pad or our reading.")
     return 0
 
 

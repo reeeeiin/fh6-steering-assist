@@ -1,5 +1,86 @@
 # Changelog
 
+## v2.0.116
+
+A rebuilt interface, six languages, an assist that answers the moment the
+car steps out, and a licence change.
+
+### Added
+
+- **A new interface**, laid out from the design rather than grown from the
+  old one: a loading and first-run sequence, settings, FAQ, About, and an
+  extended telemetry view with fixed-size readouts.
+- **Six languages** throughout: English, Russian, Spanish, French, German
+  and Japanese, including the loading screens, the FAQ and About.
+- **UI scale** at 90, 100, 110, 125 and 150 percent. One factor drives the
+  whole layout, so text, glyphs, strokes and radii grow together.
+- **Update check** against the project's latest release, with its own
+  states for looking, up to date, an update available and a failed check.
+- **Feedback button** in About that files a report with the diagnostics
+  already filled in: version, Windows build, mode, driver codes, telemetry
+  state and pad rate.
+- **Car names** in the telemetry view, read from a table of the game's car
+  ids.
+- **Launch-order warning** when the assist starts after the game.
+- **Presets of your own**, up to three. Save keeps whatever is on the
+  sliders, and updates that preset later if you change your mind; Delete
+  removes it without touching how the car drives. Each one appears in the
+  row beside Default.
+- **Build numbers.** The window shows the series, 2.0, while Settings and
+  the update check carry the full number, so a screenshot or a bug report
+  says exactly which build it came from.
+
+### Changed
+
+- **The assist no longer sleeps through the entry.** The game applies its
+  own dead area to the stick before it steers the car, and everything asked
+  for below that never reached the road: at the default setting the wheel
+  first moved four degrees into a slide, and half of the early correction
+  was thrown away. That mapping is now undone on the way out, so what the
+  assist asks for is what the car gets, from the first degree.
+- **The first degrees of a slide are answered properly.** The demand used
+  to grow from almost nothing - three degrees of slide asked for four
+  percent of lock, which no hand can feel - so the help seemed to arrive
+  late and all at once. Deep slides land where they always did.
+- **Holding opposite lock no longer costs you the assist.** Authority fell
+  away with any lock being held, whichever way it pointed, so counter-
+  steering - the one input that agrees with the assist completely - was
+  read as fighting it. At three quarters of a turn only half the help was
+  left. Steering against it still hands the wheel back exactly as before.
+- **Snap entries get the predictive term.** It used to be scaled by how far
+  the car had already gone, so it was quietest exactly when the car went
+  quickest. A handbrake pull now gets help after four degrees instead of
+  six.
+- **New defaults**, settled by driving rather than by guessing: assist
+  strength 45, alignment 25, steering curve 2.0, response 50, minimum speed
+  10 km/h.
+- **Licensed under the Elastic License 2.0** from this release. The visual
+  design and the branding are reserved separately. Releases up to 1.3.0
+  keep their MIT grant.
+- **Starting after the game no longer means restarting it.** Reconnecting
+  the controller is enough: the game rescans its inputs and finds the
+  assist.
+- **The window is a system window again.** It keeps the shell's styles and
+  removes only its frame, so minimise, restore and close animate the way
+  every other window does.
+- **The window follows its content**, easing to the height a screen needs
+  and no longer holding the tallest one it has shown.
+- Telemetry reports the rate the loop reaches rather than the one it aims
+  for, and raw input is smoothed a little more gently.
+
+### Removed
+
+- **Grip limit and Smoothing.** Grip limit set where the response curve
+  bent; the new curve has no such bend, and the setting people found
+  comfortable was the one that removed it. Smoothing's value also set how
+  far ahead the assist looked, so turning it up put back the very noise it
+  was filtering.
+- **The Heavy and Minimal presets**, in favour of the three you save
+  yourself. Anyone driving on one keeps their numbers.
+- The Oswald font, the old theme artwork and the icons the rebuilt
+  interface no longer uses.
+
+
 ## v1.3.0
 
 Bug-fix release. Everything below was measured, not guessed — the app can now

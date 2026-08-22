@@ -66,9 +66,12 @@ python forza_assist_lite.py
 build.bat
 ```
 
-Result: `dist\SteeringAssist-<version>.exe` (version is read from
-`APP_VERSION` in the script). Requests admin rights at launch (needed for
-HidHide control and for installing the drivers).
+Result: `dist\SteeringAssist-<version>.exe`. The version is the series from
+`APP_SERIES` in the script joined to a build number, which is the commit
+count read by `toolsuild_id.py` - so build after committing, and the
+number then names exactly the source it was built from. A build off a side
+branch carries that branch's letter. Requests admin rights at launch
+(needed for HidHide control and for installing the drivers).
 
 The build first runs `tools\fetch_drivers.py`, which fills `drivers\` with the
 ViGEmBus installer (taken from the installed `vgamepad` package) and the latest
@@ -176,6 +179,31 @@ stream and emulates a standard controller. Use at your own discretion.
 - [ViGEmBus](https://github.com/nefarius/ViGEmBus) and
   [HidHide](https://github.com/nefarius/HidHide) by Nefarius Software Solutions
 - [Oswald](https://fonts.google.com/specimen/Oswald) font (SIL OFL)
+
+## Licence
+
+From version 2.0 the source is available under the
+[Elastic License 2.0](LICENSE): use it, modify it, build it yourself. You may
+not offer it to others as a hosted service, strip its notices, or work around
+its licensing.
+
+The interface design, icons, logo and wordmark are **not** covered by that
+grant and remain all rights reserved. A modified copy passed on to others has
+to carry its own name and its own branding.
+
+Releases up to 1.3.0 stay under the MIT Licence.
+
+Third-party components keep their own licences, listed in [NOTICE.md](NOTICE.md).
+
+## Roadmap
+
+- **Forza Horizon 4 and 5.** They broadcast the same 324-byte packet at the
+  same offsets, so the assist itself should work. The car name table is
+  built from Horizon 6 ids, which differ between titles, so names have to
+  be keyed to the running game before this is offered.
+- **Forza Motorsport.** Its packets carry no padding after the sled block,
+  putting speed at a different offset, and FM7 is shorter than the length
+  check allows. Both need offsets chosen by packet length.
 
 ---
 

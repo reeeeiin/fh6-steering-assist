@@ -1,30 +1,23 @@
-# сборка
+# build output
 dist/
 build/
 *.spec
 __pycache__/
 
-# Установщики драйверов: ~9 МБ бинарников, в репозитории им не место.
-# Наполняются командой  python tools\fetch_drivers.py  (её зовёт build.bat).
+# Driver installers: ~9 MB of binaries, fetched at build time by
+# tools/fetch_drivers.py, which build.bat calls.
 drivers/
 
-# локальное состояние
+# local state
 assist_log*.csv
 debug.log
 assist_lite_config.json
 
-# локальные dev-помощники (диагностика этой машины, не для репозитория)
-get_assets*.bat
-app-icon*.jpg
-check.bat
-probe.bat
-probe_velocity.py
-disable_genitech.bat
-fix_icon_cache.bat
-icon - Copy.png
-log*.csv
-
-# Чейнджлог (CHANGELOG.md) в репозитории НУЖЕН — раньше он сюда не попадал
-# из-за правила RELEASE_NOTES*.md, и у выпущенного проекта не было истории.
-# Черновики релизных заметок по-прежнему локальные:
+# Drafts of release notes stay local; CHANGELOG.md is tracked.
 RELEASE_NOTES_v*.md
+
+# Subset UI fonts, regenerated at build time by tools/subset_font.py
+assets/fonts/
+
+# The build number, stamped in by build.bat from the commit count
+assets/build.txt
