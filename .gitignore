@@ -13,17 +13,6 @@ assist_log*.csv
 debug.log
 assist_lite_config.json
 
-# local helpers for diagnosing a particular machine
-get_assets*.bat
-app-icon*.jpg
-check.bat
-probe.bat
-probe_velocity.py
-disable_genitech.bat
-fix_icon_cache.bat
-icon - Copy.png
-log*.csv
-
 # Drafts of release notes stay local; CHANGELOG.md is tracked.
 RELEASE_NOTES_v*.md
 
