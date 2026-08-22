@@ -511,12 +511,14 @@ SLIDE_RAMP = 1.2
 # degrees of slide asked the wheel for four percent, which is nothing a hand
 # can feel. The assist seemed asleep early and then to wake abruptly.
 #
-# A concave curve answers the first degrees far more strongly while landing
-# a deep slide where it always did, so only the quiet part changes. Below
-# the floor nothing is asked at all, which keeps telemetry noise from
-# twitching the wheel on a straight road.
-EARLY_SHAPE = 0.65
-EARLY_GAIN = 1.0
+# A plain concave curve fixes the early degrees but saturates, and a deep
+# slide then gets a third less lock than it used to - the assist stops
+# being able to catch the car at all. So the demand is linear in the slide,
+# which keeps the deep end honest, with a boost that is large at the start
+# and fades as the angle grows. Below the floor nothing is asked, which
+# keeps telemetry noise from twitching the wheel on a straight road.
+EARLY_BOOST = 1.6
+EARLY_KNEE = 0.22
 NOISE_FLOOR = 0.06
 SLIDE_RELEASE = 0.25
 SLIDE_ATTACK = 0.10
@@ -605,7 +607,7 @@ class Assist:
         slip_abs = abs(slip_pred)
 
         usable = max(0.0, slip_abs - NOISE_FLOOR)
-        excess = (usable ** EARLY_SHAPE) * EARLY_GAIN if usable else 0.0
+        excess = usable * (1.0 + EARLY_BOOST / (1.0 + usable / EARLY_KNEE))
 
         raw_slide = clamp(excess / SLIDE_RAMP, 0.0, 1.0) * speed_gate
         self._shape += (1.0 - math.exp(-dt / SHAPE_TAU)) * (
