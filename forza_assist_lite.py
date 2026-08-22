@@ -729,18 +729,18 @@ class Assist:
         return self.angle
 
 
-CONFIG_VERSION = 11
+CONFIG_VERSION = 12
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
     "enabled": True,
     "auto_hide": True,
-    "counter_gain": 60.0,
-    "gyro": 0.4,
+    "counter_gain": 54.0,
+    "gyro": 0.375,
     "steer_lag": 0.04,
-    "steer_curve": 1.0,
-    "reaction": 0.2,
-    "min_speed": 15.0,
+    "steer_curve": 2.0,
+    "reaction": 0.5,
+    "min_speed": 10.0,
     "game_dz": 25.0,
     "speed_sens": 0.0,
     "corr_slew": 5.0,
@@ -1581,7 +1581,7 @@ SLOT_KEYS = ("custom1", "custom2", "custom3")
 PROFILE_ORDER = ("custom", "default") + SLOT_KEYS
 
 PROFILES = {
-    "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0, "reaction": 0.2, "min_speed": 15.0},
+    "default": {"counter_gain": 54.0, "gyro": 0.375, "steer_curve": 2.0, "reaction": 0.5, "min_speed": 10.0},
 }
 YIELD_MODES = ("pulse", "hold", "off")
 
@@ -1638,9 +1638,10 @@ def sanitize_config(cfg: dict) -> dict:
     slots = cfg.get("slots")
     kept = {}
     if isinstance(slots, dict):
-        for name in SLOT_KEYS:
-            got = slots.get(name)
-            if not isinstance(got, dict):
+        # Walked in the order they were saved, not in key order: the page
+        # shows the newest first and that order has to survive a reload.
+        for name, got in slots.items():
+            if name not in SLOT_KEYS or not isinstance(got, dict):
                 continue
             values = {}
             for key, lo, hi, *_ in SLIDERS:
@@ -1662,6 +1663,10 @@ def load_config() -> dict:
             return dict(DEFAULTS)
         cfg = {**DEFAULTS, **{k: data[k] for k in DEFAULTS
                               if k in data and k != "version"}}
+        if data.get("version", 1) < 12 and data.get("profile") == "default":
+            # Sitting on Default means wanting whatever Default is, and it
+            # has been retuned. Anyone on their own numbers keeps them.
+            cfg.update(PROFILES["default"])
         if data.get("version", 1) < 11 and cfg.get("profile") in (
                 "heavy", "minimal"):
             # Those presets are gone, but whatever they were driving with
@@ -3638,6 +3643,14 @@ body.t-light{
 [data-seg=lang] span{font-size:9px;padding:0 8px;min-width:0}
 [data-seg=ui_scale] span{padding:0 10px;min-width:0}
 .seg span.on{color:var(--accent-fg)}
+/* Opened on flex-basis rather than width: these are flex items, and a
+   min-width beats a max-width, so a collapsing max-width does nothing.
+   min-width is held at nothing for the whole of it for the same reason. */
+.seg span.grow{overflow:hidden;min-width:0;
+               transition:flex-basis .3s cubic-bezier(.4,0,.2,1),
+                          padding .3s cubic-bezier(.4,0,.2,1),
+                          color .2s ease}
+.seg span.grow.seed{flex-basis:0;padding:0}
 
 /* ---------- slider ---------- */
 .sl{flex:1;height:14px;position:relative;cursor:pointer;min-width:60px}
@@ -4160,12 +4173,17 @@ function slotLabel(key){
   return t('prof_custom') + ' ' + (SLOT_KEYS.indexOf(key) + 1);
 }
 
+function savedSlots(){
+  return Object.keys(cfg.slots || {}).filter(k => SLOT_KEYS.indexOf(k) >= 0);
+}
+
+/* Newest first, so a preset you just saved opens on the left, and Default
+   last, so the one chip that is always there never moves. */
 function profItems(){
-  const items = [{key: 'custom', label: t('prof_custom')},
-                 {key: 'default', label: t('prof_default')}];
-  SLOT_KEYS.forEach(k => {
-    if ((cfg.slots || {})[k]) items.push({key: k, label: slotLabel(k)});
-  });
+  const items = savedSlots().reverse()
+    .map(k => ({key: k, label: slotLabel(k)}));
+  items.push({key: 'custom', label: t('prof_custom')});
+  items.push({key: 'default', label: t('prof_default')});
   return items;
 }
 
@@ -4224,7 +4242,8 @@ function bindSlots(){
     const target = SLOT_KEYS.indexOf(cfg.profile) >= 0 ? cfg.profile : '';
     try{ pywebview.api.save_slot(target).then(r => {
       if (!r || !r.name) return;
-      cfg.slots = r.slots; cfg.profile = r.name; render();
+      cfg.slots = r.slots; cfg.profile = r.name;
+      freshSlot = r.name; render();
     }); }catch(e){}
   });
   if (dl) dl.addEventListener('click', () => {
@@ -4258,6 +4277,7 @@ function render(){
   bindRows();
   bindSlots();
   refresh();
+  playGrow();
   reportHeight();
 }
 
@@ -4274,6 +4294,10 @@ function refresh(){
   $$('[data-toggle]').forEach(el =>
     el.classList.toggle('on', !!cfg[el.dataset.toggle]));
   refreshSlots();
+  placePills();
+}
+
+function placePills(){
   $$('[data-seg]').forEach(seg => {
     const id = seg.dataset.seg;
     const cur = id === 'profile' ? cfg.profile
@@ -4289,6 +4313,57 @@ function refresh(){
       pill.style.width = act.offsetWidth + 'px';
     }
   });
+}
+
+/* A preset that has just been saved opens out of nothing instead of
+   appearing whole and shoving the row sideways. The pill is redrawn every
+   frame while it opens, with its own easing switched off, so the two move
+   as one thing rather than chasing each other. */
+let freshSlot = '';
+function playGrow(){
+  const key = freshSlot;
+  freshSlot = '';
+  if (!key) return;
+  const seg = document.querySelector('[data-seg=profile]');
+  const el = seg && seg.querySelector('[data-key="' + key + '"]');
+  if (!el) return;
+  const full = el.offsetWidth;
+  const pill = seg.querySelector('.pill');
+  const ease = pill ? pill.style.transition : '';
+  if (pill) pill.style.transition = 'none';
+  el.classList.add('grow', 'seed');
+  void el.offsetWidth;      // the collapsed state has to be laid out first,
+                            // or there is nothing to transition away from
+
+  /* Both halves are armed twice, by frame and by timer. A window that is
+     not being drawn gets no frames at all, and a chip left seeded is a
+     preset the driver can neither see nor press. */
+  let opened = false, done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    el.classList.remove('grow', 'seed');
+    el.style.flexBasis = '';
+    if (pill) pill.style.transition = ease;
+    placePills();
+  };
+  const open = () => {
+    if (opened || done) return;
+    opened = true;
+    el.classList.remove('seed');
+    el.style.flexBasis = full + 'px';
+    const t0 = performance.now();
+    const follow = now => {
+      if (done) return;
+      placePills();
+      if (now - t0 < 340){ requestAnimationFrame(follow); return; }
+      finish();
+    };
+    requestAnimationFrame(follow);
+  };
+  requestAnimationFrame(open);
+  setTimeout(open, 60);
+  setTimeout(finish, 500);
 }
 
 /* ---------------- interaction ---------------- */
