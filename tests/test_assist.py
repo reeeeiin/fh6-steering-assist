@@ -137,10 +137,10 @@ def test_v5_migration_rescues_debug_leftovers():
 
 def test_sanitize_survives_garbage_types():
     cfg = dict(fa.DEFAULTS)
-    cfg["deadband"] = None          # missing value falls back to the default
+    cfg["min_speed"] = None         # missing value falls back to the default
     cfg["gyro"] = "0.5"             # a number as text is still a number
     fa.sanitize_config(cfg)
-    assert cfg["deadband"] == fa.DEFAULTS["deadband"]
+    assert cfg["min_speed"] == fa.DEFAULTS["min_speed"]
     assert abs(cfg["gyro"] - 0.5) < 1e-9
 
 class _FakeReport:

@@ -503,6 +503,21 @@ def clamp(v, lo, hi):
 
 
 SLIDE_RAMP = 1.2
+
+# How the slide signal becomes a demand on the wheel.
+#
+# It used to be signal squared over signal plus a threshold, which is close
+# to linear once the car is properly sideways but tiny before that: three
+# degrees of slide asked the wheel for four percent, which is nothing a hand
+# can feel. The assist seemed asleep early and then to wake abruptly.
+#
+# A concave curve answers the first degrees far more strongly while landing
+# a deep slide where it always did, so only the quiet part changes. Below
+# the floor nothing is asked at all, which keeps telemetry noise from
+# twitching the wheel on a straight road.
+EARLY_SHAPE = 0.65
+EARLY_GAIN = 1.0
+NOISE_FLOOR = 0.06
 SLIDE_RELEASE = 0.25
 SLIDE_ATTACK = 0.10
 # A slide that arrives suddenly may be answered faster than one that creeps
@@ -589,8 +604,8 @@ class Assist:
         slip_pred = sig + self._dslip_f * (tau + PREDICT_EXTRA) * self._slide
         slip_abs = abs(slip_pred)
 
-        D = max(0.05, c["deadband"])
-        excess = slip_abs * slip_abs / (slip_abs + D)
+        usable = max(0.0, slip_abs - NOISE_FLOOR)
+        excess = (usable ** EARLY_SHAPE) * EARLY_GAIN if usable else 0.0
 
         raw_slide = clamp(excess / SLIDE_RAMP, 0.0, 1.0) * speed_gate
         self._shape += (1.0 - math.exp(-dt / SHAPE_TAU)) * (
@@ -659,7 +674,6 @@ DEFAULTS = {
     "steer_lag": 0.04,
     "steer_curve": 1.0,
     "reaction": 0.2,
-    "deadband": 0.2,
     "min_speed": 15.0,
     "speed_sens": 0.0,
     "corr_slew": 5.0,
@@ -1496,12 +1510,12 @@ BOOT_DONE_MS = 6000
 PROFILE_ORDER = ("custom", "default", "heavy", "minimal")
 
 PROFILES = {
-    "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0, "reaction": 0.2, "deadband": 0.2, "min_speed": 15.0},
-    "heavy": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0, "reaction": 0.05, "deadband": 0.2, "min_speed": 10.0},
+    "default": {"counter_gain": 60.0, "gyro": 0.4, "steer_curve": 1.0, "reaction": 0.2, "min_speed": 15.0},
+    "heavy": {"counter_gain": 80.0, "gyro": 0.8, "steer_curve": 2.0, "reaction": 0.05, "min_speed": 10.0},
     # Below 1.0 the stick wins more of the argument, which is what a preset
     # named Minimal should do. It sat at 2.5 because the curve ignored
     # anything under 1.0, so the value could not say what it meant.
-    "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 0.6, "reaction": 0.5, "deadband": 1.2, "min_speed": 15.0},
+    "minimal": {"counter_gain": 50.0, "gyro": 0.4, "steer_curve": 0.6, "reaction": 0.5, "min_speed": 15.0},
 }
 YIELD_MODES = ("pulse", "hold", "off")
 
@@ -1511,7 +1525,6 @@ CONFIG_RANGES = {
     "steer_lag":    (0.0, 0.25),
     "steer_curve":  (0.0, 4.0),
     "reaction":     (0.0, 1.0),
-    "deadband":     (0.0, 6.0),
     "min_speed":    (0.0, 100.0),
     "speed_sens":   (0.0, 100.0),
     "corr_slew":    (0.3, 20.0),
@@ -2500,8 +2513,6 @@ TR = {
         "counter_gain_hint": "Countersteer strength, %. 100 = wheels follow the car's real direction (BeamNG-style); higher = sharper recovery, up to full lock",
         "gyro": "Alignment",
         "gyro_hint": "Damps car rotation like a shock absorber",
-        "deadband": "Grip limit",
-        "deadband_hint": "Soft engagement: help starts from the very first degree of slide, stays tiny below this level and grows with angle",
         "min_speed": "Min speed (km/h)",
         "min_speed_hint": "Assist fully off below this speed — donuts!",
         "steer_curve": "Steering curve",
@@ -2605,8 +2616,6 @@ TR = {
         "counter_gain_hint": "Сила контрруления, %. 100 = колёса идут за вектором движения (как в BeamNG); больше = резче возврат, вплоть до полного лока",
         "gyro": "Выравнивание",
         "gyro_hint": "Гасит вращение машины, как амортизатор",
-        "deadband": "Предел сцепления",
-        "deadband_hint": "Мягкий порог: помощь есть с первого градуса заноса, ниже этого уровня она придушена и нарастает с углом",
         "min_speed": "Мин. скорость (км/ч)",
         "min_speed_hint": "Ниже этой скорости ассист выключен — пончики!",
         "steer_curve": "Кривая руля",
@@ -2710,8 +2719,6 @@ TR = {
         "counter_gain_hint": "Gegenlenk-Stärke in %. 100 = Räder folgen der Fahrtrichtung (wie BeamNG); mehr = schärfer, bis zum Volleinschlag",
         "gyro": "Ausrichtung",
         "gyro_hint": "Dämpft die Fahrzeugrotation wie ein Stoßdämpfer",
-        "deadband": "Gripgrenze",
-        "deadband_hint": "Weiche Schwelle: Hilfe ab dem ersten Grad Drift, unterhalb dieses Werts stark gedrosselt, mit dem Winkel wachsend",
         "min_speed": "Min. Tempo (km/h)",
         "min_speed_hint": "Darunter ist der Assistent ganz aus — Donuts!",
         "steer_curve": "Lenkkurve",
@@ -2815,8 +2822,6 @@ TR = {
         "counter_gain_hint": "Force de contre-braquage, %. 100 = les roues suivent la trajectoire (façon BeamNG) ; plus = plus vif, jusqu'à la butée",
         "gyro": "Alignement",
         "gyro_hint": "Amortit la rotation de la voiture, tel un amortisseur",
-        "deadband": "Limite de grip",
-        "deadband_hint": "Seuil doux : l'aide agit dès le premier degré de glisse, infime sous ce niveau et croissante avec l'angle",
         "min_speed": "Vitesse min (km/h)",
         "min_speed_hint": "En dessous, assistant coupé — donuts !",
         "steer_curve": "Courbe de direction",
@@ -2920,8 +2925,6 @@ TR = {
         "counter_gain_hint": "Fuerza de contravolante, %. 100 = las ruedas siguen la trayectoria (estilo BeamNG); más = más agresivo, hasta el tope",
         "gyro": "Alineación",
         "gyro_hint": "Amortigua la rotación del coche, como un amortiguador",
-        "deadband": "Límite de agarre",
-        "deadband_hint": "Umbral suave: la ayuda actúa desde el primer grado de derrape, mínima bajo este nivel y creciente con el ángulo",
         "min_speed": "Vel. mínima (km/h)",
         "min_speed_hint": "Por debajo, asistente apagado — ¡trompos!",
         "steer_curve": "Curva de dirección",
@@ -3030,8 +3033,6 @@ TR = {
         "counter_gain_hint": 'カウンターステアの強さ（％）。100 で車の実際の進行方向にタイヤが向きます（BeamNG 方式）。上げるほど復帰が鋭く、最大でフルロックまで',
         "gyro": '収束',
         "gyro_hint": '車体の回転をダンパーのように抑えます',
-        "deadband": 'グリップ限界',
-        "deadband_hint": '穏やかな介入。滑り始めた最初の一度から働き、この値まではごくわずかに、角度が増えるほど強くなります',
         "min_speed": '最低速度 (km/h)',
         "min_speed_hint": 'この速度を下回るとアシストは完全に切れます。ドーナツターン用',
         "steer_curve": 'ステアリングカーブ',
@@ -3114,7 +3115,6 @@ SLIDERS = [
     ("gyro",         0.0, 1.5,   0.015,  2, "%"),
     ("steer_curve",  0.0, 4.0,   0.1,    1, ""),
     ("reaction",     0.0, 1.0,   0.01,   2, "%"),
-    ("deadband",     0.0, 6.0,   0.06,   2, "%"),
     ("min_speed",    0.0, 100.0, 1.0,    0, ""),
 ]
 
