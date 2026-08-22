@@ -527,6 +527,8 @@ SLIDE_ATTACK = 0.10
 # snap took three tenths of a second whatever the car was doing.
 SLEW_URGENT = 1.6
 DSLIP_URGENT = 12.0
+# Below this the angle is only jittering, not running away.
+DSLIP_FLOOR = 3.0
 SHAPE_TAU = 0.9
 
 class Assist:
@@ -603,7 +605,17 @@ class Assist:
         d_alpha = 1.0 - math.exp(-dt / 0.015)
         raw_d = (sig - prev_sig) / dt
         self._dslip_f += d_alpha * (raw_d - self._dslip_f)
-        slip_pred = sig + self._dslip_f * (tau + PREDICT_EXTRA) * self._slide
+        # The look-ahead used to be scaled by the slide gate, which is
+        # near zero exactly while a slide is starting - so on the entries
+        # that need it most, a handbrake pull or a clutch kick, it was all
+        # but switched off and only woke once the car had already gone. How
+        # fast the angle is growing arms it instead: that is large from the
+        # first frames of a snap entry and stays at nothing on a straight
+        # road, so a slow entry behaves exactly as it did before.
+        urgency = clamp((abs(self._dslip_f) - DSLIP_FLOOR) / DSLIP_URGENT,
+                        0.0, 1.0)
+        look = max(self._slide, urgency)
+        slip_pred = sig + self._dslip_f * (tau + PREDICT_EXTRA) * look
         slip_abs = abs(slip_pred)
 
         usable = max(0.0, slip_abs - NOISE_FLOOR)
@@ -649,7 +661,6 @@ class Assist:
         else:
             self._corr_lag = corr
 
-        urgency = clamp(abs(self._dslip_f) / DSLIP_URGENT, 0.0, 1.0)
         slew = (max(0.01, c["corr_slew"]) * (1.0 + SLEW_URGENT * urgency)
                 * dt)
         self._corr = clamp(self._corr_lag, self._corr - slew, self._corr + slew)
