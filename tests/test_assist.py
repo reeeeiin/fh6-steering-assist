@@ -756,6 +756,44 @@ def test_game_deadzone_is_not_touched_by_profiles():
         assert "game_dz" not in prof, name
 
 
+def _build_id_module():
+    import importlib.util
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    spec = importlib.util.spec_from_file_location(
+        "build_id", os.path.join(here, "tools", "build_id.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_the_window_shows_the_series_and_the_full_build_is_kept():
+    """The title bar says which generation this is; a bug report needs to
+    say which build, and those are two different strings."""
+    assert fa.APP_SERIES.count(".") == 1, fa.APP_SERIES
+    assert fa.APP_VERSION.startswith(fa.APP_SERIES + ".")
+    assert fa.APP_VERSION != fa.APP_SERIES
+
+
+def test_build_numbers_only_ever_go_up():
+    a = fa._version_tuple("2.0.104b")
+    b = fa._version_tuple("2.0.108b")
+    assert a < b < fa._version_tuple("2.1.0")
+    assert fa._version_tuple("2.0.99") < fa._version_tuple("2.0.100")
+
+
+def test_a_trial_branch_is_marked_and_the_release_line_is_not():
+    mark = _build_id_module().branch_mark
+    assert mark("v2") == ""
+    assert mark("main") == ""
+    assert mark("v2b") == "b"
+    assert mark("v2.1c") == "c"
+
+
+def test_a_letter_on_the_build_does_not_confuse_the_update_check():
+    """The suffix must not read as another number and win a comparison."""
+    assert fa._version_tuple("2.0.108b") == fa._version_tuple("2.0.108")
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

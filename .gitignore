@@ -29,3 +29,6 @@ RELEASE_NOTES_v*.md
 
 # Subset UI fonts, regenerated at build time by tools/subset_font.py
 assets/fonts/
+
+# The build number, stamped in by build.bat from the commit count
+assets/build.txt

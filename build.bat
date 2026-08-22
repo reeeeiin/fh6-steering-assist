@@ -6,10 +6,18 @@ echo.
 python -m pip install pyinstaller vgamepad pywebview pygame
 if errorlevel 1 goto fail
 
-rem Version is read from APP_VERSION in the script - single source of truth
-set VER=
-for /f tokens^=2^ delims^=^" %%v in ('findstr /b /c:"APP_VERSION" forza_assist_lite.py') do set VER=%%v
-if "%VER%"=="" set VER=0.0.0
+rem The series lives in the script, the build number comes from git, and
+rem the two are joined here. build.txt is packed into the exe so a shipped
+rem build still knows which one it is with no git on the machine.
+set SERIES=
+for /f tokens^=2^ delims^=^" %%v in ('findstr /b /c:"APP_SERIES" forza_assist_lite.py') do set SERIES=%%v
+if "%SERIES%"=="" set SERIES=0.0
+set BUILDID=
+for /f %%v in ('python toolsuild_id.py') do set BUILDID=%%v
+if "%BUILDID%"=="" set BUILDID=dev
+if not exist assets mkdir assets
+> assetsuild.txt echo %BUILDID%
+set VER=%SERIES%.%BUILDID%
 echo Building version %VER%
 
 rem The UI font is a full CJK family, 26 MB per weight. Subset it to the

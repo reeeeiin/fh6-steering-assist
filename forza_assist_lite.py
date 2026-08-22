@@ -57,7 +57,50 @@ def load_vgamepad():
     vg = vgamepad
     return vg
 
-APP_VERSION = "2.0.0"
+# The series is what the window shows: it says which generation of the app
+# this is and nothing more. The build number after it says which one of
+# them, and that is what belongs in a bug report.
+APP_SERIES = "2.0"
+
+
+def _build_id() -> str:
+    """The build number, written in when the exe is packed and read back
+    from git when running from source, so a checkout never claims to be a
+    build it is not."""
+    def from_git():
+        # tools/build_id.py owns the rule for what a build is called; it is
+        # not shipped in the exe, so this path only ever runs from source.
+        here = os.path.dirname(os.path.abspath(__file__))
+        try:
+            sys.path.insert(0, os.path.join(here, "tools"))
+            import build_id as _bid
+            return _bid.build_id(here)
+        except Exception:
+            return ""
+
+    def from_file():
+        base = getattr(sys, "_MEIPASS",
+                       os.path.dirname(os.path.abspath(__file__)))
+        for path in (os.path.join(base, "assets", "build.txt"),
+                     os.path.join(base, "build.txt")):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    return f.read().strip()
+            except OSError:
+                pass
+        return ""
+
+    frozen = getattr(sys, "frozen", False)
+    order = (from_file, from_git) if frozen else (from_git, from_file)
+    for src in order:
+        got = src()
+        if got:
+            return got
+    return "dev"
+
+
+APP_BUILD = _build_id()
+APP_VERSION = APP_SERIES + "." + APP_BUILD
 UPDATE_HZ = 60.0
 PREDICT_EXTRA = 0.02
 CURVE_MIN = 0.2      # below this the wheel would snap to full lock
@@ -3260,6 +3303,7 @@ def build_html() -> str:
     html = html.replace("__LEGAL__", json.dumps(LEGAL))
     html = html.replace("__FAQ__", json.dumps(FAQ_ITEMS,
                                                 ensure_ascii=False))
+    html = html.replace("__VERSHORT__", APP_SERIES)
     html = html.replace("__VER__", APP_VERSION)
     html = html.replace("__DEFAULTS__", json.dumps(
         {k: DEFAULTS[k] for k, *_ in SLIDERS}))
@@ -3738,7 +3782,7 @@ html[data-boot] .rz{display:none}
   <div class="tbar"><span class="drag pywebview-drag-region"></span>
     <div class="tdrag">
       <span class="logo reveal"><!--ICON:applogo--></span>
-      <span class="vbadge reveal">v__VER__</span>
+      <span class="vbadge reveal">v__VERSHORT__</span>
     </div>
     <div class="tabs">
       <span class="hbtn tab sup reveal" data-url="https://boosty.to/reeeeiin" data-tr="nav_support">Support</span>
