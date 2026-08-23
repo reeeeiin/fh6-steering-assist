@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.0.116
+## v2.0.125
 
 A rebuilt interface, six languages, an assist that answers the moment the
 car steps out, and a licence change.
@@ -22,6 +22,12 @@ car steps out, and a licence change.
 - **Car names** in the telemetry view, read from a table of the game's car
   ids.
 - **Launch-order warning** when the assist starts after the game.
+- **Every press arriving twice is fixed.** Which buttons the virtual pad
+  carries depends on whether the game can already see your pad, and that
+  was decided once at startup. A wireless pad that had not finished
+  connecting lost that moment: the app mirrored every button, the pad
+  turned up seconds later, and from then on every press reached the game
+  twice. The question is now asked once a second rather than once a run.
 - **Presets of your own**, up to three. Save keeps whatever is on the
   sliders, and updates that preset later if you change your mind; Delete
   removes it without touching how the car drives. Each one appears in the
@@ -54,6 +60,15 @@ car steps out, and a licence change.
 - **New defaults**, settled by driving rather than by guessing: assist
   strength 45, alignment 25, steering curve 2.0, response 50, minimum speed
   10 km/h.
+- **A swing is no longer met like a slide.** Coming out of a drift the car
+  could set up a pendulum that was hard to stop, with the driver and the
+  assist correcting into it together. Measured through a model of the car,
+  the countersteer hit three times harder at a fast swing than at the slide
+  it came out of. A slide that keeps crossing straight is now recognised as
+  a swing and the countersteer is held back while it lasts. The yaw damper
+  is left alone - it is the part that takes energy out of a swing. Entry is
+  untouched, and so is a single change of direction: a linked drift does
+  not trip it.
 - **Licensed under the Elastic License 2.0** from this release. The visual
   design and the branding are reserved separately. Releases up to 1.3.0
   keep their MIT grant.
