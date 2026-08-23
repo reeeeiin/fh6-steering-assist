@@ -983,6 +983,58 @@ def test_xinput_mode_is_unaffected_by_the_recheck():
     assert b.mirror_all is False
 
 
+def _drive(profile, seconds=4.0, cfg=None):
+    """Feed the assist a slide angle over time and hand back the assist."""
+    a = fa.Assist(dict(cfg or fa.DEFAULTS))
+    dt, prev = 1 / 60, 0.0
+    for i in range(int(seconds / dt)):
+        beta = math.radians(profile(i * dt))
+        yaw = (beta - prev) / dt * 0.6 + beta * 0.8
+        prev = beta
+        a.update(0.0, fa.Telemetry(120 / 3.6, beta * 0.5, beta * 1.6, yaw,
+                                   beta),
+                 dt, brake=0.0, telemetry_alive=True)
+    return a
+
+
+def test_a_drift_is_not_mistaken_for_a_pendulum():
+    """One slide, held. Nothing crosses straight, so nothing is held back."""
+    a = _drive(lambda t: 25.0 * min(1.0, t / 0.4))
+    assert a._swing < 1e-6, a._swing
+
+
+def test_one_change_of_direction_is_not_a_pendulum():
+    """A linked drift swaps sides on purpose and must keep its full help."""
+    a = _drive(lambda t: 20.0 * (1.0 if t < 1.6 else -1.0)
+               * min(1.0, abs(t - 1.6) / 0.35 if t >= 1.6 else t / 0.35))
+    assert a._swing < 1e-6, a._swing
+
+
+def test_swinging_through_straight_holds_the_countersteer_back():
+    a = _drive(lambda t: 12.0 * math.sin(2 * math.pi * 1.2 * t))
+    assert a._swing > 0.9, a._swing
+
+
+def test_the_help_comes_back_once_the_swinging_stops():
+    """Held back for as long as it is needed, and no longer."""
+    def profile(t):
+        if t < 3.0:
+            return 12.0 * math.sin(2 * math.pi * 1.2 * t)
+        return 20.0          # settled into one steady slide
+    a = _drive(profile, seconds=6.0)
+    assert a._swing < 0.1, a._swing
+
+
+def test_the_yaw_damper_is_left_alone_while_swinging():
+    """It is the one term that takes energy out of a swing - cutting it
+    would make the pendulum worse, not better."""
+    a = _drive(lambda t: 12.0 * math.sin(2 * math.pi * 1.2 * t))
+    gyro = a.dbg[5]
+    assert a._swing > 0.9
+    assert abs(gyro) > 0.01, ("the damper went quiet during a swing: %r"
+                              % (gyro,))
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

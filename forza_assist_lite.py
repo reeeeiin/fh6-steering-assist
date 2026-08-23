@@ -545,6 +545,18 @@ def clamp(v, lo, hi):
     return lo if v < lo else hi if v > hi else v
 
 
+# A slide that keeps crossing straight is a pendulum, not a drift, and
+# the countersteer term is what feeds it: measured against a clean swing it
+# supplies stiffness and slightly negative damping, while the yaw damper
+# supplies all of the damping. So the swing takes the edge off the first
+# and leaves the second alone.
+SWING_WINDOW = 1.3      # seconds a crossing is remembered for
+SWING_TRIP = 2          # crossings in that window before it counts
+SWING_CUT = 0.45        # how much of the countersteer is held back
+SWING_ATTACK = 0.12     # seconds to take it off
+SWING_RELEASE = 0.60    # seconds to give it back once the swinging stops
+SWING_DEADBAND = 0.18   # the slide must actually cross, not just jitter
+
 SLIDE_RAMP = 1.2
 
 # How the slide signal becomes a demand on the wheel.
@@ -584,6 +596,9 @@ class Assist:
         self._dslip_f = 0.0
         self.dbg = (0.0,) * 10
         self._slide = 0.0
+        self._swing = 0.0
+        self._swing_sign = 0
+        self._swing_at = []
         self._shape = 0.0
         self._front_f = 0.0
         self._stick_f = 0.0
@@ -664,6 +679,19 @@ class Assist:
         usable = max(0.0, slip_abs - NOISE_FLOOR)
         excess = usable * (1.0 + EARLY_BOOST / (1.0 + usable / EARLY_KNEE))
 
+        # count how often the slide has crossed straight lately
+        self._clock = getattr(self, "_clock", 0.0) + dt
+        if abs(slip_pred) > SWING_DEADBAND:
+            sign = 1 if slip_pred > 0 else -1
+            if self._swing_sign and sign != self._swing_sign:
+                self._swing_at.append(self._clock)
+            self._swing_sign = sign
+        self._swing_at = [t for t in self._swing_at
+                          if self._clock - t <= SWING_WINDOW]
+        swinging = 1.0 if len(self._swing_at) >= SWING_TRIP else 0.0
+        tau_sw = SWING_ATTACK if swinging > self._swing else SWING_RELEASE
+        self._swing += (1.0 - math.exp(-dt / tau_sw)) * (swinging - self._swing)
+
         raw_slide = clamp(excess / SLIDE_RAMP, 0.0, 1.0) * speed_gate
         self._shape += (1.0 - math.exp(-dt / SHAPE_TAU)) * (
             raw_slide - self._shape)
@@ -695,6 +723,7 @@ class Assist:
                         * excess * STEER_PER_SLIP)
         counter = magnitude * want
         counter *= (1.0 - brake * BRAKE_SUPPRESS) * speed_gate * authority
+        counter *= 1.0 - SWING_CUT * self._swing
         self.rumble_power = clamp(excess / SLIDE_RAMP,
                                   0.0, 1.0) * speed_gate
 
