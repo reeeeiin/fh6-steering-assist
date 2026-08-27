@@ -1,4 +1,5 @@
 
+import json
 import math
 import os
 import socket
@@ -1033,6 +1034,94 @@ def test_the_yaw_damper_is_left_alone_while_swinging():
     assert a._swing > 0.9
     assert abs(gyro) > 0.01, ("the damper went quiet during a swing: %r"
                               % (gyro,))
+
+
+MINE = "HID\\VID_045E&PID_028E&IG_04\\9&abc&0&0000"
+THEIRS = "HID\\VID_054C&PID_09CC&IG_00\\7&xyz&0&0000"
+
+
+def _hidhide(cloak_on=False, already=(), present=()):
+    """A HidHide with the CLI replaced by a recorder."""
+    h = fa.HidHide.__new__(fa.HidHide)
+    h.cli = "cli.exe"
+    h.active = False
+    h.info = h.code = ""
+    h.arg = 0
+    h.hidden = set()
+    h.allowed = set()
+    h._apps = set()
+    h._prior_hidden = set()
+    h._prior_cloak = None
+    h._cli_lock = _DummyLock()
+    h.calls = []
+
+    gaming = json.dumps([{"devices": [{"deviceInstancePath": p,
+                                       "present": True} for p in present]}])
+
+    def run(*args):
+        h.calls.append(args)
+        if args[0] == "--cloak-state":
+            return "--cloak-on" if cloak_on else "--cloak-off"
+        if args[0] == "--dev-list":
+            return "".join('--dev-hide "%s"\n' % p for p in already)
+        if args[0] == "--dev-gaming":
+            return gaming
+        if args[0] == "--app-list":
+            return ""
+        return ""
+
+    h._run = run
+    return h
+
+
+class _DummyLock:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_closing_gives_the_pad_back_to_everything_else():
+    h = _hidhide(present=[MINE])
+    h.engage()
+    assert MINE in h.hidden
+    h.calls.clear()
+    h.disengage()
+    assert ("--dev-unhide", MINE) in h.calls, h.calls
+    assert ("--cloak-off",) in h.calls, h.calls
+    assert h.hidden == set()
+
+
+def test_a_device_somebody_else_hid_is_left_hidden():
+    """Their pad, their reasons - we only put back what we took."""
+    h = _hidhide(already=[THEIRS], present=[MINE, THEIRS])
+    h.engage()
+    assert THEIRS not in h.hidden
+    h.calls.clear()
+    h.disengage()
+    assert ("--dev-unhide", THEIRS) not in h.calls, h.calls
+    assert ("--dev-unhide", MINE) in h.calls, h.calls
+
+
+def test_a_cloak_that_was_already_on_stays_on():
+    """Somebody running HidHide for something else keeps their setup."""
+    h = _hidhide(cloak_on=True, present=[MINE])
+    h.engage()
+    h.calls.clear()
+    h.disengage()
+    assert ("--cloak-off",) not in h.calls, h.calls
+    assert ("--dev-unhide", MINE) in h.calls, h.calls
+
+
+def test_disengage_twice_does_nothing_the_second_time():
+    """It runs from the loop's shutdown and from atexit, and both may fire."""
+    h = _hidhide(present=[MINE])
+    h.engage()
+    h.disengage()
+    h.calls.clear()
+    h.disengage()
+    assert h.calls == [], h.calls
 
 
 def main():

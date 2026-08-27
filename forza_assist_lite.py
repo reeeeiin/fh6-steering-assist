@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+import atexit
 import ctypes
 import json
 import math
@@ -1835,6 +1836,7 @@ class DriverSetup:
         self.code = "idle"
         self.info = ""
         self.installed = []
+        self.reboot_for = []
 
     @staticmethod
     def _manifest() -> dict:
@@ -1928,7 +1930,7 @@ class DriverSetup:
         if on_install:
             on_install()
         self.info = "installing " + ", ".join(n for n, _, _ in need)
-        reboot = False
+        reboot = []
         failed = []
         for label, key, why in need:
             msi = self._bundled(str(manifest.get(key, {}).get("file", "")))
@@ -1945,8 +1947,12 @@ class DriverSetup:
             if rc == 0:
                 self.installed.append(label)
             elif rc == 3010:
+                # 3010 is Windows saying the files are in place but
+                # something it replaced is still in use. Which package said
+                # it decides whether skipping the restart costs anything,
+                # so the name is kept rather than just the fact.
                 self.installed.append(label)
-                reboot = True
+                reboot.append(label)
             else:
                 failed.append(label)
 
@@ -1955,7 +1961,9 @@ class DriverSetup:
             self.info = "failed to install: " + ", ".join(failed)
         elif reboot:
             self.code = "reboot"
-            self.info = "drivers installed, reboot required"
+            self.reboot_for = list(reboot)
+            self.info = ("installed, restart wanted by: "
+                         + ", ".join(reboot))
         else:
             self.code = "done"
             self.info = "drivers installed: " + ", ".join(self.installed)
@@ -1975,6 +1983,11 @@ class HidHide:
         self.arg = 0
         self.hidden = set()
         self.allowed = set()
+        # What HidHide looked like before we touched it. Closing puts it
+        # back to exactly this: anything the user hid for their own reasons
+        # stays hidden, and the cloak goes back on or off as we found it.
+        self._prior_hidden = set()
+        self._prior_cloak = None
         self._apps = set()
         # the CLI talks to the driver one caller at a time; overlapping
         # invocations fail, which reads as "an error occurred while hiding
@@ -1992,6 +2005,13 @@ class HidHide:
             raise RuntimeError((cp.stderr or cp.stdout or " ".join(args)).strip())
         return cp.stdout
 
+    def _cloak_is_on(self) -> bool:
+        return "--cloak-on" in (self._run("--cloak-state") or "")
+
+    def _already_hidden(self) -> set:
+        listed = self._run("--dev-list") or ""
+        return set(re.findall(r'"([^"]+)"', listed))
+
     def rescan(self):
         self.cli = next((p for p in self.CLI_PATHS if os.path.isfile(p)), None)
         return self.cli
@@ -2002,14 +2022,26 @@ class HidHide:
             self.info = "HidHide is not installed - the pad is NOT hidden from the game"
             return False
         try:
+            try:
+                self._prior_cloak = self._cloak_is_on()
+                self._prior_hidden = self._already_hidden()
+            except Exception:
+                # Better to hide nothing back than to guess wrong and
+                # unhide a device somebody else put there.
+                self._prior_cloak, self._prior_hidden = None, set()
             self._run("--app-reg", sys.executable)
             self._apps.add(sys.executable.lower())
             self.whitelist_companions()
             for path in self._present_paths():
                 self._run("--dev-hide", path)
-                self.hidden.add(path)
+                if path not in self._prior_hidden:
+                    self.hidden.add(path)
             self._run("--cloak-on")
             self.active = True
+            # The loop's own shutdown does this too. This is for the exits
+            # that never reach it, which would otherwise leave the pad
+            # hidden from everything else on the machine.
+            atexit.register(self.disengage)
             self.code, self.arg = "hidden", len(self.hidden)
             self.info = f"pad hidden from the game ({len(self.hidden)} devices)"
             # tidying the whitelist is slow and matters to nobody waiting, so
@@ -2109,7 +2141,8 @@ class HidHide:
         if not (self.cli and self.active):
             return
         try:
-            new = self._present_paths() - self.hidden - self.allowed
+            new = (self._present_paths() - self.hidden - self.allowed
+                   - self._prior_hidden)
             if new:
                 self.whitelist_companions()
                 for path in new:
@@ -2122,13 +2155,29 @@ class HidHide:
             pass
 
     def disengage(self):
-        if self.cli and self.active:
+        """Hand the pad back. Only what we hid is unhidden, and the cloak
+        returns to the setting we found - leaving it off would quietly
+        break anyone using HidHide for something else, and leaving our
+        devices hidden would keep the pad away from every other game."""
+        if not (self.cli and self.active):
+            return
+        self.active = False
+        freed = 0
+        for path in sorted(self.hidden):
             try:
-                self._run("--cloak-off")
-                self.info = "off, the pad is visible to all games again"
+                self._run("--dev-unhide", path)
+                freed += 1
             except Exception:
                 pass
-            self.active = False
+        self.hidden.clear()
+        try:
+            if self._prior_cloak is False:
+                self._run("--cloak-off")
+        except Exception:
+            pass
+        self.info = ("the pad is back, visible to everything again "
+                     "(%d released)" % freed)
+        self.code = "released"
 
 class Bridge:
     def __init__(self):
@@ -5290,6 +5339,8 @@ class Api:
             "Windows: %s" % win,
             "Mode: %s" % (b.mode_info or ("HID" if b.hid_mode else "wired")),
             "Drivers: %s" % (b.drivers.code or "-"),
+            "Restart wanted by: %s" % (", ".join(b.drivers.reboot_for)
+                                       or "nothing"),
             "Pad hiding: %s" % (b.hidhide.code or "-"),
             "Telemetry: %s" % tele,
             "Pad rate: %s Hz" % (b.pad_hz or "-"),
