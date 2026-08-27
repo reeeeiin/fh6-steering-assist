@@ -164,13 +164,7 @@ STEPS = [
 
 
 def index_page(app_html: str) -> str:
-    # The page is dark throughout, and the wordmark is white, so here it
-    # can simply be the picture - the app needs the mask because it also
-    # has a light theme to survive.
-    import base64
-    art = fa._read_asset_bytes(os.path.join("icons", "applogo.png"))
-    logo = ('<img src="data:image/png;base64,%s" alt="Steering Assist">'
-            % base64.b64encode(art).decode()) if art else ""
+    logo = fa._icon("applogo")
     faq = fa.FAQ_ITEMS["en"]
     ver = fa.APP_VERSION
 
@@ -203,7 +197,7 @@ body{margin:0;background:var(--bg);color:var(--fg);
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
 header{padding:96px 0 64px;text-align:center}
 .logo{width:660px;max-width:86vw;margin:0 auto 34px;display:block}
-.logo img{width:100%;height:auto;display:block}
+.logo svg{width:100%;height:auto;display:block;color:var(--fg)}
 h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
 .sub{color:var(--dim);font-size:clamp(15px,1.6vw,18px);max-width:640px;
      margin:0 auto 30px}
