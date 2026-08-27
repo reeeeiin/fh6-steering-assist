@@ -23,7 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
 REPO = "https://github.com/reeeeiin/fh6-steering-assist"
 # Design units, sized to the tallest screen the app has - Settings.
-PREVIEW_H = 760
+PREVIEW_H = 820
 
 # The stand-in for the Python side. It answers the same calls the app makes,
 # with a car that is permanently mid-drift so the readouts have something to
@@ -119,6 +119,9 @@ html,body{width:100%;height:100%;overflow:hidden;margin:0}
 #zoom{width:__DW__px;min-width:__DW__px;max-width:__DW__px;
       height:__PH__px;min-height:__PH__px;margin:0 auto;overflow:hidden}
 .tbar .hbtn.close,.tbar .hbtn.min{display:none}
+/* On a phone the frame is narrower than the layout. Let it scroll rather
+   than cut the right-hand side off. */
+@media (max-width:660px){html,body{overflow:auto}}
 </style></head>""".replace("__DW__", str(fa.DESIGN_W))
                             .replace("__PH__", str(PREVIEW_H)), 1)
     return html.replace("<script>", stub + "<script>", 1)
@@ -207,11 +210,11 @@ h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
          border:1px solid var(--line)}
 .btn.sec:hover{background:#181818}
 .ver{color:var(--dim);font-size:13px;margin-top:14px}
-section{padding:72px 0}
+section.wrap{padding:36px 24px}
 h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
 .lede{color:var(--dim);margin:0 0 34px;max-width:680px}
 .frame{border:1px solid var(--line);border-radius:14px;overflow:hidden;
-       background:#0f0f0f}
+       background:#0f0f0f;width:__FRAME_W__px;max-width:100%;margin:0 auto}
 .frame iframe{display:block;width:100%;height:__FRAME_H__px;border:0}
 .note{color:var(--dim);font-size:13px;margin-top:12px;text-align:center}
 .grid{display:grid;gap:22px;
@@ -287,7 +290,7 @@ footer a{color:var(--dim)}
    .replace("__FAQ__", faqs) \
    .replace("__REPO__", REPO) \
    .replace("__VER__", ver) \
-   .replace("__FRAME_H__", str(int(round(PREVIEW_H * fa.UI_SCALE)) + 8))
+   .replace("__FRAME_H__", str(int(round(PREVIEW_H * fa.UI_SCALE)) + 8))    .replace("__FRAME_W__", str(int(round(fa.DESIGN_W * fa.UI_SCALE)) + 2))
 
 
 def main():
