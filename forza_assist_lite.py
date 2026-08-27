@@ -3380,6 +3380,16 @@ def _read_asset(name):
                 return f.read()
     return None
 
+def _read_asset_bytes(name):
+    """The same lookup as _read_asset, for artwork that is not text."""
+    for base in (_app_dir(), _res_dir()):
+        p = os.path.join(base, "assets", name)
+        if os.path.isfile(p):
+            with open(p, "rb") as f:
+                return f.read()
+    return None
+
+
 def _font_b64(name):
     import base64
     for base in (_app_dir(), _res_dir()):
@@ -3399,15 +3409,32 @@ def _icon_names():
     for base in (_app_dir(), _res_dir()):
         d = os.path.join(base, "assets", "icons")
         if os.path.isdir(d):
-            return sorted(n[:-4] for n in os.listdir(d) if n.endswith(".svg"))
+            return sorted({n[:-4] for n in os.listdir(d)
+                           if n.endswith(".svg") or n.endswith(".png")})
     return []
+
+
+def _png_icon(name: str) -> str:
+    """Artwork that arrives as a picture rather than as paths.
+
+    Drawn as a mask filled with the current text colour, not as an <img>:
+    the wordmark is white, and on the light theme an image of it would be
+    white on white. As a mask it takes whatever colour the theme sets, the
+    way the traced version did.
+    """
+    import base64
+    data = _read_asset_bytes(os.path.join("icons", name + ".png"))
+    if not data:
+        return ""
+    url = "url(data:image/png;base64," + base64.b64encode(data).decode() + ")"
+    return '<i class="pngicon" style="--src:%s"></i>' % url
 
 
 def _icon(name: str) -> str:
     """Inline an exported Figma icon, recoloured to follow the text colour."""
     raw = _read_asset(os.path.join("icons", name + ".svg"))
     if not raw:
-        return ""
+        return _png_icon(name)
     raw = re.sub(r'\s(width|height)="[^"]*"', "", raw, count=2)
     raw = raw.replace('stroke="black"', 'stroke="currentColor"')
     raw = raw.replace('fill="black"', 'fill="currentColor"')
@@ -3561,6 +3588,12 @@ body.t-light{
 .hbtn.sq[data-win=min] svg{width:10px;height:2px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none;margin-right:3px}
 .logo svg{display:block;width:94px;height:17px}
+/* Artwork that came as a picture rather than as paths is painted through
+   a mask, so it still takes its colour from the theme. */
+.pngicon{display:block;background:currentColor;
+         -webkit-mask:var(--src) no-repeat center/contain;
+         mask:var(--src) no-repeat center/contain}
+.logo .pngicon{width:92px;height:17px}
 /* update check: one button that carries every state, with a spinner or a
    download button appearing beside it */
 .updwrap{display:flex;align-items:center;gap:5px;flex:none;
@@ -3865,6 +3898,7 @@ body.t-light{
 .btag{position:absolute;top:30px;left:0;right:0;display:flex;
       justify-content:center;color:var(--logo-fg)}
 .btag svg{display:block;width:141px;height:20px}
+.btag .pngicon{width:141px;height:20px}
 
 .bstage{position:absolute;left:0;right:0;
         transition:opacity .45s ease,transform .45s ease}
