@@ -69,9 +69,12 @@ car steps out, and a licence change.
   is left alone - it is the part that takes energy out of a swing. Entry is
   untouched, and so is a single change of direction: a linked drift does
   not trip it.
-- **Licensed under the Elastic License 2.0** from this release. The visual
-  design and the branding are reserved separately. Releases up to 1.3.0
-  keep their MIT grant.
+- **Source-available from this release.** The source is published to be
+  read, checked and built by anyone, but it is not offered as a starting
+  point for other projects: no redistribution, no modified versions, no
+  using it as the basis of another program without written permission. The
+  interface design and the branding sit outside the licence entirely.
+  Releases up to 1.3.0 keep their MIT grant.
 - **Starting after the game no longer means restarting it.** Reconnecting
   the controller is enough: the game rescans its inputs and finds the
   assist.

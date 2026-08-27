@@ -22,6 +22,8 @@ import forza_assist_lite as fa   # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
 REPO = "https://github.com/reeeeiin/fh6-steering-assist"
+# Design units, sized to the tallest screen the app has - Settings.
+PREVIEW_H = 760
 
 # The stand-in for the Python side. It answers the same calls the app makes,
 # with a car that is permanently mid-drift so the readouts have something to
@@ -108,11 +110,17 @@ def app_page() -> str:
                 .replace("__SLIDERS__", json.dumps([k for k, *_ in fa.SLIDERS]))
                 .replace("__SLOTS__", json.dumps(list(fa.SLOT_KEYS)))
                 .replace("__VER__", fa.APP_VERSION))
-    # in a page rather than a frameless window, let it size to the frame
+    # In the app the window grows and shrinks to whatever screen is open.
+    # On a page that reads as the layout jumping about, so the preview is
+    # pinned to one size - the tallest screen - and every tab sits inside
+    # it. PREVIEW_H is in design units, the same ones the app is drawn in.
     html = html.replace("</head>", """<style>
-html,body{overflow:auto}
+html,body{width:100%;height:100%;overflow:hidden;margin:0}
+#zoom{width:__DW__px;min-width:__DW__px;max-width:__DW__px;
+      height:__PH__px;min-height:__PH__px;margin:0 auto;overflow:hidden}
 .tbar .hbtn.close,.tbar .hbtn.min{display:none}
-</style></head>""", 1)
+</style></head>""".replace("__DW__", str(fa.DESIGN_W))
+                            .replace("__PH__", str(PREVIEW_H)), 1)
     return html.replace("<script>", stub + "<script>", 1)
 
 
@@ -122,29 +130,24 @@ def fonts_from(html: str) -> str:
 
 
 FEATURES = [
-    ("Reads the car, not the game",
-     "Forza's own telemetry, sixty times a second: how far the car is "
-     "travelling sideways against where its nose points. No memory reading, "
-     "no game files touched, no injection - a virtual pad and a UDP socket."),
-    ("Answers the first degree of a slide",
-     "The help arrives while the car is still barely out of line, rather "
-     "than once it has gone. Measured, not guessed: every change to how it "
-     "steers in this project came with numbers behind it."),
-    ("Knows a swing from a drift",
-     "A slide that keeps crossing straight is a pendulum, and meeting it "
-     "with full countersteer is what keeps it going. It backs off there, "
-     "and only there - a linked drift keeps everything."),
-    ("Your own presets",
-     "Three of them, saved from whatever is on the sliders, switched from "
-     "the same row. Delete one and the car keeps driving the way it was."),
+    ("Catches the slide, you keep the drift",
+     "Countersteer arrives as the car steps out and eases away as it comes "
+     "back, so a drift holds instead of snapping into a spin."),
+    ("Steps aside the moment you disagree",
+     "Steer against it and the wheel is yours. It never fights you for it, "
+     "and it stays quiet entirely until the car is actually sliding."),
+    ("Smooth, not twitchy",
+     "Steady through the transitions, and it will not start a pendulum of "
+     "its own when a slide swings back through straight."),
+    ("Tune it, then keep it",
+     "Five sliders that each do one thing, and three presets of your own to "
+     "save them in and switch between."),
     ("Six languages, and it fits your screen",
-     "English, Russian, Spanish, French, German and Japanese throughout, "
-     "including setup and the FAQ. Light and dark, and a scale from 90 to "
-     "150 percent that grows the whole layout, not just the text."),
+     "English, Russian, Spanish, French, German and Japanese throughout. "
+     "Light and dark, and a scale from 90 to 150 percent."),
     ("Nothing to install by hand",
-     "The drivers it needs ship inside the exe and set themselves up on "
-     "first run. It puts your pad back exactly as it found it when you "
-     "close it."),
+     "One exe. Everything it needs is inside it and sets itself up on first "
+     "run, and it hands your controller back exactly as it found it."),
 ]
 
 STEPS = [
@@ -179,7 +182,7 @@ def index_page(app_html: str) -> str:
 <meta name="description" content="A drift and countersteer assist for Forza
 Horizon on a gamepad. Reads the game's own telemetry, steers through a
 virtual controller, touches no game files. Free and open source.">
-<link rel="icon" href="data:image/svg+xml,%%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%%3E%%3Crect width='32' height='32' rx='8' fill='%%230492F8'/%%3E%%3C/svg%%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230492F8'/%3E%3C/svg%3E">
 <style>
 __FONTS__
 :root{--bg:#0b0b0b;--card:#141414;--line:rgba(255,255,255,.07);
@@ -189,9 +192,9 @@ body{margin:0;background:var(--bg);color:var(--fg);
      font-family:Chiron,-apple-system,"Segoe UI",Roboto,sans-serif;
      line-height:1.55;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-header{padding:72px 0 40px;text-align:center}
-.logo{width:220px;max-width:70vw;margin:0 auto 26px;display:block}
-.logo svg{width:100%%;height:auto}
+header{padding:96px 0 64px;text-align:center}
+.logo{width:660px;max-width:86vw;margin:0 auto 34px;display:block}
+.logo svg{width:100%;height:auto;display:block}
 h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
 .sub{color:var(--dim);font-size:clamp(15px,1.6vw,18px);max-width:640px;
      margin:0 auto 30px}
@@ -204,16 +207,17 @@ h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
          border:1px solid var(--line)}
 .btn.sec:hover{background:#181818}
 .ver{color:var(--dim);font-size:13px;margin-top:14px}
-section{padding:46px 0}
-h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 8px}
-.lede{color:var(--dim);margin:0 0 26px;max-width:680px}
+section{padding:72px 0}
+h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
+.lede{color:var(--dim);margin:0 0 34px;max-width:680px}
 .frame{border:1px solid var(--line);border-radius:14px;overflow:hidden;
        background:#0f0f0f}
-.frame iframe{display:block;width:100%%;height:760px;border:0}
+.frame iframe{display:block;width:100%;height:__FRAME_H__px;border:0}
 .note{color:var(--dim);font-size:13px;margin-top:12px;text-align:center}
-.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+.grid{display:grid;gap:22px;
+      grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
-      padding:20px 22px}
+      padding:24px 26px}
 .card h3{margin:0 0 8px;font-size:16px}
 .card p{margin:0;color:var(--dim);font-size:14px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
@@ -226,20 +230,19 @@ details p{color:var(--dim);font-size:14px;margin:10px 0 0}
 footer{padding:40px 0 60px;color:var(--dim);font-size:13px;
        border-top:1px solid var(--line);margin-top:30px}
 footer a{color:var(--dim)}
-@media (max-width:640px){.frame iframe{height:620px}}
+@media (max-width:640px){.frame iframe{height:__FRAME_H__px}}
 </style></head><body>
 
 <header><div class="wrap">
   <div class="logo">__LOGO__</div>
-  <h1>Drift assist for Forza Horizon, on a gamepad</h1>
-  <p class="sub">It reads the game's own telemetry sixty times a second and
-  feeds countersteer into a virtual controller - so the car answers the
-  moment it steps out, and hands the wheel back the instant you disagree.</p>
+  <h1>Gamepad Drift assist for Forza Horizon</h1>
+  <p class="sub">Telemetry based steering assist, for smooth, stable and
+  enjoyable drifting in the Forza Horizon series. 100% Free To Use!</p>
   <div class="cta">
     <a class="btn" href="__REPO__/releases/latest">Download</a>
     <a class="btn sec" href="__REPO__">Source on GitHub</a>
   </div>
-  <div class="ver">Free and open source - Elastic License 2.0 - Windows -
+  <div class="ver">Free to use - source available - Windows -
   version __VER__</div>
 </div></header>
 
@@ -274,7 +277,7 @@ footer a{color:var(--dim)}
   endorsed by Microsoft, Playground Games or Turn 10 Studios. Forza is a
   trademark of Microsoft Corporation. Created and published by reeeeiin.</p>
   <p>Steering Assist &#8482; 2026. Released under the
-  <a href="__REPO__/blob/main/LICENSE">Elastic License 2.0</a>.</p>
+  <a href="__REPO__/blob/main/LICENSE">Steering Assist Source-Available Licence 1.0</a>.</p>
 </div></footer>
 </body></html>
 """.replace("__FONTS__", fonts_from(app_html)) \
@@ -283,7 +286,8 @@ footer a{color:var(--dim)}
    .replace("__STEPS__", steps) \
    .replace("__FAQ__", faqs) \
    .replace("__REPO__", REPO) \
-   .replace("__VER__", ver)
+   .replace("__VER__", ver) \
+   .replace("__FRAME_H__", str(int(round(PREVIEW_H * fa.UI_SCALE)) + 8))
 
 
 def main():

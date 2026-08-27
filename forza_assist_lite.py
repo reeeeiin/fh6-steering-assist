@@ -3994,7 +3994,7 @@ html[data-boot] .rz{display:none}
   </div>
   <div class="foot reveal"><span class="drag pywebview-drag-region"></span>
     <span>Steering Assist is an independent fan project. Not affiliated with or endorsed by Microsoft, Playground Games or Turn 10 Studios.<br>Forza is a trademark of Microsoft Corporation. Created and published by reeeeiin.</span>
-    <span>Steering Assist &#8482; 2026. Released under the Elastic License 2.0.</span>
+    <span>Steering Assist &#8482; 2026. Released under the Steering Assist Source-Available Licence 1.0.</span>
   </div>
 </div>
 <div id="boot">
