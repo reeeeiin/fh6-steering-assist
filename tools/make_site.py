@@ -13,6 +13,7 @@ import io
 import json
 import os
 import re
+import shutil
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -185,7 +186,9 @@ def index_page(app_html: str) -> str:
 <meta name="description" content="A drift and countersteer assist for Forza
 Horizon on a gamepad. Reads the game's own telemetry, steers through a
 virtual controller, touches no game files. Free and open source.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230492F8'/%3E%3C/svg%3E">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="icon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icon-180.png">
 <style>
 __FONTS__
 :root{--bg:#0b0b0b;--card:#141414;--line:rgba(255,255,255,.07);
@@ -293,6 +296,32 @@ footer a{color:var(--dim)}
    .replace("__FRAME_H__", str(int(round(PREVIEW_H * fa.UI_SCALE)) + 8))    .replace("__FRAME_W__", str(int(round(fa.DESIGN_W * fa.UI_SCALE)) + 2))
 
 
+def write_icons():
+    """The tab icon, from the same artwork the exe is built with.
+
+    Sizes rather than one large file: a favicon slot is 16 or 32 pixels
+    across, and handing it half a megabyte to shrink is wasteful. The .ico
+    is the one the exe already carries, which holds every small size in one
+    file; the 180 is what a phone uses when the page is pinned.
+    """
+    src = os.path.join(ROOT, "steering.ico")
+    if os.path.isfile(src):
+        shutil.copyfile(src, os.path.join(DOCS, "favicon.ico"))
+    art = os.path.join(ROOT, "assets", "app-icon.png")
+    if not os.path.isfile(art):
+        return
+    try:
+        from PIL import Image
+    except ImportError:
+        print("Pillow missing - the png icons were not rebuilt")
+        return
+    im = Image.open(art).convert("RGBA")
+    for px in (32, 180):
+        out = os.path.join(DOCS, "icon-%d.png" % px)
+        im.resize((px, px), Image.LANCZOS).save(out, format="PNG",
+                                                optimize=True)
+
+
 def main():
     if not os.path.isdir(DOCS):
         os.makedirs(DOCS)
@@ -301,12 +330,15 @@ def main():
             newline="\n").write(app)
     io.open(os.path.join(DOCS, "index.html"), "w", encoding="utf-8",
             newline="\n").write(index_page(app))
+    write_icons()
     # Pages runs Jekyll otherwise, which eats files starting with an
     # underscore and slows every build down for nothing.
     io.open(os.path.join(DOCS, ".nojekyll"), "w", encoding="utf-8").write("")
-    for name in ("index.html", "app.html"):
+    for name in ("index.html", "app.html", "favicon.ico", "icon-32.png",
+                 "icon-180.png"):
         p = os.path.join(DOCS, name)
-        print("%-12s %6.0f KB" % (name, os.path.getsize(p) / 1024))
+        if os.path.isfile(p):
+            print("%-14s %6.1f KB" % (name, os.path.getsize(p) / 1024))
     return 0
 
 
