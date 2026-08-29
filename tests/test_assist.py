@@ -1330,6 +1330,59 @@ def test_the_restart_notice_sits_above_the_screen_it_covers():
         "the notice is written before the screens it covers")
 
 
+def test_removing_everything_is_asked_before_it_is_done():
+    """It uninstalls drivers and deletes settings; it may not start from a
+    single click."""
+    page = fa.build_html()
+    assert 'id="btn-wipe"' in page
+    assert "function askWipe(" in page
+    assert "pywebview.api.wipe()" in page
+    ask = page.index("function askWipe(")
+    call = page.index("pywebview.api.wipe()")
+    assert ask < call, "the call is not inside the confirmation"
+    for lang, tr in fa.TR.items():
+        for key in ("wipe_ask", "wipe_ask_text", "wipe_btn", "btn_cancel"):
+            assert tr.get(key), "%s is missing %s" % (lang, key)
+
+
+def test_a_restart_is_offered_never_imposed():
+    """Both notices ask which moment suits, rather than ordering one and
+    then mentioning it."""
+    page = fa.build_html()
+    for lang, tr in fa.BOOT_TR.items():
+        for key in ("rsNow", "rsLater", "rsCancel"):
+            assert tr.get(key), "%s is missing %s" % (lang, key)
+    for lang, tr in fa.TR.items():
+        assert tr.get("btn_restart_now") and tr.get("btn_later"), lang
+    assert "if (pending) restartNotice();" in page, (
+        "the step button orders a restart before asking again")
+
+
+def test_the_settings_file_is_not_rewritten_after_it_is_deleted():
+    """A save timer firing after the folder has gone would put it back."""
+    assert fa._saving_off is False
+    fa._saving_off = True
+    try:
+        before = _read_settings()
+        fa.save_config({"version": 1, "canary": True})
+        assert _read_settings() == before, "it wrote anyway"
+    finally:
+        fa._saving_off = False
+
+
+def test_the_uninstall_targets_the_package_that_is_installed():
+    """Whatever it removes has to be what the version check found, not a
+    name matched by hand."""
+    for label, reg_name, _svc, _key in fa.DriverSetup.ITEMS:
+        have = fa.installed_version(reg_name)
+        code = fa.uninstall_code(reg_name)
+        if have is None:
+            continue
+        if code is None:
+            continue      # installed without an MSI product code
+        assert code.startswith("{") and code.endswith("}"), (label, code)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

@@ -858,6 +858,8 @@ BOOT_TR = {
         "rsTitle": 'Restarting',
         "rsText": 'Windows is restarting to finish the driver setup. Steering Assist opens again by itself once you are back.',
         "rsCancel": 'Cancel',
+        "rsLater": 'Later',
+        "rsNow": 'Restart now',
         "btnSkip": 'Skip',
         "errTitle": 'Something went wrong', "errBtn": 'Start over',
         "errors": {
@@ -915,6 +917,8 @@ BOOT_TR = {
         "rsTitle": 'Перезагрузка',
         "rsText": 'Windows перезагружается, чтобы завершить установку драйверов. Steering Assist откроется сам, когда вы вернётесь.',
         "rsCancel": 'Отменить',
+        "rsLater": 'Позже',
+        "rsNow": 'Перезагрузить',
         "btnSkip": 'Позже',
         "errTitle": 'Что-то пошло не так', "errBtn": 'Начать заново',
         "errors": {
@@ -972,6 +976,8 @@ BOOT_TR = {
         "rsTitle": 'Reiniciando',
         "rsText": 'Windows se reinicia para terminar la instalacion de los controladores. Steering Assist se abre solo al volver.',
         "rsCancel": 'Cancelar',
+        "rsLater": 'Mas tarde',
+        "rsNow": 'Reiniciar',
         "btnSkip": 'Ahora no',
         "errTitle": 'Algo ha salido mal', "errBtn": 'Empezar de nuevo',
         "errors": {
@@ -1029,6 +1035,8 @@ BOOT_TR = {
         "rsTitle": 'Redemarrage',
         "rsText": 'Windows redemarre pour terminer l’installation des pilotes. Steering Assist se rouvre tout seul a votre retour.',
         "rsCancel": 'Annuler',
+        "rsLater": 'Plus tard',
+        "rsNow": 'Redemarrer',
         "btnSkip": 'Plus tard',
         "errTitle": 'Une erreur est survenue', "errBtn": 'Recommencer',
         "errors": {
@@ -1086,6 +1094,8 @@ BOOT_TR = {
         "rsTitle": 'Neustart',
         "rsText": 'Windows startet neu, um die Treiberinstallation abzuschliessen. Steering Assist offnet sich danach von selbst.',
         "rsCancel": 'Abbrechen',
+        "rsLater": 'Spater',
+        "rsNow": 'Jetzt neu starten',
         "btnSkip": 'Spaeter',
         "errTitle": 'Etwas ist schiefgelaufen', "errBtn": 'Neu starten',
         "errors": {
@@ -1143,6 +1153,8 @@ BOOT_TR = {
         "rsTitle": '再起動します',
         "rsText": 'ドライバーのインストールを完了するために Windows を再起動します。戻ってくると Steering Assist は自動で開きます。',
         "rsCancel": 'キャンセル',
+        "rsLater": 'あとで',
+        "rsNow": '今すぐ再起動',
         "btnSkip": '後で',
         "errTitle": '問題が発生しました', "errBtn": 'やり直す',
         "errors": {
@@ -1788,7 +1800,14 @@ def load_config() -> dict:
     except (OSError, ValueError):
         return dict(DEFAULTS)
 
+# Set while removing everything: the folder is being deleted, and a timer
+# firing after it has gone would put the file straight back.
+_saving_off = False
+
+
 def save_config(cfg: dict) -> None:
+    if _saving_off:
+        return
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
@@ -1857,6 +1876,36 @@ def device_present(name: str) -> bool:
         return False
     k32.CloseHandle(ctypes.c_void_p(handle))
     return True
+
+
+def uninstall_code(name_part: str) -> str | None:
+    """The product code of an installed package, for msiexec /x.
+
+    Taken from the same place the version is read from, so a driver that
+    reports itself installed is the one that gets removed."""
+    import winreg
+    branches = (r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+                r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion"
+                r"\Uninstall")
+    for branch in branches:
+        try:
+            root = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, branch)
+        except OSError:
+            continue
+        with root:
+            for i in range(winreg.QueryInfoKey(root)[0]):
+                try:
+                    key = winreg.EnumKey(root, i)
+                    with winreg.OpenKey(root, key) as sub:
+                        name = winreg.QueryValueEx(sub, "DisplayName")[0]
+                        if name_part.lower() not in str(name).lower():
+                            continue
+                except OSError:
+                    continue
+                # the key name is the product code for an MSI package
+                if key.startswith("{") and key.endswith("}"):
+                    return key
+    return None
 
 
 def installed_version(name_part: str) -> str | None:
@@ -2899,6 +2948,17 @@ TR = {
         "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
         "prof_default": "Default",
         "prof_custom": "Custom",
+        "wipe_sec": 'Remove',
+        "wipe_row": 'Remove everything',
+        "wipe_btn": 'Remove',
+        "wipe_hint": 'Uninstalls both drivers, clears what was added to HidHide and deletes your settings. Nothing of this app is left on the machine. Windows wants a restart afterwards',
+        "wipe_ask": 'Remove everything?',
+        "wipe_ask_text": 'The two drivers, everything added to HidHide, and your settings and presets. This cannot be undone.',
+        "wipe_busy": 'Removing...',
+        "wipe_done": 'Removed. Windows needs a restart to finish taking the drivers out.',
+        "btn_restart_now": 'Restart now',
+        "btn_later": 'Later',
+        "btn_cancel": 'Cancel',
         "slot_row": "Custom preset",
         "slot_row_hint": "Save what is on the sliders as a preset of your own. Three of them fit, and deleting one leaves the sliders where they are",
         "btn_save": "Save",
@@ -3007,6 +3067,17 @@ TR = {
         "profile_hint": "Готовые наборы. Любое движение ползунка переключает на «Свой» и сохраняет твои значения — к ним всегда можно вернуться.",
         "prof_default": "Обычный",
         "prof_custom": "Свой",
+        "wipe_sec": 'Удаление',
+        "wipe_row": 'Удалить всё',
+        "wipe_btn": 'Удалить',
+        "wipe_hint": 'Удаляет оба драйвера, чистит записи в HidHide и стирает настройки. От приложения на машине не остаётся ничего. После этого Windows потребует перезагрузку',
+        "wipe_ask": 'Удалить всё?',
+        "wipe_ask_text": 'Два драйвера, все записи в HidHide, настройки и пресеты. Отменить это будет нельзя.',
+        "wipe_busy": 'Удаляем...',
+        "wipe_done": 'Удалено. Чтобы драйверы ушли окончательно, Windows нужно перезагрузить.',
+        "btn_restart_now": 'Перезагрузить',
+        "btn_later": 'Позже',
+        "btn_cancel": 'Отмена',
         "slot_row": "Свой пресет",
         "slot_row_hint": "Сохранить текущие значения как свой пресет. Их помещается три, а удаление пресета не двигает ползунки",
         "btn_save": "Сохранить",
@@ -3115,6 +3186,17 @@ TR = {
         "profile_hint": "Fertige Voreinstellungen. Jeder Reglerzug wechselt auf Eigenes und behält deine Werte, du kommst also immer zurück.",
         "prof_default": "Standard",
         "prof_custom": "Eigenes",
+        "wipe_sec": 'Entfernen',
+        "wipe_row": 'Alles entfernen',
+        "wipe_btn": 'Entfernen',
+        "wipe_hint": 'Entfernt beide Treiber, raumt die Eintrage in HidHide auf und loscht die Einstellungen. Es bleibt nichts zuruck. Windows will danach einen Neustart',
+        "wipe_ask": 'Alles entfernen?',
+        "wipe_ask_text": 'Beide Treiber, alles in HidHide Eingetragene, die Einstellungen und Vorgaben. Das lasst sich nicht ruckgangig machen.',
+        "wipe_busy": 'Wird entfernt...',
+        "wipe_done": 'Entfernt. Windows braucht einen Neustart, damit die Treiber ganz verschwinden.',
+        "btn_restart_now": 'Jetzt neu starten',
+        "btn_later": 'Spater',
+        "btn_cancel": 'Abbrechen',
         "slot_row": "Eigene Vorgabe",
         "slot_row_hint": "Die aktuellen Werte als eigene Vorgabe sichern. Drei passen hinein, und Löschen verstellt die Regler nicht",
         "btn_save": "Sichern",
@@ -3223,6 +3305,17 @@ TR = {
         "profile_hint": "Réglages prêts à l'emploi. Bouger un curseur passe sur Perso et conserve tes valeurs, tu peux toujours y revenir.",
         "prof_default": "Défaut",
         "prof_custom": "Perso",
+        "wipe_sec": 'Suppression',
+        "wipe_row": 'Tout supprimer',
+        "wipe_btn": 'Supprimer',
+        "wipe_hint": 'Desinstalle les deux pilotes, nettoie ce qui a ete ajoute a HidHide et efface les reglages. Rien ne reste sur la machine. Windows demande ensuite un redemarrage',
+        "wipe_ask": 'Tout supprimer ?',
+        "wipe_ask_text": 'Les deux pilotes, tout ce qui a ete ajoute a HidHide, les reglages et les prereglages. C’est definitif.',
+        "wipe_busy": 'Suppression...',
+        "wipe_done": 'Supprime. Windows a besoin d’un redemarrage pour finir de retirer les pilotes.',
+        "btn_restart_now": 'Redemarrer',
+        "btn_later": 'Plus tard',
+        "btn_cancel": 'Annuler',
         "slot_row": "Préréglage perso",
         "slot_row_hint": "Enregistre les valeurs actuelles comme préréglage. Il y a trois places, et supprimer n'y touche pas aux curseurs",
         "btn_save": "Enregistrer",
@@ -3331,6 +3424,17 @@ TR = {
         "profile_hint": "Ajustes listos. Mover cualquier control cambia a Propio y guarda tus valores, siempre puedes volver a ellos.",
         "prof_default": "Normal",
         "prof_custom": "Propio",
+        "wipe_sec": 'Eliminar',
+        "wipe_row": 'Eliminar todo',
+        "wipe_btn": 'Eliminar',
+        "wipe_hint": 'Desinstala los dos controladores, limpia lo anadido a HidHide y borra los ajustes. No queda nada en el equipo. Windows pedira reiniciar despues',
+        "wipe_ask": 'Eliminar todo?',
+        "wipe_ask_text": 'Los dos controladores, todo lo anadido a HidHide, los ajustes y los preajustes. No se puede deshacer.',
+        "wipe_busy": 'Eliminando...',
+        "wipe_done": 'Eliminado. Windows necesita reiniciar para terminar de quitar los controladores.',
+        "btn_restart_now": 'Reiniciar',
+        "btn_later": 'Mas tarde',
+        "btn_cancel": 'Cancelar',
         "slot_row": "Ajuste propio",
         "slot_row_hint": "Guarda los valores actuales como ajuste propio. Caben tres, y borrar uno no mueve los deslizadores",
         "btn_save": "Guardar",
@@ -3446,6 +3550,17 @@ TR = {
         "profile_hint": '既製の設定です。スライダーを動かすとカスタムに切り替わり、あなたの値はそのまま残るので、いつでも戻せます。',
         "prof_default": '標準',
         "prof_custom": 'カスタム',
+        "wipe_sec": '削除',
+        "wipe_row": 'すべて削除',
+        "wipe_btn": '削除',
+        "wipe_hint": 'ドライバー2つをアンインストールし、HidHide に追加した設定を消し、設定ファイルを削除します。この PC には何も残りません。そのあと Windows の再起動が必要です',
+        "wipe_ask": 'すべて削除しますか',
+        "wipe_ask_text": 'ドライバー2つ、HidHide に追加したもの、設定とプリセット。元に戻すことはできません。',
+        "wipe_busy": '削除しています...',
+        "wipe_done": '削除しました。ドライバーを完全に取り除くには Windows の再起動が必要です。',
+        "btn_restart_now": '今すぐ再起動',
+        "btn_later": 'あとで',
+        "btn_cancel": 'キャンセル',
         "slot_row": 'カスタムプリセット',
         "slot_row_hint": '現在の値を自分のプリセットとして保存します。3つまで保存でき、削除してもスライダーは動きません',
         "btn_save": '保存',
@@ -3824,6 +3939,19 @@ body.t-light{
            display:flex;flex-direction:column;gap:9px;text-align:center;
            align-items:center}
 .warn-t{font-size:14px;font-weight:600;color:var(--warn)}
+#wipe .warn-t{color:var(--danger)}
+#wipe.busy .warn-t,#wipe.done .warn-t{color:var(--row-fg)}
+.wipe-btns{margin-top:6px;display:flex;gap:8px}
+.warn-b.danger{background:var(--danger)}
+.warn-b.ghost{background:transparent;color:var(--muted);
+              border:1px solid var(--btn-line)}
+.warn-b.ghost:hover{color:var(--row-fg);border-color:var(--muted);
+                    filter:none}
+.wipe-count{font-size:24px;font-weight:600;color:var(--accent);
+            font-variant-numeric:tabular-nums;display:none}
+#wipe.counting .wipe-count{display:block}
+/* nothing to press while it is working */
+#wipe.busy .wipe-btns{display:none}
 .warn-x{font-size:10px;line-height:1.55;color:var(--row-fg)}
 .warn-h{font-size:10px;line-height:1.55;color:var(--muted)}
 .warn-b{margin-top:6px;height:24px;padding:0 14px;border:0;border-radius:7px;
@@ -4109,7 +4237,10 @@ body.t-light{
 .bmtitle{font-size:14px;font-weight:600;color:var(--row-fg)}
 .bmtext{margin-top:8px;font-size:11px;line-height:1.5;color:var(--muted)}
 .bmcount{margin:14px 0 16px;font-size:26px;font-weight:600;
-         color:var(--accent);font-variant-numeric:tabular-nums}
+         color:var(--accent);font-variant-numeric:tabular-nums;display:none}
+.bmodal.counting .bmcount{display:block}
+.bmbtns{margin-top:16px;display:flex;gap:8px;justify-content:center}
+.bmodal.counting #bm-go{display:none}
 .bmodal .bbtn{cursor:pointer}
 
 .bbtn{height:24px;box-sizing:border-box;padding:0 13px;border-radius:7px;
@@ -4162,6 +4293,18 @@ html[data-boot] .rz{display:none}
     </div>
   </div>
   <div class="screen on" id="screen"></div>
+  <div class="warn-wrap off" id="wipe">
+    <div class="warn-card">
+      <div class="warn-t" id="wipe-title"></div>
+      <div class="warn-x" id="wipe-text"></div>
+      <div class="wipe-count" id="wipe-count"></div>
+      <div class="wipe-btns">
+        <button class="warn-b danger" id="wipe-go"></button>
+        <button class="warn-b ghost" id="wipe-no"></button>
+      </div>
+    </div>
+  </div>
+
   <div class="warn-wrap off" id="warn">
     <div class="warn-card">
       <div class="warn-t" id="warn-title"></div>
@@ -4212,7 +4355,10 @@ html[data-boot] .rz{display:none}
       <div class="bmtitle" id="bm-title"></div>
       <div class="bmtext" id="bm-text"></div>
       <div class="bmcount" id="bm-count"></div>
-      <button class="bbtn sec" id="bm-cancel"></button>
+      <div class="bmbtns">
+        <button class="bbtn" id="bm-go"></button>
+        <button class="bbtn sec" id="bm-cancel"></button>
+      </div>
     </div>
   </div>
 
@@ -4456,6 +4602,12 @@ function screenSettings(){
   h += '<div class="reveal"><div class="sec">' + t('tele_sec') + '</div>' +
        '<div class="card">' + portRow() + '</div></div>';
 
+  h += '<div class="reveal"><div class="sec">' + t('wipe_sec') + '</div>' +
+       '<div class="card"><div class="row" data-hint="wipe_hint">' +
+       '<span class="rname">' + t('wipe_row') + '</span>' +
+       '<span class="pbtns"><span class="pbtn danger" id="btn-wipe">' +
+       t('wipe_btn') + '</span></span></div></div></div>';
+
   h += '<div class="reveal"><div class="sec">' + t('version_sec') + '</div>' +
        '<div class="card">' +
        '<div class="row"><span class="rname">' + t('cur_version') + '</span>' +
@@ -4552,6 +4704,75 @@ function refreshSlots(){
   if (dl) dl.classList.toggle('off', !canDelete());
 }
 
+/* Three things in one panel, because they are one errand: asking, doing,
+   and then offering the restart Windows wants once the drivers are out. */
+let wipeTimer = null;
+function wipePanel(state){
+  const el = $('#wipe');
+  el.classList.remove('busy', 'done', 'counting');
+  if (state) el.classList.add(state);
+  el.classList.remove('off');
+}
+
+function askWipe(){
+  const el = $('#wipe');
+  $('#wipe-title').textContent = t('wipe_ask');
+  $('#wipe-text').textContent = t('wipe_ask_text');
+  $('#wipe-go').textContent = t('wipe_btn');
+  $('#wipe-no').textContent = t('btn_cancel');
+  wipePanel('');
+  $('#wipe-no').onclick = () => el.classList.add('off');
+  $('#wipe-go').onclick = () => {
+    $('#wipe-title').textContent = t('wipe_busy');
+    $('#wipe-text').textContent = '';
+    wipePanel('busy');
+    try{ pywebview.api.wipe().then(r => wipeDone(r)); }
+    catch(e){ el.classList.add('off'); }
+  };
+}
+
+function wipeDone(r){
+  $('#wipe-title').textContent = t('wipe_ask');
+  $('#wipe-text').textContent = t('wipe_done') +
+    (r && r.failed && r.failed.length ? ' (' + r.failed.join(', ') + ')' : '');
+  $('#wipe-go').textContent = t('btn_restart_now');
+  $('#wipe-no').textContent = t('btn_later');
+  wipePanel('done');
+  $('#wipe-no').onclick = () => $('#wipe').classList.add('off');
+  $('#wipe-go').onclick = () => {
+    try{ pywebview.api.restart_pc(); }catch(e){}
+    countdown('#wipe-count', () => $('#wipe').classList.add('off'));
+    $('#wipe-title').textContent = t('btn_restart_now');
+    $('#wipe-go').style.display = 'none';
+    $('#wipe-no').textContent = t('btn_cancel');
+    $('#wipe-no').onclick = () => {
+      clearTimeout(wipeTimer);
+      try{ pywebview.api.cancel_restart(); }catch(e){}
+      $('#wipe').classList.add('off');
+    };
+    wipePanel('counting');
+    $('#wipe').classList.add('done');
+  };
+}
+
+/* one countdown, wherever it is shown */
+function countdown(sel, atZero){
+  let left = BOOT.restartS;
+  const tick = () => {
+    const el = $(sel);
+    if (el) el.textContent = left;
+    if (left <= 0){ if (atZero) atZero(); return; }
+    left -= 1;
+    wipeTimer = setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+function bindWipe(){
+  const b = document.getElementById('btn-wipe');
+  if (b) b.addEventListener('click', askWipe);
+}
+
 function bindPort(){
   const el = document.getElementById('tele-port');
   if (!el) return;
@@ -4619,6 +4840,7 @@ function render(){
   bindRows();
   bindSlots();
   bindPort();
+  bindWipe();
   refresh();
   playGrow();
   reportHeight();
@@ -5147,24 +5369,37 @@ function restartNotice(){
   const t = BT(), el = $('#boot-modal');
   $('#bm-title').textContent = t.rsTitle;
   $('#bm-text').textContent = t.rsText;
-  $('#bm-cancel').textContent = t.rsCancel;
+  $('#bm-go').textContent = t.rsNow;
+  $('#bm-cancel').textContent = t.rsLater;
+  el.classList.remove('counting');
   el.classList.add('on');
   $('#boot').classList.add('blurred');
   requestAnimationFrame(() => el.classList.add('shown'));
-  let left = BOOT.restartS;
-  const tick = () => {
-    $('#bm-count').textContent = left;
-    if (left <= 0) return;
-    left -= 1;
-    restartTimer = setTimeout(tick, 1000);
-  };
-  tick();
-  $('#bm-cancel').onclick = () => {
+
+  const close = () => {
     clearTimeout(restartTimer);
-    try{ pywebview.api.cancel_restart(); }catch(e){}
     el.classList.remove('shown');
     $('#boot').classList.remove('blurred');
-    setTimeout(() => el.classList.remove('on'), 220);
+    setTimeout(() => el.classList.remove('on', 'counting'), 220);
+  };
+
+  $('#bm-cancel').onclick = close;
+  $('#bm-go').onclick = () => {
+    try{ pywebview.api.restart_pc(); }catch(e){}
+    el.classList.add('counting');
+    $('#bm-cancel').textContent = t.rsCancel;
+    $('#bm-cancel').onclick = () => {
+      try{ pywebview.api.cancel_restart(); }catch(e){}
+      close();
+    };
+    let left = BOOT.restartS;
+    const tick = () => {
+      $('#bm-count').textContent = left;
+      if (left <= 0) return;
+      left -= 1;
+      restartTimer = setTimeout(tick, 1000);
+    };
+    tick();
   };
 }
 
@@ -5191,7 +5426,7 @@ function bootError(code){
                  '</button>' : '');
     $('#err-btn').addEventListener('click', () => {
       try{
-        if (pending){ pywebview.api.restart_pc(); restartNotice(); }
+        if (pending) restartNotice();
         else pywebview.api.boot_retry();
       }catch(err){}
     });
@@ -5700,6 +5935,72 @@ class Api:
         except Exception:
             return False
         return True
+
+    def wipe(self):
+        """Remove the drivers, the settings and everything left in HidHide.
+
+        In that order on purpose: the pad is handed back and our entries
+        cleared while HidHide is still installed to clear them with, the
+        drivers go next, and the settings folder last so nothing is left to
+        write into it. A restart is wanted afterwards - both drivers ask for
+        one when they are removed."""
+        global _saving_off
+        done, failed = [], []
+
+        # let go of the pad and the hiding before anything is removed
+        try:
+            self._b.stop()
+        except Exception:
+            pass
+
+        hh = self._b.hidhide
+        try:
+            hh.disengage()
+            if hh.rescan():
+                hh._run("--app-unreg", sys.executable)
+            done.append("HidHide settings")
+        except Exception:
+            failed.append("HidHide settings")
+
+        for label, reg_name, _service, _key in DriverSetup.ITEMS:
+            code = uninstall_code(reg_name)
+            if not code:
+                continue
+            try:
+                cp = subprocess.run(
+                    ["msiexec", "/x", code, "/qn", "/norestart"],
+                    capture_output=True, text=True, timeout=180,
+                    creationflags=0x08000000)
+                # 3010 is "gone, restart to finish", which is a success here
+                (done if cp.returncode in (0, 3010) else failed).append(label)
+            except (OSError, subprocess.SubprocessError):
+                failed.append(label)
+
+        self._clear_after_restart()
+
+        _saving_off = True
+        folder = os.path.dirname(CONFIG_FILE)
+        try:
+            if os.path.isdir(folder):
+                shutil.rmtree(folder, ignore_errors=False)
+            done.append("settings")
+        except OSError:
+            failed.append("settings")
+
+        return {"ok": not failed, "done": done, "failed": failed}
+
+    @staticmethod
+    def _clear_after_restart() -> None:
+        """Drop the one-shot launch, if one was booked."""
+        try:
+            import winreg
+            with winreg.OpenKey(
+                    winreg.HKEY_CURRENT_USER,
+                    r"Software\Microsoft\Windows\CurrentVersion\RunOnce",
+                    0, winreg.KEY_SET_VALUE) as key:
+                winreg.DeleteValue(key, "SteeringAssist")
+        except OSError:
+            pass
 
     def boot_retry(self):
         """Start over after a failed install: a fresh process re-runs the
