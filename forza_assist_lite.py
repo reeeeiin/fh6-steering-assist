@@ -3846,7 +3846,8 @@ body.t-light{
       border:1px solid transparent;
       transition:background .2s ease,color .2s ease,border-color .2s ease,
                  opacity .2s ease}
-.pbtn:hover{background:linear-gradient(180deg,var(--accent),var(--accent-lit))}
+.pbtn:hover{background-image:linear-gradient(180deg,var(--accent),
+                                            var(--accent-lit))}
 /* Nothing to save, or nothing of yours to delete. The button steps back to
    an outline of itself at half strength rather than vanishing, which would
    move the row about, or dimming, which reads as broken rather than idle. */
@@ -4519,7 +4520,7 @@ function screenFaq(){
     '<div class="reveal"><div class="sec">' + t('feedback_sec') + '</div>' +
     '<div class="card"><div class="row">' +
     '<span class="rname">' + t('feedback_row') + '</span>' +
-    '<span class="pbtns"><span class="pbtn" id="btn-feedback">' +
+    '<span class="pbtns"><span class="updbtn" id="btn-feedback">' +
     t('feedback') + '</span></span></div></div></div>';
 }
 
