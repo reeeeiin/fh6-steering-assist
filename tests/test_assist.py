@@ -1383,6 +1383,27 @@ def test_the_uninstall_targets_the_package_that_is_installed():
         assert code.startswith("{") and code.endswith("}"), (label, code)
 
 
+def test_no_installer_may_restart_the_machine_on_its_own():
+    """/norestart only refuses the restart at the end of the sequence. A
+    driver whose files are in use schedules one from inside it, and only
+    the property refuses that too - without it, removing the drivers
+    restarted the machine on the spot, before the panel could say a word."""
+    for cmd in (fa.DriverSetup._remove_cmd("{1234}"),
+                fa.DriverSetup._silent_cmd("x.msi")):
+        assert "REBOOT=ReallySuppress" in cmd, cmd
+        assert "/norestart" in cmd, cmd
+
+
+def test_the_removal_is_a_stage_of_its_own():
+    """It runs, then it offers the restart. One click must not land on two
+    different buttons in the same place."""
+    page = fa.build_html()
+    assert "wipeMinMs" in page and fa.WIPE_MIN_MS >= 1000
+    for lang, tr in fa.TR.items():
+        for key in ("wipe_busy", "wipe_busy_text", "wipe_done"):
+            assert tr.get(key), "%s is missing %s" % (lang, key)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

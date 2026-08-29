@@ -1670,6 +1670,9 @@ BOOT_MIN_CHECK_MS = 1300
 # Long enough to read the notice and call it off, short enough not to feel
 # like nothing happened. The countdown shown is this same number.
 RESTART_DELAY_S = 20
+# The removal itself can be quick. It is still a stage worth seeing, so the
+# panel holds on it before offering the restart.
+WIPE_MIN_MS = 2000
 # Long enough to register that it finished, short enough not to be a
 # wait. The hint under it lands at 320ms, so it is read either way.
 BOOT_DONE_MS = 1600
@@ -1997,9 +2000,18 @@ class DriverSetup:
         return None
 
     @staticmethod
+    def _remove_cmd(code: str) -> list:
+        """Take a package off. REBOOT=ReallySuppress as well as /norestart:
+        the switch only refuses the restart at the end of the sequence, and
+        a driver whose files are in use schedules one from inside it."""
+        return ["msiexec", "/x", code, "/qn", "/norestart",
+                "REBOOT=ReallySuppress"]
+
+    @staticmethod
     def _silent_cmd(path: str) -> list:
         if path.lower().endswith(".msi"):
-            return ["msiexec", "/i", path, "/qn", "/norestart"]
+            return ["msiexec", "/i", path, "/qn", "/norestart",
+                    "REBOOT=ReallySuppress"]
         return [path, "/quiet", "/norestart"]
 
     def _install(self, path: str) -> int:
@@ -2959,6 +2971,7 @@ TR = {
         "wipe_ask": 'Remove everything?',
         "wipe_ask_text": 'The two drivers, everything added to HidHide, and your settings and presets. This cannot be undone.',
         "wipe_busy": 'Removing...',
+        "wipe_busy_text": 'This can take a moment. Do not close the window.',
         "wipe_done": 'Removed. Windows needs a restart to finish taking the drivers out.',
         "btn_restart_now": 'Restart now',
         "btn_later": 'Later',
@@ -3080,6 +3093,7 @@ TR = {
         "wipe_ask": 'Удалить всё?',
         "wipe_ask_text": 'Два драйвера, все записи в HidHide, настройки и пресеты. Отменить это будет нельзя.',
         "wipe_busy": 'Удаляем...',
+        "wipe_busy_text": 'Это займёт немного времени. Не закрывайте окно.',
         "wipe_done": 'Удалено. Чтобы драйверы ушли окончательно, Windows нужно перезагрузить.',
         "btn_restart_now": 'Перезагрузить',
         "btn_later": 'Позже',
@@ -3201,6 +3215,7 @@ TR = {
         "wipe_ask": 'Alles entfernen?',
         "wipe_ask_text": 'Beide Treiber, alles in HidHide Eingetragene, die Einstellungen und Vorgaben. Das lasst sich nicht ruckgangig machen.',
         "wipe_busy": 'Wird entfernt...',
+        "wipe_busy_text": 'Das dauert einen Moment. Fenster offen lassen.',
         "wipe_done": 'Entfernt. Windows braucht einen Neustart, damit die Treiber ganz verschwinden.',
         "btn_restart_now": 'Jetzt neu starten',
         "btn_later": 'Spater',
@@ -3322,6 +3337,7 @@ TR = {
         "wipe_ask": 'Tout supprimer ?',
         "wipe_ask_text": 'Les deux pilotes, tout ce qui a ete ajoute a HidHide, les reglages et les prereglages. C’est definitif.',
         "wipe_busy": 'Suppression...',
+        "wipe_busy_text": 'Cela prend un moment. Ne fermez pas la fenetre.',
         "wipe_done": 'Supprime. Windows a besoin d’un redemarrage pour finir de retirer les pilotes.',
         "btn_restart_now": 'Redemarrer',
         "btn_later": 'Plus tard',
@@ -3443,6 +3459,7 @@ TR = {
         "wipe_ask": 'Eliminar todo?',
         "wipe_ask_text": 'Los dos controladores, todo lo anadido a HidHide, los ajustes y los preajustes. No se puede deshacer.',
         "wipe_busy": 'Eliminando...',
+        "wipe_busy_text": 'Tardara un momento. No cierres la ventana.',
         "wipe_done": 'Eliminado. Windows necesita reiniciar para terminar de quitar los controladores.',
         "btn_restart_now": 'Reiniciar',
         "btn_later": 'Mas tarde',
@@ -3571,6 +3588,7 @@ TR = {
         "wipe_ask": 'すべて削除しますか',
         "wipe_ask_text": 'ドライバー2つ、HidHide に追加したもの、設定とプリセット。元に戻すことはできません。',
         "wipe_busy": '削除しています...',
+        "wipe_busy_text": '少し時間がかかります。ウィンドウを閉じないでください。',
         "wipe_done": '削除しました。ドライバーを完全に取り除くには Windows の再起動が必要です。',
         "btn_restart_now": '今すぐ再起動',
         "btn_later": 'あとで',
@@ -3716,7 +3734,7 @@ def build_html() -> str:
     html = html.replace("__PROFILES__", json.dumps(PROFILES))
     html = html.replace("__BOOT__", json.dumps(
          {"tr": BOOT_TR, "short": LANG_SHORT, "langs": LANG_ORDER,
-         "restartS": RESTART_DELAY_S,
+         "restartS": RESTART_DELAY_S, "wipeMinMs": WIPE_MIN_MS,
          "minMs": BOOT_MIN_MS, "minCheckMs": BOOT_MIN_CHECK_MS,
          "stepMs": BOOT_STEP_MS,
          "checkMs": BOOT_CHECK_MS, "doneMs": BOOT_DONE_MS}))
@@ -4743,9 +4761,15 @@ function askWipe(){
   $('#wipe-no').onclick = () => el.classList.add('off');
   $('#wipe-go').onclick = () => {
     $('#wipe-title').textContent = t('wipe_busy');
-    $('#wipe-text').textContent = '';
+    $('#wipe-text').textContent = t('wipe_busy_text');
     wipePanel('busy');
-    try{ pywebview.api.wipe().then(r => wipeDone(r)); }
+    /* held for a moment even when the work is quick: the driver asked for
+       this and should see it happen, not a flicker between two questions */
+    const started = Date.now();
+    const show = r => setTimeout(() => wipeDone(r),
+                                 Math.max(0, BOOT.wipeMinMs -
+                                          (Date.now() - started)));
+    try{ pywebview.api.wipe().then(show); }
     catch(e){ el.classList.add('off'); }
   };
 }
@@ -5987,7 +6011,7 @@ class Api:
                 continue
             try:
                 cp = subprocess.run(
-                    ["msiexec", "/x", code, "/qn", "/norestart"],
+                    DriverSetup._remove_cmd(code),
                     capture_output=True, text=True, timeout=180,
                     creationflags=0x08000000)
                 # 3010 is "gone, restart to finish", which is a success here
