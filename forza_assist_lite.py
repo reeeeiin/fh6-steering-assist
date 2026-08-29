@@ -2892,6 +2892,8 @@ TR = {
         "scale": 'Scale',
         "scale_hint": 'Enlarges the whole interface, text and controls alike',
         "feedback": 'Send feedback',
+        "feedback_sec": 'Feedback',
+        "feedback_row": 'Report a bug or an idea',
         "order_btn": 'Got it',
         "reaction": "Steering response",
 "reaction_hint": "How the assist treats YOUR corrections mid-slide: 1 = passes them through instantly, 0 = smooths twitchy micro-steering",
@@ -3011,6 +3013,8 @@ TR = {
         "scale": 'Масштаб',
         "scale_hint": 'Увеличивает весь интерфейс целиком, вместе с текстом и элементами',
         "feedback": 'Написать нам',
+        "feedback_sec": 'Обратная связь',
+        "feedback_row": 'Сообщить об ошибке или идее',
         "order_btn": 'Понятно',
         "reaction": "Реакция на руль",
 "reaction_hint": "Как ассист воспринимает ТВОИ коррекции в заносе: 1 = мгновенно, 0 = максимально сглаживает подруливания",
@@ -3130,6 +3134,8 @@ TR = {
         "scale": 'Skalierung',
         "scale_hint": 'Vergrossert die gesamte Oberflache samt Text und Bedienelementen',
         "feedback": 'Feedback senden',
+        "feedback_sec": 'Feedback',
+        "feedback_row": 'Fehler oder Idee melden',
         "order_btn": 'Verstanden',
         "reaction": "Lenkreaktion",
 "reaction_hint": "Wie der Assistent DEINE Korrekturen im Drift behandelt: 1 = sofort, 0 = glättet nervöses Nachlenken",
@@ -3249,6 +3255,8 @@ TR = {
         "scale": 'Echelle',
         "scale_hint": 'Agrandit toute l\'interface, texte et controles compris',
         "feedback": 'Faire un retour',
+        "feedback_sec": 'Retours',
+        "feedback_row": 'Signaler un bug ou une idee',
         "order_btn": 'Compris',
         "reaction": "Réponse au volant",
 "reaction_hint": "Réaction de l'assistant à TES corrections en glisse : 1 = immédiate, 0 = lisse les à-coups",
@@ -3368,6 +3376,8 @@ TR = {
         "scale": 'Escala',
         "scale_hint": 'Agranda toda la interfaz, texto y controles incluidos',
         "feedback": 'Enviar comentarios',
+        "feedback_sec": 'Comentarios',
+        "feedback_row": 'Informar de un fallo o una idea',
         "order_btn": 'Entendido',
         "reaction": "Respuesta al volante",
 "reaction_hint": "Cómo trata el asistente TUS correcciones en derrape: 1 = inmediata, 0 = suaviza los toques nerviosos",
@@ -3487,6 +3497,8 @@ TR = {
         "scale": '拡大率',
         "scale_hint": '文字も操作部もまとめて画面全体を拡大します',
         "feedback": 'フィードバック',
+        "feedback_sec": 'フィードバック',
+        "feedback_row": '不具合や要望を送る',
         "order_btn": '了解',
         "reaction": '操舵の反応',
 "reaction_hint": '滑走中のあなた自身の修正舵をどう扱うか。1 はそのまま即座に通し、0 は細かい震えをならします',
@@ -4502,7 +4514,13 @@ function screenFaq(){
       '<div class="qa"><h4>' + (i + 1) + '. ' + item[0] + '</h4>' +
       item[1].map(x => '<p>' + withPort(x) + '</p>').join('') +
       '</div>').join('') +
-    '</div></div></div>';
+    '</div></div></div>' +
+
+    '<div class="reveal"><div class="sec">' + t('feedback_sec') + '</div>' +
+    '<div class="card"><div class="row">' +
+    '<span class="rname">' + t('feedback_row') + '</span>' +
+    '<span class="pbtns"><span class="pbtn" id="btn-feedback">' +
+    t('feedback') + '</span></span></div></div></div>';
 }
 
 function screenAbout(){
@@ -4527,10 +4545,18 @@ function screenAbout(){
        '<div class="card"><div class="prose">' +
        LG().about.map(x => '<p>' + x + '</p>').join('') +
        '<div class="bubs repo"><span class="bub" data-url="' +
-       LG().repo[1] + '">' + LG().repo[0] + '</span>' +
-       '<span class="bub" id="btn-feedback">' + t('feedback') +
-       '</span></div>' +
+       LG().repo[1] + '">' + LG().repo[0] + '</span></div>' +
        '</div></div></div>';
+
+  h += '<div class="reveal"><div class="sec">' + t('version_sec') + '</div>' +
+       '<div class="card">' +
+       '<div class="row"><span class="rname">' + t('cur_version') + '</span>' +
+       '<span class="vbadge">v' + VER + '</span></div>' +
+       '<div class="row"><span class="rname">' + t('check_updates') + '</span>' +
+       '<span class="updwrap" id="updwrap">' +
+       '<span class="updbtn" id="btn-update">' + t('check') + '</span>' +
+       '</span></div>' +
+       '</div></div>';
   return h;
 }
 
@@ -4601,16 +4627,6 @@ function screenSettings(){
 
   h += '<div class="reveal"><div class="sec">' + t('tele_sec') + '</div>' +
        '<div class="card">' + portRow() + '</div></div>';
-
-  h += '<div class="reveal"><div class="sec">' + t('version_sec') + '</div>' +
-       '<div class="card">' +
-       '<div class="row"><span class="rname">' + t('cur_version') + '</span>' +
-       '<span class="vbadge">v' + VER + '</span></div>' +
-       '<div class="row"><span class="rname">' + t('check_updates') + '</span>' +
-       '<span class="updwrap" id="updwrap">' +
-       '<span class="updbtn" id="btn-update">' + t('check') + '</span>' +
-       '</span></div>' +
-       '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('wipe_sec') + '</div>' +
        '<div class="card"><div class="row" data-hint="wipe_hint">' +
