@@ -283,7 +283,7 @@ footer a{color:var(--dim)}
   endorsed by Microsoft, Playground Games or Turn 10 Studios. Forza is a
   trademark of Microsoft Corporation. Created and published by reeeeiin.</p>
   <p>Steering Assist &#8482; 2026. Released under the
-  <a href="__REPO__/blob/main/LICENSE">Steering Assist Source-Available Licence 1.0</a>.</p>
+  <a href="__REPO__/blob/main/LICENSE">Steering Assist Licence 2.0</a> — all rights reserved.</p>
 </div></footer>
 </body></html>
 """.replace("__FONTS__", fonts_from(app_html)) \

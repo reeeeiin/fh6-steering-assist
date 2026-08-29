@@ -182,20 +182,23 @@ stream and emulates a standard controller. Use at your own discretion.
 
 ## Licence
 
-The source is published under the [Steering Assist Source-Available Licence 1.0](LICENSE) so that
-anyone can read it, check what it does to their machine, and build it for
-themselves. It is deliberately **not** an open-source licence: the code is
-not offered as a starting point for other projects.
+**All rights reserved.** The source is published under the
+[Steering Assist Licence 2.0](LICENSE) for one reason: so that anyone can
+read it and see exactly what it does to their machine before running it.
+Publishing it grants nothing else. It is deliberately **not** an open-source
+licence, and it is not offered as a starting point for other projects.
 
 You may read it, build it and run it for yourself. You may not redistribute
-it, publish a modified version, or use it as the basis of another program -
-those need written permission first.
+it, publish a fork or a modified version under any name, use it as the basis
+or the reference for another program, or reproduce its interface. Those need
+written permission first.
 
-The interface design, icons, logo and wordmark sit outside the licence
-entirely and are all rights reserved.
+The interface design, its layout and wording, the icons, the logo and the
+wordmark sit outside the licence entirely and are all rights reserved.
 
-Releases up to 1.3.0 stay under the MIT Licence, and the 2.0 builds
-published before the change keep the Elastic License 2.0 they carried.
+None of this reaches backwards. Releases up to 1.3.0 were published under the
+MIT Licence and stay that way - that grant cannot be withdrawn. The licence
+above governs 2.0.155 and everything after it.
 
 Third-party components keep their own licences, listed in [NOTICE.md](NOTICE.md).
 

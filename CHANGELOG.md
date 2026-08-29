@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.0.125
+## v2.0 (2.0.153)
 
 A rebuilt interface, six languages, an assist that answers the moment the
 car steps out, and a licence change.
@@ -97,6 +97,29 @@ car steps out, and a licence change.
   yourself. Anyone driving on one keeps their numbers.
 - The Oswald font, the old theme artwork and the icons the rebuilt
   interface no longer uses.
+
+### Added after the first 2.0 builds
+
+- **Remove everything**, in Settings. Takes out both drivers, clears what
+  was added to HidHide and deletes your settings, then offers the restart
+  Windows wants - now, or later.
+- **Adjustable port**, for anyone whose 20777 is already spoken for.
+- **A language change that reads as one**: the words leave from the top
+  down, change while none of them are on screen, and come back the same
+  way, with the pill sliding rather than jumping.
+
+### Fixed after the first 2.0 builds
+
+- **Removing the drivers restarted the machine on the spot.** The app holds
+  the virtual pad open for as long as it is running, so taking that driver
+  out from under it brought Windows down. The removal now happens once the
+  app has closed.
+- **The restart notice never appeared**, leaving the window blurred behind
+  something invisible that swallowed every click. It appears.
+- **Setup no longer waits about.** The opening sequence and its steps take
+  half as long, and a launch that only checks says so instead of claiming
+  to install.
+- Settings now live in a folder named after the app.
 
 
 ## v1.3.0
