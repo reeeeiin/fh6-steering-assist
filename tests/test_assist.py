@@ -2,6 +2,7 @@
 import json
 import math
 import os
+import re
 import socket
 import struct
 import sys
@@ -1513,15 +1514,49 @@ def test_nothing_that_must_happen_waits_only_on_a_frame():
         assert "classList.add('shown')" not in line, line
 
 
-def test_an_unseen_notice_does_not_swallow_the_clicks():
-    """It covers the whole boot screen. If the fade never lands it must
-    still let what is behind it be used, or the window reads as frozen."""
+def _specificity(selector):
+    """(ids, classes, elements) for one selector, near enough for CSS we
+    write ourselves - no :not(), no attribute values with punctuation."""
+    ids = selector.count("#")
+    classes = selector.count(".") + selector.count("[") + selector.count(":")
+    elements = len(re.findall(r"(?:^|[\s>+~])([a-zA-Z][\w-]*)", selector))
+    return (ids, classes, elements)
+
+
+def _rules_setting(html, on_selector, prop):
+    """Every rule that sets prop on something matching on_selector, as
+    (specificity, value) pairs in source order."""
+    out = []
+    html = re.sub(r"/\*.*?\*/", "", html, flags=re.S)   # comments are not selectors
+    for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", html):
+        sel = sel.strip()
+        if on_selector not in sel or "@" in sel:
+            continue
+        for decl in body.split(";"):
+            name, _, value = decl.partition(":")
+            if name.strip() == prop:
+                out.append((_specificity(sel), value.strip(), sel))
+    return out
+
+
+def test_the_notice_can_actually_outrank_its_own_hiding():
+    """The rule that hides the notice carries an id. Written as a bare
+    .bmodal.shown the rule that reveals it lost every time, so the notice
+    covered the whole boot screen at opacity zero: the screen behind it
+    blurred, the buttons unreachable, the window apparently frozen.
+
+    Read off the arithmetic rather than the text, because the text looked
+    perfectly reasonable both before and after."""
     html = fa.build_html()
-    box = html[html.index("#boot > .bmodal{"):]
-    box = box[:box.index("}")]
-    assert "pointer-events:none" in box, box
-    assert "pointer-events:auto" in html[html.index(".bmodal.shown{"):
-                                         html.index(".bmodal.shown{") + 60]
+    for prop in ("opacity", "pointer-events"):
+        rules = _rules_setting(html, ".bmodal", prop)
+        hiding = [r for r in rules if ".shown" not in r[2]]
+        showing = [r for r in rules if ".shown" in r[2]]
+        assert hiding and showing, (prop, rules)
+        worst = max(r[0] for r in hiding)
+        best = max(r[0] for r in showing)
+        assert best >= worst, (
+            "%s: %r cannot beat %r" % (prop, showing, hiding))
 
 
 def main():

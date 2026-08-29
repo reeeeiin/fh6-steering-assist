@@ -4277,8 +4277,12 @@ body.t-light{
 #boot.blurred > .bstage,
 #boot.blurred > .btag{filter:blur(7px);transition:filter .22s ease}
 #boot > .bstage,#boot > .btag{transition:filter .22s ease}
+/* The rule that hides it carries an id, so the rule that shows it needs
+   one too. Written as a bare .bmodal.shown it lost every time: the notice
+   took the whole screen at opacity zero and the boot screen behind it was
+   blurred under a sheet nobody could see. */
 #boot > .bmodal.on{display:flex}
-.bmodal.shown{opacity:1;pointer-events:auto}
+#boot > .bmodal.shown{opacity:1;pointer-events:auto}
 .bmbox{width:250px;padding:22px;border-radius:14px;text-align:center;
        background:var(--card);border:1px solid var(--btn-line);
        box-shadow:0 18px 46px rgba(0,0,0,.5);
