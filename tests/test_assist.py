@@ -1497,6 +1497,33 @@ def test_a_failed_removal_says_so_instead_of_hanging():
     assert "wipe_fail" in html
 
 
+def test_nothing_that_must_happen_waits_only_on_a_frame():
+    """A window the system thinks is not visible is given no frames, and a
+    requestAnimationFrame callback then never runs. The restart notice came
+    up that way: display set, opacity left at zero, the screen behind it
+    blurred under a layer nobody could see. Anything that must happen goes
+    through soon(), which takes a frame or a timer, whichever lands."""
+    html = fa.build_html()
+    assert "function soon(fn)" in html
+    for line in html.split(chr(10)):
+        if "requestAnimationFrame" not in line or "function soon" in line:
+            continue
+        # the ones that are left are animation loops: they may skip a frame
+        # without anything being lost, and each has its own way out
+        assert "classList.add('shown')" not in line, line
+
+
+def test_an_unseen_notice_does_not_swallow_the_clicks():
+    """It covers the whole boot screen. If the fade never lands it must
+    still let what is behind it be used, or the window reads as frozen."""
+    html = fa.build_html()
+    box = html[html.index("#boot > .bmodal{"):]
+    box = box[:box.index("}")]
+    assert "pointer-events:none" in box, box
+    assert "pointer-events:auto" in html[html.index(".bmodal.shown{"):
+                                         html.index(".bmodal.shown{") + 60]
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

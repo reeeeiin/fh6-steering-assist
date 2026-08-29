@@ -1657,8 +1657,8 @@ LATEST_API = "https://api.github.com/repos/%s/releases/latest" % REPO
 RELEASES_URL = "https://github.com/%s/releases/latest" % REPO
 ISSUES_URL = "https://github.com/%s/issues/new" % REPO
 
-BOOT_MIN_MS = 4000
-BOOT_STEP_MS = 6000
+BOOT_MIN_MS = 2000
+BOOT_STEP_MS = 3000
 # Confirming four things that are already there is not four pieces of
 # work, and pacing it as though it were makes a launch that installs
 # nothing look like a launch that does. Quick enough to read as checking.
@@ -1666,7 +1666,7 @@ BOOT_CHECK_MS = 260
 # The bar in front of the steps is shortened on that launch too, but only
 # once the driver step has decided nothing needs installing - otherwise it
 # would have to run backwards when the decision turned out otherwise.
-BOOT_MIN_CHECK_MS = 1300
+BOOT_MIN_CHECK_MS = 650
 # Long enough to read the notice and call it off, short enough not to feel
 # like nothing happened. The countdown shown is this same number.
 RESTART_DELAY_S = 20
@@ -1675,7 +1675,7 @@ RESTART_DELAY_S = 20
 WIPE_MIN_MS = 2000
 # Long enough to register that it finished, short enough not to be a
 # wait. The hint under it lands at 320ms, so it is read either way.
-BOOT_DONE_MS = 1600
+BOOT_DONE_MS = 800
 
 # Slots the driver saves into. Three is enough to keep a car, a road and a
 # wet setting apart without turning the row into a list to read.
@@ -4268,7 +4268,7 @@ body.t-light{
 /* Ordering a restart used to look like nothing happening: the window sat
    there while Windows counted down out of sight. */
 #boot > .bmodal{position:absolute;inset:0;z-index:50;display:none;
-        align-items:center;justify-content:center;pointer-events:auto;
+        align-items:center;justify-content:center;pointer-events:none;
         background:rgba(0,0,0,.55);
         opacity:0;transition:opacity .22s ease}
 /* The blur goes on what is behind the notice, not on the notice's own
@@ -4278,7 +4278,7 @@ body.t-light{
 #boot.blurred > .btag{filter:blur(7px);transition:filter .22s ease}
 #boot > .bstage,#boot > .btag{transition:filter .22s ease}
 #boot > .bmodal.on{display:flex}
-.bmodal.shown{opacity:1}
+.bmodal.shown{opacity:1;pointer-events:auto}
 .bmbox{width:250px;padding:22px;border-radius:14px;text-align:center;
        background:var(--card);border:1px solid var(--btn-line);
        box-shadow:0 18px 46px rgba(0,0,0,.5);
@@ -5172,7 +5172,7 @@ function liveUpdate(){
 let lastH = 0;
 function reportHeight(){
   if (bootPhase !== 'app') return;
-  requestAnimationFrame(() => {
+  soon(() => {
     /* #zoom is stretched to the window so the footer can sit at the bottom,
        so its own height says nothing about what the content needs. Adding
        the three blocks and the gaps between them does. */
@@ -5439,6 +5439,18 @@ function revealApp(){
   }, 520);
 }
 
+/* requestAnimationFrame is a favour, not a promise. A window the system
+   thinks is not visible is given no frames at all, and anything waiting on
+   one simply never happens - which is how the restart notice came up
+   invisible, blurring the screen behind a layer nobody could see. Whatever
+   has to happen happens, frame or no frame. */
+function soon(fn){
+  let done = false;
+  const run = () => { if (done) return; done = true; fn(); };
+  requestAnimationFrame(run);
+  setTimeout(run, 32);
+}
+
 let restartTimer = null;
 function restartNotice(){
   const t = BT(), el = $('#boot-modal');
@@ -5449,7 +5461,7 @@ function restartNotice(){
   el.classList.remove('counting');
   el.classList.add('on');
   $('#boot').classList.add('blurred');
-  requestAnimationFrame(() => el.classList.add('shown'));
+  soon(() => el.classList.add('shown'));
 
   const close = () => {
     clearTimeout(restartTimer);
