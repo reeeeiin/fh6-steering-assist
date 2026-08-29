@@ -4159,6 +4159,13 @@ body.t-light{
             margin .2s ease,opacity .2s ease,transform .2s ease !important}
 
 .tbar .reveal.shown{transition:opacity .42s ease}
+/* Leaving, one line after another, while the language is replaced. Same
+   weight as .reveal.shown and written after it, so source order decides
+   and this one wins - a lighter selector would simply never apply. */
+.reveal.going{opacity:0;transform:translateY(-6px);
+              transition:opacity .22s ease,transform .22s ease}
+/* the header does not travel, here or anywhere else */
+.tbar .reveal.going{transform:none;transition:opacity .22s ease}
 
 #boot{position:fixed;inset:0;z-index:60;background:var(--win-bg);
       zoom:var(--uiz);
@@ -4912,7 +4919,8 @@ function render(){
     const rows = [...$$('#screen .reveal'), ...$$('.foot.reveal')];
     const staged = screen !== lastScreen;
     lastScreen = screen;
-    rows.forEach((el, i) => staged
+    /* a language change brings them back in its own order */
+    if (!langHold) rows.forEach((el, i) => staged
       ? setTimeout(() => el.classList.add('shown'), 40 + i * 55)
       : el.classList.add('shown'));
   }
@@ -5038,12 +5046,53 @@ function applyProfile(name){
   profAnim = requestAnimationFrame(step);
 }
 
+/* Changing the language rewrites every word in the window. Done in one
+   frame it reads as a fault rather than a choice, so the lines leave from
+   the top down, the words are replaced while none of them are on screen,
+   and they arrive back the same way.
+
+   The pill is deliberately not part of that. It has already slid to the
+   language just pressed, the way every other pill moves, and it does that
+   instead of being thrown away and drawn again somewhere else - which is
+   all rebuilding the screen in place ever did. */
+const LANG_OUT_MS = 26, LANG_IN_MS = 34, LANG_GAP_MS = 240;
+let langHold = false, langRun = 0;
+
+function langRows(){
+  return [...$$('.tbar .reveal'), ...$$('#screen .reveal'),
+          ...$$('.foot.reveal')]
+    .sort((a, b) => a.getBoundingClientRect().top -
+                    b.getBoundingClientRect().top);
+}
+
+function relanguage(){
+  const run = ++langRun;      // a second change part way through wins
+  const out = langRows();
+  out.forEach((el, i) => setTimeout(() => el.classList.add('going'),
+                                    i * LANG_OUT_MS));
+  setTimeout(() => {
+    if (run !== langRun) return;
+    /* the header and the footer live through the rebuild, so they are put
+       back to nothing by hand before the words under them change */
+    [...$$('.tbar .reveal'), ...$$('.foot.reveal')]
+      .forEach(el => el.classList.remove('going', 'shown'));
+    langHold = true;
+    render();
+    langHold = false;
+    langRows().forEach((el, i) => setTimeout(() => {
+      if (run !== langRun) return;
+      el.classList.remove('going');
+      el.classList.add('shown');
+    }, i * LANG_IN_MS));
+  }, out.length * LANG_OUT_MS + LANG_GAP_MS);
+}
+
 function segPick(id, key){
   if (id === 'profile'){ applyProfile(key); return; }
   cfg[id] = key;
   refresh();
   try{ pywebview.api.set(id, key); }catch(e){}
-  if (id === 'lang') render();
+  if (id === 'lang') relanguage();
   if (id === 'theme') document.body.className = 't-' + key;
   if (id === 'ui_scale'){
     applyScale();

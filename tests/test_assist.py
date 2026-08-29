@@ -1559,6 +1559,55 @@ def test_the_notice_can_actually_outrank_its_own_hiding():
             "%s: %r cannot beat %r" % (prop, showing, hiding))
 
 
+def _cascade_winner(html, classes, prop):
+    """Which rule actually sets prop on an element carrying these classes.
+
+    Only compound class selectors are considered - the ones where the whole
+    selector is classes, like .reveal.going - which is all this needs. Ties
+    on specificity are settled the way a browser settles them: last wins."""
+    html = re.sub(r"/\*.*?\*/", "", html, flags=re.S)
+    best = None
+    for order, (sel, body) in enumerate(
+            re.findall(r"([^{}]+)\{([^{}]*)\}", html)):
+        for part in sel.split(","):
+            part = part.strip()
+            if not part.startswith(".") or not re.fullmatch(r"[.\w-]+", part):
+                continue
+            want = set(part.split(".")[1:])
+            if not want or not want <= classes:
+                continue
+            for decl in body.split(";"):
+                name, _, value = decl.partition(":")
+                if name.strip() != prop:
+                    continue
+                rank = (len(want), order)
+                if best is None or rank >= best[0]:
+                    best = (rank, part, value.strip())
+    return best
+
+
+def test_the_leaving_lines_can_actually_leave():
+    """A row on its way out carries reveal, shown and going at once. If the
+    going rule cannot outrank the shown rule the lines never fade and the
+    language changes in a single frame - which is the whole thing this is
+    meant to avoid. Resolved the way the browser resolves it, because both
+    rules read perfectly well on their own."""
+    html = fa.build_html()
+    for prop, wanted in (("opacity", "0"), ("transform", "translateY(-6px)")):
+        won = _cascade_winner(html, {"reveal", "shown", "going"}, prop)
+        assert won, prop
+        assert ".going" in won[1] and won[2] == wanted, (prop, won)
+
+
+def test_changing_the_language_is_not_a_bare_rebuild():
+    """Rebuilding the screen in place throws the pill away and draws a new
+    one already at its destination, so it jumps while every other pill
+    slides."""
+    html = fa.build_html()
+    assert "if (id === 'lang') relanguage();" in html
+    assert "function relanguage()" in html
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
