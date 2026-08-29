@@ -1415,21 +1415,47 @@ def test_the_drivers_are_never_removed_from_inside_this_process():
     body = inspect.getsource(fa.Api.wipe)
     assert "msiexec" not in body, "wipe() is removing drivers in-process"
     assert "_pending_drivers" in body
-    later = inspect.getsource(fa.Api.finish_wipe)
-    assert "tasklist" in later and "PID eq" in later, (
+    txt = fa.Api._remove_script(["{AAAA}"], False)
+    assert "tasklist" in txt and "PID eq %d" % os.getpid() in txt, (
         "the script does not wait for this process to be gone")
-    assert "_remove_cmd" in later
+    assert "msiexec" in txt and "{AAAA}" in txt
 
 
 def test_the_removal_script_waits_before_it_restarts():
     """Order matters: gone first, then the restart, or the packages are
-    interrupted half way out."""
+    interrupted half way out. Read off the script itself, not the source
+    that writes it."""
+    txt = fa.Api._remove_script(["{AAAA}", "{BBBB}"], True)
+    wait = txt.index("tasklist")
+    first = txt.index("{AAAA}")
+    second = txt.index("{BBBB}")
+    restart = txt.index("shutdown")
+    assert wait < first < second < restart, txt
+
+
+def test_the_removal_script_names_its_programs_in_full():
+    """A bare tasklist or find answers to whatever is first on PATH. Pick up
+    a stranger's find and the wait becomes no wait at all - which is how the
+    drivers were left in place."""
+    txt = fa.Api._remove_script(["{AAAA}"], False)
+    for exe in ("tasklist.exe", "find.exe", "ping.exe"):
+        assert os.path.join("System32", exe).lower() in txt.lower(), exe
+
+
+def test_the_removal_script_is_not_started_detached():
+    """DETACHED_PROCESS leaves it with no console, and the console programs
+    it drives never run - so nothing at all happens. Measured, not guessed:
+    with the flag the script never fired, without it the script fired."""
     import inspect
-    later = inspect.getsource(fa.Api.finish_wipe)
-    wait = later.index("tasklist")
-    remove = later.index("_remove_cmd")
-    restart = later.index("shutdown")
-    assert wait < remove < restart, (wait, remove, restart)
+    src = inspect.getsource(fa.Api.finish_wipe)
+    assert "0x08000000" in src, "the window should still be hidden"
+    assert "0x00000008" not in src, "started detached, so it will not run"
+
+
+def test_the_removal_script_gives_up_waiting_eventually():
+    """A process that will not die must not strand the removal for ever."""
+    txt = fa.Api._remove_script(["{AAAA}"], False)
+    assert "gtr" in txt and "goto go" in txt, txt
 
 
 def test_removing_everything_runs_all_the_way_through():

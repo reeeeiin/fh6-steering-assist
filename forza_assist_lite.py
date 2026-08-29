@@ -6068,34 +6068,69 @@ class Api:
         deleting itself when it is done."""
         codes = getattr(self, "_pending_drivers", [])
         if codes:
-            lines = ["@echo off",
-                     "setlocal",
-                     ":wait",
-                     'tasklist /fi "PID eq %d" 2>nul | find "%d" >nul'
-                     % (os.getpid(), os.getpid()),
-                     "if not errorlevel 1 (",
-                     "  ping -n 2 127.0.0.1 >nul",
-                     "  goto wait",
-                     ")"]
-            for code in codes:
-                lines.append(" ".join(DriverSetup._remove_cmd(code)))
-            if restart:
-                lines.append('shutdown /r /t %d /c "Steering Assist: '
-                             'restarting to finish removing the drivers"'
-                             % RESTART_DELAY_S)
-            lines.append('del "%~f0"')
             path = os.path.join(tempfile.gettempdir(),
                                 "steering-assist-remove.bat")
             try:
                 with open(path, "w", encoding="ascii", errors="ignore") as f:
-                    f.write("\r\n".join(lines) + "\r\n")
+                    f.write(self._remove_script(codes, restart))
+                # DETACHED_PROCESS stops the script running at all - it is
+                # left with no console, and the console programs it drives
+                # never start. No window is all that was wanted anyway.
                 subprocess.Popen(["cmd", "/c", path],
-                                 creationflags=0x00000008 | 0x08000000,
+                                 creationflags=0x08000000,
                                  close_fds=True)
             except OSError:
                 return False
+            # The script out there is waiting for this process to go, and
+            # the drivers cannot come out until it does. Closing the window
+            # should be enough; this makes sure of it.
+            killer = threading.Timer(2.0, lambda: os._exit(0))
+            killer.daemon = True
+            killer.start()
         self.win_close()
         return True
+
+    @staticmethod
+    def _remove_script(codes, restart):
+        """The batch that outlives us, as text.
+
+        Every program is named by its full path. A bare tasklist or find
+        answers to whatever is first on PATH, and picking up a stranger's
+        find turns the wait into no wait at all.
+        """
+        sysd = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"),
+                            "System32")
+        pid = os.getpid()
+        lines = [
+            "@echo off",
+            "setlocal",
+            'set "TL=%s"' % os.path.join(sysd, "tasklist.exe"),
+            'set "FIND=%s"' % os.path.join(sysd, "find.exe"),
+            'set "PING=%s"' % os.path.join(sysd, "ping.exe"),
+            "set /a tries=0",
+            ":wait",
+            "set /a tries+=1",
+            # a couple of minutes, then go ahead regardless: better to try
+            # the removal than to sit here for ever on a stuck process
+            "if %tries% gtr 120 goto go",
+            '"%%TL%%" /fi "PID eq %d" /nh 2>nul | "%%FIND%%" "%d" >nul' % (pid, pid),
+            "if errorlevel 1 goto go",
+            '"%PING%" -n 2 127.0.0.1 >nul',
+            "goto wait",
+            ":go",
+            # onefile runs as two processes; the second takes a moment more
+            '"%PING%" -n 3 127.0.0.1 >nul',
+        ]
+        for code in codes:
+            lines.append(" ".join(DriverSetup._remove_cmd(code)))
+        if restart:
+            # the panel has already counted down in front of the driver;
+            # this is the last breath before the machine goes
+            lines.append('"%s" /r /t 5 /c "Steering Assist: restarting to '
+                         'finish removing the drivers"'
+                         % os.path.join(sysd, "shutdown.exe"))
+        lines.append('del "%~f0"')
+        return "\r\n".join(lines) + "\r\n"
 
     @staticmethod
     def _clear_after_restart() -> None:
