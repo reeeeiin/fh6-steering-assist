@@ -798,7 +798,7 @@ DEFAULTS = {
     "theme": "dark",
     "ui_scale": 1.0,
     "steer_in_general": False,
-    "ext_telemetry": True,
+    "ext_telemetry": False,
     "profile": "default",
     "custom": {},
     "slots": {},
@@ -2948,8 +2948,8 @@ TR = {
         "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
         "prof_default": "Default",
         "prof_custom": "Custom",
-        "wipe_sec": 'Remove',
-        "wipe_row": 'Remove everything',
+        "wipe_sec": 'Uninstall',
+        "wipe_row": 'Remove all components and app data',
         "wipe_btn": 'Remove',
         "wipe_hint": 'Uninstalls both drivers, clears what was added to HidHide and deletes your settings. Nothing of this app is left on the machine. Windows wants a restart afterwards',
         "wipe_ask": 'Remove everything?',
@@ -3068,7 +3068,7 @@ TR = {
         "prof_default": "Обычный",
         "prof_custom": "Свой",
         "wipe_sec": 'Удаление',
-        "wipe_row": 'Удалить всё',
+        "wipe_row": 'Удалить все компоненты и данные приложения',
         "wipe_btn": 'Удалить',
         "wipe_hint": 'Удаляет оба драйвера, чистит записи в HidHide и стирает настройки. От приложения на машине не остаётся ничего. После этого Windows потребует перезагрузку',
         "wipe_ask": 'Удалить всё?',
@@ -3186,8 +3186,8 @@ TR = {
         "profile_hint": "Fertige Voreinstellungen. Jeder Reglerzug wechselt auf Eigenes und behält deine Werte, du kommst also immer zurück.",
         "prof_default": "Standard",
         "prof_custom": "Eigenes",
-        "wipe_sec": 'Entfernen',
-        "wipe_row": 'Alles entfernen',
+        "wipe_sec": 'Deinstallation',
+        "wipe_row": 'Alle Komponenten und App-Daten entfernen',
         "wipe_btn": 'Entfernen',
         "wipe_hint": 'Entfernt beide Treiber, raumt die Eintrage in HidHide auf und loscht die Einstellungen. Es bleibt nichts zuruck. Windows will danach einen Neustart',
         "wipe_ask": 'Alles entfernen?',
@@ -3305,8 +3305,8 @@ TR = {
         "profile_hint": "Réglages prêts à l'emploi. Bouger un curseur passe sur Perso et conserve tes valeurs, tu peux toujours y revenir.",
         "prof_default": "Défaut",
         "prof_custom": "Perso",
-        "wipe_sec": 'Suppression',
-        "wipe_row": 'Tout supprimer',
+        "wipe_sec": 'Desinstallation',
+        "wipe_row": 'Supprimer tous les composants et les donnees',
         "wipe_btn": 'Supprimer',
         "wipe_hint": 'Desinstalle les deux pilotes, nettoie ce qui a ete ajoute a HidHide et efface les reglages. Rien ne reste sur la machine. Windows demande ensuite un redemarrage',
         "wipe_ask": 'Tout supprimer ?',
@@ -3424,8 +3424,8 @@ TR = {
         "profile_hint": "Ajustes listos. Mover cualquier control cambia a Propio y guarda tus valores, siempre puedes volver a ellos.",
         "prof_default": "Normal",
         "prof_custom": "Propio",
-        "wipe_sec": 'Eliminar',
-        "wipe_row": 'Eliminar todo',
+        "wipe_sec": 'Desinstalar',
+        "wipe_row": 'Eliminar todos los componentes y los datos',
         "wipe_btn": 'Eliminar',
         "wipe_hint": 'Desinstala los dos controladores, limpia lo anadido a HidHide y borra los ajustes. No queda nada en el equipo. Windows pedira reiniciar despues',
         "wipe_ask": 'Eliminar todo?',
@@ -3550,8 +3550,8 @@ TR = {
         "profile_hint": '既製の設定です。スライダーを動かすとカスタムに切り替わり、あなたの値はそのまま残るので、いつでも戻せます。',
         "prof_default": '標準',
         "prof_custom": 'カスタム',
-        "wipe_sec": '削除',
-        "wipe_row": 'すべて削除',
+        "wipe_sec": 'アンインストール',
+        "wipe_row": 'すべてのコンポーネントとアプリデータを削除',
         "wipe_btn": '削除',
         "wipe_hint": 'ドライバー2つをアンインストールし、HidHide に追加した設定を消し、設定ファイルを削除します。この PC には何も残りません。そのあと Windows の再起動が必要です',
         "wipe_ask": 'すべて削除しますか',
@@ -4602,12 +4602,6 @@ function screenSettings(){
   h += '<div class="reveal"><div class="sec">' + t('tele_sec') + '</div>' +
        '<div class="card">' + portRow() + '</div></div>';
 
-  h += '<div class="reveal"><div class="sec">' + t('wipe_sec') + '</div>' +
-       '<div class="card"><div class="row" data-hint="wipe_hint">' +
-       '<span class="rname">' + t('wipe_row') + '</span>' +
-       '<span class="pbtns"><span class="pbtn danger" id="btn-wipe">' +
-       t('wipe_btn') + '</span></span></div></div></div>';
-
   h += '<div class="reveal"><div class="sec">' + t('version_sec') + '</div>' +
        '<div class="card">' +
        '<div class="row"><span class="rname">' + t('cur_version') + '</span>' +
@@ -4617,6 +4611,12 @@ function screenSettings(){
        '<span class="updbtn" id="btn-update">' + t('check') + '</span>' +
        '</span></div>' +
        '</div></div>';
+
+  h += '<div class="reveal"><div class="sec">' + t('wipe_sec') + '</div>' +
+       '<div class="card"><div class="row" data-hint="wipe_hint">' +
+       '<span class="rname">' + t('wipe_row') + '</span>' +
+       '<span class="pbtns"><span class="pbtn danger" id="btn-wipe">' +
+       t('wipe_btn') + '</span></span></div></div></div>';
   return h;
 }
 
