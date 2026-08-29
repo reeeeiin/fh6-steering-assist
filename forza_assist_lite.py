@@ -2972,7 +2972,8 @@ TR = {
         "wipe_ask_text": 'The two drivers, everything added to HidHide, and your settings and presets. This cannot be undone.',
         "wipe_busy": 'Removing...',
         "wipe_busy_text": 'This can take a moment. Do not close the window.',
-        "wipe_done": 'Removed. Windows needs a restart to finish taking the drivers out.',
+        "wipe_done": 'Settings and HidHide entries are gone. The drivers come out as the app closes, and Windows needs a restart to finish.',
+        "wipe_ok": 'Removed',
         "btn_restart_now": 'Restart now',
         "btn_later": 'Later',
         "btn_cancel": 'Cancel',
@@ -3094,7 +3095,8 @@ TR = {
         "wipe_ask_text": 'Два драйвера, все записи в HidHide, настройки и пресеты. Отменить это будет нельзя.',
         "wipe_busy": 'Удаляем...',
         "wipe_busy_text": 'Это займёт немного времени. Не закрывайте окно.',
-        "wipe_done": 'Удалено. Чтобы драйверы ушли окончательно, Windows нужно перезагрузить.',
+        "wipe_done": 'Настройки и записи в HidHide удалены. Драйверы снимутся при закрытии приложения, после чего Windows нужно перезагрузить.',
+        "wipe_ok": 'Удалено',
         "btn_restart_now": 'Перезагрузить',
         "btn_later": 'Позже',
         "btn_cancel": 'Отмена',
@@ -3216,7 +3218,8 @@ TR = {
         "wipe_ask_text": 'Beide Treiber, alles in HidHide Eingetragene, die Einstellungen und Vorgaben. Das lasst sich nicht ruckgangig machen.',
         "wipe_busy": 'Wird entfernt...',
         "wipe_busy_text": 'Das dauert einen Moment. Fenster offen lassen.',
-        "wipe_done": 'Entfernt. Windows braucht einen Neustart, damit die Treiber ganz verschwinden.',
+        "wipe_done": 'Einstellungen und HidHide-Eintrage sind weg. Die Treiber gehen beim Schliessen, danach braucht Windows einen Neustart.',
+        "wipe_ok": 'Entfernt',
         "btn_restart_now": 'Jetzt neu starten',
         "btn_later": 'Spater',
         "btn_cancel": 'Abbrechen',
@@ -3338,7 +3341,8 @@ TR = {
         "wipe_ask_text": 'Les deux pilotes, tout ce qui a ete ajoute a HidHide, les reglages et les prereglages. C’est definitif.',
         "wipe_busy": 'Suppression...',
         "wipe_busy_text": 'Cela prend un moment. Ne fermez pas la fenetre.',
-        "wipe_done": 'Supprime. Windows a besoin d’un redemarrage pour finir de retirer les pilotes.',
+        "wipe_done": 'Reglages et entrees HidHide effaces. Les pilotes partent a la fermeture, puis Windows doit redemarrer.',
+        "wipe_ok": 'Supprime',
         "btn_restart_now": 'Redemarrer',
         "btn_later": 'Plus tard',
         "btn_cancel": 'Annuler',
@@ -3460,7 +3464,8 @@ TR = {
         "wipe_ask_text": 'Los dos controladores, todo lo anadido a HidHide, los ajustes y los preajustes. No se puede deshacer.',
         "wipe_busy": 'Eliminando...',
         "wipe_busy_text": 'Tardara un momento. No cierres la ventana.',
-        "wipe_done": 'Eliminado. Windows necesita reiniciar para terminar de quitar los controladores.',
+        "wipe_done": 'Ajustes y entradas de HidHide borrados. Los controladores salen al cerrar la app y luego Windows debe reiniciar.',
+        "wipe_ok": 'Eliminado',
         "btn_restart_now": 'Reiniciar',
         "btn_later": 'Mas tarde',
         "btn_cancel": 'Cancelar',
@@ -3589,7 +3594,8 @@ TR = {
         "wipe_ask_text": 'ドライバー2つ、HidHide に追加したもの、設定とプリセット。元に戻すことはできません。',
         "wipe_busy": '削除しています...',
         "wipe_busy_text": '少し時間がかかります。ウィンドウを閉じないでください。',
-        "wipe_done": '削除しました。ドライバーを完全に取り除くには Windows の再起動が必要です。',
+        "wipe_done": '設定と HidHide の登録は削除しました。ドライバーはアプリ終了時に外れ、そのあと Windows の再起動が必要です。',
+        "wipe_ok": '削除しました',
         "btn_restart_now": '今すぐ再起動',
         "btn_later": 'あとで',
         "btn_cancel": 'キャンセル',
@@ -4775,26 +4781,33 @@ function askWipe(){
 }
 
 function wipeDone(r){
-  $('#wipe-title').textContent = t('wipe_ask');
+  const el = $('#wipe');
+  $('#wipe-title').textContent = t('wipe_ok');
   $('#wipe-text').textContent = t('wipe_done') +
     (r && r.failed && r.failed.length ? ' (' + r.failed.join(', ') + ')' : '');
   $('#wipe-go').textContent = t('btn_restart_now');
   $('#wipe-no').textContent = t('btn_later');
+  $('#wipe-go').style.display = '';
   wipePanel('done');
-  $('#wipe-no').onclick = () => $('#wipe').classList.add('off');
+
+  /* Both answers end the same way - the drivers can only come out once
+     this process is gone, so it closes either way. The difference is
+     whether Windows restarts afterwards. */
+  $('#wipe-no').onclick = () => {
+    try{ pywebview.api.finish_wipe(false); }catch(e){}
+  };
   $('#wipe-go').onclick = () => {
-    try{ pywebview.api.restart_pc(); }catch(e){}
-    countdown('#wipe-count', () => $('#wipe').classList.add('off'));
     $('#wipe-title').textContent = t('btn_restart_now');
     $('#wipe-go').style.display = 'none';
     $('#wipe-no').textContent = t('btn_cancel');
     $('#wipe-no').onclick = () => {
       clearTimeout(wipeTimer);
-      try{ pywebview.api.cancel_restart(); }catch(e){}
-      $('#wipe').classList.add('off');
+      wipeDone(r);
     };
     wipePanel('counting');
-    $('#wipe').classList.add('done');
+    el.classList.add('done');
+    countdown('#wipe-count',
+              () => { try{ pywebview.api.finish_wipe(true); }catch(e){} });
   };
 }
 
@@ -5980,17 +5993,19 @@ class Api:
         return True
 
     def wipe(self):
-        """Remove the drivers, the settings and everything left in HidHide.
+        """Clear everything that can go while the app is still running.
 
-        In that order on purpose: the pad is handed back and our entries
-        cleared while HidHide is still installed to clear them with, the
-        drivers go next, and the settings folder last so nothing is left to
-        write into it. A restart is wanted afterwards - both drivers ask for
-        one when they are removed."""
+        Not the drivers. vgamepad opens ViGEmBus as it is imported and keeps
+        that connection for the whole life of the process - there is no way
+        to hand it back short of exiting. Pulling a kernel driver out from
+        under a client that still holds it does not fail politely: the
+        machine bugchecks and restarts on the spot, which is exactly what
+        removing them from in here did. So the drivers are named now and
+        removed by finish_wipe once we are gone.
+        """
         global _saving_off
-        done, failed = [], []
+        done, failed, drivers = [], [], []
 
-        # let go of the pad and the hiding before anything is removed
         try:
             self._b.stop()
         except Exception:
@@ -6007,17 +6022,9 @@ class Api:
 
         for label, reg_name, _service, _key in DriverSetup.ITEMS:
             code = uninstall_code(reg_name)
-            if not code:
-                continue
-            try:
-                cp = subprocess.run(
-                    DriverSetup._remove_cmd(code),
-                    capture_output=True, text=True, timeout=180,
-                    creationflags=0x08000000)
-                # 3010 is "gone, restart to finish", which is a success here
-                (done if cp.returncode in (0, 3010) else failed).append(label)
-            except (OSError, subprocess.SubprocessError):
-                failed.append(label)
+            if code:
+                drivers.append(code)
+                done.append(label)
 
         self._clear_after_restart()
 
@@ -6030,9 +6037,47 @@ class Api:
         except OSError:
             failed.append("settings")
 
-        return {"ok": not failed, "done": done, "failed": failed}
+        self._pending_drivers = drivers
+        return {"ok": not failed, "done": done, "failed": failed,
+                "drivers": len(drivers)}
 
-    @staticmethod
+    def finish_wipe(self, restart=False):
+        """Hand the driver removal to something that outlives us.
+
+        A small script waits for this process to disappear, then removes
+        each package and, if asked, restarts. Written to the temp folder and
+        deleting itself when it is done."""
+        codes = getattr(self, "_pending_drivers", [])
+        if codes:
+            lines = ["@echo off",
+                     "setlocal",
+                     ":wait",
+                     'tasklist /fi "PID eq %d" 2>nul | find "%d" >nul'
+                     % (os.getpid(), os.getpid()),
+                     "if not errorlevel 1 (",
+                     "  ping -n 2 127.0.0.1 >nul",
+                     "  goto wait",
+                     ")"]
+            for code in codes:
+                lines.append(" ".join(DriverSetup._remove_cmd(code)))
+            if restart:
+                lines.append('shutdown /r /t %d /c "Steering Assist: '
+                             'restarting to finish removing the drivers"'
+                             % RESTART_DELAY_S)
+            lines.append('del "%~f0"')
+            path = os.path.join(tempfile.gettempdir(),
+                                "steering-assist-remove.bat")
+            try:
+                with open(path, "w", encoding="ascii", errors="ignore") as f:
+                    f.write("\r\n".join(lines) + "\r\n")
+                subprocess.Popen(["cmd", "/c", path],
+                                 creationflags=0x00000008 | 0x08000000,
+                                 close_fds=True)
+            except OSError:
+                return False
+        self.win_close()
+        return True
+
     def _clear_after_restart() -> None:
         """Drop the one-shot launch, if one was booked."""
         try:

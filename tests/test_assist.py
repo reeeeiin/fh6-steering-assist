@@ -1404,6 +1404,34 @@ def test_the_removal_is_a_stage_of_its_own():
             assert tr.get(key), "%s is missing %s" % (lang, key)
 
 
+def test_the_drivers_are_never_removed_from_inside_this_process():
+    """vgamepad opens ViGEmBus as it is imported and holds that connection
+    for the whole life of the process. Pulling the driver out from under a
+    client that still has it open does not fail politely - the machine
+    bugchecks and restarts on the spot, with nothing drawn and nothing
+    logged. So wipe() only names the packages; a script that outlives us
+    removes them."""
+    import inspect
+    body = inspect.getsource(fa.Api.wipe)
+    assert "msiexec" not in body, "wipe() is removing drivers in-process"
+    assert "_pending_drivers" in body
+    later = inspect.getsource(fa.Api.finish_wipe)
+    assert "tasklist" in later and "PID eq" in later, (
+        "the script does not wait for this process to be gone")
+    assert "_remove_cmd" in later
+
+
+def test_the_removal_script_waits_before_it_restarts():
+    """Order matters: gone first, then the restart, or the packages are
+    interrupted half way out."""
+    import inspect
+    later = inspect.getsource(fa.Api.finish_wipe)
+    wait = later.index("tasklist")
+    remove = later.index("_remove_cmd")
+    restart = later.index("shutdown")
+    assert wait < remove < restart, (wait, remove, restart)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
