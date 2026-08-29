@@ -2972,6 +2972,8 @@ TR = {
         "wipe_ask_text": 'The two drivers, everything added to HidHide, and your settings and presets. This cannot be undone.',
         "wipe_busy": 'Removing...',
         "wipe_busy_text": 'This can take a moment. Do not close the window.',
+        "wipe_fail": 'Could not remove everything',
+        "btn_close": 'Close',
         "wipe_done": 'Settings and HidHide entries are gone. The drivers come out as the app closes, and Windows needs a restart to finish.',
         "wipe_ok": 'Removed',
         "btn_restart_now": 'Restart now',
@@ -3095,6 +3097,8 @@ TR = {
         "wipe_ask_text": 'Два драйвера, все записи в HidHide, настройки и пресеты. Отменить это будет нельзя.',
         "wipe_busy": 'Удаляем...',
         "wipe_busy_text": 'Это займёт немного времени. Не закрывайте окно.',
+        "wipe_fail": 'Удалить всё не получилось',
+        "btn_close": 'Закрыть',
         "wipe_done": 'Настройки и записи в HidHide удалены. Драйверы снимутся при закрытии приложения, после чего Windows нужно перезагрузить.',
         "wipe_ok": 'Удалено',
         "btn_restart_now": 'Перезагрузить',
@@ -3218,6 +3222,8 @@ TR = {
         "wipe_ask_text": 'Beide Treiber, alles in HidHide Eingetragene, die Einstellungen und Vorgaben. Das lasst sich nicht ruckgangig machen.',
         "wipe_busy": 'Wird entfernt...',
         "wipe_busy_text": 'Das dauert einen Moment. Fenster offen lassen.',
+        "wipe_fail": 'Es konnte nicht alles entfernt werden',
+        "btn_close": 'Schliessen',
         "wipe_done": 'Einstellungen und HidHide-Eintrage sind weg. Die Treiber gehen beim Schliessen, danach braucht Windows einen Neustart.',
         "wipe_ok": 'Entfernt',
         "btn_restart_now": 'Jetzt neu starten',
@@ -3341,6 +3347,8 @@ TR = {
         "wipe_ask_text": 'Les deux pilotes, tout ce qui a ete ajoute a HidHide, les reglages et les prereglages. C’est definitif.',
         "wipe_busy": 'Suppression...',
         "wipe_busy_text": 'Cela prend un moment. Ne fermez pas la fenetre.',
+        "wipe_fail": 'Tout n a pas pu etre supprime',
+        "btn_close": 'Fermer',
         "wipe_done": 'Reglages et entrees HidHide effaces. Les pilotes partent a la fermeture, puis Windows doit redemarrer.',
         "wipe_ok": 'Supprime',
         "btn_restart_now": 'Redemarrer',
@@ -3464,6 +3472,8 @@ TR = {
         "wipe_ask_text": 'Los dos controladores, todo lo anadido a HidHide, los ajustes y los preajustes. No se puede deshacer.',
         "wipe_busy": 'Eliminando...',
         "wipe_busy_text": 'Tardara un momento. No cierres la ventana.',
+        "wipe_fail": 'No se pudo eliminar todo',
+        "btn_close": 'Cerrar',
         "wipe_done": 'Ajustes y entradas de HidHide borrados. Los controladores salen al cerrar la app y luego Windows debe reiniciar.',
         "wipe_ok": 'Eliminado',
         "btn_restart_now": 'Reiniciar',
@@ -3594,6 +3604,8 @@ TR = {
         "wipe_ask_text": 'ドライバー2つ、HidHide に追加したもの、設定とプリセット。元に戻すことはできません。',
         "wipe_busy": '削除しています...',
         "wipe_busy_text": '少し時間がかかります。ウィンドウを閉じないでください。',
+        "wipe_fail": 'すべては削除できませんでした',
+        "btn_close": '閉じる',
         "wipe_done": '設定と HidHide の登録は削除しました。ドライバーはアプリ終了時に外れ、そのあと Windows の再起動が必要です。',
         "wipe_ok": '削除しました',
         "btn_restart_now": '今すぐ再起動',
@@ -4775,8 +4787,15 @@ function askWipe(){
     const show = r => setTimeout(() => wipeDone(r),
                                  Math.max(0, BOOT.wipeMinMs -
                                           (Date.now() - started)));
-    try{ pywebview.api.wipe().then(show); }
-    catch(e){ el.classList.add('off'); }
+    const failed = e => { $('#wipe-title').textContent = t('wipe_fail');
+                          $('#wipe-text').textContent = String(e);
+                          wipePanel('done');
+                          $('#wipe-go').style.display = 'none';
+                          $('#wipe-no').textContent = t('btn_close');
+                          $('#wipe-no').onclick =
+                            () => el.classList.add('off'); };
+    try{ pywebview.api.wipe().then(show).catch(failed); }
+    catch(e){ failed(e); }
   };
 }
 
@@ -6078,6 +6097,7 @@ class Api:
         self.win_close()
         return True
 
+    @staticmethod
     def _clear_after_restart() -> None:
         """Drop the one-shot launch, if one was booked."""
         try:

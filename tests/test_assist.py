@@ -1432,6 +1432,45 @@ def test_the_removal_script_waits_before_it_restarts():
     assert wait < remove < restart, (wait, remove, restart)
 
 
+def test_removing_everything_runs_all_the_way_through():
+    """It ran end to end once the machine stopped bugchecking half way, and
+    an exception in here is invisible from the panel: the promise rejects,
+    nothing calls back, and it sits on "Removing..." for good. So the whole
+    thing is walked, against a settings folder made for the occasion."""
+    import shutil
+    import tempfile
+
+    class _HH:
+        def disengage(self): pass
+        def rescan(self): return None
+        def _run(self, *a): pass
+
+    class _Bridge:
+        hidhide = _HH()
+        def stop(self): pass
+
+    folder = tempfile.mkdtemp(prefix="wipe-test-")
+    saved_cfg, saved_off = fa.CONFIG_FILE, fa._saving_off
+    fa.CONFIG_FILE = os.path.join(folder, "settings.json")
+    with open(fa.CONFIG_FILE, "w") as f:
+        f.write("{}")
+    try:
+        r = fa.Api(_Bridge()).wipe()          # must return, not raise
+        assert r["ok"], r
+        assert "settings" in r["done"], r
+        assert not os.path.isdir(folder), "the settings folder is still there"
+    finally:
+        fa.CONFIG_FILE, fa._saving_off = saved_cfg, saved_off
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_a_failed_removal_says_so_instead_of_hanging():
+    """A rejected promise walks straight past try/catch."""
+    html = fa.build_html()
+    assert ".catch(failed)" in html
+    assert "wipe_fail" in html
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
