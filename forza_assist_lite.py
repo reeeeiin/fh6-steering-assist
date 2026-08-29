@@ -774,7 +774,7 @@ class Assist:
         return self.angle
 
 
-CONFIG_VERSION = 14
+CONFIG_VERSION = 15
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
@@ -804,6 +804,10 @@ DEFAULTS = {
     "slots": {},
     "telemetry_seen": False,
     "setup_done": False,
+    # Whether this machine has run the app before. The steps are worded and
+    # paced from it: the first time they are work, every time after they
+    # are confirmation.
+    "ran_before": False,
     # Which Windows session we last asked for a restart in. Same number
     # until the machine actually restarts, so a driver waiting on that
     # restart is not installed again and again in the meantime.
@@ -2273,6 +2277,9 @@ class Bridge:
         self.drivers = DriverSetup()
         self.hidhide = HidHide()
         self.first_run = not self.cfg.get("setup_done", False)
+        # Read before it is written, so the launch that sets it still counts
+        # as the first one.
+        self.ran_before = bool(self.cfg.get("ran_before", False))
         self.bad_order = False
         self.boot_step = 0
         self.boot_error = ""
@@ -2572,6 +2579,9 @@ class Bridge:
             self.bad_order = game_running()
 
             self.boot_step = 1
+            if not self.cfg.get("ran_before"):
+                self.cfg["ran_before"] = True
+                save_config(self.cfg)
             self.status_code = "drivers"
             self.drivers.ensure(on_install=lambda: setattr(self,
                                                            "boot_step", 2),
@@ -4070,14 +4080,21 @@ body.t-light{
 .btele-t+.bchips+.btele-t{margin-top:9px}
 /* Ordering a restart used to look like nothing happening: the window sat
    there while Windows counted down out of sight. */
-.bmodal{position:absolute;inset:0;z-index:40;display:none;
-        align-items:center;justify-content:center;
-        background:rgba(0,0,0,.62);backdrop-filter:blur(3px);
+#boot > .bmodal{position:absolute;inset:0;z-index:50;display:none;
+        align-items:center;justify-content:center;pointer-events:auto;
+        background:rgba(0,0,0,.55);
         opacity:0;transition:opacity .22s ease}
-.bmodal.on{display:flex}
+/* The blur goes on what is behind the notice, not on the notice's own
+   backdrop: the window's rounded edge is drawn by the frame, and blurring
+   through it softens the corners. */
+#boot.blurred > .bstage,
+#boot.blurred > .btag{filter:blur(7px);transition:filter .22s ease}
+#boot > .bstage,#boot > .btag{transition:filter .22s ease}
+#boot > .bmodal.on{display:flex}
 .bmodal.shown{opacity:1}
 .bmbox{width:250px;padding:22px;border-radius:14px;text-align:center;
        background:var(--card);border:1px solid var(--btn-line);
+       box-shadow:0 18px 46px rgba(0,0,0,.5);
        transform:translateY(6px) scale(.98);
        transition:transform .22s cubic-bezier(.4,0,.2,1)}
 .bmodal.shown .bmbox{transform:none}
@@ -4156,15 +4173,6 @@ html[data-boot] .rz{display:none}
   <span class="bclose" data-win="close"><!--ICON:close--></span>
   <div class="btag"><!--ICON:applogotagline--></div>
 
-  <div class="bmodal" id="boot-modal">
-    <div class="bmbox">
-      <div class="bmtitle" id="bm-title"></div>
-      <div class="bmtext" id="bm-text"></div>
-      <div class="bmcount" id="bm-count"></div>
-      <button class="bbtn sec" id="bm-cancel"></button>
-    </div>
-  </div>
-
   <div class="bstage" id="bs-load">
     <div class="bmark">
       <span class="blay bdim"><!--ICON:applogoshape--></span>
@@ -4191,6 +4199,15 @@ html[data-boot] .rz{display:none}
   </div>
 
   <div class="bhint" id="boot-hint"></div>
+  <div class="bmodal" id="boot-modal">
+    <div class="bmbox">
+      <div class="bmtitle" id="bm-title"></div>
+      <div class="bmtext" id="bm-text"></div>
+      <div class="bmcount" id="bm-count"></div>
+      <button class="bbtn sec" id="bm-cancel"></button>
+    </div>
+  </div>
+
   <div class="bfoot">
     <span>Steering Assist is an independent fan project. It is not affiliated
       with, endorsed by or sponsored by Microsoft Corporation, Xbox Game
@@ -5124,6 +5141,7 @@ function restartNotice(){
   $('#bm-text').textContent = t.rsText;
   $('#bm-cancel').textContent = t.rsCancel;
   el.classList.add('on');
+  $('#boot').classList.add('blurred');
   requestAnimationFrame(() => el.classList.add('shown'));
   let left = BOOT.restartS;
   const tick = () => {
@@ -5137,6 +5155,7 @@ function restartNotice(){
     clearTimeout(restartTimer);
     try{ pywebview.api.cancel_restart(); }catch(e){}
     el.classList.remove('shown');
+    $('#boot').classList.remove('blurred');
     setTimeout(() => el.classList.remove('on'), 220);
   };
 }
@@ -5186,8 +5205,7 @@ function bootTick(){
        this launch is confirming rather than working: it need not sit on
        the bar for as long. Waiting for step 3 keeps the bar from having to
        run backwards if it turns out something does need installing. */
-    const checking = (state.boot_step || 0) >= 3 &&
-                     !(state.boot_installed && state.boot_installed.length);
+    const checking = !!state.ran_before;
     const minMs = checking ? BOOT.minCheckMs : BOOT.minMs;
     const pct = Math.round(bootProgress(el / minMs) * 100);
     $('#boot-load').textContent = BT().loading;
@@ -5215,7 +5233,13 @@ function bootTick(){
     const real = Math.max(1, Math.min(5, state.boot_step || 1));
     /* nothing was installed this run, so these steps are confirming what is
        already there: quicker, and worded as checks rather than work */
-    const verifying = !(state.boot_installed && state.boot_installed.length);
+    /* Worded and paced from whether the machine has run this before, not
+       from whether something is being installed right now. A driver can
+       report itself half-installed for reasons outside this program, and
+       then every launch calls itself an installation. The pace is only a
+       floor - a step waits for the real one to advance - so a launch that
+       genuinely does install still sits on the step until it is done. */
+    const verifying = !!state.ran_before;
     const stepMs = verifying ? BOOT.checkMs : BOOT.stepMs;
     if (!bootShown){ bootShown = 1; bootShownAt = now; }
     if (real > bootShown && now - bootShownAt >= stepMs){
@@ -5744,6 +5768,7 @@ class Api:
             "boot_error": b.boot_error,
             "boot_installed": b.boot_installed,
             "first_run": bool(BOOT_DEMO) or b.first_run,
+            "ran_before": b.ran_before and not BOOT_DEMO,
             "drv_code": b.drivers.code,
             "drv_info": b.drivers.info,
             "hh_code": b.hidhide.code,

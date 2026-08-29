@@ -1305,6 +1305,31 @@ def test_the_restart_notice_speaks_every_language():
     assert hasattr(fa.Api, "cancel_restart")
 
 
+def test_the_steps_are_paced_by_whether_this_machine_has_run_before():
+    """Not by whether something is installing: a driver can report itself
+    half-installed for reasons outside this program, and then every launch
+    calls itself an installation and crawls."""
+    page = fa.build_html()
+    assert "const verifying = !!state.ran_before;" in page, (
+        "the pacing is keyed off something else again")
+    assert "boot_installed && state.boot_installed.length" not in page, (
+        "the old install-based pacing is back")
+    assert fa.DEFAULTS["ran_before"] is False
+
+
+def test_the_restart_notice_sits_above_the_screen_it_covers():
+    """Every child of #boot is pinned to one layer by an id-level rule, so
+    the notice needs its own or it lands under the dots - and loses its
+    pointer events with them, which is what made Cancel dead."""
+    page = fa.build_html()
+    assert "#boot > .bmodal{" in page
+    assert "z-index:50" in page and "pointer-events:auto" in page
+    assert "#boot.blurred > .bstage" in page, "nothing blurs behind it"
+    boot = page[page.index('<div id="boot">'):page.index("</body>")]
+    assert boot.index("boot-modal") > boot.index("bs-tele"), (
+        "the notice is written before the screens it covers")
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
