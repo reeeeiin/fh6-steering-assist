@@ -12,7 +12,7 @@ if errorlevel 1 (
 set ASSIST_DEBUG_LOG=1
 echo === DEBUG LOG ON ===
 echo Log will be written on exit to:
-echo   %APPDATA%\ForzaAssistLite\assist_log.csv
+echo   %APPDATA%\Steering Assist\assist_log.csv
 echo.
 rem Find an interpreter that actually runs. Installed without "Add
 rem python.exe to PATH", that name belongs to a Microsoft Store stub which

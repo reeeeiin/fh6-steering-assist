@@ -88,7 +88,7 @@ network access once, running does not.
 3. Start Forza. Drive. The telemetry panel comes alive once data flows.
 
 Hover any setting for a tooltip. Settings persist in
-`%APPDATA%\ForzaAssistLite\`.
+`%APPDATA%\Steering Assist\`.
 
 ## How it works
 
@@ -115,7 +115,7 @@ fire twice.
 
 Which buttons count as holds defaults to **A + LB** — the stock Forza layout.
 If yours differs, set `btn_handbrake` / `btn_clutch` in
-`%APPDATA%\ForzaAssistLite\assist_lite_config.json` (values are XInput button
+`%APPDATA%\Steering Assist\settings.json` (values are XInput button
 bits). Anything listed there is mirrored and must be a hold, never a gear:
 the previous version hardcoded A, which silently broke every layout with a
 gear on that button.
@@ -149,7 +149,7 @@ a second copy would create a second virtual pad and duplicate inputs.
 - **Buttons feel laggy or get dropped** — sending vibration is a blocking USB
   request to the same pad the buttons come from, so it is rate-limited and kept
   off the steering loop. If your pad still misbehaves, set `"rumble": false` in
-  `%APPDATA%\ForzaAssistLite\assist_lite_config.json` and compare.
+  `%APPDATA%\Steering Assist\settings.json` and compare.
 
 ## Diagnostics
 
@@ -162,7 +162,7 @@ python tools\analyze_log.py
 
 It reports how many presses actually reached the assist, so "the game lost
 it" and "the pad lost it" stop being guesswork. The log lands in
-`%APPDATA%\ForzaAssistLite\assist_log.csv` when the app closes.
+`%APPDATA%\Steering Assist\assist_log.csv` when the app closes.
 
 Tests: `python tests\test_assist.py` (no pytest needed).
 

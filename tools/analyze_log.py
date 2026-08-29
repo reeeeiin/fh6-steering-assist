@@ -102,7 +102,7 @@ def bounce_report(rows):
 
 def default_path():
     base = os.environ.get("APPDATA", "")
-    return os.path.join(base, "ForzaAssistLite", "assist_log.csv")
+    return os.path.join(base, "Steering Assist", "assist_log.csv")
 
 
 def main(path):

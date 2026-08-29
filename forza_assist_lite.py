@@ -184,22 +184,33 @@ def sweep_stale_unpacks():
         shutil.rmtree(path, ignore_errors=True)
 
 
+APPDATA_DIR = "Steering Assist"
+SETTINGS_FILE = "settings.json"
+
+
 def _config_path() -> str:
-    base = os.path.join(os.environ.get("APPDATA", _app_dir()),
-                        "ForzaAssistLite")
+    """Where settings live. Nothing is carried over from the folder version
+    1 used: its settings are laid out differently enough that bringing them
+    across would mean maintaining a path nobody exercises. Version 1 keeps
+    its own folder and its own file, untouched, so the two never meet."""
+    base = os.path.join(os.environ.get("APPDATA", _app_dir()), APPDATA_DIR)
     try:
         os.makedirs(base, exist_ok=True)
     except OSError:
-        return os.path.join(_app_dir(), "assist_lite_config.json")
-    p = os.path.join(base, "assist_lite_config.json")
-    legacy = os.path.join(_app_dir(), "assist_lite_config.json")
-    if not os.path.isfile(p) and os.path.isfile(legacy):
+        return os.path.join(_app_dir(), SETTINGS_FILE)
+    return os.path.join(base, SETTINGS_FILE)
+    for folder, name in LEGACY_PATHS:
+        src = (os.path.join(roaming, folder, name) if folder
+               else os.path.join(_app_dir(), name))
+        if not os.path.isfile(src):
+            continue
         try:
-            with open(legacy, "r", encoding="utf-8") as fsrc, \
+            with open(src, "r", encoding="utf-8") as fsrc, \
                  open(p, "w", encoding="utf-8") as fdst:
                 fdst.write(fsrc.read())
         except OSError:
-            pass
+            continue
+        break
     return p
 
 

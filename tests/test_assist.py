@@ -11,6 +11,27 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import forza_assist_lite as fa
 
+def _read_settings():
+    """The settings file may not exist yet - a fresh machine has none."""
+    try:
+        with open(fa.CONFIG_FILE, encoding="utf-8") as f:
+            return f.read()
+    except OSError:
+        return None
+
+
+def _write_settings(text):
+    """Put back exactly what was there, including nothing at all."""
+    if text is None:
+        try:
+            os.remove(fa.CONFIG_FILE)
+        except OSError:
+            pass
+        return
+    with open(fa.CONFIG_FILE, "w", encoding="utf-8") as f:
+        f.write(text)
+
+
 def make_packet(race_on=1, vx=0.0, vz=30.0, yaw=0.0, speed=30.0, slip=0.0):
     pkt = bytearray(fa.TelemetryListener.PACKET_SIZE)
     struct.pack_into("<i", pkt, fa.TelemetryListener.OFF_RACE_ON, race_on)
@@ -122,7 +143,7 @@ def test_sanitize_clamps_dangerous_values():
 def test_v5_migration_rescues_debug_leftovers():
     import io
     import json
-    backup = io.open(fa.CONFIG_FILE, encoding="utf-8").read()
+    backup = _read_settings()
     try:
         io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(json.dumps({
             "version": 4, "yield_mode": "off", "rumble": False,
@@ -134,7 +155,7 @@ def test_v5_migration_rescues_debug_leftovers():
         assert cfg["counter_gain"] == 75.0
         assert cfg["version"] == fa.CONFIG_VERSION
     finally:
-        io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(backup)
+        _write_settings(backup)
 
 def test_sanitize_survives_garbage_types():
     cfg = dict(fa.DEFAULTS)
@@ -421,7 +442,7 @@ def test_the_shipped_curve_only_shapes_the_stick_in_a_slide():
 def test_config_v6_puts_the_steering_back_to_the_default():
     import io
     import json
-    backup = io.open(fa.CONFIG_FILE, encoding="utf-8").read()
+    backup = _read_settings()
     try:
         io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(json.dumps({
             "version": 5, "steer_curve": 2.0, "speed_sens": 20.0,
@@ -431,7 +452,7 @@ def test_config_v6_puts_the_steering_back_to_the_default():
         assert cfg["speed_sens"] == 0.0, cfg["speed_sens"]
         assert cfg["gyro"] == 0.6 and cfg["counter_gain"] == 60.0
     finally:
-        io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(backup)
+        _write_settings(backup)
 
 
 def test_full_lock_stays_reachable():
@@ -919,7 +940,7 @@ def test_the_dropped_presets_do_not_take_the_tuning_with_them():
     """Heavy and Minimal are gone; whoever was on one keeps their numbers."""
     import io as _io
     import json
-    backup = _io.open(fa.CONFIG_FILE, encoding="utf-8").read()
+    backup = _read_settings()
     try:
         _io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(json.dumps({
             "version": 10, "profile": "heavy", "counter_gain": 80.0,
@@ -929,7 +950,7 @@ def test_the_dropped_presets_do_not_take_the_tuning_with_them():
         assert cfg["counter_gain"] == 80.0 and cfg["gyro"] == 0.8
         assert cfg["custom"]["counter_gain"] == 80.0
     finally:
-        _io.open(fa.CONFIG_FILE, "w", encoding="utf-8").write(backup)
+        _write_settings(backup)
 
 
 def _hid_bridge(slots, virtual=frozenset({1})):
@@ -1048,6 +1069,8 @@ def _hidhide(cloak_on=False, already=(), present=()):
     """A HidHide with the CLI replaced by a recorder."""
     h = fa.HidHide.__new__(fa.HidHide)
     h.cli = "cli.exe"
+    h.rescan = lambda: h.cli      # engage() re-scans the real paths first,
+                                  # and the machine need not have HidHide
     h.active = False
     h.info = h.code = ""
     h.arg = 0
