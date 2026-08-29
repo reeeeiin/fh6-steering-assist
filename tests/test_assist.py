@@ -533,6 +533,10 @@ class _StubBridge:
     def __init__(self, **over):
         self.cfg = dict(fa.DEFAULTS)
         self.cfg.update(over)
+        self.retuned = []
+
+    def retune_telemetry(self, port):
+        self.retuned.append(port)
 
 
 def _api(**over):
@@ -1122,6 +1126,71 @@ def test_disengage_twice_does_nothing_the_second_time():
     h.calls.clear()
     h.disengage()
     assert h.calls == [], h.calls
+
+
+def test_a_sensible_port_is_taken_and_the_listener_moves():
+    api = _api()
+    try:
+        r = api.set_port("20890")
+        assert r == {"ok": True, "port": 20890}, r
+        assert api._b.cfg["port"] == 20890
+        assert api._b.retuned == [20890], api._b.retuned
+    finally:
+        _done(api)
+
+
+def test_a_port_that_cannot_work_is_refused_and_nothing_moves():
+    """Below 1024 needs privileges; above 49151 is the range Windows hands
+    out to outgoing sockets, so it can be taken from under us at any time."""
+    api = _api()
+    try:
+        for bad in ("80", "0", "50000", "70000", "-1", "abc", "", None):
+            r = api.set_port(bad)
+            assert r["ok"] is False, (bad, r)
+            assert r["port"] == fa.DEFAULTS["port"], (bad, r)
+        assert api._b.cfg["port"] == fa.DEFAULTS["port"]
+        assert api._b.retuned == [], api._b.retuned
+    finally:
+        _done(api)
+
+
+def test_setting_the_port_it_already_has_moves_nothing():
+    api = _api()
+    try:
+        r = api.set_port(fa.DEFAULTS["port"])
+        assert r["ok"] is True
+        assert api._b.retuned == [], api._b.retuned
+    finally:
+        _done(api)
+
+
+def test_the_port_survives_being_written_out_and_read_back():
+    cfg = dict(fa.DEFAULTS)
+    cfg["port"] = "20890"          # a page hands back text
+    fa.sanitize_config(cfg)
+    assert cfg["port"] == 20890 and isinstance(cfg["port"], int)
+    cfg["port"] = 99999
+    fa.sanitize_config(cfg)
+    assert cfg["port"] == fa.DEFAULTS["port"]
+
+
+def test_the_listener_really_ends_up_on_the_new_port():
+    """The whole point: telemetry aimed at the new port arrives."""
+    class Holder:
+        pass
+
+    h = Holder()
+    h.telemetry = fa.TelemetryListener(port=20894)
+    h.telemetry.start()
+    time.sleep(0.2)
+    try:
+        fa.Bridge.retune_telemetry(h, 20895)
+        time.sleep(0.2)
+        assert h.telemetry.port == 20895
+        send(20895, make_packet(race_on=1, vx=-4.0, vz=20.0, speed=20.0))
+        assert h.telemetry.alive is True, "nothing arrived on the new port"
+    finally:
+        h.telemetry.stop()
 
 
 def main():

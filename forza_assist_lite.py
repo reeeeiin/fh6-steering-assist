@@ -124,6 +124,10 @@ YIELD_TAU = 0.05
 YIELD_STRENGTH = 0.85
 YAW_TAU = 0.012
 TELEMETRY_PORT = 20777
+# Below 1024 is reserved and needs privileges nobody should need for this;
+# above 49151 is the range Windows hands out to outgoing sockets by itself,
+# so a fixed port up there can be taken by something else at any moment.
+PORT_MIN, PORT_MAX = 1024, 49151
 BETA_GAIN = 7.0
 BRAKE_SUPPRESS = 0.5
 TRANSITION_SPEED = 1.0
@@ -759,7 +763,7 @@ class Assist:
         return self.angle
 
 
-CONFIG_VERSION = 12
+CONFIG_VERSION = 13
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
@@ -771,6 +775,7 @@ DEFAULTS = {
     "steer_curve": 2.0,
     "reaction": 0.5,
     "min_speed": 10.0,
+    "port": TELEMETRY_PORT,
     "game_dz": 25.0,
     "speed_sens": 0.0,
     "corr_slew": 5.0,
@@ -1643,6 +1648,11 @@ def sanitize_config(cfg: dict) -> dict:
         except (KeyError, TypeError, ValueError):
             v = DEFAULTS[key]
         cfg[key] = v if v in BUTTON_NAMES or v == 0 else DEFAULTS[key]
+    try:
+        p = int(cfg.get("port", DEFAULTS["port"]))
+    except (TypeError, ValueError):
+        p = DEFAULTS["port"]
+    cfg["port"] = p if PORT_MIN <= p <= PORT_MAX else DEFAULTS["port"]
     if cfg.get("yield_mode") not in YIELD_MODES:
         cfg["yield_mode"] = DEFAULTS["yield_mode"]
     if cfg.get("lang") not in LANG_ORDER:
@@ -2183,7 +2193,7 @@ class Bridge:
     def __init__(self):
         self.cfg = load_config()
         self.assist = Assist(self.cfg)
-        self.telemetry = TelemetryListener()
+        self.telemetry = TelemetryListener(port=self.cfg["port"])
         self.drivers = DriverSetup()
         self.hidhide = HidHide()
         self.first_run = not self.cfg.get("setup_done", False)
@@ -2394,6 +2404,20 @@ class Bridge:
         if th is not None:
             th.join(timeout=3.0)
         self._dump_log()
+
+    def retune_telemetry(self, port: int):
+        """Point the listener at another port while everything runs.
+
+        The new one is opened before the old one is dropped, so a port that
+        turns out to be busy shows up as an error on a listener that is
+        already in place rather than as a gap with nothing listening.
+        """
+        old = self.telemetry
+        fresh = TelemetryListener(port=int(port))
+        fresh.start()
+        self.telemetry = fresh
+        if old is not fresh:
+            old.stop()
 
     def _recheck_mirror(self):
         """A pad read over HID may also be sitting on XInput, where the game
@@ -2730,6 +2754,9 @@ TR = {
         "gyro_hint": "Damps car rotation like a shock absorber",
         "min_speed": "Min speed (km/h)",
         "min_speed_hint": "Assist fully off below this speed — donuts!",
+        "tele_sec": "Telemetry",
+        "port": "Data Out port",
+        "port_hint": "Must match the port set in the game's Data Out. Change it only if something else on the machine already uses 20777. Anything from 1024 to 49151 is safe; the address does not need setting - the assist listens on every one",
         "game_dz": "Game deadzone",
         "game_dz_hint": "Must match Steering Deadzone Inside in the game settings. The game throws away small stick movement, so small corrections never reach the car - this puts them back",
         "steer_curve": "Steering curve",
@@ -2837,6 +2864,9 @@ TR = {
         "gyro_hint": "Гасит вращение машины, как амортизатор",
         "min_speed": "Мин. скорость (км/ч)",
         "min_speed_hint": "Ниже этой скорости ассист выключен — пончики!",
+        "tele_sec": "Телеметрия",
+        "port": "Порт Data Out",
+        "port_hint": "Должен совпадать с портом в настройке Data Out в игре. Меняй только если 20777 уже занят другой программой. Безопасен любой от 1024 до 49151; адрес указывать не нужно — ассист слушает все",
         "game_dz": "Мёртвая зона игры",
         "game_dz_hint": "Должна совпадать с Steering Deadzone Inside в настройках игры. Игра отбрасывает малые отклонения стика, и слабые коррекции до машины не доходят — здесь мы их возвращаем",
         "steer_curve": "Кривая руля",
@@ -2944,6 +2974,9 @@ TR = {
         "gyro_hint": "Dämpft die Fahrzeugrotation wie ein Stoßdämpfer",
         "min_speed": "Min. Tempo (km/h)",
         "min_speed_hint": "Darunter ist der Assistent ganz aus — Donuts!",
+        "tele_sec": "Telemetrie",
+        "port": "Data-Out-Port",
+        "port_hint": "Muss mit dem Port in Data Out im Spiel ubereinstimmen. Nur andern, wenn 20777 schon belegt ist. Alles von 1024 bis 49151 ist sicher; eine Adresse braucht es nicht - der Assistent hort auf allen",
         "game_dz": "Totzone des Spiels",
         "game_dz_hint": "Muss mit Steering Deadzone Inside in den Spieleinstellungen übereinstimmen. Das Spiel verwirft kleine Stickbewegungen, damit kommen schwache Korrekturen nie am Auto an - das gleichen wir hier aus",
         "steer_curve": "Lenkkurve",
@@ -3051,6 +3084,9 @@ TR = {
         "gyro_hint": "Amortit la rotation de la voiture, tel un amortisseur",
         "min_speed": "Vitesse min (km/h)",
         "min_speed_hint": "En dessous, assistant coupé — donuts !",
+        "tele_sec": "Telemetrie",
+        "port": "Port Data Out",
+        "port_hint": "Doit correspondre au port reglé dans Data Out du jeu. A changer seulement si 20777 est deja pris. De 1024 a 49151 c'est sur ; l'adresse est inutile - l'assistant ecoute sur toutes",
         "game_dz": "Zone morte du jeu",
         "game_dz_hint": "Doit correspondre à Steering Deadzone Inside dans les réglages du jeu. Le jeu ignore les petits mouvements du stick, donc les corrections faibles n'atteignent jamais la voiture - on les rétablit ici",
         "steer_curve": "Courbe de direction",
@@ -3158,6 +3194,9 @@ TR = {
         "gyro_hint": "Amortigua la rotación del coche, como un amortiguador",
         "min_speed": "Vel. mínima (km/h)",
         "min_speed_hint": "Por debajo, asistente apagado — ¡trompos!",
+        "tele_sec": "Telemetria",
+        "port": "Puerto de Data Out",
+        "port_hint": "Debe coincidir con el puerto de Data Out del juego. Cambialo solo si algo ya usa el 20777. De 1024 a 49151 es seguro; la direccion no hace falta - el asistente escucha en todas",
         "game_dz": "Zona muerta del juego",
         "game_dz_hint": "Debe coincidir con Steering Deadzone Inside en los ajustes del juego. El juego descarta los movimientos pequeños del stick, así que las correcciones suaves nunca llegan al coche - aquí se las devolvemos",
         "steer_curve": "Curva de dirección",
@@ -3270,6 +3309,9 @@ TR = {
         "gyro_hint": '車体の回転をダンパーのように抑えます',
         "min_speed": '最低速度 (km/h)',
         "min_speed_hint": 'この速度を下回るとアシストは完全に切れます。ドーナツターン用',
+        "tele_sec": 'テレメトリー',
+        "port": 'Data Out ポート',
+        "port_hint": 'ゲームの Data Out で設定したポートと一致させてください。20777 が他で使われている場合だけ変更します。1024〜49151 なら安全です。アドレスの設定は不要で、アシストはすべてのアドレスで待ち受けます',
         "game_dz": 'ゲームのデッドゾーン',
         "game_dz_hint": 'ゲーム設定の Steering Deadzone Inside と同じ値にしてください。ゲームはスティックのわずかな動きを切り捨てるため、小さな補正が車に届きません。ここで元に戻します',
         "steer_curve": 'ステアリングカーブ',
@@ -3664,6 +3706,14 @@ body.t-light{
 .rval.off{color:var(--off)}
 .rval{font-size:15px;font-weight:600;color:var(--row-fg);flex:none;
       min-width:30px;text-align:right}
+.pin{font:inherit;font-size:15px;font-weight:600;color:var(--row-fg);
+     background:var(--card-2);border:1px solid transparent;border-radius:7px;
+     height:28px;width:80px;box-sizing:border-box;text-align:center;
+     margin-left:auto;flex:none;outline:none;
+     transition:border-color .2s ease,color .2s ease}
+.pin:hover{border-color:var(--btn-line)}
+.pin:focus{border-color:var(--accent)}
+.pin.bad{border-color:var(--danger);color:var(--danger)}
 
 /* the launch-order warning sits over a blurred layout: nothing behind it
    is worth touching until the game can see the pad */
@@ -4083,6 +4133,13 @@ function sliderRow(key){
     '<span class="rval" data-val="' + key + '"></span></div>';
 }
 
+function portRow(){
+  return '<div class="row" data-hint="port_hint">' +
+    '<span class="rname">' + t('port') + '</span>' +
+    '<input class="pin" id="tele-port" inputmode="numeric" maxlength="5" ' +
+    'spellcheck="false" value="' + cfg.port + '"></div>';
+}
+
 function toggleRow(key, field){
   return '<div class="row" data-hint="' + key + '_hint">' +
     '<span class="rname">' + t(key) + '</span>' +
@@ -4253,6 +4310,9 @@ function screenSettings(){
        toggleRow('ext_telemetry', 'ext_telemetry') +
        '</div></div>';
 
+  h += '<div class="reveal"><div class="sec">' + t('tele_sec') + '</div>' +
+       '<div class="card">' + portRow() + '</div></div>';
+
   h += '<div class="reveal"><div class="sec">' + t('version_sec') + '</div>' +
        '<div class="card">' +
        '<div class="row"><span class="rname">' + t('cur_version') + '</span>' +
@@ -4349,6 +4409,30 @@ function refreshSlots(){
   if (dl) dl.classList.toggle('off', !canDelete());
 }
 
+function bindPort(){
+  const el = document.getElementById('tele-port');
+  if (!el) return;
+  const commit = () => {
+    el.classList.remove('bad');
+    try{ pywebview.api.set_port(el.value).then(r => {
+      if (!r) return;
+      // whatever it ends up as is what goes back on screen, so a value
+      // that was refused cannot sit there looking accepted
+      cfg.port = r.port;
+      el.value = r.port;
+      if (!r.ok){
+        el.classList.add('bad');
+        setTimeout(() => el.classList.remove('bad'), 1200);
+      }
+    }); }catch(e){}
+  };
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape'){ el.value = cfg.port; el.blur(); }
+  });
+  el.addEventListener('blur', commit);
+}
+
 function bindSlots(){
   const sv = document.getElementById('btn-slot-save');
   const dl = document.getElementById('btn-slot-del');
@@ -4391,6 +4475,7 @@ function render(){
   }
   bindRows();
   bindSlots();
+  bindPort();
   refresh();
   playGrow();
   reportHeight();
@@ -5527,6 +5612,29 @@ class Api:
             sanitize_config(cfg)
             save_config_soon(cfg)
         return True
+
+    def set_port(self, value):
+        """Change the port the game is expected to send to. Returns what the
+        setting ended up as, so a rejected value can be put back on screen
+        rather than left as whatever was typed."""
+        cfg = self._b.cfg
+        try:
+            port = int(str(value).strip())
+        except (TypeError, ValueError):
+            return {"ok": False, "port": cfg["port"]}
+        if not (PORT_MIN <= port <= PORT_MAX):
+            return {"ok": False, "port": cfg["port"]}
+        if port != cfg["port"]:
+            cfg["port"] = port
+            sanitize_config(cfg)
+            save_config_soon(cfg)
+            try:
+                self._b.retune_telemetry(port)
+            except OSError:
+                # a port the system will not give us shows up on the
+                # telemetry line; anything else is a bug and should say so
+                pass
+        return {"ok": True, "port": cfg["port"]}
 
     def set_profile(self, name):
         """Apply a preset. Returns the values so the page and the config
