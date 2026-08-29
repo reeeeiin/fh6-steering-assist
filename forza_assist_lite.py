@@ -1670,7 +1670,9 @@ BOOT_MIN_CHECK_MS = 1300
 # Long enough to read the notice and call it off, short enough not to feel
 # like nothing happened. The countdown shown is this same number.
 RESTART_DELAY_S = 20
-BOOT_DONE_MS = 6000
+# Long enough to register that it finished, short enough not to be a
+# wait. The hint under it lands at 320ms, so it is read either way.
+BOOT_DONE_MS = 1600
 
 # Slots the driver saves into. Three is enough to keep a car, a road and a
 # wet setting apart without turning the row into a list to read.
