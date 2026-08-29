@@ -2764,7 +2764,6 @@ TR = {
         "speed": "Speed", "slip": "Slip", "no_telemetry": "no telemetry",
         "paused": "in menu / paused",
         "setup_ip": "IP address - 127.0.0.1",
-        "setup_port": "IP port - 20777",
         "setup_where": "Navigate to game settings|Hud & Gameplay / Telemetry:",
         "st_recv": 'Receiving',
         "general_sec": "General",
@@ -2813,7 +2812,6 @@ TR = {
         "st_starting": "starting…", "st_no_pad": "controller not found (XInput)", "st_pad_lost": "controller disconnected — waiting…", "st_vigem": "ViGEmBus driver missing — installer opened, install it and restart", "hh_hidden": 'Hidden', "hh_install": 'Installing', "hh_disabled": 'Visible', "hh_error": 'Error',
         "setup_title": "First run — enable telemetry in the game:",
         "setup_1": "Game Settings → HUD & Gameplay → Data Out: ON",
-        "setup_2": "IP address: 127.0.0.1 · Port: 20777",
         "setup_3": "Controls → Steering: Simulation",
         "setup_wait": "This panel will come alive once data flows…",
         "mode_status": 'Mode status',
@@ -2874,7 +2872,6 @@ TR = {
         "speed": "Скорость", "slip": "Снос", "no_telemetry": "нет телеметрии",
         "paused": "в меню / на паузе",
         "setup_ip": "IP адрес - 127.0.0.1",
-        "setup_port": "IP порт - 20777",
         "setup_where": "Настройки игры|Hud & Gameplay / Telemetry:",
         "st_recv": 'Приём',
         "general_sec": "Основное",
@@ -2923,7 +2920,6 @@ TR = {
         "st_starting": "запуск…", "st_no_pad": "контроллер не найден (XInput)", "st_pad_lost": "контроллер отключился — жду…", "st_vigem": "нет драйвера ViGEmBus — открыл установщик, поставь и перезапусти", "hh_hidden": 'Скрыт', "hh_install": 'Установка', "hh_disabled": 'Виден', "hh_error": 'Ошибка',
         "setup_title": "Первый запуск — включи телеметрию в игре:",
         "setup_1": "Настройки игры → HUD и геймплей → Data Out: ВКЛ",
-        "setup_2": "IP-адрес: 127.0.0.1 · Порт: 20777",
         "setup_3": "Управление → Руление: Симуляция",
         "setup_wait": "Панель оживёт сама, как только пойдут данные…",
         "mode_status": 'Режим',
@@ -2984,7 +2980,6 @@ TR = {
         "speed": "Tempo", "slip": "Schlupf", "no_telemetry": "keine Telemetrie",
         "paused": "im Menü / pausiert",
         "setup_ip": "IP address - 127.0.0.1",
-        "setup_port": "IP port - 20777",
         "setup_where": "Navigate to game settings|Hud & Gameplay / Telemetry:",
         "st_recv": 'Empfang',
         "general_sec": "General",
@@ -3033,7 +3028,6 @@ TR = {
         "st_starting": "Start…", "st_no_pad": "Controller nicht gefunden (XInput)", "st_pad_lost": "Controller getrennt — warte…", "st_vigem": "ViGEmBus-Treiber fehlt — Installer geöffnet, installieren und neu starten", "hh_hidden": 'Versteckt', "hh_install": 'Installiert', "hh_disabled": 'Sichtbar', "hh_error": 'Fehler',
         "setup_title": "Erster Start — Telemetrie im Spiel aktivieren:",
         "setup_1": "Spieleinstellungen → HUD → Data Out: AN",
-        "setup_2": "IP-Adresse: 127.0.0.1 · Port: 20777",
         "setup_3": "Steuerung → Lenkung: Simulation",
         "setup_wait": "Dieses Panel erwacht, sobald Daten fließen…",
         "mode_status": 'Modus',
@@ -3094,7 +3088,6 @@ TR = {
         "speed": "Vitesse", "slip": "Glisse", "no_telemetry": "pas de télémétrie",
         "paused": "dans le menu / en pause",
         "setup_ip": "IP address - 127.0.0.1",
-        "setup_port": "IP port - 20777",
         "setup_where": "Navigate to game settings|Hud & Gameplay / Telemetry:",
         "st_recv": 'Reception',
         "general_sec": "General",
@@ -3143,7 +3136,6 @@ TR = {
         "st_starting": "démarrage…", "st_no_pad": "manette introuvable (XInput)", "st_pad_lost": "manette déconnectée — attente…", "st_vigem": "pilote ViGEmBus manquant — installeur ouvert, installez et relancez", "hh_hidden": 'Masque', "hh_install": 'Installation', "hh_disabled": 'Visible', "hh_error": 'Erreur',
         "setup_title": "Premier lancement — activez la télémétrie en jeu :",
         "setup_1": "Réglages du jeu → HUD → Data Out : ON",
-        "setup_2": "Adresse IP : 127.0.0.1 · Port : 20777",
         "setup_3": "Commandes → Direction : Simulation",
         "setup_wait": "Ce panneau s'animera dès que les données arriveront…",
         "mode_status": 'Mode',
@@ -3204,7 +3196,6 @@ TR = {
         "speed": "Velocidad", "slip": "Derrape", "no_telemetry": "sin telemetría",
         "paused": "en menú / en pausa",
         "setup_ip": "IP address - 127.0.0.1",
-        "setup_port": "IP port - 20777",
         "setup_where": "Navigate to game settings|Hud & Gameplay / Telemetry:",
         "st_recv": 'Recibiendo',
         "general_sec": "General",
@@ -3253,7 +3244,6 @@ TR = {
         "st_starting": "iniciando…", "st_no_pad": "mando no encontrado (XInput)", "st_pad_lost": "mando desconectado — esperando…", "st_vigem": "falta el driver ViGEmBus — instalador abierto, instala y reinicia", "hh_hidden": 'Oculto', "hh_install": 'Instalando', "hh_disabled": 'Visible', "hh_error": 'Error',
         "setup_title": "Primer inicio — activa la telemetría en el juego:",
         "setup_1": "Ajustes del juego → HUD → Data Out: ON",
-        "setup_2": "Dirección IP: 127.0.0.1 · Puerto: 20777",
         "setup_3": "Controles → Dirección: Simulación",
         "setup_wait": "Este panel cobrará vida cuando lleguen datos…",
         "mode_status": 'Modo',
@@ -3321,7 +3311,6 @@ TR = {
         "no_telemetry": 'テレメトリーなし',
         "paused": 'メニュー / 停止中',
         "setup_ip": 'IP アドレス - 127.0.0.1',
-        "setup_port": 'IP ポート - 20777',
         "setup_where": 'ゲーム設定|Hud & Gameplay / Telemetry へ:',
         "st_recv": '受信中',
         "general_sec": '全般',
@@ -3377,7 +3366,6 @@ TR = {
         "hh_error": 'エラー',
         "setup_title": '初回起動 — ゲーム側でテレメトリーを有効にしてください:',
         "setup_1": 'Game Settings → HUD & Gameplay → Data Out: ON',
-        "setup_2": 'IP アドレス: 127.0.0.1 · ポート: 20777',
         "setup_3": 'Controls → Steering: Simulation',
         "setup_wait": 'データが流れ始めるとこの欄が動き出します…',
         "mode_status": 'モード',
@@ -4107,6 +4095,11 @@ let cfg = null, state = null, screen = 'main';
 const $ = q => document.querySelector(q);
 const $$ = q => [...document.querySelectorAll(q)];
 const t = k => (TR[cfg && cfg.lang] || TR.en)[k] || (TR.en[k] || k);
+const livePort = () => (state && state.port) || (cfg && cfg.port) || 20777;
+/* Instructions carry the default port in their wording, in six languages.
+   Rather than six more strings, the number is swapped for the live one
+   wherever the text is telling the driver what to type into the game. */
+const withPort = x => String(x).replace(/20777/g, livePort());
 
 function shown(key, v){
   const r = ALLS.find(x => x[0] === key);
@@ -4166,7 +4159,8 @@ function screenMain(){
     '<b>' + t('setup_apply') + '</b></div>' +
     '<div class="srow"><span>' + t('sw_dataout') + '</span><b>On</b></div>' +
     '<div class="srow"><span>' + t('sw_ip') + '</span><b>127.0.0.1</b></div>' +
-    '<div class="srow"><span>' + t('sw_port') + '</span><b>20777</b></div>' +
+    '<div class="srow"><span>' + t('sw_port') + '</span><b>' +
+    livePort() + '</b></div>' +
     '</div>';
 
   h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>' +
@@ -4182,7 +4176,7 @@ function screenMain(){
          '<span class="chip">' + t('sw_dataout') + ' - <b>On</b></span>' +
          '<span class="chip">' + t('sw_ip') + ' - <b>127.0.0.1</b></span>' +
          '<span class="chip">' + t('sw_port') +
-         ' - <b>20777</b></span></span></div>') +
+         ' - <b>' + livePort() + '</b></span></span></div>') +
        '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
        '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
        '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
@@ -4212,7 +4206,8 @@ function screenFaq(){
   return '<div class="reveal"><div class="sec">' + t('faq_sec') + '</div>' +
     '<div class="card faqwrap"><div class="faqbox">' + FQ().map((item, i) =>
       '<div class="qa"><h4>' + (i + 1) + '. ' + item[0] + '</h4>' +
-      item[1].map(x => '<p>' + x + '</p>').join('') + '</div>').join('') +
+      item[1].map(x => '<p>' + withPort(x) + '</p>').join('') +
+      '</div>').join('') +
     '</div></div></div>';
 }
 
@@ -4966,7 +4961,8 @@ function bootChips(){
   if (el.dataset.built) return;
   const t = BT().tele;
   el.innerHTML = t.chips.map(
-      c => '<span class="bchip">' + c[0] + ' - <b>' + c[1] + '</b></span>'
+      c => '<span class="bchip">' + c[0] + ' - <b>' + withPort(c[1]) +
+           '</b></span>'
     ).join('') + '<button class="bbtn" id="tele-btn">' +
     t.btn + '</button>';
   el.dataset.built = '1';

@@ -1193,6 +1193,15 @@ def test_the_listener_really_ends_up_on_the_new_port():
         h.telemetry.stop()
 
 
+def test_the_page_never_writes_the_port_into_its_markup():
+    """Every place that tells the driver which port to set has to say the
+    one being listened on. Writing the number into the markup is how it
+    came to keep naming 20777 after the setting had moved."""
+    page = fa.build_html()
+    assert "<b>20777</b>" not in page, "a hardcoded port is back in the markup"
+    assert "livePort()" in page, "nothing is reading the live port"
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
