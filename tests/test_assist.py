@@ -284,17 +284,22 @@ def test_working_drivers_are_not_reinstalled():
     GUID and never answers there, so requiring it to would condemn a
     perfectly healthy bus to being reinstalled on every launch."""
     d = fa.DriverSetup()
-    present = []
-    for label, reg, svc, _key in fa.DriverSetup.ITEMS:
+    manifest = fa.DriverSetup._manifest()
+    ready = []
+    for label, reg, svc, key in fa.DriverSetup.ITEMS:
         have = d._current(reg, svc)
         if svc in fa.DriverSetup.NAMED_DEVICES and have:
             assert fa.device_present(svc), (
                 f"{label} is reported installed but does not answer on its "
                 f"device link")
-        if have:
-            present.append(label)
-    if len(present) < len(fa.DriverSetup.ITEMS):
-        return          # nothing to assert about installing on this machine
+        want = str(manifest.get(key, {}).get("version", "") or "")
+        # Present is not enough: a machine carrying an older build than the
+        # one bundled here has something to do, and doing it is right.
+        if have and not (want and fa._version_tuple(want)
+                         > fa._version_tuple(have)):
+            ready.append(label)
+    if len(ready) < len(fa.DriverSetup.ITEMS):
+        return          # this machine has work to do, so nothing to assert
     d.ensure()
     assert d.code == "done", f"{d.code}: {d.info}"
     assert d.installed == [], f"nothing needed installing, yet it installed {d.installed}"
@@ -1223,6 +1228,43 @@ def test_the_page_never_writes_the_port_into_its_markup():
     page = fa.build_html()
     assert "<b>20777</b>" not in page, "a hardcoded port is back in the markup"
     assert "livePort()" in page, "nothing is reading the live port"
+
+
+def test_confirming_is_far_quicker_than_installing():
+    """A launch that installs nothing walks the same five steps, and pacing
+    it like work is what made a restart look like starting over."""
+    assert fa.BOOT_CHECK_MS * 5 < fa.BOOT_STEP_MS, (
+        "checking all five steps should cost less than one install step")
+    assert fa.BOOT_MIN_CHECK_MS < fa.BOOT_MIN_MS
+    whole = fa.BOOT_MIN_CHECK_MS + fa.BOOT_CHECK_MS * 4
+    assert whole < 3000, "%d ms to reach the telemetry step is too long" % whole
+
+
+def test_setup_is_not_finished_until_telemetry_has_arrived():
+    """Step five is the telemetry. Until the game has sent some, the setup
+    the steps describe has not happened, whatever else succeeded."""
+    cfg = dict(fa.DEFAULTS)
+    assert cfg["setup_done"] is False
+    assert cfg["telemetry_seen"] is False
+    fa.sanitize_config(cfg)
+    assert cfg["setup_done"] is False, "a fresh config must want the steps"
+
+
+def test_a_finished_setup_stops_asking():
+    cfg = dict(fa.DEFAULTS)
+    cfg["telemetry_seen"] = True
+    cfg["setup_done"] = True
+    fa.sanitize_config(cfg)
+    b = fa.Bridge.__new__(fa.Bridge)
+    b.cfg = cfg
+    assert not (not b.cfg.get("setup_done")), "the steps would be shown again"
+
+
+def test_the_restart_hook_touches_nothing_when_run_from_source():
+    """It writes a RunOnce entry, and only a built exe has a path worth
+    writing. From source it must do nothing at all rather than register
+    the interpreter."""
+    assert fa.Api._open_after_restart() is False
 
 
 def main():

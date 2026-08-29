@@ -1618,7 +1618,14 @@ ISSUES_URL = "https://github.com/%s/issues/new" % REPO
 
 BOOT_MIN_MS = 4000
 BOOT_STEP_MS = 6000
-BOOT_CHECK_MS = 1400
+# Confirming four things that are already there is not four pieces of
+# work, and pacing it as though it were makes a launch that installs
+# nothing look like a launch that does. Quick enough to read as checking.
+BOOT_CHECK_MS = 260
+# The bar in front of the steps is shortened on that launch too, but only
+# once the driver step has decided nothing needs installing - otherwise it
+# would have to run backwards when the decision turned out otherwise.
+BOOT_MIN_CHECK_MS = 1300
 BOOT_DONE_MS = 6000
 
 # Slots the driver saves into. Three is enough to keep a car, a road and a
@@ -2580,9 +2587,6 @@ class Bridge:
             self.physical_slot = min(before) if before else None
             self.boot_step = 5
             self.status_code = "ok"
-            if not self.cfg.get("setup_done"):
-                self.cfg["setup_done"] = True
-                save_config(self.cfg)
 
             if RUMBLE_FORWARD:
                 def on_rumble(client, target, large_motor, small_motor,
@@ -2639,6 +2643,14 @@ class Bridge:
                     self._hz_t0 = now
                 brake = gp.bLeftTrigger / 255.0
                 alive = self.telemetry.alive
+                if alive and not self.cfg.get("telemetry_seen"):
+                    # The last of the five steps is the game sending
+                    # telemetry. Until it has arrived once, setup is not
+                    # finished and the steps are shown again next launch -
+                    # quickly, as checks, since nothing needs installing.
+                    self.cfg["telemetry_seen"] = True
+                    self.cfg["setup_done"] = True
+                    save_config(self.cfg)
                 tm = self.telemetry.get()
 
                 out_x = self.assist.update(stick_x, tm, dt, brake, alive)
@@ -3492,7 +3504,8 @@ def build_html() -> str:
     html = html.replace("__PROFILES__", json.dumps(PROFILES))
     html = html.replace("__BOOT__", json.dumps(
          {"tr": BOOT_TR, "short": LANG_SHORT, "langs": LANG_ORDER,
-         "minMs": BOOT_MIN_MS, "stepMs": BOOT_STEP_MS,
+         "minMs": BOOT_MIN_MS, "minCheckMs": BOOT_MIN_CHECK_MS,
+         "stepMs": BOOT_STEP_MS,
          "checkMs": BOOT_CHECK_MS, "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__SLOT_KEYS__", json.dumps(list(SLOT_KEYS)))
@@ -3965,7 +3978,12 @@ body.t-light{
 .bdot.bad.hit .x{opacity:1}
 .bdot.warn.hit .bang{opacity:1}
 .bdot.warn .ok,.bdot.warn .x{display:none}
-.bdot .ok svg{display:block;width:14px;height:10px}
+/* The stroke is 2 wide with round caps, so its ink runs from 0 to 9.5 in
+   a box 10 tall - a quarter pixel high of centre before anything else. A
+   check also reads high when it is centred by its box, because its mass
+   sits low and its long arm reaches up. One pixel down settles both. */
+.bdot .ok svg{display:block;width:14px;height:10px;
+              transform:translateY(1px)}
 .bdot .x svg{display:block;width:12px;height:12px}
 .bbar{width:24px;height:4px;border-radius:2px;background:var(--track);
       flex:none;overflow:hidden}
@@ -5046,11 +5064,18 @@ function bootTick(){
   const now = performance.now(), el = now - bootT0;
 
   if (bootPhase === 'load'){
-    const pct = Math.round(bootProgress(el / BOOT.minMs) * 100);
+    /* Nothing was installed and the driver step has already said so, so
+       this launch is confirming rather than working: it need not sit on
+       the bar for as long. Waiting for step 3 keeps the bar from having to
+       run backwards if it turns out something does need installing. */
+    const checking = (state.boot_step || 0) >= 3 &&
+                     !(state.boot_installed && state.boot_installed.length);
+    const minMs = checking ? BOOT.minCheckMs : BOOT.minMs;
+    const pct = Math.round(bootProgress(el / minMs) * 100);
     $('#boot-load').textContent = BT().loading;
     bootFill(pct / 100);
     $('#boot-pct').textContent = pct + '%';
-    if (el < BOOT.minMs) return;
+    if (el < minMs) return;
     /* a repeat launch goes straight to the app once the loop is up */
     if (!state.first_run && !state.boot_error){
       if (state.boot_step >= 5) revealApp();
@@ -5479,9 +5504,30 @@ class Api:
         _WIN["boot"] = False
         return True
 
+    @staticmethod
+    def _open_after_restart() -> bool:
+        """Ask Windows to start us once, after the restart we are asking
+        for. RunOnce clears its own entry as it fires, so this leaves
+        nothing behind in the user's startup - it is a way back into the
+        setup, not an autostart they did not choose."""
+        if not getattr(sys, "frozen", False):
+            return False
+        try:
+            import winreg
+            with winreg.CreateKey(
+                    winreg.HKEY_CURRENT_USER,
+                    r"Software\Microsoft\Windows\CurrentVersion\RunOnce"
+            ) as key:
+                winreg.SetValueEx(key, "SteeringAssist", 0, winreg.REG_SZ,
+                                  '"%s"' % sys.executable)
+            return True
+        except OSError:
+            return False
+
     def restart_pc(self):
         """Ask Windows to restart with a notice and a delay, so anything else
         that is open gets its chance to object. shutdown /a cancels it."""
+        self._open_after_restart()
         try:
             subprocess.Popen(
                 ["shutdown", "/r", "/t", "20", "/c",
