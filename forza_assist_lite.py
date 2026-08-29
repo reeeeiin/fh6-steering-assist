@@ -1162,6 +1162,9 @@ BOOT_TR = {
 
 BOOT_DEMO = os.environ.get("ASSIST_BOOT_DEMO", "")
 BOOT_DEMO_ERR = os.environ.get("ASSIST_BOOT_ERROR", "")
+# Shows the walkthrough as a launch that has been run before: the steps
+# read as checks and go at the pace of checks.
+BOOT_DEMO_REPEAT = os.environ.get("ASSIST_BOOT_REPEAT", "") == "1"
 
 FAQ_ITEMS = {
     "en": [
@@ -2462,7 +2465,12 @@ class Bridge:
                 if BOOT_DEMO_ERR:
                     self.boot_error = BOOT_DEMO_ERR
                 return
-            time.sleep(2.2 if step < 5 else 3.0)
+            if BOOT_DEMO_REPEAT:
+                # nothing is being done, so the screen's own floor is what
+                # paces this - the same as on a real repeat launch
+                time.sleep(0.15)
+            else:
+                time.sleep(2.2 if step < 5 else 3.0)
         self.status_code = "ok"
         while self._run.is_set():
             self.telemetry._t_last = time.monotonic()
@@ -5669,6 +5677,10 @@ class Api:
     def restart_pc(self):
         """Ask Windows to restart with a notice and a delay, so anything else
         that is open gets its chance to object. shutdown /a cancels it."""
+        if BOOT_DEMO:
+            # The walkthrough shows the notice and the countdown; it does
+            # not restart the machine of whoever is reviewing the screens.
+            return True
         self._open_after_restart()
         try:
             subprocess.Popen(
@@ -5681,6 +5693,8 @@ class Api:
 
     def cancel_restart(self):
         """Call off a restart that has been ordered but not happened yet."""
+        if BOOT_DEMO:
+            return True
         try:
             subprocess.Popen(["shutdown", "/a"], creationflags=0x08000000)
         except Exception:
@@ -5768,7 +5782,8 @@ class Api:
             "boot_error": b.boot_error,
             "boot_installed": b.boot_installed,
             "first_run": bool(BOOT_DEMO) or b.first_run,
-            "ran_before": b.ran_before and not BOOT_DEMO,
+            "ran_before": (BOOT_DEMO_REPEAT if BOOT_DEMO
+                           else b.ran_before),
             "drv_code": b.drivers.code,
             "drv_info": b.drivers.info,
             "hh_code": b.hidhide.code,
