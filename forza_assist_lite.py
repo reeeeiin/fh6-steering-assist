@@ -774,7 +774,7 @@ class Assist:
         return self.angle
 
 
-CONFIG_VERSION = 13
+CONFIG_VERSION = 14
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
@@ -804,6 +804,10 @@ DEFAULTS = {
     "slots": {},
     "telemetry_seen": False,
     "setup_done": False,
+    # Which Windows session we last asked for a restart in. Same number
+    # until the machine actually restarts, so a driver waiting on that
+    # restart is not installed again and again in the meantime.
+    "reboot_session": 0,
 }
 
 THEMES = ("dark", "light")
@@ -847,6 +851,9 @@ BOOT_TR = {
                  "note": 'Enjoy drifting on the streets of Horizon.',
                  "hint": "Don't forget to support if you enjoyed the app"},
         "pendTitle": 'One more step', "btnRestart": 'Restart now',
+        "rsTitle": 'Restarting',
+        "rsText": 'Windows is restarting to finish the driver setup. Steering Assist opens again by itself once you are back.',
+        "rsCancel": 'Cancel',
         "btnSkip": 'Skip',
         "errTitle": 'Something went wrong', "errBtn": 'Start over',
         "errors": {
@@ -901,6 +908,9 @@ BOOT_TR = {
                  "note": 'Приятного дрифта на улицах Horizon.',
                  "hint": 'Если приложение понравилось, поддержите проект'},
         "pendTitle": 'Остался один шаг', "btnRestart": 'Перезагрузить',
+        "rsTitle": 'Перезагрузка',
+        "rsText": 'Windows перезагружается, чтобы завершить установку драйверов. Steering Assist откроется сам, когда вы вернётесь.',
+        "rsCancel": 'Отменить',
         "btnSkip": 'Позже',
         "errTitle": 'Что-то пошло не так', "errBtn": 'Начать заново',
         "errors": {
@@ -955,6 +965,9 @@ BOOT_TR = {
                  "note": 'Disfruta derrapando por las calles de Horizon.',
                  "hint": 'Si te gusta la app, no olvides apoyarla'},
         "pendTitle": 'Queda un paso', "btnRestart": 'Reiniciar ahora',
+        "rsTitle": 'Reiniciando',
+        "rsText": 'Windows se reinicia para terminar la instalacion de los controladores. Steering Assist se abre solo al volver.',
+        "rsCancel": 'Cancelar',
         "btnSkip": 'Ahora no',
         "errTitle": 'Algo ha salido mal', "errBtn": 'Empezar de nuevo',
         "errors": {
@@ -1009,6 +1022,9 @@ BOOT_TR = {
                  "note": 'Bon drift dans les rues de Horizon.',
                  "hint": "Si l'app vous plait, pensez a la soutenir"},
         "pendTitle": 'Encore une etape', "btnRestart": 'Redemarrer',
+        "rsTitle": 'Redemarrage',
+        "rsText": 'Windows redemarre pour terminer l’installation des pilotes. Steering Assist se rouvre tout seul a votre retour.',
+        "rsCancel": 'Annuler',
         "btnSkip": 'Plus tard',
         "errTitle": 'Une erreur est survenue', "errBtn": 'Recommencer',
         "errors": {
@@ -1063,6 +1079,9 @@ BOOT_TR = {
                  "note": 'Viel Spass beim Driften in den Strassen von Horizon.',
                  "hint": 'Wenn dir die App gefaellt, unterstuetze sie gern'},
         "pendTitle": 'Noch ein Schritt', "btnRestart": 'Jetzt neu starten',
+        "rsTitle": 'Neustart',
+        "rsText": 'Windows startet neu, um die Treiberinstallation abzuschliessen. Steering Assist offnet sich danach von selbst.',
+        "rsCancel": 'Abbrechen',
         "btnSkip": 'Spaeter',
         "errTitle": 'Etwas ist schiefgelaufen', "errBtn": 'Neu starten',
         "errors": {
@@ -1117,6 +1136,9 @@ BOOT_TR = {
                  "note": 'Horizon の街でドリフトをお楽しみください。',
                  "hint": 'アプリが気に入ったら応援をお願いします'},
         "pendTitle": 'あと一歩です', "btnRestart": '今すぐ再起動',
+        "rsTitle": '再起動します',
+        "rsText": 'ドライバーのインストールを完了するために Windows を再起動します。戻ってくると Steering Assist は自動で開きます。',
+        "rsCancel": 'キャンセル',
         "btnSkip": '後で',
         "errTitle": '問題が発生しました', "errBtn": 'やり直す',
         "errors": {
@@ -1626,6 +1648,9 @@ BOOT_CHECK_MS = 260
 # once the driver step has decided nothing needs installing - otherwise it
 # would have to run backwards when the decision turned out otherwise.
 BOOT_MIN_CHECK_MS = 1300
+# Long enough to read the notice and call it off, short enough not to feel
+# like nothing happened. The countdown shown is this same number.
+RESTART_DELAY_S = 20
 BOOT_DONE_MS = 6000
 
 # Slots the driver saves into. Three is enough to keep a car, a road and a
@@ -1788,6 +1813,18 @@ def _version_tuple(v) -> tuple:
     nums = [int(n) for n in re.findall(r"\d+", str(v or ""))]
     return tuple((nums + [0, 0, 0, 0])[:4])
 
+def session_id() -> int:
+    """Identifies this run of Windows: the moment it started, in seconds.
+
+    It stays put for as long as the machine is up and changes when it is
+    restarted, which is the only question being asked of it."""
+    try:
+        up = ctypes.windll.kernel32.GetTickCount64() / 1000.0
+    except Exception:
+        return 0
+    return int(time.time() - up)
+
+
 def service_exists(name: str) -> bool:
     import winreg
     try:
@@ -1932,7 +1969,7 @@ class DriverSetup:
             return True
         return False
 
-    def ensure(self, on_install=None) -> None:
+    def ensure(self, on_install=None, cfg=None) -> None:
         manifest = self._manifest()
         need = []
         for label, reg_name, service, key in self.ITEMS:
@@ -1946,6 +1983,22 @@ class DriverSetup:
         if not need:
             self.code = "done"
             self.info = "drivers already present"
+            return
+
+        # A driver mid-install reads as version "0" until the restart it
+        # asked for has happened, and installing it again before then
+        # changes nothing: same files, same 3010, same prompt. So if the
+        # restart was asked for in this same Windows session, wait for it
+        # rather than doing the whole thing over on every launch.
+        if cfg is not None and cfg.get("reboot_session") == session_id():
+            # Asked once, in this same session. Its own code, not "reboot":
+            # that one stops the boot sequence on the prompt, and a driver
+            # who has already declined the restart should be taken on to the
+            # telemetry step rather than shown the same button again.
+            self.code = "waiting"
+            self.reboot_for = [n for n, _, _ in need]
+            self.info = ("waiting for the restart already asked for: "
+                         + ", ".join(self.reboot_for))
             return
 
         if not is_admin():
@@ -1990,6 +2043,11 @@ class DriverSetup:
         elif reboot:
             self.code = "reboot"
             self.reboot_for = list(reboot)
+            if cfg is not None:
+                # Remember which session asked, so the next launch waits
+                # instead of installing the same thing again.
+                cfg["reboot_session"] = session_id()
+                save_config(cfg)
             self.info = ("installed, restart wanted by: "
                          + ", ".join(reboot))
         else:
@@ -2516,7 +2574,14 @@ class Bridge:
             self.boot_step = 1
             self.status_code = "drivers"
             self.drivers.ensure(on_install=lambda: setattr(self,
-                                                           "boot_step", 2))
+                                                           "boot_step", 2),
+                                cfg=self.cfg)
+            if (self.drivers.code not in ("reboot", "waiting")
+                    and self.cfg.get("reboot_session")):
+                # Whatever it was waiting for is done with; a later restart
+                # request will set this again.
+                self.cfg["reboot_session"] = 0
+                save_config(self.cfg)
             self.boot_installed = list(self.drivers.installed)
             if self.drivers.code in ("failed", "noadmin", "reboot"):
                 self.boot_error = self.drivers.code
@@ -3504,6 +3569,7 @@ def build_html() -> str:
     html = html.replace("__PROFILES__", json.dumps(PROFILES))
     html = html.replace("__BOOT__", json.dumps(
          {"tr": BOOT_TR, "short": LANG_SHORT, "langs": LANG_ORDER,
+         "restartS": RESTART_DELAY_S,
          "minMs": BOOT_MIN_MS, "minCheckMs": BOOT_MIN_CHECK_MS,
          "stepMs": BOOT_STEP_MS,
          "checkMs": BOOT_CHECK_MS, "doneMs": BOOT_DONE_MS}))
@@ -4002,6 +4068,25 @@ body.t-light{
 .bchip b{color:var(--accent);font-weight:600;margin-left:4px}
 .bchips .bbtn{margin-left:2px}
 .btele-t+.bchips+.btele-t{margin-top:9px}
+/* Ordering a restart used to look like nothing happening: the window sat
+   there while Windows counted down out of sight. */
+.bmodal{position:absolute;inset:0;z-index:40;display:none;
+        align-items:center;justify-content:center;
+        background:rgba(0,0,0,.62);backdrop-filter:blur(3px);
+        opacity:0;transition:opacity .22s ease}
+.bmodal.on{display:flex}
+.bmodal.shown{opacity:1}
+.bmbox{width:250px;padding:22px;border-radius:14px;text-align:center;
+       background:var(--card);border:1px solid var(--btn-line);
+       transform:translateY(6px) scale(.98);
+       transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.bmodal.shown .bmbox{transform:none}
+.bmtitle{font-size:14px;font-weight:600;color:var(--row-fg)}
+.bmtext{margin-top:8px;font-size:11px;line-height:1.5;color:var(--muted)}
+.bmcount{margin:14px 0 16px;font-size:26px;font-weight:600;
+         color:var(--accent);font-variant-numeric:tabular-nums}
+.bmodal .bbtn{cursor:pointer}
+
 .bbtn{height:24px;box-sizing:border-box;padding:0 13px;border-radius:7px;
       border:0;background:var(--accent);color:var(--accent-fg);font-size:12px;
       font-weight:600;font-family:inherit;cursor:default;white-space:nowrap;
@@ -4070,6 +4155,15 @@ html[data-boot] .rz{display:none}
   <span class="blang" id="boot-lang"></span>
   <span class="bclose" data-win="close"><!--ICON:close--></span>
   <div class="btag"><!--ICON:applogotagline--></div>
+
+  <div class="bmodal" id="boot-modal">
+    <div class="bmbox">
+      <div class="bmtitle" id="bm-title"></div>
+      <div class="bmtext" id="bm-text"></div>
+      <div class="bmcount" id="bm-count"></div>
+      <button class="bbtn sec" id="bm-cancel"></button>
+    </div>
+  </div>
 
   <div class="bstage" id="bs-load">
     <div class="bmark">
@@ -5023,6 +5117,30 @@ function revealApp(){
   }, 520);
 }
 
+let restartTimer = null;
+function restartNotice(){
+  const t = BT(), el = $('#boot-modal');
+  $('#bm-title').textContent = t.rsTitle;
+  $('#bm-text').textContent = t.rsText;
+  $('#bm-cancel').textContent = t.rsCancel;
+  el.classList.add('on');
+  requestAnimationFrame(() => el.classList.add('shown'));
+  let left = BOOT.restartS;
+  const tick = () => {
+    $('#bm-count').textContent = left;
+    if (left <= 0) return;
+    left -= 1;
+    restartTimer = setTimeout(tick, 1000);
+  };
+  tick();
+  $('#bm-cancel').onclick = () => {
+    clearTimeout(restartTimer);
+    try{ pywebview.api.cancel_restart(); }catch(e){}
+    el.classList.remove('shown');
+    setTimeout(() => el.classList.remove('on'), 220);
+  };
+}
+
 function bootError(code){
   const t = BT();
   const e = t.errors[code] || t.errors.failed;
@@ -5046,7 +5164,7 @@ function bootError(code){
                  '</button>' : '');
     $('#err-btn').addEventListener('click', () => {
       try{
-        if (pending) pywebview.api.restart_pc();
+        if (pending){ pywebview.api.restart_pc(); restartNotice(); }
         else pywebview.api.boot_retry();
       }catch(err){}
     });
@@ -5530,9 +5648,17 @@ class Api:
         self._open_after_restart()
         try:
             subprocess.Popen(
-                ["shutdown", "/r", "/t", "20", "/c",
+                ["shutdown", "/r", "/t", str(RESTART_DELAY_S), "/c",
                  "Steering Assist: restarting to finish the driver setup"],
                 creationflags=0x08000000)
+        except Exception:
+            return False
+        return True
+
+    def cancel_restart(self):
+        """Call off a restart that has been ordered but not happened yet."""
+        try:
+            subprocess.Popen(["shutdown", "/a"], creationflags=0x08000000)
         except Exception:
             return False
         return True

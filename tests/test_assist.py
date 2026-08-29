@@ -1267,6 +1267,44 @@ def test_the_restart_hook_touches_nothing_when_run_from_source():
     assert fa.Api._open_after_restart() is False
 
 
+def test_a_restart_already_asked_for_is_waited_on_not_repeated():
+    """A driver mid-install reads as version 0 until the machine restarts.
+    Installing it again before then changes nothing - same files, same
+    3010, same prompt - and that loop is what made every launch look like
+    the first one."""
+    d = fa.DriverSetup()
+    cfg = dict(fa.DEFAULTS)
+    cfg["reboot_session"] = fa.session_id()
+    d.ensure(cfg=cfg)
+    assert d.code in ("waiting", "done"), d.code
+    assert d.installed == [], "it installed while waiting for a restart"
+
+
+def test_waiting_for_a_restart_does_not_stop_the_boot_sequence():
+    """Asking is one thing and having asked is another: someone who
+    declined the restart should be carried on to the telemetry step, not
+    shown the same button every launch."""
+    assert "waiting" not in ("failed", "noadmin", "reboot"), (
+        "the waiting code must not be one that halts the steps")
+
+
+def test_the_session_id_holds_still():
+    """It answers one question - has the machine restarted - so it has to
+    be the same number twice in a row."""
+    a = fa.session_id()
+    b = fa.session_id()
+    assert a == b, (a, b)
+    assert a > 1400000000, "that is not a plausible moment for a boot"
+
+
+def test_the_restart_notice_speaks_every_language():
+    for lang, tr in fa.BOOT_TR.items():
+        for key in ("rsTitle", "rsText", "rsCancel"):
+            assert tr.get(key), "%s is missing %s" % (lang, key)
+    assert fa.RESTART_DELAY_S >= 10, "no time to read it or call it off"
+    assert hasattr(fa.Api, "cancel_restart")
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
