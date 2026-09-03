@@ -871,6 +871,8 @@ BOOT_TR = {
              'Restart to finish the setup. Windows switches the drivers on as it comes back, and the assist is ready straight away.'],
             'hide': ['An error occurred while hiding your controller',
              'Try to close apps like controller drivers and etc, it might interfere with Steering Assist installation.'],
+            'no_pad': ['Controller not found',
+             'Steering Assist cannot see a controller on XInput. Switch it on, or unplug it and plug it back in - Windows finds it again straight away. The setup carries on by itself once it appears.'],
             'vigem': ['An error occurred while creating the virtual controller',
              'Try to close apps like controller drivers and etc, it might interfere with Steering Assist installation.'],
         },
@@ -930,6 +932,8 @@ BOOT_TR = {
              'Перезагрузите компьютер, чтобы завершить установку. Windows включит драйверы при запуске, и ассист сразу будет готов.'],
             'hide': ['Ошибка при скрытии геймпада',
              'Закройте драйверы геймпадов и похожие программы, они могут мешать установке.'],
+            'no_pad': ['Геймпад не найден',
+             'Steering Assist не видит контроллер в XInput. Включите его или переподключите - Windows тут же найдёт его снова. Как только он появится, установка продолжится сама.'],
             'vigem': ['Ошибка при создании виртуального геймпада',
              'Закройте драйверы геймпадов и похожие программы, они могут мешать установке.'],
         },
@@ -989,6 +993,8 @@ BOOT_TR = {
              'Reinicia para terminar la instalacion. Windows activa los controladores al arrancar y el asistente queda listo.'],
             'hide': ['Error al ocultar tu mando',
              'Cierra apps como controladores de mando, pueden interferir con la instalacion de Steering Assist.'],
+            'no_pad': ['Controller nicht gefunden',
+             'Steering Assist sieht keinen Controller ueber XInput. Einschalten oder kurz ab- und wieder anstecken - Windows findet ihn sofort wieder. Sobald er da ist, laeuft die Einrichtung von selbst weiter.'],
             'vigem': ['Error al crear el mando virtual',
              'Cierra apps como controladores de mando, pueden interferir con la instalacion de Steering Assist.'],
         },
@@ -1048,6 +1054,8 @@ BOOT_TR = {
              "Redemarrez pour terminer l'installation. Windows active les pilotes au demarrage et l'assistance est prete aussitot."],
             'hide': ['Erreur lors du masquage de la manette',
              "Fermez les applications de pilotes de manette, elles peuvent gener l'installation de Steering Assist."],
+            'no_pad': ['Manette introuvable',
+             'Steering Assist ne voit aucune manette sur XInput. Allumez-la, ou debranchez-la et rebranchez-la - Windows la retrouve aussitot. L’installation reprend d’elle-meme des qu’elle apparait.'],
             'vigem': ['Erreur lors de la creation de la manette virtuelle',
              "Fermez les applications de pilotes de manette, elles peuvent gener l'installation de Steering Assist."],
         },
@@ -1107,6 +1115,8 @@ BOOT_TR = {
              'Starte neu, um die Einrichtung abzuschliessen. Windows aktiviert die Treiber beim Hochfahren, danach ist die Hilfe sofort bereit.'],
             'hide': ['Fehler beim Verstecken des Controllers',
              'Schliesse Apps wie Controller-Treiber, sie koennen die Installation von Steering Assist stoeren.'],
+            'no_pad': ['Mando no encontrado',
+             'Steering Assist no ve ningun mando en XInput. Enciendelo, o desconectalo y vuelve a conectarlo: Windows lo encuentra al momento. La instalacion sigue sola en cuanto aparezca.'],
             'vigem': ['Fehler beim Erstellen des virtuellen Controllers',
              'Schliesse Apps wie Controller-Treiber, sie koennen die Installation von Steering Assist stoeren.'],
         },
@@ -1166,6 +1176,8 @@ BOOT_TR = {
              '再起動すると設定が完了します。Windows の起動時にドライバーが有効になり、アシストはすぐに使えます。'],
             'hide': ['コントローラーを隠せませんでした',
              'コントローラードライバーなどのアプリを終了してください。Steering Assist のインストールを妨げることがあります。'],
+            'no_pad': ['コントローラーが見つかりません',
+             'XInput でコントローラーを検出できません。電源を入れるか、いったん外してつなぎ直してください。Windows がすぐに認識します。見つかればセットアップは自動的に続きます。'],
             'vigem': ['仮想コントローラーを作成できませんでした',
              'コントローラードライバーなどのアプリを終了してください。Steering Assist のインストールを妨げることがあります。'],
         },
@@ -1673,6 +1685,15 @@ RESTART_DELAY_S = 20
 # The removal itself can be quick. It is still a stage worth seeing, so the
 # panel holds on it before offering the restart.
 WIPE_MIN_MS = 2000
+# How long to wait for a controller on XInput before saying so. A pad that
+# has not finished waking takes a few seconds; one that is off, asleep or
+# not in XInput mode never arrives at all, and used to leave the setup
+# screen waiting for it for ever with nothing said.
+NO_PAD_WAIT_S = 12.0
+# The virtual pad usually enumerates inside a second, but a fixed pause is
+# a guess. If it is wrong, the set below is empty and the wait mistakes our
+# own pad for the driver's.
+VPAD_WAIT_S = 5.0
 # Long enough to register that it finished, short enough not to be a
 # wait. The hint under it lands at 320ms, so it is read either way.
 BOOT_DONE_MS = 800
@@ -2717,19 +2738,33 @@ class Bridge:
                     self.status_detail = str(e)[:60]
                 self.boot_error = "vigem"
                 return
-            time.sleep(1.0)
+            virtual = set()
+            vpad_by = time.monotonic() + VPAD_WAIT_S
+            while time.monotonic() < vpad_by:
+                virtual = xinput_connected_slots() - before
+                if virtual:
+                    break
+                time.sleep(0.1)
             self.hidhide.snapshot_allowed()
-            virtual = xinput_connected_slots() - before
             self.virtual_slots = set(virtual)
             self.mirror_all = self.hid_mode
             self._recheck_mirror()
 
+            waited = 0.0
             while self._run.is_set() and not before and not self.hid_mode:
                 self.status_code = "no_pad"
+                # Say so rather than sit here silently. The wait carries on
+                # underneath, so a pad plugged in after the notice appears
+                # still gets picked up and the notice goes away.
+                if waited >= NO_PAD_WAIT_S and not self.boot_error:
+                    self.boot_error = "no_pad"
                 time.sleep(0.5)
+                waited += 0.5
                 before = xinput_connected_slots() - virtual
             if not self._run.is_set():
                 return
+            if self.boot_error == "no_pad":
+                self.boot_error = ""
             self.physical_slot = min(before) if before else None
             self.boot_step = 5
             self.status_code = "ok"
@@ -4319,6 +4354,12 @@ body.t-light{
 #bs-err{top:auto;bottom:56px;display:flex;align-items:center;
         justify-content:center;gap:14px}
 .berr{width:244px;font-size:10px;color:var(--row-fg);line-height:1.5}
+/* What actually failed, in the app's own words. The line above it is the
+   same for three different faults, so without this nobody - the driver or
+   me - can tell which one happened. */
+.bdetail{width:244px;margin-top:-2px;font-size:9px;line-height:1.45;
+         color:var(--foot);font-family:ui-monospace,Consolas,monospace;
+         word-break:break-word}
 
 .bhint{position:absolute;top:283px;left:0;right:0;text-align:center;
        font-size:12px;color:var(--row-fg);transition:opacity .45s ease}
@@ -5543,6 +5584,11 @@ function restartNotice(){
   };
 }
 
+function esc(t){
+  return String(t).replace(/[&<>"]/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
 function bootError(code){
   const t = BT();
   const e = t.errors[code] || t.errors.failed;
@@ -5558,20 +5604,29 @@ function bootError(code){
   const box = $('#bs-err');
   if (box.dataset.cur !== code){
     box.dataset.cur = code;
+    /* Three of these faults share one sentence about closing other
+       controller software, which is a guess and often the wrong one. The
+       app already knows what actually went wrong; it just never said. */
+    const why = code === 'hide'  ? (state.hh_info || '')
+              : code === 'vigem' ? (state.detail  || '')
+              : code === 'no_pad' ? ''
+              : (state.drv_info || '');
     box.innerHTML =
       '<div class="berr">' + e[1] + '</div>' +
+      (why ? '<div class="bdetail">' + esc(why) + '</div>' : '') +
       '<button class="bbtn" id="err-btn">' +
       (pending ? t.btnRestart : t.errBtn) + '</button>' +
-      (pending ? '<button class="bbtn sec" id="err-skip">' + t.btnSkip +
-                 '</button>' : '');
+      /* Every fault gets a way past it. Skipping into a half-working app
+         beats a screen with no exit: the status line there names the
+         problem and the driver can still reach the settings. */
+      '<button class="bbtn sec" id="err-skip">' + t.btnSkip + '</button>';
     $('#err-btn').addEventListener('click', () => {
       try{
         if (pending) restartNotice();
         else pywebview.api.boot_retry();
       }catch(err){}
     });
-    const skip = $('#err-skip');
-    if (skip) skip.addEventListener('click', revealApp);
+    $('#err-skip').addEventListener('click', revealApp);
   }
   stageShow('#bs-err');
   const at = Math.max(0, (bootShown || state.boot_step || 1) - 1);
@@ -6296,6 +6351,7 @@ class Api:
             "drv_code": b.drivers.code,
             "drv_info": b.drivers.info,
             "hh_code": b.hidhide.code,
+            "hh_info": b.hidhide.info,
             "hh_arg": b.hidhide.arg,
             "code": b.status_code,
             "detail": b.status_detail,
@@ -6422,21 +6478,195 @@ class Api:
 
 _instance_mutex = None
 
-def _kill_stale_instances():
+QUIT_EVENT = "Global\\SteeringAssistQuit"
+# How long a previous copy is given to close itself before it is killed, and
+# how long the kill is then given to actually take effect.
+QUIT_GRACE_S = 4.0
+DEATH_WAIT_S = 4.0
+
+
+def _our_pids() -> list:
+    """Every other process running this program - and nothing of ours.
+
+    Matched on the image file, not the command line. WebView2 puts the host
+    application's name into the command line of each helper it starts, so a
+    command-line match reaches into the browser: measured on one machine,
+    five msedgewebview2 processes and three shells matched.
+
+    The built program is matched by name rather than by full path, because
+    every release carries its version in the file name and an exact path
+    would never find the copy the previous version left behind.
+
+    Which is why our own family has to be excluded explicitly. A one-file
+    build runs as two processes - the loader that unpacks it and the Python
+    it then starts - and both carry that same name. Killing "the other one
+    with my name" therefore meant killing the loader that owns this
+    process, and the app shut itself down the moment it opened.
+    """
     me = os.getpid()
+    frozen = getattr(sys, "frozen", False)
     try:
-        subprocess.run(
-            ["powershell", "-NoProfile", "-Command",
-             "Get-CimInstance Win32_Process | Where-Object { "
-             "($_.CommandLine -match 'forza_assist_lite|SteeringAssist') -and "
-             f"($_.ProcessId -ne {me}) -and "
-             "($_.Name -match 'python|SteeringAssist') } | "
-             "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"],
-            capture_output=True, text=True,
-            creationflags=0x08000000, timeout=20)
-        time.sleep(0.3)
+        script = ("" if frozen
+                  else os.path.normcase(os.path.abspath(__file__)))
+        mine = os.path.normcase(sys.executable)
+    except Exception:
+        return []
+    cmd = ("Get-CimInstance Win32_Process | "
+           "Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine"
+           " | ConvertTo-Json -Compress")
+    try:
+        cp = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
+                            capture_output=True, text=True,
+                            creationflags=0x08000000, timeout=20)
+        rows = json.loads(cp.stdout or "[]")
+    except Exception:
+        return []
+    if isinstance(rows, dict):
+        rows = [rows]
+
+    parent, children = {}, {}
+    for row in rows:
+        pid, ppid = row.get("ProcessId"), row.get("ParentProcessId")
+        if pid is None:
+            continue
+        parent[pid] = ppid
+        children.setdefault(ppid, []).append(pid)
+
+    family = {me}
+    walk = parent.get(me)
+    while walk and walk not in family:          # the loader, and its own
+        family.add(walk)
+        walk = parent.get(walk)
+    stack = [me]
+    while stack:                                # anything we started
+        for kid in children.get(stack.pop(), []):
+            if kid not in family:
+                family.add(kid)
+                stack.append(kid)
+
+    out = []
+    for row in rows:
+        pid = row.get("ProcessId")
+        path = os.path.normcase(row.get("ExecutablePath") or "")
+        if not pid or pid in family or not path:
+            continue
+        if frozen:
+            hit = os.path.basename(path).startswith("steeringassist")
+        else:
+            hit = (path == mine
+                   and script in os.path.normcase(row.get("CommandLine") or ""))
+        if hit:
+            out.append(int(pid))
+    return out
+
+
+def _still_alive(pids: list) -> list:
+    alive = []
+    for pid in pids:
+        # 0x100000 is SYNCHRONIZE: enough to learn whether it is there
+        h = ctypes.windll.kernel32.OpenProcess(0x100000, False, pid)
+        if h:
+            ctypes.windll.kernel32.CloseHandle(h)
+            alive.append(pid)
+    return alive
+
+
+def _wait_gone(pids: list, seconds: float) -> list:
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        pids = _still_alive(pids)
+        if not pids:
+            return []
+        time.sleep(0.1)
+    return _still_alive(pids)
+
+
+def _kill_stale_instances():
+    """Clear the way for this launch, and clear up after the last one.
+
+    Killing the previous copy outright is what this used to do, with a
+    third of a second to settle afterwards. A killed process runs no
+    atexit handler, so it never took the pad back out of hiding and never
+    let go of the virtual pad it had made. Each launch in a session left
+    another one behind, which is why the assist grew unreliable until the
+    machine was restarted, and why the setup screen sometimes stopped on a
+    HidHide or ViGEmBus fault blaming other people's software.
+    """
+    stale = _our_pids()
+    if not stale:
+        return
+    # Ask first. A copy new enough to be listening closes itself properly,
+    # putting the pad back and releasing the virtual one.
+    try:
+        ev = ctypes.windll.kernel32.OpenEventW(0x0002, False, QUIT_EVENT)
+        if ev:
+            ctypes.windll.kernel32.SetEvent(ev)
+            ctypes.windll.kernel32.CloseHandle(ev)
     except Exception:
         pass
+    left = _wait_gone(stale, QUIT_GRACE_S)
+    killed = False
+    if left:
+        # It did not go, or it is old enough not to be listening.
+        for pid in left:
+            try:
+                subprocess.run(["taskkill", "/F", "/PID", str(pid)],
+                               capture_output=True, creationflags=0x08000000,
+                               timeout=10)
+                killed = True
+            except Exception:
+                pass
+        _wait_gone(left, DEATH_WAIT_S)
+    if killed:
+        _clear_killed_leftovers()
+
+
+def _clear_killed_leftovers():
+    """Undo what the copy we just killed could not undo itself.
+
+    It left the cloak on, so the pad is hidden from this process too - and
+    the setup then waits for a controller that Windows is deliberately not
+    showing it. Turning it off here means the sequence starts from a state
+    it understands rather than inheriting half of one.
+    """
+    cli = HidHide().rescan()
+    if not cli:
+        return
+    try:
+        subprocess.run([cli, "--cloak-off"], capture_output=True,
+                       creationflags=0x08000000, timeout=10)
+    except Exception:
+        pass
+
+
+def _listen_for_quit(close_window, bridge):
+    """Let the next launch ask this one to leave instead of killing it.
+
+    Killed, this process runs no atexit handler: the pad stays hidden, the
+    virtual one stays made, and the launch that killed it inherits the
+    mess. So when asked, the tidying happens first and does not wait on the
+    window closing cleanly - by the time we go, everything is already back
+    where the driver left it, and it no longer matters who wins the race.
+    """
+    try:
+        ev = ctypes.windll.kernel32.CreateEventW(None, True, False, QUIT_EVENT)
+    except Exception:
+        ev = 0
+    if not ev:
+        return
+
+    def wait():
+        ctypes.windll.kernel32.WaitForSingleObject(ev, 0xFFFFFFFF)
+        for step in (bridge.stop, bridge.hidhide.disengage, close_window):
+            try:
+                step()
+            except Exception:
+                pass
+        time.sleep(1.0)
+        os._exit(0)
+
+    threading.Thread(target=wait, daemon=True).start()
+
 
 def _ensure_single_instance():
     global _instance_mutex
@@ -6463,6 +6693,9 @@ def main():
                                    hidden=True,
                                    background_color="#111111")
     api._window = window
+    # A second launch signals this; closing the window runs the ordinary
+    # shutdown, which puts the pad back and releases the virtual one.
+    _listen_for_quit(api.win_close, bridge)
 
     def setup_window():
         """Round the corners and clamp the minimum size. No aspect lock:

@@ -1608,6 +1608,114 @@ def test_changing_the_language_is_not_a_bare_rebuild():
     assert "function relanguage()" in html
 
 
+def test_every_setup_fault_has_a_way_out():
+    """A screen with no exit is worse than a half-working app: the status
+    line in the app names the problem, the setup screen only guessed at
+    it. Skip used to be offered for a pending restart and nothing else."""
+    html = fa.build_html()
+    panel = html[html.index("function bootError(code){"):]
+    panel = panel[:panel.index("function bootTick")]
+    assert "id=\"err-skip\"" in panel
+    # it must not be conditional on the restart case any more
+    skip = panel[panel.index("id=\"err-skip\"") - 120:
+                 panel.index("id=\"err-skip\"")]
+    assert "pending ?" not in skip, skip
+
+
+def test_the_setup_screen_says_what_actually_failed():
+    """Three different faults share one sentence about closing other
+    controller software, which is a guess and usually the wrong one. The
+    app knows the real reason - it just never showed it."""
+    html = fa.build_html()
+    assert "bdetail" in html
+    for field in ("hh_info", "state.detail", "drv_info"):
+        assert field in html, field
+
+
+def test_the_reason_reaches_the_screen():
+    """hh_info is the one that was missing: hidhide.code came through but
+    the message beside it did not."""
+    import inspect
+    src = inspect.getsource(fa.Api.state)
+    for key in ('"hh_info"', '"drv_info"', '"detail"'):
+        assert key in src, key
+
+
+def test_waiting_for_a_controller_does_not_wait_for_ever():
+    """It used to sit on step 4 with nothing said for as long as the pad
+    stayed away, and a pad that is off never arrives."""
+    import inspect
+    src = inspect.getsource(fa.Bridge._loop)
+    assert "NO_PAD_WAIT_S" in src
+    assert 'self.boot_error = "no_pad"' in src
+    assert fa.NO_PAD_WAIT_S > 0
+    # and it clears again if the pad turns up while the notice is on screen
+    assert 'self.boot_error = ""' in src
+
+
+def test_no_pad_is_worded_in_every_language():
+    with open(fa.__file__, encoding="utf-8") as f:
+        src = f.read()
+    assert src.count("'no_pad': [") == 6, src.count("'no_pad': [")
+
+
+def test_our_own_slot_is_found_by_looking_not_by_waiting():
+    """A fixed pause is a guess. When it was wrong the set came back empty
+    and the wait below took our own virtual pad for the driver's."""
+    import inspect
+    src = inspect.getsource(fa.Bridge._loop)
+    assert "VPAD_WAIT_S" in src
+    assert "time.sleep(1.0)" not in src
+
+
+def test_the_previous_copy_is_asked_before_it_is_killed():
+    """Killing it outright runs no atexit handler, so the pad stayed hidden
+    and the virtual one stayed made. That leftover is what made the assist
+    unreliable after a few launches and what the setup screen was blaming
+    on other people's software."""
+    import inspect
+    src = inspect.getsource(fa._kill_stale_instances)
+    ask = src.index("SetEvent")
+    grace = src.index("QUIT_GRACE_S")
+    kill = src.index("taskkill")
+    assert ask < grace < kill, (ask, grace, kill)
+    assert "_clear_killed_leftovers" in src
+    # and the third of a second is gone
+    assert "0.3" not in src
+
+
+def test_the_kill_waits_for_the_process_to_actually_go():
+    import inspect
+    assert "OpenProcess" in inspect.getsource(fa._still_alive)
+    assert "monotonic" in inspect.getsource(fa._wait_gone)
+    assert fa._still_alive([999999]) == []
+    assert fa._still_alive([os.getpid()]) == [os.getpid()]
+
+
+def test_other_peoples_processes_are_not_matched():
+    """WebView2 names its host in the command line of every helper it
+    starts, so a command-line match reaches into the browser."""
+    import inspect
+    src = inspect.getsource(fa._our_pids)
+    assert "ExecutablePath" in src
+    assert "msedgewebview2" not in src.lower().split('"""')[2].lower()
+    # a new release changes the file name, so an exact path would never
+    # find the copy the previous version left behind
+    assert 'startswith("steeringassist")' in src
+
+
+def test_the_copy_that_is_asked_to_leave_tidies_up_first():
+    """Whoever wins the race, the pad must come back. The departing copy
+    puts everything back itself rather than trusting the window to close
+    in time - which is what made a killed copy so expensive."""
+    import inspect
+    src = inspect.getsource(fa._listen_for_quit)
+    stop = src.index("bridge.stop")
+    hand = src.index("disengage")
+    gone = src.index("os._exit")
+    assert stop < hand < gone, (stop, hand, gone)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
