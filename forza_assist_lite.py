@@ -778,6 +778,10 @@ CONFIG_VERSION = 15
 
 DEFAULTS = {
     "version": CONFIG_VERSION,
+    # Process names that must keep seeing the pad while it is hidden from
+    # the game. The built-in list covers the common vendor tools; this is
+    # for the ones it does not know about, and needs no new build.
+    "extra_apps": [],
     "enabled": True,
     "auto_hide": True,
     "counter_gain": 54.0,
@@ -2170,6 +2174,19 @@ class HidHide:
         # invocations fail, which reads as "an error occurred while hiding
         # your controller" on a launch that was otherwise fine
         self._cli_lock = threading.Lock()
+        # Written while we hold the pad, deleted when we hand it back.
+        # disengage runs from atexit, and atexit does not run when a
+        # process is killed, crashes, or the machine loses power. Left
+        # like that the pad stays hidden from everything on the machine
+        # for ever, because the next launch reads that state as somebody
+        # else's and will not touch it.
+        self.state_file = os.path.join(os.path.dirname(CONFIG_FILE),
+                                       "hidhide_state.json")
+        # Process names allowed to keep seeing the pad. Pad software that
+        # cannot see its own device stops working, and there is no list of
+        # every vendor tool in existence - so this one can be added to
+        # from the settings file without waiting for a new build.
+        self.extra_apps = []
 
     def _run(self, *args) -> str:
         with self._cli_lock:
@@ -2209,10 +2226,14 @@ class HidHide:
             self._run("--app-reg", sys.executable)
             self._apps.add(sys.executable.lower())
             self.whitelist_companions()
+            # recorded before the first change, so a crash half way through
+            # still leaves enough to put everything back
+            self._save_state()
             for path in self._present_paths():
                 self._run("--dev-hide", path)
                 if path not in self._prior_hidden:
                     self.hidden.add(path)
+                    self._save_state()
             self._run("--cloak-on")
             self.active = True
             # The loop's own shutdown does this too. This is for the exits
@@ -2293,13 +2314,19 @@ class HidHide:
         except Exception:
             pass
 
-    COMPANION_PATTERNS = ("flydigi", "ds4windows", "8bitdo", "gamesir")
+    COMPANION_PATTERNS = ("flydigi", "ds4windows", "8bitdo", "gamesir",
+                          "rewasd", "dualsense", "xoutput", "x360ce",
+                          "betterjoy", "joyxoff", "xbox accessories",
+                          "xboxaccessories", "hidguardian", "antimicro",
+                          "keysticks", "controllercompanion")
 
     def whitelist_companions(self):
         if not self.cli:
             return
         try:
-            pattern = "|".join(self.COMPANION_PATTERNS)
+            names = tuple(self.COMPANION_PATTERNS) + tuple(
+                str(x).lower() for x in self.extra_apps if str(x).strip())
+            pattern = "|".join(re.escape(n) for n in names)
             cp = subprocess.run(
                 ["powershell", "-NoProfile", "-Command",
                  f"Get-Process | Where-Object {{$_.Path -and ($_.Name -match '{pattern}')}} "
@@ -2331,6 +2358,54 @@ class HidHide:
         except Exception:
             pass
 
+    def _save_state(self):
+        try:
+            os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
+            with open(self.state_file, "w", encoding="utf-8") as f:
+                json.dump({"cloak_was": self._prior_cloak,
+                           "hidden": sorted(self.hidden)}, f)
+        except Exception:
+            pass
+
+    def _drop_state(self):
+        try:
+            os.remove(self.state_file)
+        except Exception:
+            pass
+
+    def restore_leftovers(self):
+        """Put back what a session that never finished could not put back.
+
+        Only what we wrote down is undone, so a device somebody else hid
+        for their own reasons stays hidden and a cloak somebody else turned
+        on stays on. Anything else would be guessing with a setting that
+        affects every game on the machine.
+
+        Called before engage, and only once this launch is alone: the
+        stale-instance check has already seen to that.
+        """
+        if not self.rescan():
+            return 0
+        try:
+            with open(self.state_file, encoding="utf-8") as f:
+                left = json.load(f)
+        except (OSError, ValueError):
+            return 0
+        freed = 0
+        for path in left.get("hidden") or []:
+            try:
+                self._run("--dev-unhide", path)
+                freed += 1
+            except Exception:
+                pass
+        if left.get("cloak_was") is False:
+            try:
+                self._run("--cloak-off")
+            except Exception:
+                pass
+        self._drop_state()
+        return freed
+
     def disengage(self):
         """Hand the pad back. Only what we hid is unhidden, and the cloak
         returns to the setting we found - leaving it off would quietly
@@ -2352,6 +2427,7 @@ class HidHide:
                 self._run("--cloak-off")
         except Exception:
             pass
+        self._drop_state()      # nothing left for a later launch to undo
         self.info = ("the pad is back, visible to everything again "
                      "(%d released)" % freed)
         self.code = "released"
@@ -2689,6 +2765,12 @@ class Bridge:
                 self.boot_error = self.drivers.code
 
             self.boot_step = 3
+            # Whatever the last session left behind goes first. By now the
+            # stale-instance check has made sure we are the only copy
+            # running, so anything still written down belongs to a session
+            # that ended without putting the pad back.
+            self.hidhide.extra_apps = list(self.cfg.get("extra_apps") or [])
+            self.hidhide.restore_leftovers()
             if self.cfg["auto_hide"]:
                 self.hidhide.engage()
                 if self.hidhide.code == "error":

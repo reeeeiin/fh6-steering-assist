@@ -6,6 +6,7 @@ import re
 import socket
 import struct
 import sys
+import tempfile
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -1086,6 +1087,11 @@ def _hidhide(cloak_on=False, already=(), present=()):
     h._prior_hidden = set()
     h._prior_cloak = None
     h._cli_lock = _DummyLock()
+    # __new__ skips __init__, so anything the class gained since this stub
+    # was written has to be named here. Three tests went red the day the
+    # crash-recovery note was added, which is the stub telling the truth.
+    h.state_file = os.path.join(tempfile.mkdtemp(prefix="hh-"), "state.json")
+    h.extra_apps = []
     h.calls = []
 
     gaming = json.dumps([{"devices": [{"deviceInstancePath": p,
@@ -1714,6 +1720,83 @@ def test_the_copy_that_is_asked_to_leave_tidies_up_first():
     hand = src.index("disengage")
     gone = src.index("os._exit")
     assert stop < hand < gone, (stop, hand, gone)
+
+
+def test_a_session_that_never_finished_is_undone_by_the_next_one():
+    """disengage runs from atexit, and atexit does not run when a process
+    is killed, crashes, or the machine loses power. Left alone the pad
+    stays hidden from everything on the machine - not just from us - and
+    the next launch reads that as somebody else's setting and will not
+    touch it. So what we do is written down while we do it."""
+    h = _hidhide(present=[MINE])
+    h.engage()
+    assert os.path.isfile(h.state_file), "nothing was written down"
+
+    # a launch that dies without disengaging: the note survives it
+    later = _hidhide(present=[MINE])
+    later.state_file = h.state_file
+    freed = later.restore_leftovers()
+    assert freed == 1, later.calls
+    assert ("--dev-unhide", MINE) in later.calls, later.calls
+    assert ("--cloak-off",) in later.calls, later.calls
+    assert not os.path.isfile(h.state_file), "the note outlived its use"
+
+
+def test_the_note_only_covers_what_we_did():
+    """A cloak somebody else turned on, and devices somebody else hid, are
+    not ours to put back - and that setting reaches every game."""
+    h = _hidhide(cloak_on=True, already=[THEIRS], present=[MINE, THEIRS])
+    h.engage()
+    with open(h.state_file, encoding="utf-8") as f:
+        note = json.load(f)
+    assert note["cloak_was"] is True
+    assert THEIRS not in note["hidden"], note
+    assert MINE in note["hidden"], note
+
+    later = _hidhide(present=[MINE, THEIRS])
+    later.state_file = h.state_file
+    later.restore_leftovers()
+    assert ("--cloak-off",) not in later.calls, later.calls
+    assert ("--dev-unhide", THEIRS) not in later.calls, later.calls
+
+
+def test_closing_properly_leaves_no_note_behind():
+    h = _hidhide(present=[MINE])
+    h.engage()
+    h.disengage()
+    assert not os.path.isfile(h.state_file)
+
+
+def test_pad_software_can_be_named_without_a_new_build():
+    """There is no list of every vendor tool in existence, and a tool that
+    cannot see its own pad stops working. The search itself is watched
+    rather than the result: whether such a process is running on the
+    machine running the tests is not the point."""
+    h = _hidhide(present=[MINE])
+    h.extra_apps = ["mypadtool"]
+    seen = []
+
+    class _Done:
+        stdout = ""
+
+    real = fa.subprocess.run
+    fa.subprocess.run = lambda cmd, **kw: (seen.append(cmd), _Done())[1]
+    try:
+        h.whitelist_companions()
+    finally:
+        fa.subprocess.run = real
+    joined = " ".join(seen[0]) if seen else ""
+    assert "mypadtool" in joined, joined
+    assert "gamesir" in joined, "the built-in list went missing"
+    assert "extra_apps" in fa.DEFAULTS
+
+
+def test_the_leftovers_are_put_back_before_anything_is_hidden():
+    """Engaging on top of a half-cloaked machine is what made the pad
+    invisible to us in the first place."""
+    import inspect
+    src = inspect.getsource(fa.Bridge._loop)
+    assert src.index("restore_leftovers") < src.index("hidhide.engage")
 
 
 def main():
