@@ -6481,7 +6481,7 @@ _instance_mutex = None
 QUIT_EVENT = "Global\\SteeringAssistQuit"
 # How long a previous copy is given to close itself before it is killed, and
 # how long the kill is then given to actually take effect.
-QUIT_GRACE_S = 4.0
+QUIT_GRACE_S = 7.0
 DEATH_WAIT_S = 4.0
 
 
@@ -6662,7 +6662,7 @@ def _listen_for_quit(close_window, bridge):
                 step()
             except Exception:
                 pass
-        time.sleep(1.0)
+        # nothing left to wait for: the pad is back and the window is gone
         os._exit(0)
 
     threading.Thread(target=wait, daemon=True).start()
