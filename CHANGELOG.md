@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.0.160
+## v2.0.163
 
 Setup and launching, made to cope with the state a real machine is in.
 
@@ -30,6 +30,27 @@ Setup and launching, made to cope with the state a real machine is in.
 - **More controller software is left alone.** Vendor tools and remappers
   that need to see their own pad are recognised more widely, and any this
   app has not heard of can be named in `settings.json` under `extra_apps`.
+
+- **The setup screen no longer stacks.** A fault that cleared - waiting for
+  a controller does clear, the moment you plug one in - left its panel
+  behind under whatever came next, so several stages could be on screen at
+  once, each in the language it happened to be drawn in. It also now
+  changes language along with the rest of the window.
+- **The fault panel reads as one thing.** The reason and the advice were
+  laid out beside the explanation rather than under it, which left a
+  paragraph of machine text loose in the middle of the window. Advice is
+  its own line under the reason now, instead of being glued to the end of
+  it, and a pending restart shows no machine detail at all.
+- **A hidden pad that was not hidden now says so.** The panel could read
+  *Hidden* after hiding nothing at all: the game still saw the controller,
+  the assist had no effect, and the one place that would have explained it
+  agreed everything was fine. It says **Nothing hidden**, and the number of
+  devices sits beside *Hidden* when there are any.
+- **German and Spanish are the right way round.** The new controller notice
+  was inserted into the wrong table order, so German speakers were shown
+  Spanish and Spanish speakers German.
+- HidHide's tooling occasionally answers with truncated output, which used
+  to take the whole hiding step down with it. It is asked again.
 
 ### Notes
 
