@@ -1898,6 +1898,29 @@ def test_a_fault_that_clears_takes_its_panel_with_it():
     assert "'#bs-err'].forEach" in html
 
 
+def test_hiding_nothing_does_not_report_success():
+    """The worst thing this can report. The game still sees the pad, the
+    assist has no visible effect, and the one place that would explain it
+    agrees everything is fine - which is exactly how it was reported."""
+    empty = _hidhide(present=[])          # HidHide listed no gaming devices
+    empty.engage()
+    assert empty.code == "none", (empty.code, empty.info)
+    assert "no effect" in empty.info
+
+    working = _hidhide(present=[MINE])
+    working.engage()
+    assert working.code == "hidden" and working.arg == 1, working.info
+
+    # a pad already hidden by a session that died still counts as hidden
+    inherited = _hidhide(already=[MINE], present=[MINE])
+    inherited.engage()
+    assert inherited.code == "hidden", inherited.info
+
+    for lang in fa.TR:
+        assert "hh_none" in fa.TR[lang], lang
+    assert "state.hh_arg" in fa.build_html(), "the count never reaches the screen"
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

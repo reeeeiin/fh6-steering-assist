@@ -2243,8 +2243,19 @@ class HidHide:
             # that never reach it, which would otherwise leave the pad
             # hidden from everything else on the machine.
             atexit.register(self.disengage)
-            self.code, self.arg = "hidden", len(self.hidden)
-            self.info = f"pad hidden from the game ({len(self.hidden)} devices)"
+            # Saying "hidden" after hiding nothing is the worst thing
+            # this can report: the game still sees the pad, the assist has
+            # no effect, and the one place that would explain it agrees
+            # everything is fine.
+            total = len(self.hidden) + len(self._prior_hidden)
+            if total:
+                self.code, self.arg = "hidden", total
+                self.info = f"pad hidden from the game ({total} devices)"
+            else:
+                self.code, self.arg = "none", 0
+                self.info = ("no controller was hidden - HidHide listed no "
+                             "gaming devices, so the game can still see "
+                             "your pad and the assist will have no effect")
             # tidying the whitelist is slow and matters to nobody waiting, so
             # it follows the hiding rather than competing with it
             threading.Thread(target=self.prune_stale_apps, daemon=True).start()
@@ -3129,6 +3140,7 @@ TR = {
         "btn_none": "none",
         "tele_port": "port {p} busy",
         "st_starting": "starting…", "st_no_pad": "controller not found (XInput)", "st_pad_lost": "controller disconnected — waiting…", "st_vigem": "ViGEmBus driver missing — installer opened, install it and restart", "hh_hidden": 'Hidden', "hh_install": 'Installing', "hh_disabled": 'Visible', "hh_error": 'Error',
+        "hh_none": 'Nothing hidden',
         "setup_title": "First run — enable telemetry in the game:",
         "setup_1": "Game Settings → HUD & Gameplay → Data Out: ON",
         "setup_3": "Controls → Steering: Simulation",
@@ -3254,6 +3266,7 @@ TR = {
         "btn_none": "нет",
         "tele_port": "порт {p} занят",
         "st_starting": "запуск…", "st_no_pad": "контроллер не найден (XInput)", "st_pad_lost": "контроллер отключился — жду…", "st_vigem": "нет драйвера ViGEmBus — открыл установщик, поставь и перезапусти", "hh_hidden": 'Скрыт', "hh_install": 'Установка', "hh_disabled": 'Виден', "hh_error": 'Ошибка',
+        "hh_none": 'Ничего не скрыто',
         "setup_title": "Первый запуск — включи телеметрию в игре:",
         "setup_1": "Настройки игры → HUD и геймплей → Data Out: ВКЛ",
         "setup_3": "Управление → Руление: Симуляция",
@@ -3379,6 +3392,7 @@ TR = {
         "btn_none": "keine",
         "tele_port": "Port {p} belegt",
         "st_starting": "Start…", "st_no_pad": "Controller nicht gefunden (XInput)", "st_pad_lost": "Controller getrennt — warte…", "st_vigem": "ViGEmBus-Treiber fehlt — Installer geöffnet, installieren und neu starten", "hh_hidden": 'Versteckt', "hh_install": 'Installiert', "hh_disabled": 'Sichtbar', "hh_error": 'Fehler',
+        "hh_none": 'Nichts versteckt',
         "setup_title": "Erster Start — Telemetrie im Spiel aktivieren:",
         "setup_1": "Spieleinstellungen → HUD → Data Out: AN",
         "setup_3": "Steuerung → Lenkung: Simulation",
@@ -3504,6 +3518,7 @@ TR = {
         "btn_none": "aucun",
         "tele_port": "port {p} occupé",
         "st_starting": "démarrage…", "st_no_pad": "manette introuvable (XInput)", "st_pad_lost": "manette déconnectée — attente…", "st_vigem": "pilote ViGEmBus manquant — installeur ouvert, installez et relancez", "hh_hidden": 'Masque', "hh_install": 'Installation', "hh_disabled": 'Visible', "hh_error": 'Erreur',
+        "hh_none": 'Rien de masque',
         "setup_title": "Premier lancement — activez la télémétrie en jeu :",
         "setup_1": "Réglages du jeu → HUD → Data Out : ON",
         "setup_3": "Commandes → Direction : Simulation",
@@ -3629,6 +3644,7 @@ TR = {
         "btn_none": "ninguno",
         "tele_port": "puerto {p} ocupado",
         "st_starting": "iniciando…", "st_no_pad": "mando no encontrado (XInput)", "st_pad_lost": "mando desconectado — esperando…", "st_vigem": "falta el driver ViGEmBus — instalador abierto, instala y reinicia", "hh_hidden": 'Oculto', "hh_install": 'Instalando', "hh_disabled": 'Visible', "hh_error": 'Error',
+        "hh_none": 'Nada oculto',
         "setup_title": "Primer inicio — activa la telemetría en el juego:",
         "setup_1": "Ajustes del juego → HUD → Data Out: ON",
         "setup_3": "Controles → Dirección: Simulación",
@@ -3765,6 +3781,7 @@ TR = {
         "st_pad_lost": 'コントローラーが切断されました — 待機中…',
         "st_vigem": 'ViGEmBus ドライバーがありません — インストーラーを開きました。導入後に再起動してください',
         "hh_hidden": '非表示',
+        "hh_none": '非表示なし',
         "hh_install": '導入中',
         "hh_disabled": '表示',
         "hh_error": 'エラー',
@@ -5365,7 +5382,10 @@ function liveUpdate(){
     const hidden = state.hh_code === 'hidden';
     ps.className = 'rval ' + (hidden ? 'ok' : state.hh_code === 'error'
                               ? 'bad' : 'off');
-    ps.textContent = t('hh_' + (state.hh_code || 'idle'));
+    /* the count matters: "hidden" after hiding nothing looks exactly like
+       "hidden" after hiding the pad, and only one of them works */
+    ps.textContent = t('hh_' + (state.hh_code || 'idle')) +
+                     (hidden && state.hh_arg ? ' (' + state.hh_arg + ')' : '');
   }
 }
 
