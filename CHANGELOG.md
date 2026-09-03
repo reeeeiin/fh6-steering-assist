@@ -1,5 +1,43 @@
 # Changelog
 
+## v2.0.160
+
+Setup and launching, made to cope with the state a real machine is in.
+
+### Fixed
+
+- **Launching again in the same session no longer leaves a mess behind.**
+  Every launch used to kill the previous copy outright and carry on a
+  third of a second later. A killed copy never gets to hand your
+  controller back or release the virtual one, so each launch inherited a
+  little more of the last one - which is why the assist grew unreliable
+  after a few starts and only a restart cleared it. The previous copy is
+  now asked to leave, and it puts everything back before it goes.
+- **Setup no longer stops on a fault it cannot explain.** One sentence
+  about closing other controller software stood for three different
+  failures and was usually the wrong guess. The real reason is now printed
+  under it, and **every** fault can be skipped past instead of ending the
+  launch.
+- **Waiting for a controller no longer waits for ever.** If your pad is
+  off, asleep, or not in XInput mode, setup used to sit on step 4 in
+  silence. It now says so and tells you to reconnect it - and picks up by
+  itself the moment you do.
+- **A controller can no longer be left hidden.** Handing your pad back
+  happened as the app closed, so a crash or a forced close left it hidden
+  from every game on the machine, with nothing left to undo it. Whatever
+  is hidden is now written down and put back by the next launch. Only what
+  this app hid: anything you hid yourself stays as you left it.
+- **More controller software is left alone.** Vendor tools and remappers
+  that need to see their own pad are recognised more widely, and any this
+  app has not heard of can be named in `settings.json` under `extra_apps`.
+
+### Notes
+
+- Settings and drivers were checked for the same treatment and needed
+  none: a newer settings file is read safely by an older build, and
+  drivers are only installed when missing or genuinely older, so keeping
+  several versions on the machine is harmless.
+
 ## v2.0 (2.0.153)
 
 A rebuilt interface, six languages, an assist that answers the moment the
