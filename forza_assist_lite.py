@@ -997,8 +997,8 @@ BOOT_TR = {
              'Reinicia para terminar la instalacion. Windows activa los controladores al arrancar y el asistente queda listo.'],
             'hide': ['Error al ocultar tu mando',
              'Cierra apps como controladores de mando, pueden interferir con la instalacion de Steering Assist.'],
-            'no_pad': ['Controller nicht gefunden',
-             'Steering Assist sieht keinen Controller ueber XInput. Einschalten oder kurz ab- und wieder anstecken - Windows findet ihn sofort wieder. Sobald er da ist, laeuft die Einrichtung von selbst weiter.'],
+            'no_pad': ['Mando no encontrado',
+             'Steering Assist no ve ningun mando en XInput. Enciendelo, o desconectalo y vuelve a conectarlo: Windows lo encuentra al momento. La instalacion sigue sola en cuanto aparezca.'],
             'vigem': ['Error al crear el mando virtual',
              'Cierra apps como controladores de mando, pueden interferir con la instalacion de Steering Assist.'],
         },
@@ -1119,8 +1119,8 @@ BOOT_TR = {
              'Starte neu, um die Einrichtung abzuschliessen. Windows aktiviert die Treiber beim Hochfahren, danach ist die Hilfe sofort bereit.'],
             'hide': ['Fehler beim Verstecken des Controllers',
              'Schliesse Apps wie Controller-Treiber, sie koennen die Installation von Steering Assist stoeren.'],
-            'no_pad': ['Mando no encontrado',
-             'Steering Assist no ve ningun mando en XInput. Enciendelo, o desconectalo y vuelve a conectarlo: Windows lo encuentra al momento. La instalacion sigue sola en cuanto aparezca.'],
+            'no_pad': ['Controller nicht gefunden',
+             'Steering Assist sieht keinen Controller ueber XInput. Einschalten oder kurz ab- und wieder anstecken - Windows findet ihn sofort wieder. Sobald er da ist, laeuft die Einrichtung von selbst weiter.'],
             'vigem': ['Fehler beim Erstellen des virtuellen Controllers',
              'Schliesse Apps wie Controller-Treiber, sie koennen die Installation von Steering Assist stoeren.'],
         },
@@ -2160,6 +2160,9 @@ class HidHide:
         self.cli = next((p for p in self.CLI_PATHS if os.path.isfile(p)), None)
         self.active = False
         self.info = "not started"
+        # What to try, kept apart from what went wrong. Run together they
+        # read as one long machine message and the advice is lost in it.
+        self.hint = ""
         self.code = "idle"
         self.arg = 0
         self.hidden = set()
@@ -2248,8 +2251,9 @@ class HidHide:
             return True
         except Exception as e:
             self.code = "error"
-            self.info = (f"error: {e}. If access is denied, "
-                         "run the assist as administrator")
+            self.info = str(e)
+            self.hint = ("If access is denied, run the assist as "
+                         "administrator.")
             return False
 
     @staticmethod
@@ -2297,7 +2301,19 @@ class HidHide:
                 pass
 
     def _present_paths(self) -> set:
-        data = json.loads(self._run("--dev-gaming") or "[]")
+        # The CLI now and then answers with output that stops mid-string -
+        # seen in the wild as "unterminated string ... (char 358)", which
+        # took the whole of engage down with it and put a JSON parser error
+        # on the setup screen. Asking again costs a moment and answers it.
+        data = None
+        for attempt in range(3):
+            try:
+                data = json.loads(self._run("--dev-gaming") or "[]")
+                break
+            except ValueError:
+                if attempt == 2:
+                    raise
+                time.sleep(0.4)
         paths = set()
         for group in data:
             for dev in group.get("devices", []):
@@ -4435,13 +4451,21 @@ body.t-light{
    footer */
 #bs-err{top:auto;bottom:56px;display:flex;align-items:center;
         justify-content:center;gap:14px}
-.berr{width:244px;font-size:10px;color:var(--row-fg);line-height:1.5}
+/* The row is text then buttons. The explanation, the reason and the
+   advice are one column inside it - added as further items of the row
+   they became columns of their own, which is what put a paragraph of
+   machine text loose in the middle of the window. */
+.berr-col{width:244px;display:flex;flex-direction:column;gap:7px}
+.berr{font-size:10px;color:var(--row-fg);line-height:1.5}
 /* What actually failed, in the app's own words. The line above it is the
    same for three different faults, so without this nobody - the driver or
    me - can tell which one happened. */
-.bdetail{width:244px;margin-top:-2px;font-size:9px;line-height:1.45;
-         color:var(--foot);font-family:ui-monospace,Consolas,monospace;
-         word-break:break-word}
+.bdetail{font-size:9px;line-height:1.45;color:var(--foot);
+         font-family:ui-monospace,Consolas,monospace;word-break:break-word;
+         padding:6px 8px;border-radius:5px;background:var(--card-2);
+         max-height:52px;overflow:auto}
+/* Advice belongs under the reason, not inside it. */
+.badvice{font-size:10px;line-height:1.45;color:var(--row-fg)}
 
 .bhint{position:absolute;top:283px;left:0;right:0;text-align:center;
        font-size:12px;color:var(--row-fg);transition:opacity .45s ease}
@@ -5480,8 +5504,11 @@ function BT(){ return BOOT.tr[bootLang] || BOOT.tr.en; }
 function bootRedraw(){
   $('#boot-lang').textContent = BOOT.short[bootLang] || bootLang;
   const t = BT();
+  /* #bs-err is where the fault panel keeps its cache key - clearing it
+     on .berr, one of its children, left the panel in whatever language it
+     was first drawn in while everything around it changed */
   ['#boot-line', '#boot-note', '#boot-hint', '#tele-top', '#tele-bot',
-   '.berr'].forEach(sel => { const e = $(sel); if (e) e.dataset.cur = ''; });
+   '#bs-err'].forEach(sel => { const e = $(sel); if (e) e.dataset.cur = ''; });
   $('#boot-load').textContent = t.loading;
   if (bootPhrases.length){
     bootPhrases = bootPhraseList();
@@ -5562,7 +5589,11 @@ function swapText(el, html, delay){
 
 function stageShow(id){
   const el = $(id);
-  if (!el.classList.contains('off')) return;
+  /* A stage on its way out is not 'off' yet. Bailing here handed it to the
+     timer that hide left running, which then put away the very stage this
+     call had asked for. */
+  if (el._hideT){ clearTimeout(el._hideT); el._hideT = 0; }
+  if (!el.classList.contains('off') && !el.classList.contains('leave')) return;
   el.classList.remove('off', 'leave');
   el.classList.add('enter');
   /* a timer, not rAF: the callback must fire even when the window is
@@ -5574,7 +5605,10 @@ function stageHide(id){
   const el = $(id);
   if (el.classList.contains('off') || el.classList.contains('leave')) return;
   el.classList.add('leave');
-  setTimeout(() => el.classList.add('off'), 470);
+  el._hideT = setTimeout(() => {
+    el.classList.add('off');
+    el._hideT = 0;
+  }, 470);
 }
 
 function bootChips(){
@@ -5688,14 +5722,21 @@ function bootError(code){
     box.dataset.cur = code;
     /* Three of these faults share one sentence about closing other
        controller software, which is a guess and often the wrong one. The
-       app already knows what actually went wrong; it just never said. */
-    const why = code === 'hide'  ? (state.hh_info || '')
+       app already knows what actually went wrong; it just never said.
+       Nothing is shown for a pending restart - that is not a fault, and
+       the note beside it was only ever naming what had been installed. */
+    const why = pending ? ''
+              : code === 'hide'  ? (state.hh_info || '')
               : code === 'vigem' ? (state.detail  || '')
               : code === 'no_pad' ? ''
               : (state.drv_info || '');
+    const tip = code === 'hide' ? (state.hh_hint || '') : '';
     box.innerHTML =
-      '<div class="berr">' + e[1] + '</div>' +
-      (why ? '<div class="bdetail">' + esc(why) + '</div>' : '') +
+      '<div class="berr-col">' +
+        '<div class="berr">' + e[1] + '</div>' +
+        (why ? '<div class="bdetail">' + esc(why) + '</div>' : '') +
+        (tip ? '<div class="badvice">' + esc(tip) + '</div>' : '') +
+      '</div>' +
       '<button class="bbtn" id="err-btn">' +
       (pending ? t.btnRestart : t.errBtn) + '</button>' +
       /* Every fault gets a way past it. Skipping into a half-working app
@@ -5777,6 +5818,12 @@ function bootTick(){
       bootError(state.boot_error);
       return;
     }
+    /* Nothing used to clear a fault once it was set, so nothing needed to
+       take the panel away again. Waiting for a controller does clear -
+       plug the pad in and the setup carries on - and the panel was left
+       sitting under the stage that followed it. */
+    stageHide('#bs-err');
+    $('#bs-err').dataset.cur = '';
     const t = BT();
     const info = t.steps[step - 1];
     swapText($('#boot-line'),
@@ -6434,6 +6481,7 @@ class Api:
             "drv_info": b.drivers.info,
             "hh_code": b.hidhide.code,
             "hh_info": b.hidhide.info,
+            "hh_hint": b.hidhide.hint,
             "hh_arg": b.hidhide.arg,
             "code": b.status_code,
             "detail": b.status_detail,

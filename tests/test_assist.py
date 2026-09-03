@@ -1799,6 +1799,105 @@ def test_the_leftovers_are_put_back_before_anything_is_hidden():
     assert src.index("restore_leftovers") < src.index("hidhide.engage")
 
 
+def test_the_fault_panel_is_a_column_of_text_and_then_the_buttons():
+    """#bs-err lays its children out in a row. The reason and the advice
+    were added as further children, so each became a column of its own and
+    a paragraph of machine text sat loose in the middle of the window."""
+    html = fa.build_html()
+    panel = html[html.index("function bootError(code){"):]
+    panel = panel[:panel.index("function bootTick")]
+    body = panel[panel.index("box.innerHTML"):panel.index("addEventListener")]
+    assert "berr-col" in body
+    # the three text pieces close inside the column, before any button
+    assert body.index("</div>'") < body.index("id=\"err-btn\"")
+    assert ".berr-col{" in html and "flex-direction:column" in html
+
+
+def test_advice_sits_under_the_reason_not_inside_it():
+    """Run together they read as one long machine message and the advice
+    is lost in it - it was arriving glued to a JSON parser error."""
+    import inspect
+    src = inspect.getsource(fa.HidHide.engage)
+    assert "self.hint" in src
+    assert "run the assist as" not in src.split("self.info = str(e)")[0]
+    html = fa.build_html()
+    assert "badvice" in html and "hh_hint" in html
+
+
+def test_a_pending_restart_shows_no_machine_detail():
+    """It is a step of the setup, not a fault, and the note beside it was
+    only ever naming what had just been installed."""
+    html = fa.build_html()
+    panel = html[html.index("function bootError(code){"):]
+    panel = panel[:panel.index("function bootTick")]
+    assert "pending ? ''" in panel, panel[panel.index("const why"):][:200]
+
+
+def test_output_that_stops_mid_string_is_asked_for_again():
+    """Seen in the wild: the CLI answered with truncated JSON, the parser
+    raised, and the whole of engage went down with a parser error on the
+    setup screen."""
+    calls = []
+
+    class _Flaky(fa.HidHide):
+        def __init__(self):
+            self.cli = "cli.exe"
+            self._cli_lock = _DummyLock()
+
+        def _run(self, *args):
+            calls.append(args)
+            if len(calls) < 3:
+                return '[{"devices": [{"deviceInstancePath": "X"'
+            return json.dumps([{"devices": [{"deviceInstancePath": MINE,
+                                             "present": True}]}])
+
+    got = _Flaky()._present_paths()
+    assert got == {MINE}, got
+    assert len(calls) == 3, calls
+
+
+def test_the_two_translation_tables_run_in_different_orders():
+    """A trap worth failing loudly on. BOOT_TR is written en, ru, es, fr,
+    de, ja and TR is written en, ru, de, fr, es, ja, so anything inserted
+    by position rather than by name lands two languages away - which is
+    how German speakers were shown Spanish."""
+    import re
+    with open(fa.__file__, encoding="utf-8") as f:
+        src = f.read()
+    boot = src[src.index("BOOT_TR"):src.index("BOOT_TR") + 200000]
+    order = re.findall(r'^    "([a-z]{2})": \{', boot, re.M)
+    assert order[:6] == ["en", "ru", "es", "fr", "de", "ja"], order[:6]
+    assert list(fa.TR)[:6] == ["en", "ru", "de", "fr", "es", "ja"], list(fa.TR)[:6]
+
+
+def test_the_no_pad_notice_is_in_the_language_it_claims():
+    """Written down rather than derived: a swapped pair reads perfectly
+    well in both slots, which is exactly why it went unnoticed."""
+    want = {"en": "Controller not found",
+            "ru": "Геймпад не найден",
+            "de": "Controller nicht gefunden",
+            "fr": "Manette introuvable",
+            "es": "Mando no encontrado",
+            "ja": "コントローラーが見つかりません"}
+    for lang, title in want.items():
+        got = fa.BOOT_TR[lang]["errors"]["no_pad"][0]
+        assert got == title, (lang, got)
+
+
+def test_a_fault_that_clears_takes_its_panel_with_it():
+    """Nothing used to clear a fault once set, so nothing needed to put the
+    panel away. Waiting for a controller does clear, and the panel was left
+    sitting under the stage that followed it - three stages on screen at
+    once, each in whatever language it was drawn in."""
+    html = fa.build_html()
+    tick = html[html.index("function bootTick(){"):]
+    err = tick.index("bootError(state.boot_error)")
+    hide = tick.index("stageHide('#bs-err')")
+    assert err < hide, "the panel is never put away"
+    # and the cache key is cleared on the element that actually holds it
+    assert "'#bs-err'].forEach" in html
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
