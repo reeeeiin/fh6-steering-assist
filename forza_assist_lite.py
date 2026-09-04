@@ -2196,7 +2196,13 @@ class HidHide:
             return self._run_locked(*args)
 
     def _run_locked(self, *args) -> str:
+        # text=True alone decodes with whatever code page the machine runs
+        # on - cp1251 on a Russian Windows, cp1252 elsewhere. The CLI
+        # answers in UTF-8, so a controller with a non-English name came
+        # back mangled and the JSON with it. Named explicitly, and never
+        # allowed to raise on a byte it cannot place.
         cp = subprocess.run([self.cli, *args], capture_output=True, text=True,
+                            encoding="utf-8", errors="replace",
                             creationflags=self.CREATE_NO_WINDOW, timeout=10)
         if cp.returncode != 0:
             raise RuntimeError((cp.stderr or cp.stdout or " ".join(args)).strip())
@@ -2311,27 +2317,48 @@ class HidHide:
             except Exception:
                 pass
 
+    # Device paths are plain ASCII whatever the controller is called, so
+    # they can be read straight out of the text when the document around
+    # them will not parse.
+    PATH_RE = re.compile(r'"deviceInstancePath"\s*:\s*"((?:[^"\\]|\\.)+)"')
+
     def _present_paths(self) -> set:
-        # The CLI now and then answers with output that stops mid-string -
-        # seen in the wild as "unterminated string ... (char 358)", which
-        # took the whole of engage down with it and put a JSON parser error
-        # on the setup screen. Asking again costs a moment and answers it.
-        data = None
-        for attempt in range(3):
-            try:
-                data = json.loads(self._run("--dev-gaming") or "[]")
-                break
-            except ValueError:
-                if attempt == 2:
-                    raise
-                time.sleep(0.4)
-        paths = set()
-        for group in data:
-            for dev in group.get("devices", []):
-                p = dev.get("deviceInstancePath")
-                if p and dev.get("present"):
-                    paths.add(p)
-        return paths
+        """Which gaming devices HidHide can see.
+
+        Reported from a machine where this raised "unterminated string
+        starting at: line 9 column 17" every single time and stopped the
+        pad ever being hidden. Whatever the CLI does to its own JSON, the
+        paths are still in there, so a document that will not parse is read
+        for the paths rather than thrown away with the whole step.
+        """
+        raw = self._run("--dev-gaming") or "[]"
+        try:
+            paths = set()
+            for group in json.loads(raw):
+                for dev in group.get("devices", []):
+                    p = dev.get("deviceInstancePath")
+                    if p and dev.get("present"):
+                        paths.add(p)
+            return paths
+        except ValueError as e:
+            # what the pattern captures is still JSON-escaped, and a
+            # device path is mostly backslashes: handed over doubled, it
+            # names no device at all and hides nothing
+            found = set()
+            for hit in self.PATH_RE.findall(raw):
+                try:
+                    found.add(json.loads('"%s"' % hit))
+                except ValueError:
+                    found.add(hit.replace(chr(92) * 2, chr(92)))
+            if not found:
+                raise RuntimeError("%s; HidHide answered: %s"
+                                   % (e, raw[:120].replace(chr(10), " ")))
+            # No way to tell which of them are plugged in from here. Hiding
+            # one that is not costs nothing: HidHide simply records it, and
+            # it is unhidden again on the way out like any other.
+            self.info = ("HidHide's device list would not parse; read %d "
+                         "device paths out of it instead" % len(found))
+            return found
 
     def snapshot_allowed(self):
         if not (self.cli and self.active):

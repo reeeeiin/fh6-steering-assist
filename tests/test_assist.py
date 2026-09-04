@@ -1833,29 +1833,6 @@ def test_a_pending_restart_shows_no_machine_detail():
     assert "pending ? ''" in panel, panel[panel.index("const why"):][:200]
 
 
-def test_output_that_stops_mid_string_is_asked_for_again():
-    """Seen in the wild: the CLI answered with truncated JSON, the parser
-    raised, and the whole of engage went down with a parser error on the
-    setup screen."""
-    calls = []
-
-    class _Flaky(fa.HidHide):
-        def __init__(self):
-            self.cli = "cli.exe"
-            self._cli_lock = _DummyLock()
-
-        def _run(self, *args):
-            calls.append(args)
-            if len(calls) < 3:
-                return '[{"devices": [{"deviceInstancePath": "X"'
-            return json.dumps([{"devices": [{"deviceInstancePath": MINE,
-                                             "present": True}]}])
-
-    got = _Flaky()._present_paths()
-    assert got == {MINE}, got
-    assert len(calls) == 3, calls
-
-
 def test_the_two_translation_tables_run_in_different_orders():
     """A trap worth failing loudly on. BOOT_TR is written en, ru, es, fr,
     de, ja and TR is written en, ru, de, fr, es, ja, so anything inserted
@@ -1919,6 +1896,68 @@ def test_hiding_nothing_does_not_report_success():
     for lang in fa.TR:
         assert "hh_none" in fa.TR[lang], lang
     assert "state.hh_arg" in fa.build_html(), "the count never reaches the screen"
+
+
+def _truncated_dev_gaming():
+    """The shape reported from a real machine: valid JSON that stops part
+    way through a device's name."""
+    doc = [{"friendlyName": "Xbox Controller",
+            "devices": [{"present": True, "deviceInstancePath": MINE,
+                         "friendlyName": "Controller (Xbox One For Windows)"}]}]
+    raw = json.dumps(doc, indent=2)
+    return raw[:raw.index('"friendlyName": "Controller') + 24]
+
+
+def test_a_device_list_that_will_not_parse_is_read_anyway():
+    """Reported as "unterminated string starting at: line 9 column 17",
+    every launch, with the pad never hidden as a result. The paths are
+    still in the text whatever the CLI does to the document around them,
+    so the step reads them out instead of failing."""
+    broken = _truncated_dev_gaming()
+    try:
+        json.loads(broken)
+        raise AssertionError("the sample is not actually broken")
+    except ValueError:
+        pass
+
+    class _Probe(fa.HidHide):
+        def __init__(self):
+            self.info = ""
+
+        def _run(self, *a):
+            return broken
+
+    p = _Probe()
+    got = p._present_paths()
+    assert got == {MINE}, got          # and not the escaped form
+    assert "would not parse" in p.info
+
+
+def test_nothing_to_salvage_still_says_what_came_back():
+    """If there are no paths in it either, the message carries the answer
+    itself - guessing from a parser error is what cost the last round."""
+    class _Empty(fa.HidHide):
+        def __init__(self):
+            self.info = ""
+
+        def _run(self, *a):
+            return "HidHideCLI: access denied"
+
+    try:
+        _Empty()._present_paths()
+        raise AssertionError("it should not pretend there are no devices")
+    except RuntimeError as e:
+        assert "access denied" in str(e), e
+
+
+def test_the_cli_is_read_as_utf8_whatever_the_machine_runs_on():
+    """text=True alone decodes with the machine's code page - cp1251 on a
+    Russian Windows - and a controller with a non-English name came back
+    mangled, taking the JSON with it."""
+    import inspect
+    src = inspect.getsource(fa.HidHide._run_locked)
+    assert 'encoding="utf-8"' in src
+    assert 'errors="replace"' in src
 
 
 def main():
