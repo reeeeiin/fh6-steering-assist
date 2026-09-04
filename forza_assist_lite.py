@@ -2321,6 +2321,31 @@ class HidHide:
     # they can be read straight out of the text when the document around
     # them will not parse.
     PATH_RE = re.compile(r'"deviceInstancePath"\s*:\s*"((?:[^"\\]|\\.)+)"')
+    # The list is written a field at a time and the CLI stops writing at
+    # the first character its code page cannot hold, so on a machine whose
+    # device descriptions are not in English the answer ends part way down
+    # the first device - reported as "unterminated string ... line 9", the
+    # line the description sits on. The symbolic link is printed five
+    # lines earlier and carries the same identity in another spelling.
+    LINK_RE = re.compile(r'"symbolicLink"\s*:\s*"((?:[^"\\]|\\.)*)"')
+
+    @staticmethod
+    def _path_from_link(link: str) -> str:
+        """HID\\VID_x&PID_y\\instance, out of the symbolic link.
+
+        Checked against every device on a working machine: the first two
+        parts are spelled in capitals in the instance path and the last one
+        is left exactly as it is.
+        """
+        if link.startswith("\\\\?\\"):
+            link = link[4:]
+        cut = link.rfind("#{")
+        if cut > 0:
+            link = link[:cut]
+        parts = link.split("#")
+        if len(parts) != 3:
+            return ""
+        return "\\".join([parts[0].upper(), parts[1].upper(), parts[2]])
 
     def _present_paths(self) -> set:
         """Which gaming devices HidHide can see.
@@ -2351,6 +2376,20 @@ class HidHide:
                 except ValueError:
                     found.add(hit.replace(chr(92) * 2, chr(92)))
             if not found:
+                # The instance path is printed after the description, so a
+                # list that stops at the description has none of them in
+                # it. The symbolic link is five lines earlier and says the
+                # same thing in another spelling.
+                for hit in self.LINK_RE.findall(raw):
+                    try:
+                        link = json.loads('"%s"' % hit)
+                    except ValueError:
+                        link = hit.replace(chr(92) * 2, chr(92))
+                    path = self._path_from_link(link)
+                    if path:
+                        found.add(path)
+            if not found:
+                self._keep_answer(raw)
                 raise RuntimeError("%s; HidHide answered: %s"
                                    % (e, raw[:120].replace(chr(10), " ")))
             # No way to tell which of them are plugged in from here. Hiding
@@ -2409,6 +2448,17 @@ class HidHide:
             if len(self.hidden) != self.arg:
                 self.arg = len(self.hidden)
                 self.info = f"pad hidden from the game ({self.arg} devices)"
+        except Exception:
+            pass
+
+    def _keep_answer(self, raw):
+        """Nothing could be made of it, so keep it for whoever asks next.
+        Guessing at this from a parser error has already cost two rounds."""
+        try:
+            with open(os.path.join(os.path.dirname(self.state_file),
+                                   "hidhide_answer.txt"), "w",
+                      encoding="utf-8", errors="replace") as f:
+                f.write(raw)
         except Exception:
             pass
 

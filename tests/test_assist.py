@@ -1960,6 +1960,91 @@ def test_the_cli_is_read_as_utf8_whatever_the_machine_runs_on():
     assert 'errors="replace"' in src
 
 
+# The real shape, copied from a working machine: one field per line, the
+# symbolic link on line 4 and the description on line 9.
+DEV_GAMING = """ [ { "friendlyName" : "Controller (Xbox One For Windows)" , "devices" : [
+{ "present" : true ,
+"gamingDevice" : true ,
+"symbolicLink" : "%s" ,
+"vendor" : "" ,
+"product" : "" ,
+"serialNumber" : "" ,
+"usage" : "absent" ,
+"description" : "%s" ,
+"deviceInstancePath" : "%s" ,
+"baseContainerDeviceCount" : 1 } ] } ]"""
+
+LINK = (chr(92) * 4 + "?" + chr(92) * 2 +
+        "hid#vid_045e&pid_02ff&ig_00#a&1986510&0&0000"
+        "#{4d1e55b2-f16f-11cf-88cb-001111000030}")
+INST = "HID" + chr(92) * 2 + "VID_045E&PID_02FF&IG_00" + chr(92) * 2 +        "a&1986510&0&0000"
+WANT = INST.replace(chr(92) * 2, chr(92))
+
+
+def _cli_answer(description="HID-compliant game controller", stop_at=None):
+    text = DEV_GAMING % (LINK, description, INST)
+    return text[:stop_at] if stop_at else text
+
+
+def test_a_list_cut_short_at_the_description_still_finds_the_pad():
+    """Reported as "unterminated string starting at: line 9 column 17".
+    Line 9 is the description, and the CLI stops writing at the first
+    character its code page cannot hold - so on a machine whose device
+    descriptions are not in English the answer ends there, before the
+    instance path is ever printed. The symbolic link is five lines
+    earlier and says the same thing another way."""
+    full = _cli_answer()
+    cut = full.index('"description" : "') + len('"description" : "HID-')
+    broken = full[:cut]
+    try:
+        json.loads(broken)
+        raise AssertionError("the sample is not actually broken")
+    except ValueError as e:
+        assert "line 9" in str(e), e        # the reported line, exactly
+
+    class _Probe(fa.HidHide):
+        def __init__(self):
+            self.info = ""
+            self.state_file = os.path.join(tempfile.mkdtemp(), "s.json")
+
+        def _run(self, *a):
+            return broken
+
+    got = _Probe()._present_paths()
+    assert got == {WANT}, got
+
+
+def test_the_link_is_read_the_way_windows_spells_the_path():
+    """Checked against every gaming device on a working machine: the first
+    two parts are capitals in the instance path, the last is left alone.
+    Getting the case wrong names no device and hides nothing."""
+    assert fa.HidHide._path_from_link(LINK.replace(chr(92) * 2, chr(92))) == WANT
+    assert fa.HidHide._path_from_link("nonsense") == ""
+
+
+def test_an_answer_nothing_can_be_made_of_is_kept():
+    """Guessing at this from a parser error has already cost two rounds."""
+    folder = tempfile.mkdtemp()
+
+    class _Junk(fa.HidHide):
+        def __init__(self):
+            self.info = ""
+            self.state_file = os.path.join(folder, "s.json")
+
+        def _run(self, *a):
+            return "HidHideCLI: something else entirely"
+
+    try:
+        _Junk()._present_paths()
+        raise AssertionError("it should not pretend there are no devices")
+    except RuntimeError:
+        pass
+    kept = os.path.join(folder, "hidhide_answer.txt")
+    assert os.path.isfile(kept), "the answer was not kept"
+    with open(kept, encoding="utf-8") as f:
+        assert "something else entirely" in f.read()
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
