@@ -152,7 +152,9 @@ def test_v5_migration_rescues_debug_leftovers():
             "lang": "ru", "gyro": 0.6, "counter_gain": 75.0}))
         cfg = fa.load_config()
         assert cfg["yield_mode"] == "hold", cfg["yield_mode"]
-        assert cfg["rumble"] is True, cfg["rumble"]
+        # the migration puts it back to whatever the default is, which
+        # is the point of it - not to one particular value
+        assert cfg["rumble"] == fa.DEFAULTS["rumble"], cfg["rumble"]
         assert cfg["lang"] == "ru" and cfg["gyro"] == 0.6
         assert cfg["counter_gain"] == 75.0
         assert cfg["version"] == fa.CONFIG_VERSION
@@ -1928,6 +1930,18 @@ def test_hiding_nothing_does_not_report_success():
     assert "state.hh_arg" in fa.build_html(), "the count never reaches the screen"
 
 
+def _no_windows_devices():
+    """The Windows-side list is a second source for _present_paths, so a
+    test about parsing must not also depend on what is plugged in here."""
+    real = fa.HidHide._gaming_paths_from_windows
+    fa.HidHide._gaming_paths_from_windows = staticmethod(lambda: set())
+    return real
+
+
+def _restore_windows_devices(real):
+    fa.HidHide._gaming_paths_from_windows = real
+
+
 def _truncated_dev_gaming():
     """The shape reported from a real machine: valid JSON that stops part
     way through a device's name."""
@@ -1950,6 +1964,7 @@ def test_a_device_list_that_will_not_parse_is_read_anyway():
     except ValueError:
         pass
 
+    real = _no_windows_devices()
     class _Probe(fa.HidHide):
         def __init__(self):
             self.info = ""
@@ -1961,11 +1976,12 @@ def test_a_device_list_that_will_not_parse_is_read_anyway():
     got = p._present_paths()
     assert got == {MINE}, got          # and not the escaped form
     assert "would not parse" in p.info
-
+    _restore_windows_devices(real)
 
 def test_nothing_to_salvage_still_says_what_came_back():
     """If there are no paths in it either, the message carries the answer
     itself - guessing from a parser error is what cost the last round."""
+    real = _no_windows_devices()
     class _Empty(fa.HidHide):
         def __init__(self):
             self.info = ""
@@ -1978,7 +1994,7 @@ def test_nothing_to_salvage_still_says_what_came_back():
         raise AssertionError("it should not pretend there are no devices")
     except RuntimeError as e:
         assert "access denied" in str(e), e
-
+    _restore_windows_devices(real)
 
 def test_the_cli_is_read_as_utf8_whatever_the_machine_runs_on():
     """text=True alone decodes with the machine's code page - cp1251 on a
@@ -2032,6 +2048,7 @@ def test_a_list_cut_short_at_the_description_still_finds_the_pad():
     except ValueError as e:
         assert "line 9" in str(e), e        # the reported line, exactly
 
+    real = _no_windows_devices()
     class _Probe(fa.HidHide):
         def __init__(self):
             self.info = ""
@@ -2042,7 +2059,7 @@ def test_a_list_cut_short_at_the_description_still_finds_the_pad():
 
     got = _Probe()._present_paths()
     assert got == {WANT}, got
-
+    _restore_windows_devices(real)
 
 def test_the_link_is_read_the_way_windows_spells_the_path():
     """Checked against every gaming device on a working machine: the first
@@ -2056,6 +2073,7 @@ def test_an_answer_nothing_can_be_made_of_is_kept():
     """Guessing at this from a parser error has already cost two rounds."""
     folder = tempfile.mkdtemp()
 
+    real = _no_windows_devices()
     class _Junk(fa.HidHide):
         def __init__(self):
             self.info = ""
@@ -2073,7 +2091,7 @@ def test_an_answer_nothing_can_be_made_of_is_kept():
     assert os.path.isfile(kept), "the answer was not kept"
     with open(kept, encoding="utf-8") as f:
         assert "something else entirely" in f.read()
-
+    _restore_windows_devices(real)
 
 def test_a_pad_is_recognised_by_its_id_not_by_its_name():
     """Windows writes a device's name in the language it was installed in,
@@ -2114,6 +2132,44 @@ def test_the_app_never_revokes_its_own_permission():
     src = inspect.getsource(fa.HidHide.prune_stale_apps)
     assert "sys.executable" in src
     assert "ufffd" in src or chr(0xFFFD) in src
+
+
+def test_a_pad_is_never_hidden_by_half_of_its_interfaces():
+    """One controller shows up as several HID interfaces. A truncated list
+    yields only the ones printed before the break - reported from a machine
+    where the panel read Hidden (1) - and a pad hidden by one interface out
+    of several leaves the game seeing part of a controller: the assist
+    works, the buttons do not."""
+    broken = _cli_answer()
+    cut = broken.index('"description" : "') + len('"description" : "HID-')
+    broken = broken[:cut]
+    extra = "HID" + chr(92) + "VID_045E&PID_02FF&IG_03" + chr(92) + "3&abc&0&0000"
+
+    class _Probe(fa.HidHide):
+        def __init__(self):
+            self.info = ""
+            self.state_file = os.path.join(tempfile.mkdtemp(), "s.json")
+
+        def _run(self, *a):
+            return broken
+
+    real = fa.HidHide._gaming_paths_from_windows
+    fa.HidHide._gaming_paths_from_windows = staticmethod(lambda: {extra})
+    try:
+        got = _Probe()._present_paths()
+    finally:
+        fa.HidHide._gaming_paths_from_windows = real
+    assert WANT in got, got          # the one the broken list still named
+    assert extra in got, got         # and the one only Windows knew about
+
+
+def test_windows_is_only_asked_about_game_controllers():
+    """It is the one source that cannot be truncated, so it must not be
+    able to name a keyboard: an interface number is the mark of a pad."""
+    import inspect
+    src = inspect.getsource(fa.HidHide._gaming_paths_from_windows)
+    assert "IG_" in src
+    assert 'startswith("HID")' in src
 
 
 def main():

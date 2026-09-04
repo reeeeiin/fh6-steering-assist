@@ -849,7 +849,11 @@ DEFAULTS = {
     "btn_handbrake": 0x1000,
     "btn_clutch": 0x0100,
     "yield_mode": "hold",
-    "rumble": True,
+    # Forwarding what the game sends to the hidden pad. Off unless asked
+    # for: the pad is hidden from the game, so anything it feels comes from
+    # us, and a tool that makes the controller buzz on its own is a tool
+    # nobody asked for.
+    "rumble": False,
     "lang": "en",
     "theme": "dark",
     "ui_scale": 1.0,
@@ -2448,6 +2452,10 @@ class HidHide:
                     path = self._path_from_link(link)
                     if path:
                         found.add(path)
+            # Windows still knows what is plugged in, whatever HidHide
+            # managed to say about it. Hiding one interface of a pad and
+            # not the rest leaves the game seeing half a controller.
+            found |= self._gaming_paths_from_windows()
             if not found:
                 self._keep_answer(raw)
                 raise RuntimeError("%s; HidHide answered: %s"
@@ -2506,6 +2514,34 @@ class HidHide:
                 self.info = f"pad hidden from the game ({self.arg} devices)"
         except Exception:
             pass
+
+    # An id carrying an XInput interface number is a game controller and
+    # never a keyboard or a mouse, which is what makes it safe to hide
+    # everything that matches.
+    @staticmethod
+    def _gaming_paths_from_windows() -> set:
+        """The pad's interfaces, asked of Windows instead of HidHide.
+
+        HidHide's own list is the better source when it can be read, but it
+        arrives one field at a time and stops at the first character its
+        code page cannot hold - so on a machine that hits that, only the
+        devices printed before the break are ever found, and a pad hidden
+        by half of its interfaces behaves worse than one not hidden at all.
+        """
+        try:
+            cp = subprocess.run(
+                ["pnputil", "/enum-devices", "/connected"],
+                capture_output=True, text=True, errors="replace",
+                creationflags=HidHide.CREATE_NO_WINDOW, timeout=30)
+        except Exception:
+            return set()
+        out = set()
+        for line in (cp.stdout or "").splitlines():
+            value = line.split(":", 1)[-1].strip()
+            if value.upper().startswith("HID") and re.search(
+                    r"IG_\d\d", value, re.IGNORECASE):
+                out.add(value)
+        return out
 
     def _keep_answer(self, raw):
         """Nothing could be made of it, so keep it for whoever asks next.
@@ -3113,9 +3149,12 @@ class Bridge:
                                     (stick_x, tm.speed_mps * 3.6,
                                      gp.wButtons, virt_out))
 
+                # Only what the game sends. There used to be a fallback
+                # here that drove the motors from the slide itself whenever
+                # the game was quiet - so the pad buzzed even with the
+                # game's own vibration switched off, which is not this
+                # app's call to make.
                 gl, gs = self._game_rumble
-                if gl < 0.01 and gs < 0.01:
-                    gl, gs = self.assist.rumble_power * 0.3, self.assist.rumble_power
                 if not self.cfg["rumble"]:
                     gl = gs = 0.0
                 self._rumble_target = (self._quantize_rumble(gl),
