@@ -854,6 +854,15 @@ DEFAULTS = {
     # us, and a tool that makes the controller buzz on its own is a tool
     # nobody asked for.
     "rumble": False,
+    # Which of the driver's buttons reach the game through the virtual pad.
+    # Off: only the handbrake and the clutch, because the game is expected
+    # to read the rest from the physical pad directly. That holds only
+    # while the game can still see that pad - hide it properly and every
+    # other button goes nowhere, which is what a gear that no longer
+    # changes looks like. On: everything, which is right when the game has
+    # only the virtual pad to read, and doubles every press when it has
+    # both. There is no way to ask the game which it is.
+    "mirror_all_buttons": False,
     "lang": "en",
     "theme": "dark",
     "ui_scale": 1.0,
@@ -1788,7 +1797,8 @@ def sanitize_config(cfg: dict) -> dict:
             v = float(DEFAULTS[key])
         cfg[key] = clamp(v, lo, hi) if math.isfinite(v) else float(DEFAULTS[key])
     for key in ("enabled", "auto_hide", "telemetry_seen", "setup_done",
-                "rumble", "steer_in_general", "ext_telemetry"):
+                "rumble", "steer_in_general", "ext_telemetry",
+                "mirror_all_buttons"):
         cfg[key] = bool(cfg.get(key, DEFAULTS[key]))
     for key in ("btn_handbrake", "btn_clutch"):
         try:
@@ -2741,7 +2751,10 @@ class Bridge:
             self._pad_t0 = now
 
     def _virtual_buttons(self, buttons: int, alive: bool, now: float) -> int:
-        if self.hid_mode and self.mirror_all:
+        # the hid_mode test comes first, as it always did: it is the
+        # one that decides whether mirror_all means anything
+        if ((self.hid_mode and self.mirror_all)
+                or self.cfg.get("mirror_all_buttons")):
             return self._debounce(buttons, now)
         if MENU_NEUTRAL and not alive:
             return 0
@@ -3295,6 +3308,8 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Display steering settings in general',
         "ext_telemetry": 'Display extended telemetry',
+        "mirror_all_buttons": 'Send all buttons to the game',
+        "mirror_all_buttons_hint": 'Turn this on if gears, camera or menu buttons stopped working while the assist runs. Turn it off again if a single press starts arriving twice.',
         "st_waiting": 'Waiting',
         "st_ingame": "In game",
         "st_inmenu": "In menu",
@@ -3421,6 +3436,8 @@ TR = {
         "theme_light": "Светлая",
         "steer_in_general": 'Отображать настройки помощника на главной',
         "ext_telemetry": 'Отображать расширенную телеметрию',
+        "mirror_all_buttons": 'Отправлять в игру все кнопки',
+        "mirror_all_buttons_hint": 'Включите, если при работающем ассисте перестали работать передачи, камера или кнопки меню. Выключите обратно, если одно нажатие стало срабатывать дважды.',
         "st_waiting": 'Ожидание',
         "st_ingame": "В игре",
         "st_inmenu": "В меню",
@@ -3547,6 +3564,8 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Lenkeinstellungen auf der Startseite zeigen',
         "ext_telemetry": 'Erweiterte Telemetrie anzeigen',
+        "mirror_all_buttons": 'Alle Tasten an das Spiel senden',
+        "mirror_all_buttons_hint": 'Einschalten, wenn Gaenge, Kamera oder Menuetasten bei laufender Assistenz nicht mehr reagieren. Wieder ausschalten, wenn ein Druck doppelt ankommt.',
         "st_waiting": 'Wartet',
         "st_ingame": "In game",
         "st_inmenu": "In menu",
@@ -3673,6 +3692,8 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Afficher les reglages de direction sur l\'accueil',
         "ext_telemetry": 'Afficher la telemetrie detaillee',
+        "mirror_all_buttons": 'Envoyer tous les boutons au jeu',
+        "mirror_all_buttons_hint": "A activer si les vitesses, la camera ou les boutons de menu ne repondent plus quand l'assistance tourne. A desactiver si un appui arrive deux fois.",
         "st_waiting": 'Attente',
         "st_ingame": "In game",
         "st_inmenu": "In menu",
@@ -3799,6 +3820,8 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Mostrar los ajustes de direccion en general',
         "ext_telemetry": 'Mostrar telemetria ampliada',
+        "mirror_all_buttons": 'Enviar todos los botones al juego',
+        "mirror_all_buttons_hint": 'Activalo si las marchas, la camara o los botones de menu dejan de funcionar con la asistencia activa. Desactivalo si una pulsacion llega dos veces.',
         "st_waiting": 'Esperando',
         "st_ingame": "In game",
         "st_inmenu": "In menu",
@@ -3932,6 +3955,8 @@ TR = {
         "theme_light": 'ライト',
         "steer_in_general": '操舵設定をメイン画面に表示',
         "ext_telemetry": '詳細なテレメトリーを表示',
+        "mirror_all_buttons": 'すべてのボタンをゲームに送る',
+        "mirror_all_buttons_hint": 'アシスト作動中にギアやカメラ、メニューのボタンが効かない場合にオンにします。1回の操作が2回入る場合はオフに戻してください。',
         "st_waiting": '待機中',
         "st_ingame": '走行中',
         "st_inmenu": 'メニュー',
@@ -5035,6 +5060,7 @@ function screenSettings(){
        '</div>' +
        toggleRow('steer_in_general', 'steer_in_general') +
        toggleRow('ext_telemetry', 'ext_telemetry') +
+       toggleRow('mirror_all_buttons', 'mirror_all_buttons') +
        '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('tele_sec') + '</div>' +

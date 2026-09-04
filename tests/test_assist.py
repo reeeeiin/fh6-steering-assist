@@ -2172,6 +2172,53 @@ def test_windows_is_only_asked_about_game_controllers():
     assert 'startswith("HID")' in src
 
 
+def test_the_app_never_shakes_the_pad_by_itself():
+    """When the game sent nothing the loop used to substitute rumble of its
+    own, driven by the slide, so the pad buzzed with the game's vibration
+    switched off. Passing on what the game sends is a choice; inventing it
+    is not ours to make."""
+    import inspect
+    src = inspect.getsource(fa.Bridge._loop)
+    assert "assist.rumble_power" not in src, "the app is still inventing it"
+    assert fa.DEFAULTS["rumble"] is False
+
+
+def test_all_buttons_can_be_sent_when_the_game_sees_only_our_pad():
+    """Only the handbrake and the clutch reach the game normally, because
+    it is expected to read the rest from the physical pad. Hide that pad
+    properly and every other button goes nowhere - reported as gears and
+    camera dead while the assist still worked. Off by default: switched on
+    where the game can see both pads, every press arrives twice."""
+    class _B(fa.Bridge):
+        def __init__(self, on):
+            self.hid_mode = False
+            self.mirror_all = False
+            self._btn_state = 0
+            self._btn_lock_until = [0.0] * 16
+            self._prev_events = 0
+            self._yield_until = 0.0
+            self.cfg = dict(fa.DEFAULTS)
+            self.cfg["mirror_all_buttons"] = on
+            self.cfg["btn_handbrake"] = 0x1000      # A
+            self.cfg["btn_clutch"] = 0x0100         # LB
+
+    gear = 0x2000                                   # B, an event button
+    held = 0x1000                                   # A, the handbrake
+
+    # normally the hold passes and the gear does not...
+    assert _B(False)._virtual_buttons(held, True, 1.0) == held
+    # ...and while a gear is held the pad steps aside altogether, so the
+    # game reads that press from the physical pad instead. Which is the
+    # whole trouble: if it cannot see that pad, the press is simply lost.
+    assert _B(False)._virtual_buttons(gear | held, True, 1.0) == 0
+
+    # switched on, everything goes through our pad and nothing is lost
+    assert _B(True)._virtual_buttons(gear | held, True, 1.0) == gear | held
+    assert fa.DEFAULTS["mirror_all_buttons"] is False
+    for lang in fa.TR:
+        assert "mirror_all_buttons" in fa.TR[lang], lang
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
