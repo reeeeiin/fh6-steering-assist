@@ -1700,14 +1700,68 @@ def test_the_kill_waits_for_the_process_to_actually_go():
 
 def test_other_peoples_processes_are_not_matched():
     """WebView2 names its host in the command line of every helper it
-    starts, so a command-line match reaches into the browser."""
+    starts, so a command-line match reaches into the browser. The image
+    file is asked for instead - and a new release changes the file name,
+    so an exact path would never find what the previous version left."""
     import inspect
     src = inspect.getsource(fa._our_pids)
-    assert "ExecutablePath" in src
-    assert "msedgewebview2" not in src.lower().split('"""')[2].lower()
-    # a new release changes the file name, so an exact path would never
-    # find the copy the previous version left behind
     assert 'startswith("steeringassist")' in src
+    assert "CommandLine" not in src
+    # run from source the image is python.exe, which says nothing about
+    # whose it is: matching it would sweep up every other Python running
+    assert fa._our_pids() == [], "a source run must not claim other Pythons"
+
+
+def test_processes_are_asked_of_windows_not_of_a_shell():
+    """PowerShell hands output back through a text pipe in the console code
+    page, so a path under a profile named in anything but Latin came back
+    with the letters replaced by question marks - measured - and every
+    check against it then failed. It is also one more scripted process for
+    a security suite to take an interest in, on top of an unsigned exe."""
+    import inspect
+    for fn in (fa._our_pids, fa.HidHide.whitelist_companions):
+        assert "powershell" not in inspect.getsource(fn).lower(), fn.__name__
+
+    rows = fa.process_list()
+    assert len(rows) > 10, len(rows)
+    me = [r for r in rows if r[0] == os.getpid()]
+    assert me, "did not find this very process"
+    pid, ppid, name, path = me[0]
+    assert name.lower().startswith("python"), name
+    assert ppid > 0
+    assert os.path.isfile(path), path      # a real path, not a mangled one
+
+
+def test_pad_software_can_be_named_without_a_new_build():
+    """There is no list of every vendor tool in existence, and a tool that
+    cannot see its own pad stops working."""
+    seen = []
+
+    class _Probe(fa.HidHide):
+        def __init__(self):
+            self.cli = "cli.exe"
+            self._apps = set()
+            self.extra_apps = ["mypadtool"]
+
+        def _run(self, *a):
+            seen.append(a)
+
+    real = fa.process_list
+    fa.process_list = lambda: [
+        (11, 1, "MyPadTool.exe", "C:" + chr(92) + "tools" + chr(92) + "MyPadTool.exe"),
+        (12, 1, "notepad.exe", "C:" + chr(92) + "Windows" + chr(92) + "notepad.exe"),
+        (13, 1, "GameSir-Nova.exe", "C:" + chr(92) + "gs" + chr(92) + "GameSir-Nova.exe"),
+    ]
+    try:
+        _Probe().whitelist_companions()
+    finally:
+        fa.process_list = real
+
+    reg = [a[1] for a in seen if a and a[0] == "--app-reg"]
+    assert any("MyPadTool" in p for p in reg), reg      # named by the driver
+    assert any("GameSir" in p for p in reg), reg        # and the built-in list
+    assert not any("notepad" in p for p in reg), reg    # and nothing else
+    assert "extra_apps" in fa.DEFAULTS
 
 
 def test_the_copy_that_is_asked_to_leave_tidies_up_first():
@@ -1765,30 +1819,6 @@ def test_closing_properly_leaves_no_note_behind():
     h.engage()
     h.disengage()
     assert not os.path.isfile(h.state_file)
-
-
-def test_pad_software_can_be_named_without_a_new_build():
-    """There is no list of every vendor tool in existence, and a tool that
-    cannot see its own pad stops working. The search itself is watched
-    rather than the result: whether such a process is running on the
-    machine running the tests is not the point."""
-    h = _hidhide(present=[MINE])
-    h.extra_apps = ["mypadtool"]
-    seen = []
-
-    class _Done:
-        stdout = ""
-
-    real = fa.subprocess.run
-    fa.subprocess.run = lambda cmd, **kw: (seen.append(cmd), _Done())[1]
-    try:
-        h.whitelist_companions()
-    finally:
-        fa.subprocess.run = real
-    joined = " ".join(seen[0]) if seen else ""
-    assert "mypadtool" in joined, joined
-    assert "gamesir" in joined, "the built-in list went missing"
-    assert "extra_apps" in fa.DEFAULTS
 
 
 def test_the_leftovers_are_put_back_before_anything_is_hidden():
@@ -2043,6 +2073,47 @@ def test_an_answer_nothing_can_be_made_of_is_kept():
     assert os.path.isfile(kept), "the answer was not kept"
     with open(kept, encoding="utf-8") as f:
         assert "something else entirely" in f.read()
+
+
+def test_a_pad_is_recognised_by_its_id_not_by_its_name():
+    """Windows writes a device's name in the language it was installed in,
+    so a check that reads "xbox" out of it works on an English machine and
+    nowhere else. The vendor id is the same everywhere."""
+    class _Joy:
+        def __init__(self, guid):
+            self._g = guid
+
+        def get_guid(self):
+            return self._g
+
+    xbox = _Joy("030000005e040000e002000003090000")
+    assert fa.Bridge._is_xinput_pad(xbox, "геймпад")
+    assert fa.Bridge._is_xinput_pad(xbox, "")          # no name at all
+    other = _Joy("03000000830500006020000010010000")
+    assert not fa.Bridge._is_xinput_pad(other, "some pad")
+    # and the old check still catches one whose id we cannot read
+    assert fa.Bridge._is_xinput_pad(_Joy(""), "Xbox One Controller")
+
+
+def test_localised_tool_output_cannot_stop_the_setup():
+    """pnputil writes its labels in the machine's own language, and a byte
+    the code page has no letter for would raise on a strict decode and take
+    the whole step with it. Only values are read, and device ids are ASCII
+    everywhere."""
+    import inspect
+    for fn in (fa.XusbDisabler._pnputil, fa.XusbDisabler.list_xusb):
+        src = inspect.getsource(fn)
+        assert 'errors="replace"' in src, fn.__name__
+
+
+def test_the_app_never_revokes_its_own_permission():
+    """Pruning reads "the file is gone" from a path it could not decode,
+    and the entry it then removes is this app's own - which leaves it
+    hidden from the pad it just hid, for no visible reason."""
+    import inspect
+    src = inspect.getsource(fa.HidHide.prune_stale_apps)
+    assert "sys.executable" in src
+    assert "ufffd" in src or chr(0xFFFD) in src
 
 
 def main():

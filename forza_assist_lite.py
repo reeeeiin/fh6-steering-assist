@@ -302,9 +302,13 @@ class XusbDisabler:
         self.disabled = []
 
     def _pnputil(self, verb, dev_id):
+        # errors="replace" throughout: pnputil writes its labels in the
+        # machine's own language, and a byte the code page has no letter
+        # for would otherwise raise and take the step down with it. Only
+        # the values are read, and device ids are ASCII everywhere.
         return subprocess.run(
             ["pnputil", verb, dev_id],
-            capture_output=True, text=True,
+            capture_output=True, text=True, errors="replace",
             creationflags=self.CREATE_NO_WINDOW, timeout=20)
 
     TARGET_PATTERNS = (r"USB\\VID_045E&PID_028E\\(?!.*VIGEM)",
@@ -315,7 +319,7 @@ class XusbDisabler:
         import re
         cp = subprocess.run(
             ["pnputil", "/enum-devices", "/connected"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, errors="replace",
             creationflags=self.CREATE_NO_WINDOW, timeout=30)
         ids = []
         for line in (cp.stdout or "").splitlines():
@@ -556,6 +560,54 @@ class TelemetryListener:
                                                  (fl + fr) * 0.5,
                                                  (rl + rr) * 0.5, yaw, beta)
                         self._t_race = now
+
+def process_list():
+    """Every running process as (pid, parent pid, name, full path).
+
+    Asked of Windows directly rather than through PowerShell. Two reasons,
+    both from real machines. PowerShell hands its output back through a
+    text pipe in the console code page, so a path under a profile named
+    in anything but Latin came back with each letter replaced by a
+    question mark - measured on this machine - and
+    every check against it then failed. And it is one more scripted
+    process for a security suite to take an interest in, on top of an exe
+    nobody has signed.
+
+    Paths come back as Unicode from the API, whatever the machine's
+    language. A process we may not open simply has no path.
+    """
+    out = []
+    snap = ctypes.windll.kernel32.CreateToolhelp32Snapshot(2, 0)  # PROCESSES
+    if snap == -1 or not snap:
+        return out
+    try:
+        entry = PROCESSENTRY32W()
+        entry.dwSize = ctypes.sizeof(entry)
+        first = ctypes.windll.kernel32.Process32FirstW(snap,
+                                                       ctypes.byref(entry))
+        buf = ctypes.create_unicode_buffer(32768)
+        while first:
+            path = ""
+            # 0x1000 is PROCESS_QUERY_LIMITED_INFORMATION: enough for the
+            # image path, and granted for processes a plain user may not
+            # otherwise touch
+            h = ctypes.windll.kernel32.OpenProcess(
+                0x1000, False, entry.th32ProcessID)
+            if h:
+                size = wintypes.DWORD(len(buf))
+                if ctypes.windll.kernel32.QueryFullProcessImageNameW(
+                        h, 0, buf, ctypes.byref(size)):
+                    path = buf.value
+                ctypes.windll.kernel32.CloseHandle(h)
+            out.append((int(entry.th32ProcessID),
+                        int(entry.th32ParentProcessID),
+                        entry.szExeFile, path))
+            first = ctypes.windll.kernel32.Process32NextW(
+                snap, ctypes.byref(entry))
+    finally:
+        ctypes.windll.kernel32.CloseHandle(snap)
+    return out
+
 
 def clamp(v, lo, hi):
     return lo if v < lo else hi if v > hi else v
@@ -2312,6 +2364,14 @@ class HidHide:
                 continue
             if os.path.isfile(path):
                 continue
+            # Two ways to read "the file is gone" wrongly, and both end
+            # with this app losing its own permission to see the pad it
+            # has just hidden - the exact state that looks like the pad
+            # vanishing for no reason.
+            if os.path.normcase(path) == os.path.normcase(sys.executable):
+                continue
+            if "�" in path or "?" in os.path.basename(path):
+                continue
             try:
                 self._run("--app-unreg", entry)
             except Exception:
@@ -2419,18 +2479,14 @@ class HidHide:
         try:
             names = tuple(self.COMPANION_PATTERNS) + tuple(
                 str(x).lower() for x in self.extra_apps if str(x).strip())
-            pattern = "|".join(re.escape(n) for n in names)
-            cp = subprocess.run(
-                ["powershell", "-NoProfile", "-Command",
-                 f"Get-Process | Where-Object {{$_.Path -and ($_.Name -match '{pattern}')}} "
-                 "| Select-Object -ExpandProperty Path -Unique"],
-                capture_output=True, text=True,
-                creationflags=self.CREATE_NO_WINDOW, timeout=10)
-            for line in (cp.stdout or "").splitlines():
-                path = line.strip()
-                if path and path.lower() not in self._apps and os.path.isfile(path):
-                    self._run("--app-reg", path)
-                    self._apps.add(path.lower())
+            for _pid, _ppid, exe, path in process_list():
+                low = exe.lower()
+                if not path or not any(n in low for n in names):
+                    continue
+                if path.lower() in self._apps:
+                    continue
+                self._run("--app-reg", path)
+                self._apps.add(path.lower())
         except Exception:
             pass
 
@@ -2796,6 +2852,32 @@ class Bridge:
                           "hid mode: the pad is on XInput too, so only "
                           "holds are mirrored")
 
+    # Vendors whose pads Windows exposes through XInput as well, and so
+    # are already handled by the wired path. Read out of the device id,
+    # which is the same on every machine in every language - the name is
+    # not: Windows writes it in the language it was installed in.
+    XINPUT_VENDORS = ("045e",   # Microsoft
+                      "0e6f",   # PDP
+                      "0f0d",   # Hori
+                      "24c6",   # PowerA
+                      "1532",   # Razer
+                      "20d6")   # PowerA / BDA
+
+    @staticmethod
+    def _is_xinput_pad(joy, name: str) -> bool:
+        try:
+            guid = joy.get_guid() or ""
+        except Exception:
+            guid = ""
+        # pygame gives the SDL guid, in which bytes 4..6 are the vendor id,
+        # little-endian: "030000005e040000..." is vendor 045e
+        if len(guid) >= 12:
+            vendor = (guid[10:12] + guid[8:10]).lower()
+            if vendor in Bridge.XINPUT_VENDORS:
+                return True
+        low = (name or "").lower()
+        return "xbox" in low or "x360" in low or "xinput" in low
+
     def _try_hid_mode(self) -> bool:
         if not HAVE_PYGAME:
             self.mode_info = "fallback: pygame not installed (pip install pygame)"
@@ -2816,7 +2898,7 @@ class Bridge:
                     continue
                 joy = pygame.joystick.Joystick(i)
                 name = (joy.get_name() or "").lower()
-                if "xbox" in name or "x360" in name or "xinput" in name:
+                if self._is_xinput_pad(joy, name):
                     continue
                 self.hid_ctrl = sdl_controller.Controller(i)
                 self.hid_joy = joy
@@ -6731,31 +6813,18 @@ def _our_pids() -> list:
     process, and the app shut itself down the moment it opened.
     """
     me = os.getpid()
-    frozen = getattr(sys, "frozen", False)
-    try:
-        script = ("" if frozen
-                  else os.path.normcase(os.path.abspath(__file__)))
-        mine = os.path.normcase(sys.executable)
-    except Exception:
+    if not getattr(sys, "frozen", False):
+        # Run from source the image is python.exe, which says nothing about
+        # whose it is: matching on it would sweep up every other Python on
+        # the machine. A developer gets the single-instance check and no
+        # tidying, which is the safe half of the two.
         return []
-    cmd = ("Get-CimInstance Win32_Process | "
-           "Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine"
-           " | ConvertTo-Json -Compress")
-    try:
-        cp = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
-                            capture_output=True, text=True,
-                            creationflags=0x08000000, timeout=20)
-        rows = json.loads(cp.stdout or "[]")
-    except Exception:
+    rows = process_list()
+    if not rows:
         return []
-    if isinstance(rows, dict):
-        rows = [rows]
 
     parent, children = {}, {}
-    for row in rows:
-        pid, ppid = row.get("ProcessId"), row.get("ParentProcessId")
-        if pid is None:
-            continue
+    for pid, ppid, _name, _path in rows:
         parent[pid] = ppid
         children.setdefault(ppid, []).append(pid)
 
@@ -6772,18 +6841,9 @@ def _our_pids() -> list:
                 stack.append(kid)
 
     out = []
-    for row in rows:
-        pid = row.get("ProcessId")
-        path = os.path.normcase(row.get("ExecutablePath") or "")
-        if not pid or pid in family or not path:
-            continue
-        if frozen:
-            hit = os.path.basename(path).startswith("steeringassist")
-        else:
-            hit = (path == mine
-                   and script in os.path.normcase(row.get("CommandLine") or ""))
-        if hit:
-            out.append(int(pid))
+    for pid, _ppid, name, _path in rows:
+        if pid not in family and name.lower().startswith("steeringassist"):
+            out.append(pid)
     return out
 
 
