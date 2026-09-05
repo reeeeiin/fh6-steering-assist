@@ -2255,16 +2255,44 @@ def test_the_round_darkens_around_the_button_never_over_it():
 
 
 def test_the_all_buttons_switch_is_explained_in_the_faq():
-    """It is the cure for a fault whose symptoms make no sense - the assist
-    steers but no button works - so it has to be findable."""
+    """It cures a fault whose symptoms make no sense on their own - the
+    steering works, no button does - so it has to be findable, and the
+    answer has to carry the reader to the switch rather than describe
+    where to look for it."""
     for lang, items in fa.FAQ_ITEMS.items():
-        joined = " ".join(q + " " + " ".join(a) for q, a in items)
         assert len(items) == 13, (lang, len(items))
-        hit = [q for q, a in items
-               if "menu" in q.lower() or "меню" in q
-               or "メニュー" in q]
-        assert hit, (lang, [q for q, _ in items])
+        linked = [q for q, a in items
+                  if any('data-goto="mirror_all_buttons"' in p for p in a)]
+        assert linked, (lang, "no answer links to the switch")
 
+
+def test_the_faq_does_not_send_people_to_settings_that_are_gone():
+    """The presets and the grip limit went in 2.0; two answers still named
+    them, and a reader following either would have looked for a control
+    that is not there."""
+    gone = ('Minimal', 'grip limit', 'limite de agarre', 'Grip-Grenze',
+            'порог сцепления')
+    for lang, items in fa.FAQ_ITEMS.items():
+        text = " ".join(q + " " + " ".join(a) for q, a in items)
+        for word in gone:
+            assert word not in text, (lang, word)
+
+
+def test_every_faq_link_points_at_a_row_that_exists():
+    """A link that lands nowhere is worse than no link: it says the cure is
+    in Settings and then leaves you looking."""
+    import re
+    html = fa.build_html()
+    for lang, items in fa.FAQ_ITEMS.items():
+        for q, a in items:
+            for key in re.findall(r'data-goto="([a-z_]+)"', " ".join(a)):
+                # the row carries data-hint="<key>_hint", built at run time,
+                # so what has to exist is the setting, its hint text, and a
+                # row that renders it
+                assert key in fa.DEFAULTS, (lang, key)
+                for pack in fa.TR.values():
+                    assert key + "_hint" in pack, (lang, key)
+                assert "toggleRow('%s'" % key in html                     or "sliderRow('%s'" % key in html, (lang, key)
 
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]

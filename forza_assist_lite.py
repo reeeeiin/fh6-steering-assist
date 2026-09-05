@@ -1273,10 +1273,10 @@ FAQ_ITEMS = {
         'Restarting the assist rebuilds the virtual pad and hides the physical one again, which puts everything back in order.',
         'If the readings froze rather than the steering, the game stopped sending telemetry. Check Data Out is still enabled.',
     ]),
-    ('Gears, camera or menu buttons do not work at all', [
+    ('My controller’s buttons do nothing in game', [
         'Only the handbrake and the clutch are sent to the game through the assist. Everything else the game is meant to read from your controller directly, and on most machines it can.',
         'On some it cannot: once the assist hides your pad, the game has only the virtual one to read, and every button that is not a hold goes nowhere. The steering still works, which is what makes it puzzling.',
-        'Turn on Send all buttons to the game in Settings. If instead a single press starts arriving twice, your game can see both pads, so turn it back off.',
+        'Open <a class="flink" data-goto="mirror_all_buttons">Release all buttons</a> in Settings and switch it on. If instead a single press starts arriving twice, your game can see both pads, so turn it back off.',
     ]),
     ('Gear shifts do not register while I hold the handbrake', [
         'The game reads buttons from one device at a time. While the assist holds the handbrake on its virtual pad, presses on your own pad can be ignored.',
@@ -1289,8 +1289,8 @@ FAQ_ITEMS = {
         'Close other controller software. Vendor drivers and remappers grab the device and interfere with the assist.',
     ]),
     ('The wheels barely turn', [
-        'Assist strength is probably low, or the Minimal profile is active. Raise the strength and try again.',
-        'Steering curve and grip limit reshape the middle of the stick travel. Set high, they eat most of it and leave little to steer with.',
+        'Assist strength is probably low. Raise it and try again - it is the first slider, and the one that decides how much countersteer you get.',
+        'Steering curve reshapes the middle of the stick travel. Set high it eats most of it, leaving little to steer with.',
         'Make sure the game is on Simulation steering. The assisted setting applies its own correction on top and cancels much of this one.',
     ]),
     ('Nothing happens at low speed', [
@@ -1307,7 +1307,7 @@ FAQ_ITEMS = {
         'It is small and does not throw the car off.',
     ]),
     ('Clicking the app again does nothing', [
-        'Only one copy runs at a time. A second launch closes itself so the two cannot fight over the virtual pad.',
+        'Only one copy runs at a time. A second launch asks the first to close, waits for it to hand your controller back, and takes over - so the two never fight over the virtual pad.',
         'The window you already have is on the taskbar, minimised or behind the game.',
     ]),
     ('My antivirus flags it', [
@@ -1337,10 +1337,10 @@ FAQ_ITEMS = {
             'Перезапуск ассиста пересоздаёт виртуальный геймпад и заново прячет физический, это возвращает всё на место.',
             'Если замерли показания, а не руль, игра перестала слать телеметрию. Проверьте, что Data Out всё ещё включён.',
         ]),
-        ('Передачи, камера или кнопки меню не работают вообще', [
+        ('Кнопки геймпада не работают в игре', [
         'Через ассист в игру уходят только ручник и сцепление. Всё остальное игра должна читать с вашего геймпада напрямую, и на большинстве машин читает.',
         'На некоторых нет: как только ассист прячет пад, игре остаётся только виртуальный, и любая кнопка кроме удержания проваливается в никуда. Руль при этом работает, поэтому и выглядит странно.',
-        'Включите «Отправлять в игру все кнопки» в настройках. Если вместо этого одно нажатие начнёт срабатывать дважды, значит ваша игра видит оба пада: выключите обратно.',
+        'Откройте <a class="flink" data-goto="mirror_all_buttons">Освободить все кнопки</a> в настройках и включите. Если вместо этого одно нажатие начнёт срабатывать дважды, значит ваша игра видит оба пада: выключите обратно.',
     ]),
     ('Передачи не переключаются, пока зажат ручник', [
             'Игра читает кнопки с одного устройства за раз. Пока ассист держит ручник на своём виртуальном геймпаде, нажатия на вашем могут игнорироваться.',
@@ -1353,8 +1353,8 @@ FAQ_ITEMS = {
             'Закройте другие программы для геймпадов. Фирменные драйверы и ремапперы перехватывают устройство и мешают ассисту.',
         ]),
         ('Руль почти не поворачивается', [
-            'Скорее всего занижена сила ассиста или включён профиль Minimal. Поднимите силу и попробуйте снова.',
-            'Кривая руля и порог сцепления перестраивают середину хода стика. Выставленные высоко, они съедают большую её часть, и рулить почти нечем.',
+            'Скорее всего занижена сила ассиста. Поднимите её и попробуйте снова: это первый ползунок, он же решает, сколько будет доворота.',
+            'Кривая руля перестраивает середину хода стика. Выставленная высоко, она съедает большую её часть, и рулить почти нечем.',
             'Убедитесь, что в игре стоит управление Simulation. Режим с ассистом накладывает свою коррекцию сверху и гасит нашу.',
         ]),
         ('На малой скорости ничего не происходит', [
@@ -1371,7 +1371,7 @@ FAQ_ITEMS = {
             'Эффект небольшой и машину не сбивает. Увеличенное сглаживание делает его ещё мягче.',
         ]),
         ('Повторный клик по приложению ничего не делает', [
-            'Одновременно работает только одна копия. Второй запуск закрывает сам себя, чтобы две копии не делили виртуальный геймпад.',
+            'Одновременно работает только одна копия. Второй запуск просит первую закрыться, дожидается, пока та вернёт геймпад, и занимает её место — так две копии никогда не делят виртуальный пад.',
             'Уже открытое окно находится на панели задач, свёрнутое или за игрой.',
         ]),
         ('Антивирус ругается на приложение', [
@@ -1401,10 +1401,10 @@ FAQ_ITEMS = {
             'Reiniciar el asistente recrea el mando virtual y vuelve a ocultar el fisico, lo que deja todo en su sitio.',
             'Si lo que se congelo fueron las lecturas y no la direccion, el juego dejo de enviar telemetria. Revisa que Data Out siga activado.',
         ]),
-        ('Las marchas, la camara o los botones de menu no funcionan', [
+        ('Los botones del mando no hacen nada en el juego', [
         'Por la asistencia solo llegan al juego el freno de mano y el embrague. Todo lo demas el juego debe leerlo de tu mando directamente, y en la mayoria de equipos puede.',
         'En algunos no: cuando la asistencia oculta tu mando, al juego solo le queda el virtual, y cualquier boton que no sea de mantener se pierde. La direccion sigue funcionando, y por eso desconcierta.',
-        'Activa Enviar todos los botones al juego en Ajustes. Si en cambio una pulsacion empieza a llegar dos veces, tu juego ve los dos mandos: vuelve a desactivarlo.',
+        'Abre <a class="flink" data-goto="mirror_all_buttons">Liberar todos los botones</a> en Ajustes y activalo. Si en cambio una pulsacion empieza a llegar dos veces, tu juego ve los dos mandos: vuelve a desactivarlo.',
     ]),
     ('Los cambios de marcha no responden con el freno de mano pulsado', [
             'El juego lee los botones de un dispositivo cada vez. Mientras el asistente mantiene el freno de mano en su mando virtual, las pulsaciones del tuyo pueden ignorarse.',
@@ -1417,8 +1417,8 @@ FAQ_ITEMS = {
             'Cierra otros programas de mandos. Los controladores del fabricante y los remapeadores toman el dispositivo e interfieren.',
         ]),
         ('Las ruedas apenas giran', [
-            'Probablemente la fuerza del asistente sea baja o este activo el perfil Minimal. Sube la fuerza y prueba de nuevo.',
-            'La curva de direccion y el limite de agarre reconfiguran el centro del recorrido del stick. Muy altos, se comen la mayor parte y queda poco con lo que girar.',
+            'Probablemente la fuerza del asistente sea baja. Subela y prueba otra vez: es el primer control, y el que decide cuanto contravolante recibes.',
+            'La curva de direccion reconfigura el centro del recorrido del stick. Muy alta, se come casi todo y deja poco con lo que dirigir.',
             'Asegurate de que el juego este en direccion Simulation. El ajuste asistido aplica su propia correccion encima y anula gran parte de esta.',
         ]),
         ('A baja velocidad no pasa nada', [
@@ -1435,7 +1435,7 @@ FAQ_ITEMS = {
             'Es pequeno y no desestabiliza el coche. Subir el suavizado lo atenua aun mas.',
         ]),
         ('Hacer clic en la aplicacion otra vez no hace nada', [
-            'Solo se ejecuta una copia a la vez. El segundo arranque se cierra solo para que las dos no se disputen el mando virtual.',
+            'Solo se ejecuta una copia a la vez. El segundo arranque pide a la primera que se cierre, espera a que devuelva tu mando y ocupa su lugar, asi que nunca se disputan el mando virtual.',
             'La ventana que ya tienes esta en la barra de tareas, minimizada o detras del juego.',
         ]),
         ('Mi antivirus lo marca', [
@@ -1465,10 +1465,10 @@ FAQ_ITEMS = {
             "Redemarrer l'assistance recree la manette virtuelle et masque de nouveau la physique, ce qui remet tout en ordre.",
             "Si ce sont les valeurs qui se sont figees et non la direction, le jeu a cesse d'envoyer la telemetrie. Verifiez que Data Out est toujours active.",
         ]),
-        ('Les vitesses, la camera ou les boutons de menu ne marchent pas', [
+        ('Les boutons de ma manette ne font rien dans le jeu', [
         'Seuls le frein a main et l’embrayage passent au jeu par l’assistance. Le reste, le jeu doit le lire directement sur votre manette, et sur la plupart des machines il y arrive.',
         'Sur certaines non : des que l’assistance masque votre manette, le jeu n’a plus que la virtuelle, et tout bouton qui n’est pas maintenu se perd. La direction fonctionne toujours, ce qui rend la chose deroutante.',
-        'Activez Envoyer tous les boutons au jeu dans les Reglages. Si au contraire un appui arrive deux fois, votre jeu voit les deux manettes : desactivez-le.',
+        'Ouvrez <a class="flink" data-goto="mirror_all_buttons">Liberer tous les boutons</a> dans les Reglages et activez-le. Si au contraire un appui arrive deux fois, votre jeu voit les deux manettes : desactivez-le.',
     ]),
     ('Les rapports ne passent pas quand je tiens le frein a main', [
             "Le jeu lit les boutons d'un seul peripherique a la fois. Tant que l'assistance tient le frein a main sur sa manette virtuelle, vos appuis peuvent etre ignores.",
@@ -1481,8 +1481,8 @@ FAQ_ITEMS = {
             "Fermez les autres logiciels de manette. Les pilotes constructeurs et les remappeurs accaparent le peripherique et genent l'assistance.",
         ]),
         ('Les roues tournent a peine', [
-            "La force de l'assistance est sans doute basse, ou le profil Minimal est actif. Augmentez la force et reessayez.",
-            "La courbe de direction et la limite d'adherence remodelent le centre de la course du stick. Reglees haut, elles en mangent l'essentiel et il reste peu pour diriger.",
+            "La force de l’assistance est sans doute basse. Augmentez-la et reessayez : c’est le premier curseur, celui qui decide de la quantite de contre-braquage.",
+            "La courbe de direction remodele le centre de la course du stick. Reglee haut, elle en mange l’essentiel et laisse peu de quoi diriger.",
             'Assurez-vous que le jeu est en direction Simulation. Le reglage assiste applique sa propre correction par-dessus et annule une grande partie de celle-ci.',
         ]),
         ('Rien ne se passe a basse vitesse', [
@@ -1499,7 +1499,7 @@ FAQ_ITEMS = {
             "L'effet est faible et ne desequilibre pas la voiture. Augmenter le lissage l'adoucit encore.",
         ]),
         ("Recliquer sur l'application ne fait rien", [
-            'Une seule copie tourne a la fois. Le second lancement se ferme de lui-meme pour que les deux ne se disputent pas la manette virtuelle.',
+            'Une seule copie tourne a la fois. Le second lancement demande a la premiere de se fermer, attend qu’elle rende votre manette, puis prend le relais : les deux ne se disputent jamais la manette virtuelle.',
             'La fenetre que vous avez deja est dans la barre des taches, reduite ou derriere le jeu.',
         ]),
         ('Mon antivirus le signale', [
@@ -1529,10 +1529,10 @@ FAQ_ITEMS = {
             'Ein Neustart der Lenkhilfe baut das virtuelle Pad neu auf und versteckt das physische wieder, damit ist alles zuruck an seinem Platz.',
             'Sind die Anzeigen eingefroren und nicht die Lenkung, sendet das Spiel keine Telemetrie mehr. Prufe, ob Data Out noch aktiv ist.',
         ]),
-        ('Gange, Kamera oder Menuetasten reagieren gar nicht', [
+        ('Die Tasten meines Controllers tun im Spiel nichts', [
         'Uber die Assistenz gehen nur Handbremse und Kupplung an das Spiel. Alles andere soll das Spiel direkt von Ihrem Controller lesen, und auf den meisten Rechnern kann es das.',
         'Auf manchen nicht: sobald die Assistenz Ihren Controller versteckt, bleibt dem Spiel nur der virtuelle, und jede Taste ausser einer gehaltenen geht ins Leere. Die Lenkung arbeitet weiter, was es so ratselhaft macht.',
-        'Schalten Sie in den Einstellungen Alle Tasten an das Spiel senden ein. Kommt stattdessen ein Druck doppelt an, sieht Ihr Spiel beide Controller: dann wieder aus.',
+        'Offnen Sie <a class="flink" data-goto="mirror_all_buttons">Alle Tasten freigeben</a> in den Einstellungen und schalten Sie es ein. Kommt stattdessen ein Druck doppelt an, sieht Ihr Spiel beide Controller: dann wieder aus.',
     ]),
     ('Gange schalten nicht, solange ich die Handbremse halte', [
             'Das Spiel liest Tasten immer nur von einem Gerat. Solange die Hilfe die Handbremse auf ihrem virtuellen Pad halt, konnen Eingaben auf deinem ignoriert werden.',
@@ -1545,8 +1545,8 @@ FAQ_ITEMS = {
             'Schliesse andere Controller-Software. Herstellertreiber und Remapper greifen sich das Gerat und storen die Hilfe.',
         ]),
         ('Die Rader schlagen kaum ein', [
-            'Wahrscheinlich ist die Starke niedrig oder das Profil Minimal aktiv. Erhohe die Starke und versuche es erneut.',
-            'Lenkkurve und Grip-Grenze formen die Mitte des Stickwegs um. Hoch eingestellt fressen sie den grossten Teil davon, und zum Lenken bleibt wenig ubrig.',
+            'Wahrscheinlich ist die Starke niedrig. Erhohe sie und versuche es erneut - es ist der erste Regler und der, der uber die Menge Gegenlenkung entscheidet.',
+            'Die Lenkkurve formt die Mitte des Stickwegs um. Hoch eingestellt frisst sie den grossten Teil davon und lasst wenig zum Lenken ubrig.',
             'Stelle sicher, dass das Spiel auf Simulation steht. Die unterstutzte Einstellung legt ihre eigene Korrektur daruber und hebt vieles davon auf.',
         ]),
         ('Bei niedriger Geschwindigkeit passiert nichts', [
@@ -1563,7 +1563,7 @@ FAQ_ITEMS = {
             'Der Effekt ist klein und bringt das Auto nicht aus der Bahn. Mehr Glattung mildert ihn weiter.',
         ]),
         ('Ein erneuter Klick auf die App bewirkt nichts', [
-            'Es lauft immer nur eine Kopie. Der zweite Start beendet sich selbst, damit sich beide nicht um das virtuelle Pad streiten.',
+            'Es lauft immer nur eine Kopie. Der zweite Start bittet die erste zu schliessen, wartet bis sie den Controller zuruckgibt, und ubernimmt - so streiten sich nie zwei um das virtuelle Gamepad.',
             'Das vorhandene Fenster liegt in der Taskleiste, minimiert oder hinter dem Spiel.',
         ]),
         ('Mein Virenscanner schlagt an', [
@@ -1593,10 +1593,10 @@ FAQ_ITEMS = {
             'アシストを再起動すると仮想パッドが作り直され、実機のパッドも隠し直されます。',
             '操舵ではなく数値が止まった場合は、ゲームがテレメトリーの送信をやめています。Data Out が有効なままか確認してください。',
         ]),
-        ('ギアやカメラ、メニューのボタンが全く効かない', [
+        ('コントローラーのボタンがゲームで効かない', [
         'アシスト経由でゲームに送られるのはサイドブレーキとクラッチだけです。他はゲームがコントローラーから直接読む前提で、多くの環境ではそれで動きます。',
         '一部の環境では違います。アシストがパッドを隠すとゲームには仮想パッドしか残らず、押し続け以外のボタンはどこにも届きません。ステアリングは動いているため分かりにくい不具合です。',
-        '設定で「すべてのボタンをゲームに送る」をオンにしてください。1回の操作が2回入る場合は両方のパッドが見えているので、オフに戻してください。',
+        '設定の<a class="flink" data-goto="mirror_all_buttons">すべてのボタンを解放</a>をオンにしてください。1回の操作が2回入る場合は両方のパッドが見えているので、オフに戻してください。',
     ]),
     ('サイドブレーキを握るとギアが入らない', [
             'ゲームは一度に一台の機器からしかボタンを読みません。アシストが仮想パッドでサイドブレーキを保持している間、手元のパッドの入力は無視されることがあります。',
@@ -1609,8 +1609,8 @@ FAQ_ITEMS = {
             '他のコントローラー関連ソフトを終了してください。メーカー製ドライバーやリマッパーが機器を占有して干渉します。',
         ]),
         ('ハンドルがほとんど切れない', [
-            'アシスト強度が低いか、Minimal プロファイルが有効になっている可能性があります。強度を上げて試してください。',
-            'ステアリングカーブとグリップ制限はスティックの中央域を作り変えます。高く設定すると中央域の大半を使い切り、操舵に残る余地がわずかになります。',
+            'アシスト強度が低い可能性があります。最初のスライダーで、カウンターステアの量を決める項目です。上げて試してください。',
+            'ステアリングカーブはスティックの中央域を作り変えます。高く設定すると中央域の大半を使い切り、操舵に残る余地がわずかになります。',
             'ゲームのステアリングが Simulation か確認してください。アシスト設定は独自の補正を上から掛け、こちらの効果を大きく打ち消します。',
         ]),
         ('低速では何も起きない', [
@@ -1627,7 +1627,7 @@ FAQ_ITEMS = {
             '影響は小さく、車の姿勢は崩れません。スムージングを上げるとさらに和らぎます。',
         ]),
         ('アプリをもう一度クリックしても何も起きない', [
-            '同時に動くのは一つだけです。二つ目の起動は仮想パッドの取り合いを避けるため、自分で終了します。',
+            '同時に動くのは一つだけです。二つ目の起動は一つ目に終了を依頼し、コントローラーが戻るのを待ってから引き継ぎます。仮想パッドを取り合うことはありません。',
             'すでに開いているウィンドウはタスクバーにあり、最小化されているかゲームの背面にあります。',
         ]),
         ('ウイルス対策ソフトが警告する', [
@@ -3306,7 +3306,7 @@ TR = {
 "reaction_hint": "How the assist treats YOUR corrections mid-slide: 1 = passes them through instantly, 0 = smooths twitchy micro-steering",
         "interface_sec": 'Interface', "theme": 'Appearance',
         "theme_hint": "Window colour theme",
-        "assist_sec": "Assistant", "settings_sec": "Settings",
+        "assist_sec": "Assistant", "settings_sec": 'Steering',
         "telemetry_sec": "Telemetry",
         "helper": "Assistant", "lang": "Language",
         "on": "Enabled", "off": "Disabled", "lang_name": "English",
@@ -3319,6 +3319,7 @@ TR = {
         "min_speed": "Min speed (km/h)",
         "min_speed_hint": "Assist fully off below this speed — donuts!",
         "tele_sec": "Telemetry",
+        "input_sec": 'Input',
         "port": "Data Out port",
         "port_hint": "Must match the port in the game's Data Out, where the address stays 127.0.0.1 - the game needs that to know where to send. Change this only if something else on the machine already uses 20777; anything from 1024 to 49151 works",
         "game_dz": "Game deadzone",
@@ -3346,7 +3347,7 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Display steering settings in general',
         "ext_telemetry": 'Display extended telemetry',
-        "mirror_all_buttons": 'Send all buttons to the game',
+        "mirror_all_buttons": 'Release all buttons',
         "mirror_all_buttons_hint": 'Turn this on if gears, camera or menu buttons stopped working while the assist runs. Turn it off again if a single press starts arriving twice.',
         "st_waiting": 'Waiting',
         "st_ingame": "In game",
@@ -3440,7 +3441,7 @@ TR = {
 "reaction_hint": "Как ассист воспринимает ТВОИ коррекции в заносе: 1 = мгновенно, 0 = максимально сглаживает подруливания",
         "interface_sec": 'Интерфейс', "theme": 'Оформление',
         "theme_hint": "Тема оформления окна",
-        "assist_sec": "Ассистент", "settings_sec": "Настройки",
+        "assist_sec": "Ассистент", "settings_sec": 'Вождение',
         "telemetry_sec": "Телеметрия",
         "helper": "Помощник", "lang": "Язык",
         "on": "Включен", "off": "Выключен", "lang_name": "Русский",
@@ -3453,6 +3454,7 @@ TR = {
         "min_speed": "Мин. скорость (км/ч)",
         "min_speed_hint": "Ниже этой скорости ассист выключен — пончики!",
         "tele_sec": "Телеметрия",
+        "input_sec": 'Ввод',
         "port": "Порт Data Out",
         "port_hint": "Должен совпадать с портом в Data Out в игре, где адрес остаётся 127.0.0.1 — без него игре некуда отправлять. Меняй только если 20777 уже занят другой программой; подойдёт любой от 1024 до 49151",
         "game_dz": "Мёртвая зона игры",
@@ -3480,7 +3482,7 @@ TR = {
         "theme_light": "Светлая",
         "steer_in_general": 'Отображать настройки помощника на главной',
         "ext_telemetry": 'Отображать расширенную телеметрию',
-        "mirror_all_buttons": 'Отправлять в игру все кнопки',
+        "mirror_all_buttons": 'Освободить все кнопки',
         "mirror_all_buttons_hint": 'Включите, если при работающем ассисте перестали работать передачи, камера или кнопки меню. Выключите обратно, если одно нажатие стало срабатывать дважды.',
         "st_waiting": 'Ожидание',
         "st_ingame": "В игре",
@@ -3574,7 +3576,7 @@ TR = {
 "reaction_hint": "Wie der Assistent DEINE Korrekturen im Drift behandelt: 1 = sofort, 0 = glättet nervöses Nachlenken",
         "interface_sec": 'Oberflache', "theme": 'Darstellung',
         "theme_hint": "Farbschema des Fensters",
-        "assist_sec": "Assistent", "settings_sec": "Einstellungen",
+        "assist_sec": "Assistent", "settings_sec": 'Lenkung',
         "telemetry_sec": "Telemetrie",
         "helper": "Assistent", "lang": "Sprache",
         "on": "Aktiviert", "off": "Deaktiviert", "lang_name": "Deutsch",
@@ -3587,6 +3589,7 @@ TR = {
         "min_speed": "Min. Tempo (km/h)",
         "min_speed_hint": "Darunter ist der Assistent ganz aus — Donuts!",
         "tele_sec": "Telemetrie",
+        "input_sec": 'Eingabe',
         "port": "Data-Out-Port",
         "port_hint": "Muss mit dem Port in Data Out im Spiel ubereinstimmen, wo die Adresse 127.0.0.1 bleibt - ohne sie weiss das Spiel nicht, wohin. Nur andern, wenn 20777 schon belegt ist; von 1024 bis 49151 geht alles",
         "game_dz": "Totzone des Spiels",
@@ -3614,7 +3617,7 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Lenkeinstellungen auf der Startseite zeigen',
         "ext_telemetry": 'Erweiterte Telemetrie anzeigen',
-        "mirror_all_buttons": 'Alle Tasten an das Spiel senden',
+        "mirror_all_buttons": 'Alle Tasten freigeben',
         "mirror_all_buttons_hint": 'Einschalten, wenn Gaenge, Kamera oder Menuetasten bei laufender Assistenz nicht mehr reagieren. Wieder ausschalten, wenn ein Druck doppelt ankommt.',
         "st_waiting": 'Wartet',
         "st_ingame": "In game",
@@ -3708,7 +3711,7 @@ TR = {
 "reaction_hint": "Réaction de l'assistant à TES corrections en glisse : 1 = immédiate, 0 = lisse les à-coups",
         "interface_sec": 'Interface', "theme": 'Apparence',
         "theme_hint": "Thème de couleurs de la fenêtre",
-        "assist_sec": "Assistant", "settings_sec": "Réglages",
+        "assist_sec": "Assistant", "settings_sec": 'Direction',
         "telemetry_sec": "Télémétrie",
         "helper": "Assistant", "lang": "Langue",
         "on": "Activé", "off": "Désactivé", "lang_name": "Français",
@@ -3721,6 +3724,7 @@ TR = {
         "min_speed": "Vitesse min (km/h)",
         "min_speed_hint": "En dessous, assistant coupé — donuts !",
         "tele_sec": "Telemetrie",
+        "input_sec": 'Entree',
         "port": "Port Data Out",
         "port_hint": "Doit correspondre au port de Data Out dans le jeu, ou l'adresse reste 127.0.0.1 - sans elle le jeu ne sait pas ou envoyer. A changer seulement si 20777 est deja pris ; de 1024 a 49151 tout convient",
         "game_dz": "Zone morte du jeu",
@@ -3748,7 +3752,7 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Afficher les reglages de direction sur l\'accueil',
         "ext_telemetry": 'Afficher la telemetrie detaillee',
-        "mirror_all_buttons": 'Envoyer tous les boutons au jeu',
+        "mirror_all_buttons": 'Liberer tous les boutons',
         "mirror_all_buttons_hint": "A activer si les vitesses, la camera ou les boutons de menu ne repondent plus quand l'assistance tourne. A desactiver si un appui arrive deux fois.",
         "st_waiting": 'Attente',
         "st_ingame": "In game",
@@ -3842,7 +3846,7 @@ TR = {
 "reaction_hint": "Cómo trata el asistente TUS correcciones en derrape: 1 = inmediata, 0 = suaviza los toques nerviosos",
         "interface_sec": 'Interfaz', "theme": 'Apariencia',
         "theme_hint": "Tema de color de la ventana",
-        "assist_sec": "Asistente", "settings_sec": "Ajustes",
+        "assist_sec": "Asistente", "settings_sec": 'Direccion',
         "telemetry_sec": "Telemetría",
         "helper": "Asistente", "lang": "Idioma",
         "on": "Activado", "off": "Desactivado", "lang_name": "Español",
@@ -3855,6 +3859,7 @@ TR = {
         "min_speed": "Vel. mínima (km/h)",
         "min_speed_hint": "Por debajo, asistente apagado — ¡trompos!",
         "tele_sec": "Telemetria",
+        "input_sec": 'Entrada',
         "port": "Puerto de Data Out",
         "port_hint": "Debe coincidir con el puerto de Data Out del juego, donde la direccion sigue siendo 127.0.0.1: sin ella el juego no sabe adonde enviar. Cambialo solo si algo ya usa el 20777; de 1024 a 49151 vale cualquiera",
         "game_dz": "Zona muerta del juego",
@@ -3882,7 +3887,7 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Mostrar los ajustes de direccion en general',
         "ext_telemetry": 'Mostrar telemetria ampliada',
-        "mirror_all_buttons": 'Enviar todos los botones al juego',
+        "mirror_all_buttons": 'Liberar todos los botones',
         "mirror_all_buttons_hint": 'Activalo si las marchas, la camara o los botones de menu dejan de funcionar con la asistencia activa. Desactivalo si una pulsacion llega dos veces.',
         "st_waiting": 'Esperando',
         "st_ingame": "In game",
@@ -3978,7 +3983,7 @@ TR = {
         "theme": '外観',
         "theme_hint": 'ウィンドウの配色',
         "assist_sec": 'アシスト',
-        "settings_sec": '設定',
+        "settings_sec": 'ステアリング',
         "telemetry_sec": 'テレメトリー',
         "helper": 'アシスト',
         "lang": '言語',
@@ -3994,6 +3999,7 @@ TR = {
         "min_speed": '最低速度 (km/h)',
         "min_speed_hint": 'この速度を下回るとアシストは完全に切れます。ドーナツターン用',
         "tele_sec": 'テレメトリー',
+        "input_sec": '入力',
         "port": 'Data Out ポート',
         "port_hint": 'ゲームの Data Out のポートと一致させてください。アドレスは 127.0.0.1 のままにします。これがないとゲームは送信先を判断できません。20777 が他で使われている場合だけ変更してください。1024〜49151 ならどれでも使えます',
         "game_dz": 'ゲームのデッドゾーン',
@@ -4023,7 +4029,7 @@ TR = {
         "theme_light": 'ライト',
         "steer_in_general": '操舵設定をメイン画面に表示',
         "ext_telemetry": '詳細なテレメトリーを表示',
-        "mirror_all_buttons": 'すべてのボタンをゲームに送る',
+        "mirror_all_buttons": 'すべてのボタンを解放',
         "mirror_all_buttons_hint": 'アシスト作動中にギアやカメラ、メニューのボタンが効かない場合にオンにします。1回の操作が2回入る場合はオフに戻してください。',
         "st_waiting": '待機中',
         "st_ingame": '走行中',
@@ -4283,6 +4289,17 @@ body.t-light{
                  left .32s cubic-bezier(.4,0,.2,1),
                  top .32s cubic-bezier(.4,0,.2,1)}
 #tour.shown .tpop{opacity:1;transform:none}
+/* A fault whose cure is a setting should carry the driver to it rather
+   than describe where to look. */
+.flink{color:var(--accent);cursor:pointer;text-decoration:underline;
+       text-underline-offset:2px;text-decoration-thickness:1px}
+.flink:hover{color:var(--accent-lit)}
+.row.flash{animation:rowflash 2.2s ease}
+@keyframes rowflash{
+  0%,100%{background-color:transparent}
+  14%,62%{background-color:rgba(4,146,248,.16)}
+}
+
 .tpop h4{margin:0 0 6px;font-size:13px;font-weight:600;color:var(--row-fg)}
 .tpop p{margin:0;font-size:11px;line-height:1.5;color:var(--muted)}
 .tfoot{margin-top:13px;display:flex;align-items:center;gap:8px}
@@ -5160,7 +5177,9 @@ function screenSettings(){
           '<span class="rname">' + t('profile') + '</span>' +
           segEl('profile', profItems(), cfg.profile) + '</div>';
   SLIDERS.forEach(s => { h += sliderRow(s[0]); });
-  h += slotRow();
+  /* Saving presets is out of the way for now - nobody was using it, and
+     the useful version of the idea is one preset per car. The machinery
+     stays; only the row is gone. */
   h += '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('interface_sec') + '</div>' +
@@ -5177,11 +5196,12 @@ function screenSettings(){
        '</div>' +
        toggleRow('steer_in_general', 'steer_in_general') +
        toggleRow('ext_telemetry', 'ext_telemetry') +
-       toggleRow('mirror_all_buttons', 'mirror_all_buttons') +
        '</div></div>';
 
-  h += '<div class="reveal"><div class="sec">' + t('tele_sec') + '</div>' +
-       '<div class="card">' + portRow() + '</div></div>';
+  h += '<div class="reveal"><div class="sec">' + t('input_sec') + '</div>' +
+       '<div class="card">' +
+       toggleRow('mirror_all_buttons', 'mirror_all_buttons') +
+       portRow() + '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('wipe_sec') + '</div>' +
        '<div class="card"><div class="row" data-hint="wipe_hint">' +
@@ -5605,6 +5625,24 @@ function segPick(id, key){
     lastH = 0;
     setTimeout(reportHeight, 60);
   }
+}
+
+/* The FAQ names settings by their label; this takes you to the row and
+   marks it, so nobody has to hunt for wording that may have changed. */
+function gotoSetting(key){
+  const mark = () => {
+    const row = document.querySelector('[data-hint="' + key + '_hint"]');
+    if (!row) return;
+    try{ row.scrollIntoView({block: 'center', behavior: 'smooth'}); }
+    catch(e){ row.scrollIntoView(); }
+    row.classList.remove('flash');
+    void row.offsetWidth;                 /* let the animation start over */
+    row.classList.add('flash');
+    setTimeout(() => row.classList.remove('flash'), 2400);
+  };
+  if (screen === 'settings'){ mark(); return; }
+  goScreen('settings');
+  setTimeout(mark, 480);                  /* after the rows have arrived */
 }
 
 function bindRows(){
@@ -6317,6 +6355,11 @@ $$('[data-nav]').forEach(b => b.addEventListener('click', () => {
   goScreen((screen === b.dataset.nav) ? 'main' : b.dataset.nav);
 }));
 $('.logo').addEventListener('click', () => goScreen('main'));
+/* delegated: the FAQ is rebuilt on every render and on every language */
+document.addEventListener('click', e => {
+  const link = e.target.closest && e.target.closest('[data-goto]');
+  if (link) gotoSetting(link.dataset.goto);
+});
 $('#warn-ok').addEventListener('click', () => {
   warnSeen = true;
   $('#warn').classList.add('off');
