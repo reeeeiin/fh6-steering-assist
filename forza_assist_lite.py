@@ -863,6 +863,8 @@ DEFAULTS = {
     # only the virtual pad to read, and doubles every press when it has
     # both. There is no way to ask the game which it is.
     "mirror_all_buttons": False,
+    # Shown once, after the first run has finished and the window is up.
+    "tour_seen": False,
     "lang": "en",
     "theme": "dark",
     "ui_scale": 1.0,
@@ -1271,6 +1273,11 @@ FAQ_ITEMS = {
         'Restarting the assist rebuilds the virtual pad and hides the physical one again, which puts everything back in order.',
         'If the readings froze rather than the steering, the game stopped sending telemetry. Check Data Out is still enabled.',
     ]),
+    ('Gears, camera or menu buttons do not work at all', [
+        'Only the handbrake and the clutch are sent to the game through the assist. Everything else the game is meant to read from your controller directly, and on most machines it can.',
+        'On some it cannot: once the assist hides your pad, the game has only the virtual one to read, and every button that is not a hold goes nowhere. The steering still works, which is what makes it puzzling.',
+        'Turn on Send all buttons to the game in Settings. If instead a single press starts arriving twice, your game can see both pads, so turn it back off.',
+    ]),
     ('Gear shifts do not register while I hold the handbrake', [
         'The game reads buttons from one device at a time. While the assist holds the handbrake on its virtual pad, presses on your own pad can be ignored.',
         'The assist yields the mirror for the whole press, so shifts get through. Measured on a real session it lands about eight times out of ten.',
@@ -1330,7 +1337,12 @@ FAQ_ITEMS = {
             'Перезапуск ассиста пересоздаёт виртуальный геймпад и заново прячет физический, это возвращает всё на место.',
             'Если замерли показания, а не руль, игра перестала слать телеметрию. Проверьте, что Data Out всё ещё включён.',
         ]),
-        ('Передачи не переключаются, пока зажат ручник', [
+        ('Передачи, камера или кнопки меню не работают вообще', [
+        'Через ассист в игру уходят только ручник и сцепление. Всё остальное игра должна читать с вашего геймпада напрямую, и на большинстве машин читает.',
+        'На некоторых нет: как только ассист прячет пад, игре остаётся только виртуальный, и любая кнопка кроме удержания проваливается в никуда. Руль при этом работает, поэтому и выглядит странно.',
+        'Включите «Отправлять в игру все кнопки» в настройках. Если вместо этого одно нажатие начнёт срабатывать дважды, значит ваша игра видит оба пада: выключите обратно.',
+    ]),
+    ('Передачи не переключаются, пока зажат ручник', [
             'Игра читает кнопки с одного устройства за раз. Пока ассист держит ручник на своём виртуальном геймпаде, нажатия на вашем могут игнорироваться.',
             'Ассист уступает зеркалирование на всё время нажатия, поэтому передачи проходят. На реальном заезде это срабатывает примерно восемь раз из десяти.',
             'Проводной геймпад здесь заметно надёжнее Bluetooth, который теряет больше таких нажатий.',
@@ -1389,7 +1401,12 @@ FAQ_ITEMS = {
             'Reiniciar el asistente recrea el mando virtual y vuelve a ocultar el fisico, lo que deja todo en su sitio.',
             'Si lo que se congelo fueron las lecturas y no la direccion, el juego dejo de enviar telemetria. Revisa que Data Out siga activado.',
         ]),
-        ('Los cambios de marcha no responden con el freno de mano pulsado', [
+        ('Las marchas, la camara o los botones de menu no funcionan', [
+        'Por la asistencia solo llegan al juego el freno de mano y el embrague. Todo lo demas el juego debe leerlo de tu mando directamente, y en la mayoria de equipos puede.',
+        'En algunos no: cuando la asistencia oculta tu mando, al juego solo le queda el virtual, y cualquier boton que no sea de mantener se pierde. La direccion sigue funcionando, y por eso desconcierta.',
+        'Activa Enviar todos los botones al juego en Ajustes. Si en cambio una pulsacion empieza a llegar dos veces, tu juego ve los dos mandos: vuelve a desactivarlo.',
+    ]),
+    ('Los cambios de marcha no responden con el freno de mano pulsado', [
             'El juego lee los botones de un dispositivo cada vez. Mientras el asistente mantiene el freno de mano en su mando virtual, las pulsaciones del tuyo pueden ignorarse.',
             'El asistente cede el espejo durante toda la pulsacion para que los cambios pasen. En una sesion real acierta unas ocho de cada diez veces.',
             'Un mando por cable es bastante mas fiable aqui que Bluetooth, que pierde mas de estas pulsaciones.',
@@ -1448,7 +1465,12 @@ FAQ_ITEMS = {
             "Redemarrer l'assistance recree la manette virtuelle et masque de nouveau la physique, ce qui remet tout en ordre.",
             "Si ce sont les valeurs qui se sont figees et non la direction, le jeu a cesse d'envoyer la telemetrie. Verifiez que Data Out est toujours active.",
         ]),
-        ('Les rapports ne passent pas quand je tiens le frein a main', [
+        ('Les vitesses, la camera ou les boutons de menu ne marchent pas', [
+        'Seuls le frein a main et l’embrayage passent au jeu par l’assistance. Le reste, le jeu doit le lire directement sur votre manette, et sur la plupart des machines il y arrive.',
+        'Sur certaines non : des que l’assistance masque votre manette, le jeu n’a plus que la virtuelle, et tout bouton qui n’est pas maintenu se perd. La direction fonctionne toujours, ce qui rend la chose deroutante.',
+        'Activez Envoyer tous les boutons au jeu dans les Reglages. Si au contraire un appui arrive deux fois, votre jeu voit les deux manettes : desactivez-le.',
+    ]),
+    ('Les rapports ne passent pas quand je tiens le frein a main', [
             "Le jeu lit les boutons d'un seul peripherique a la fois. Tant que l'assistance tient le frein a main sur sa manette virtuelle, vos appuis peuvent etre ignores.",
             "L'assistance cede le miroir pendant toute la duree de l'appui pour que les rapports passent. Sur une session reelle, cela fonctionne environ huit fois sur dix.",
             'Une manette filaire est nettement plus fiable ici que le Bluetooth, qui perd davantage de ces appuis.',
@@ -1507,7 +1529,12 @@ FAQ_ITEMS = {
             'Ein Neustart der Lenkhilfe baut das virtuelle Pad neu auf und versteckt das physische wieder, damit ist alles zuruck an seinem Platz.',
             'Sind die Anzeigen eingefroren und nicht die Lenkung, sendet das Spiel keine Telemetrie mehr. Prufe, ob Data Out noch aktiv ist.',
         ]),
-        ('Gange schalten nicht, solange ich die Handbremse halte', [
+        ('Gange, Kamera oder Menuetasten reagieren gar nicht', [
+        'Uber die Assistenz gehen nur Handbremse und Kupplung an das Spiel. Alles andere soll das Spiel direkt von Ihrem Controller lesen, und auf den meisten Rechnern kann es das.',
+        'Auf manchen nicht: sobald die Assistenz Ihren Controller versteckt, bleibt dem Spiel nur der virtuelle, und jede Taste ausser einer gehaltenen geht ins Leere. Die Lenkung arbeitet weiter, was es so ratselhaft macht.',
+        'Schalten Sie in den Einstellungen Alle Tasten an das Spiel senden ein. Kommt stattdessen ein Druck doppelt an, sieht Ihr Spiel beide Controller: dann wieder aus.',
+    ]),
+    ('Gange schalten nicht, solange ich die Handbremse halte', [
             'Das Spiel liest Tasten immer nur von einem Gerat. Solange die Hilfe die Handbremse auf ihrem virtuellen Pad halt, konnen Eingaben auf deinem ignoriert werden.',
             'Die Hilfe gibt die Spiegelung fur die gesamte Dauer des Drucks frei, damit Schaltvorgange durchkommen. In einer echten Session klappt das etwa acht von zehn Mal.',
             'Ein Pad am Kabel ist hier deutlich zuverlassiger als Bluetooth, das mehr dieser Eingaben verliert.',
@@ -1566,7 +1593,12 @@ FAQ_ITEMS = {
             'アシストを再起動すると仮想パッドが作り直され、実機のパッドも隠し直されます。',
             '操舵ではなく数値が止まった場合は、ゲームがテレメトリーの送信をやめています。Data Out が有効なままか確認してください。',
         ]),
-        ('サイドブレーキを握るとギアが入らない', [
+        ('ギアやカメラ、メニューのボタンが全く効かない', [
+        'アシスト経由でゲームに送られるのはサイドブレーキとクラッチだけです。他はゲームがコントローラーから直接読む前提で、多くの環境ではそれで動きます。',
+        '一部の環境では違います。アシストがパッドを隠すとゲームには仮想パッドしか残らず、押し続け以外のボタンはどこにも届きません。ステアリングは動いているため分かりにくい不具合です。',
+        '設定で「すべてのボタンをゲームに送る」をオンにしてください。1回の操作が2回入る場合は両方のパッドが見えているので、オフに戻してください。',
+    ]),
+    ('サイドブレーキを握るとギアが入らない', [
             'ゲームは一度に一台の機器からしかボタンを読みません。アシストが仮想パッドでサイドブレーキを保持している間、手元のパッドの入力は無視されることがあります。',
             'アシストは押している間ずっとミラーを譲るため、シフトは通ります。実走行では十回中およそ八回成功します。',
             'ここでは有線パッドのほうが Bluetooth より明らかに確実で、Bluetooth は取りこぼしが増えます。',
@@ -1798,7 +1830,7 @@ def sanitize_config(cfg: dict) -> dict:
         cfg[key] = clamp(v, lo, hi) if math.isfinite(v) else float(DEFAULTS[key])
     for key in ("enabled", "auto_hide", "telemetry_seen", "setup_done",
                 "rumble", "steer_in_general", "ext_telemetry",
-                "mirror_all_buttons"):
+                "mirror_all_buttons", "tour_seen"):
         cfg[key] = bool(cfg.get(key, DEFAULTS[key]))
     for key in ("btn_handbrake", "btn_clutch"):
         try:
@@ -3248,6 +3280,12 @@ TR = {
         "nav_settings": 'Settings',
         "nav_faq": 'FAQ',
         "nav_about": 'About',
+        'tour_settings': 'Strength, response and the speed the assist wakes up at. Save what you like as a preset and switch between them.',
+        'tour_faq': 'If something behaves oddly, look here first. Most of it is the launch order or a second controller.',
+        'tour_about': 'Version, updates, and a button that sends a report with the details already filled in.',
+        'tour_next': 'Next',
+        'tour_done': 'Got it',
+        'tour_skip': 'Skip',
         "grp_sw": 'Software',
         "grp_fonts": 'Fonts',
         "setup_apply": 'Apply settings',
@@ -3376,6 +3414,12 @@ TR = {
         "nav_settings": 'Настройки',
         "nav_faq": 'FAQ',
         "nav_about": 'Инфо',
+        'tour_settings': 'Сила, отзывчивость и скорость, с которой ассист просыпается. Настройки можно сохранить в пресеты и переключаться между ними.',
+        'tour_faq': 'Если что-то ведёт себя странно, смотрите сюда первым делом. Чаще всего дело в порядке запуска или во втором контроллере.',
+        'tour_about': 'Версия, обновления и кнопка, которая отправит отчёт с уже заполненными подробностями.',
+        'tour_next': 'Далее',
+        'tour_done': 'Понятно',
+        'tour_skip': 'Пропустить',
         "grp_sw": 'Программы',
         "grp_fonts": 'Шрифты',
         "setup_apply": 'Примените настройки',
@@ -3504,6 +3548,12 @@ TR = {
         "nav_settings": 'Einstellungen',
         "nav_faq": 'FAQ',
         "nav_about": 'Uber',
+        'tour_settings': 'Starke, Ansprechverhalten und ab welchem Tempo die Assistenz einsetzt. Als Vorgabe speichern und umschalten.',
+        'tour_faq': 'Wenn sich etwas seltsam verhalt, zuerst hier nachsehen. Meist ist es die Startreihenfolge oder ein zweiter Controller.',
+        'tour_about': 'Version, Updates und eine Taste, die einen Bericht mit allen Angaben verschickt.',
+        'tour_next': 'Weiter',
+        'tour_done': 'Alles klar',
+        'tour_skip': 'Uberspringen',
         "grp_sw": 'Software',
         "grp_fonts": 'Schriften',
         "setup_apply": 'Einstellungen setzen',
@@ -3632,6 +3682,12 @@ TR = {
         "nav_settings": 'Reglages',
         "nav_faq": 'FAQ',
         "nav_about": 'A propos',
+        'tour_settings': 'Force, reactivite et la vitesse a laquelle l’assistance se met en route. Enregistrez vos reglages en prereglages.',
+        'tour_faq': 'Si quelque chose se comporte bizarrement, commencez ici. C’est le plus souvent l’ordre de lancement ou une seconde manette.',
+        'tour_about': 'Version, mises a jour, et un bouton qui envoie un rapport deja rempli.',
+        'tour_next': 'Suivant',
+        'tour_done': 'Compris',
+        'tour_skip': 'Passer',
         "grp_sw": 'Logiciels',
         "grp_fonts": 'Polices',
         "setup_apply": 'Appliquez ces reglages',
@@ -3760,6 +3816,12 @@ TR = {
         "nav_settings": 'Ajustes',
         "nav_faq": 'FAQ',
         "nav_about": 'Acerca de',
+        'tour_settings': 'Fuerza, respuesta y a que velocidad entra la asistencia. Guarda lo que te guste como preajuste.',
+        'tour_faq': 'Si algo se comporta de forma rara, mira aqui primero. Casi siempre es el orden de arranque o un segundo mando.',
+        'tour_about': 'Version, actualizaciones y un boton que envia un informe con los datos ya rellenados.',
+        'tour_next': 'Siguiente',
+        'tour_done': 'Entendido',
+        'tour_skip': 'Omitir',
         "grp_sw": 'Software',
         "grp_fonts": 'Fuentes',
         "setup_apply": 'Aplica los ajustes',
@@ -3888,6 +3950,12 @@ TR = {
         "nav_settings": '設定',
         "nav_faq": 'FAQ',
         "nav_about": '概要',
+        'tour_settings': '効きの強さ、応答性、作動を始める速度を調整できます。気に入った設定はプリセットに保存できます。',
+        'tour_faq': '様子がおかしいときはまずここを。多くは起動順序か、2台目のコントローラーが原因です。',
+        'tour_about': 'バージョン、更新、そして必要な情報を入れた報告を送るボタンがあります。',
+        'tour_next': '次へ',
+        'tour_done': 'わかりました',
+        'tour_skip': 'スキップ',
         "grp_sw": 'ソフトウェア',
         "grp_fonts": 'フォント',
         "setup_apply": '設定を適用',
@@ -4190,6 +4258,39 @@ body.t-light{
 
 /* one factor drives the whole layout; CSS zoom carries it into text,
    strokes and radii the same way Figma scales a frame */
+/* The first look round. Four panels darken everything except the button
+   being pointed at - drawn around it rather than over it, so the button is
+   never covered and nothing in the layout moves. The layer sits outside
+   #zoom and is not scaled, which is what lets a measured rectangle be used
+   as it comes. */
+#tour{position:fixed;inset:0;z-index:70;display:none}
+#tour.on{display:block}
+.tmask{position:fixed;background:rgba(0,0,0,.62);opacity:0;
+       transition:opacity .28s ease}
+#tour.shown .tmask{opacity:1}
+.tring{position:fixed;border-radius:9px;pointer-events:none;opacity:0;
+       box-shadow:0 0 0 2px var(--accent),0 0 0 7px rgba(4,146,248,.22);
+       transition:opacity .28s ease,left .32s cubic-bezier(.4,0,.2,1),
+                  top .32s cubic-bezier(.4,0,.2,1),
+                  width .32s cubic-bezier(.4,0,.2,1),
+                  height .32s cubic-bezier(.4,0,.2,1)}
+#tour.shown .tring{opacity:1}
+.tpop{position:fixed;width:250px;box-sizing:border-box;padding:15px 16px;
+      background:var(--card);border:1px solid var(--btn-line);
+      border-radius:12px;box-shadow:0 18px 46px rgba(0,0,0,.5);opacity:0;
+      transform:translateY(-6px);
+      transition:opacity .28s ease,transform .28s ease,
+                 left .32s cubic-bezier(.4,0,.2,1),
+                 top .32s cubic-bezier(.4,0,.2,1)}
+#tour.shown .tpop{opacity:1;transform:none}
+.tpop h4{margin:0 0 6px;font-size:13px;font-weight:600;color:var(--row-fg)}
+.tpop p{margin:0;font-size:11px;line-height:1.5;color:var(--muted)}
+.tfoot{margin-top:13px;display:flex;align-items:center;gap:8px}
+.tdots{display:flex;gap:5px;margin-right:auto}
+.tdot{width:5px;height:5px;border-radius:50%;background:var(--btn-line);
+      transition:background .25s ease}
+.tdot.on{background:var(--accent)}
+
 #zoom{width:100%;min-width:510px;min-height:calc(100vh / var(--uiz));
       zoom:var(--uiz);
       display:flex;flex-direction:column;padding:18px;gap:24px}
@@ -4764,7 +4865,23 @@ html[data-boot] .rz{display:none}
   </div>
   <div class="foot reveal"><span class="drag pywebview-drag-region"></span>
     <span>Steering Assist is an independent fan project. Not affiliated with or endorsed by Microsoft, Playground Games or Turn 10 Studios.<br>Forza is a trademark of Microsoft Corporation. Created and published by reeeeiin.</span>
-    <span>Steering Assist &#8482; 2026. Released under the Steering Assist Source-Available Licence 1.0.</span>
+    <span>Steering Assist &#8482; 2026. All rights reserved.</span>
+  </div>
+</div>
+<div id="tour">
+  <div class="tmask" id="tm-t"></div>
+  <div class="tmask" id="tm-b"></div>
+  <div class="tmask" id="tm-l"></div>
+  <div class="tmask" id="tm-r"></div>
+  <div class="tring" id="t-ring"></div>
+  <div class="tpop" id="t-pop">
+    <h4 id="t-title"></h4>
+    <p id="t-text"></p>
+    <div class="tfoot">
+      <span class="tdots" id="t-dots"></span>
+      <button class="bbtn sec" id="t-skip"></button>
+      <button class="bbtn" id="t-next"></button>
+    </div>
   </div>
 </div>
 <div id="boot">
@@ -5869,6 +5986,79 @@ function bootChips(){
 }
 
 /* the boot screen fades out, then the app rises block by block */
+/* Settings, then FAQ, then About - the order somebody new needs them in.
+   Nothing is explained that the screen does not already show; the point is
+   only that these three exist and what each is for. */
+const TOUR = [{nav: 'settings', name: 'nav_settings', text: 'tour_settings'},
+              {nav: 'faq', name: 'nav_faq', text: 'tour_faq'},
+              {nav: 'about', name: 'nav_about', text: 'tour_about'}];
+let tourAt = -1;
+
+function tourPlace(){
+  const step = TOUR[tourAt];
+  const el = document.querySelector('[data-nav="' + step.nav + '"]');
+  const tour = $('#tour');
+  if (!el || !tour) return tourEnd();
+  const r = el.getBoundingClientRect();
+  if (!r.width) return tourEnd();     /* nothing to point at */
+  const pad = 6;
+  const L = r.left - pad, T = r.top - pad;
+  const W = r.width + pad * 2, H = r.height + pad * 2;
+  const px = v => Math.round(v) + 'px';
+  const put = (sel, css) => Object.assign($(sel).style, css);
+  put('#tm-t', {left: 0, top: 0, right: 0, width: 'auto', height: px(Math.max(0, T))});
+  put('#tm-b', {left: 0, top: px(T + H), right: 0, width: 'auto', bottom: 0, height: 'auto'});
+  put('#tm-l', {left: 0, top: px(T), width: px(Math.max(0, L)), height: px(H)});
+  put('#tm-r', {left: px(L + W), top: px(T), right: 0, width: 'auto', height: px(H)});
+  put('#t-ring', {left: px(L), top: px(T), width: px(W), height: px(H)});
+
+  $('#t-title').textContent = t(step.name);
+  $('#t-text').textContent = t(step.text);
+  $('#t-skip').textContent = t('tour_skip');
+  $('#t-next').textContent = t(tourAt === TOUR.length - 1 ? 'tour_done'
+                                                         : 'tour_next');
+  $('#t-dots').innerHTML = TOUR.map((_, i) =>
+    '<span class="tdot' + (i === tourAt ? ' on' : '') + '"></span>').join('');
+
+  /* below the button, and never past either edge of the window */
+  const pop = $('#t-pop');
+  const w = pop.offsetWidth || 250;
+  let left = L + W / 2 - w / 2;
+  left = Math.max(12, Math.min(left, innerWidth - w - 12));
+  put('#t-pop', {left: px(left), top: px(T + H + 10)});
+}
+
+function tourStep(i){
+  tourAt = i;
+  if (tourAt >= TOUR.length) return tourEnd();
+  tourPlace();
+}
+
+function tourEnd(){
+  const tour = $('#tour');
+  if (tour){
+    tour.classList.remove('shown');
+    setTimeout(() => tour.classList.remove('on'), 300);
+  }
+  if (cfg && !cfg.tour_seen){
+    cfg.tour_seen = true;
+    try{ pywebview.api.set('tour_seen', true); }catch(e){}
+  }
+}
+
+function startTour(){
+  const tour = $('#tour');
+  if (!tour || !cfg || cfg.tour_seen) return;
+  tour.classList.add('on');
+  tourStep(0);
+  soon(() => tour.classList.add('shown'));
+  $('#t-next').onclick = () => tourStep(tourAt + 1);
+  $('#t-skip').onclick = tourEnd;
+  addEventListener('resize', () => {
+    if (tour.classList.contains('on')) tourPlace();
+  });
+}
+
 function revealApp(){
   bootPhase = 'app';
   delete document.documentElement.dataset.boot;
@@ -5882,6 +6072,8 @@ function revealApp(){
   setTimeout(() => {
     $('#boot').style.display = 'none';
     try{ pywebview.api.boot_done(); }catch(e){}
+    /* once the window has settled, and only the first time */
+    setTimeout(startTour, 900);
     lastH = 0;
     reportHeight();
     setTimeout(() => {

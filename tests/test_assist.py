@@ -2219,6 +2219,53 @@ def test_all_buttons_can_be_sent_when_the_game_sees_only_our_pad():
         assert "mirror_all_buttons" in fa.TR[lang], lang
 
 
+def test_the_first_look_round_points_at_the_three_tabs():
+    """Settings, then FAQ, then About - the order somebody new needs them
+    in. Measured in the running window: the ring lands on each button in
+    turn and the panel closes after the last."""
+    html = fa.build_html()
+    order = html[html.index("const TOUR = ["):]
+    order = order[:order.index("];")]
+    assert order.index("settings") < order.index("faq") < order.index("about")
+    for piece in ('id="tour"', "function startTour", "function tourPlace",
+                  "tour_seen"):
+        assert piece in html, piece
+
+
+def test_the_round_is_shown_once_and_remembered():
+    """Nobody wants it a second time, and the flag has to survive a
+    restart - so it is a setting like any other."""
+    html = fa.build_html()
+    assert "cfg.tour_seen" in html
+    assert "pywebview.api.set('tour_seen', true)" in html
+    assert fa.DEFAULTS["tour_seen"] is False
+    assert "tour_seen" in fa.sanitize_config(dict(fa.DEFAULTS))
+
+
+def test_the_round_darkens_around_the_button_never_over_it():
+    """Four panels drawn around the target rather than one sheet over it:
+    the button stays visible and nothing in the layout moves."""
+    html = fa.build_html()
+    for panel in ("tm-t", "tm-b", "tm-l", "tm-r"):
+        assert panel in html, panel
+    # and the layer sits outside the scaled container, so a measured
+    # rectangle can be used as it comes
+    assert html.index('id="tour"') > html.index('id="zoom"')
+    assert html.index('id="tour"') < html.index('id="boot"')
+
+
+def test_the_all_buttons_switch_is_explained_in_the_faq():
+    """It is the cure for a fault whose symptoms make no sense - the assist
+    steers but no button works - so it has to be findable."""
+    for lang, items in fa.FAQ_ITEMS.items():
+        joined = " ".join(q + " " + " ".join(a) for q, a in items)
+        assert len(items) == 13, (lang, len(items))
+        hit = [q for q, a in items
+               if "menu" in q.lower() or "меню" in q
+               or "メニュー" in q]
+        assert hit, (lang, [q for q, _ in items])
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
