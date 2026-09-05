@@ -3380,8 +3380,8 @@ TR = {
         "btn_save": "Save",
         "btn_delete": "Delete",
         "order_title": 'Started after the game',
-        "order_text": 'Forza was already running. It looks for controllers when it starts, so it may not see the assist\'s virtual pad yet.',
-        "order_hint": 'Unplug your controller and plug it back in, or switch a wireless one off and on. The game picks it up without a restart.',
+        "order_text": 'Forza was already running. It looks for controllers when it starts, so it may not see the virtual pad yet.',
+        "order_hint": 'If the assist does nothing, unplug your controller and plug it back in, or switch a wireless one off and on - the game finds it again without being restarted. Next time, start the assist first and the game after it.',
         "st_drivers": "installing drivers…",
         "buttons_sec": "Buttons",
         "btn_handbrake": "Handbrake",
@@ -3515,8 +3515,8 @@ TR = {
         "btn_save": "Сохранить",
         "btn_delete": "Удалить",
         "order_title": 'Запущен после игры',
-        "order_text": 'Forza уже была запущена. Игра ищет контроллеры при старте, поэтому виртуальный геймпад ассиста она может пока не видеть.',
-        "order_hint": 'Отключите геймпад и подключите снова, а беспроводной выключите и включите. Игра подхватит его без перезапуска.',
+        "order_text": 'Forza уже была запущена. Игра ищет контроллеры при старте, поэтому виртуальный геймпад она может пока не видеть.',
+        "order_hint": 'Если ассист не работает, отключите геймпад и подключите снова, а беспроводной выключите и включите — игра найдёт его заново без перезапуска. В следующий раз запускайте сначала ассист, потом игру.',
         "st_drivers": "ставлю драйверы…",
         "buttons_sec": "Кнопки",
         "btn_handbrake": "Ручник",
@@ -3651,7 +3651,7 @@ TR = {
         "btn_delete": "Löschen",
         "order_title": 'Nach dem Spiel gestartet',
         "order_text": 'Forza lief bereits. Das Spiel sucht Controller beim Start, daher sieht es das virtuelle Pad moglicherweise noch nicht.',
-        "order_hint": 'Ziehe den Controller ab und stecke ihn wieder an, oder schalte einen kabellosen aus und ein. Das Spiel erkennt ihn ohne Neustart.',
+        "order_hint": 'Wenn die Assistenz nichts tut, den Controller ab- und wieder anstecken, einen kabellosen aus- und einschalten - das Spiel findet ihn ohne Neustart wieder. Beim nachsten Mal zuerst die Assistenz starten, dann das Spiel.',
         "st_drivers": "installiere Treiber…",
         "buttons_sec": "Tasten",
         "btn_handbrake": "Handbremse",
@@ -3785,8 +3785,8 @@ TR = {
         "btn_save": "Enregistrer",
         "btn_delete": "Supprimer",
         "order_title": 'Lance apres le jeu',
-        "order_text": 'Forza tournait deja. Le jeu cherche les manettes a son demarrage, il ne voit donc peut-etre pas encore la manette virtuelle.',
-        "order_hint": 'Debranchez la manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil. Le jeu la reprend sans redemarrer.',
+        "order_text": 'Forza tournait deja. Le jeu cherche les manettes au demarrage, il ne voit donc peut-etre pas encore la manette virtuelle.',
+        "order_hint": 'Si l’assistance ne fait rien, debranchez votre manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil : le jeu la retrouve sans etre relance. La prochaine fois, lancez l’assistance avant le jeu.',
         "st_drivers": "installation des pilotes…",
         "buttons_sec": "Boutons",
         "btn_handbrake": "Frein à main",
@@ -3920,8 +3920,8 @@ TR = {
         "btn_save": "Guardar",
         "btn_delete": "Borrar",
         "order_title": 'Iniciado despues del juego',
-        "order_text": 'Forza ya estaba abierto. Busca mandos al iniciarse, asi que puede que aun no vea el mando virtual del asistente.',
-        "order_hint": 'Desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico. El juego lo detecta sin reiniciar.',
+        "order_text": 'Forza ya estaba en marcha. El juego busca mandos al arrancar, asi que puede que aun no vea el mando virtual.',
+        "order_hint": 'Si la asistencia no hace nada, desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico: el juego lo encuentra otra vez sin reiniciarse. La proxima vez, abre primero la asistencia y luego el juego.',
         "st_drivers": "instalando controladores…",
         "buttons_sec": "Botones",
         "btn_handbrake": "Freno de mano",
@@ -4062,8 +4062,8 @@ TR = {
         "btn_save": '保存',
         "btn_delete": '削除',
         "order_title": 'ゲームより後に起動しました',
-        "order_text": 'Forza はすでに起動していました。ゲームは起動時にコントローラーを探すため、仮想パッドがまだ見えていない可能性があります。',
-        "order_hint": 'コントローラーを抜き差ししてください。無線の場合は電源を入れ直します。ゲームは再起動なしで認識します。',
+        "order_text": 'Forza がすでに起動していました。ゲームは起動時にコントローラーを探すため、仮想パッドをまだ認識していない可能性があります。',
+        "order_hint": 'アシストが動かない場合はコントローラーを接続し直すか、無線なら電源を入れ直してください。ゲームを再起動しなくても認識されます。次回はアシストを先に、ゲームを後に起動してください。',
         "st_drivers": 'ドライバーを導入中…',
         "buttons_sec": 'ボタン',
         "btn_handbrake": 'サイドブレーキ',
@@ -4196,6 +4196,7 @@ def build_html() -> str:
     html = html.replace("__RIG__", json.dumps(RIG))
     html = html.replace("__ARROW__", json.dumps(ARROW_SVG))
     html = html.replace("__LANGS__", json.dumps(LANG_ORDER))
+    html = html.replace("__PORTDEF__", str(DEFAULTS["port"]))
     html = html.replace("__PROFILES__", json.dumps(PROFILES))
     html = html.replace("__BOOT__", json.dumps(
          {"tr": BOOT_TR, "short": LANG_SHORT, "langs": LANG_ORDER,
@@ -4459,13 +4460,17 @@ body.t-light{
 .rval.off{color:var(--off)}
 .rval{font-size:15px;font-weight:600;color:var(--row-fg);flex:none;
       min-width:30px;text-align:right}
-.pin{font:inherit;font-size:15px;font-weight:600;color:var(--row-fg);
-     background:var(--card-2);border:1px solid transparent;border-radius:7px;
+.pin{font:inherit;font-size:15px;font-weight:600;color:var(--muted);
+     background:var(--card-2);border:1px solid var(--line);border-radius:7px;
      height:28px;width:80px;box-sizing:border-box;text-align:center;
      margin-left:auto;flex:none;outline:none;
      transition:border-color .2s ease,color .2s ease}
-.pin:hover{border-color:var(--btn-line)}
-.pin:focus{border-color:var(--accent)}
+.pin:hover{color:var(--row-fg);border-color:var(--accent)}
+.pin:focus{color:var(--row-fg);border-color:var(--accent)}
+/* not the usual 20777 - worth seeing without having to remember it */
+.pin.custom{color:var(--accent)}
+.pin.custom:hover,.pin.custom:focus{color:var(--accent);
+                                    border-color:var(--accent)}
 .pin.bad{border-color:var(--danger);color:var(--danger)}
 
 /* the launch-order warning sits over a blurred layout: nothing behind it
@@ -5219,6 +5224,7 @@ function bootTheme(){
 
 const UI_BASE = 1.25;
 const UI_STEPS = [0.9, 1, 1.1, 1.25, 1.5];
+const PORT_DEFAULT = __PORTDEF__;
 
 function uiZoom(){
   const step = cfg && UI_STEPS.indexOf(+cfg.ui_scale) >= 0 ? +cfg.ui_scale : 1;
@@ -5395,6 +5401,7 @@ function bindPort(){
       // that was refused cannot sit there looking accepted
       cfg.port = r.port;
       el.value = r.port;
+      el.classList.toggle('custom', +r.port !== PORT_DEFAULT);
       if (!r.ok){
         el.classList.add('bad');
         setTimeout(() => el.classList.remove('bad'), 1200);
@@ -5470,6 +5477,8 @@ function refresh(){
   });
   $$('[data-toggle]').forEach(el =>
     el.classList.toggle('on', !!cfg[el.dataset.toggle]));
+  const pin = document.getElementById('tele-port');
+  if (pin) pin.classList.toggle('custom', +cfg.port !== PORT_DEFAULT);
   refreshSlots();
   placePills();
 }

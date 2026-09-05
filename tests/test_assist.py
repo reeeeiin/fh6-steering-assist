@@ -2294,6 +2294,46 @@ def test_every_faq_link_points_at_a_row_that_exists():
                     assert key + "_hint" in pack, (lang, key)
                 assert "toggleRow('%s'" % key in html                     or "sliderRow('%s'" % key in html, (lang, key)
 
+def test_the_port_field_looks_like_something_you_can_type_in():
+    """A border only on hover reads as a label. It carries the same grey as
+    the bubbles in About, and turns blue with the text going white when the
+    pointer is on it."""
+    html = fa.build_html()
+    rest = html[html.index(".pin{"):]
+    rest = rest[:rest.index("}")]
+    assert "border:1px solid var(--line)" in rest, rest
+    assert "color:var(--muted)" in rest, rest
+    hover = html[html.index(".pin:hover{"):]
+    hover = hover[:hover.index("}")]
+    assert "color:var(--row-fg)" in hover and "var(--accent)" in hover, hover
+
+
+def test_a_port_that_is_not_the_usual_one_says_so():
+    """Measured in the running window: 20777 reads muted, 20999 reads in
+    the accent, and it goes back when the port does."""
+    html = fa.build_html()
+    assert ".pin.custom{color:var(--accent)}" in html
+    # the border stays grey until the pointer is on it
+    custom = html[html.index(".pin.custom{"):]
+    custom = custom[:custom.index("}")]
+    assert "border-color" not in custom, custom
+    assert "const PORT_DEFAULT = %d;" % fa.DEFAULTS["port"] in html
+    assert "+cfg.port !== PORT_DEFAULT" in html
+
+
+def test_the_launch_notice_says_what_to_do_about_it():
+    """It named the problem and left the reader to work out the rest. The
+    cure comes first now, and the order for next time stays - knowing it is
+    what stops this happening again."""
+    for lang, pack in fa.TR.items():
+        hint = pack["order_hint"]
+        assert len(hint) > 80, (lang, hint)
+        # both halves: reconnect now, and the order to use next time
+        assert any(w in hint.lower() for w in
+                   ("plug", "подключ", "anstecken", "branchez",
+                    "conectarlo", "接続")), (lang, hint)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
