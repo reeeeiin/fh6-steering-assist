@@ -130,9 +130,13 @@ Third-party components keep their own licences, listed in [NOTICE.md](NOTICE.md)
 
 ## Roadmap
 
-- Support for more titles in the Horizon series.
-- Presets saved per car.
-- Statistics, and something to show for the miles.
+- Presets that follow the car you are driving.
+- Drift angle and stability shown as dials, not figures.
+- Statistics, and a screen to keep them on.
+- An oversteer assist alongside the countersteer one.
+- PlayStation controllers.
+
+The rest, and why some of it may never happen, is in [ROADMAP.md](ROADMAP.md).
 
 ---
 
