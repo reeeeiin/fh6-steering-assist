@@ -214,6 +214,10 @@ body{margin:0;background:var(--bg);color:var(--fg);
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
 header{padding:96px 0 64px;text-align:center}
 .logo{width:660px;max-width:86vw;margin:0 auto 34px;display:block}
+/* The mark carries the colour; the wordmark stays as it is. The class
+   is on the shape in the artwork itself, so re-exporting the lockup
+   does not quietly move it onto a letter. */
+.logo .mark{fill:var(--accent)}
 .logo svg{width:100%;height:auto;display:block;color:var(--fg)}
 h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
 .sub{color:var(--dim);font-size:clamp(15px,1.6vw,18px);max-width:640px;
