@@ -38,9 +38,36 @@ section.wrap{padding:36px 24px}
 h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
 .lede{color:var(--dim);margin:0 0 34px;max-width:680px}
 .frame{border:1px solid var(--line);border-radius:14px;overflow:hidden;
-       background:#0f0f0f;width:640px;max-width:100%;margin:0 auto}
+       background:#0f0f0f;width:640px;max-width:100%}
 .frame iframe{display:block;width:100%;height:1033px;border:0}
 .note{color:var(--dim);font-size:13px;margin-top:12px;text-align:center}
+/* The interface on the left with what it does beside it, so the two are
+   read together rather than one after the other. The preview stays put
+   while the column moves, because it is taller than any one tile and
+   there is no reason to scroll away from it. */
+.showcase-wrap{max-width:1200px}
+.showcase{display:grid;gap:26px;align-items:start;
+          grid-template-columns:640px minmax(320px,1fr)}
+.shot{position:sticky;top:24px}
+.tiles{display:flex;flex-direction:column;gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;
+      padding:16px 18px;
+      transition:transform .18s cubic-bezier(.4,0,.2,1),
+                 border-color .18s ease,background .18s ease}
+.tile:hover{transform:translateY(-2px) scale(1.015);
+            border-color:var(--accent);background:#171717}
+.tile h3{margin:0 0 5px;font-size:15px}
+.tile p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.55}
+@media (prefers-reduced-motion:reduce){
+  .tile{transition:border-color .18s ease}
+  .tile:hover{transform:none}
+}
+@media (max-width:1060px){
+  .showcase{grid-template-columns:1fr}
+  .shot{position:static}
+  .frame{margin:0 auto}
+  .tiles{max-width:640px;margin:0 auto}
+}
 .grid{display:grid;gap:22px;
       grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
@@ -89,28 +116,31 @@ footer a{color:var(--dim)}
     <a class="btn sec" href="https://github.com/reeeeiin/fh6-steering-assist">Source on GitHub</a>
   </div>
   <div class="ver">Free to use - source available - Windows -
-  version 2.1.171</div>
+  version 2.1</div>
 </div></header>
 
-<section class="wrap">
+<section class="wrap showcase-wrap">
   <h2>The actual interface</h2>
   <p class="lede">Not a screenshot. This is the app's own page, built from
-  the same source as the exe, with made-up telemetry behind it. Every tab,
-  slider and preset works - try them.</p>
-  <div class="frame"><iframe src="app.html" title="Steering Assist interface"
-       loading="lazy"></iframe></div>
-  <p class="note">Driving data is invented for the preview. Everything else
-  is the real thing.</p>
-</section>
-
-<section class="wrap">
-  <h2>What it does</h2>
-  <div class="grid"><article class="card"><h3>Catches the slide, you keep the drift</h3><p>Countersteer arrives as the car steps out and eases away as it comes back, so a drift holds instead of snapping into a spin.</p></article>
-<article class="card"><h3>Steps aside the moment you disagree</h3><p>Steer against it and the wheel is yours. It never fights you for it, and it stays quiet entirely until the car is actually sliding.</p></article>
-<article class="card"><h3>Smooth, not twitchy</h3><p>Steady through the transitions, and it will not start a pendulum of its own when a slide swings back through straight.</p></article>
-<article class="card"><h3>Tune it, then keep it</h3><p>Five sliders that each do one thing, and three presets of your own to save them in and switch between.</p></article>
-<article class="card"><h3>Six languages, and it fits your screen</h3><p>English, Russian, Spanish, French, German and Japanese throughout. Light and dark, and a scale from 90 to 150 percent.</p></article>
-<article class="card"><h3>Nothing to install by hand</h3><p>One exe. Everything it needs is inside it and sets itself up on first run, and it hands your controller back exactly as it found it.</p></article></div>
+  the same source as the exe, with made-up telemetry behind it. Every tab
+  and slider works - try them.</p>
+  <div class="showcase">
+    <div class="shot">
+      <div class="frame"><iframe src="app.html"
+           title="Steering Assist interface" loading="lazy"></iframe></div>
+      <p class="note">Driving data is invented for the preview. Everything
+      else is the real thing.</p>
+    </div>
+    <div class="tiles"><article class="tile"><h3>Catches the slide, you keep the drift</h3><p>Countersteer arrives as the car steps out and eases away as it comes back, so a drift holds instead of snapping into a spin.</p></article>
+<article class="tile"><h3>Steps aside the moment you disagree</h3><p>Steer against it and the wheel is yours. It never fights you for it, and it stays quiet entirely until the car is actually sliding.</p></article>
+<article class="tile"><h3>Smooth, not twitchy</h3><p>Steady through the transitions, and it will not start a pendulum of its own when a slide swings back through straight.</p></article>
+<article class="tile"><h3>Five sliders, each doing one thing</h3><p>Strength, damping, the shape of the stick, how fast it answers, and the speed below which it leaves you alone entirely.</p></article>
+<article class="tile"><h3>It shows you what it is doing</h3><p>Your own input and the assisted one side by side, live, with the speed and the rate the game is talking at.</p></article>
+<article class="tile"><h3>Works when your buttons do not</h3><p>On some machines a hidden controller costs you gears and camera. One switch hands every button back, and the FAQ takes you to it.</p></article>
+<article class="tile"><h3>Nothing to install by hand</h3><p>One exe. Everything it needs is inside it and sets itself up on first run, and it hands your controller back exactly as it found it.</p></article>
+<article class="tile"><h3>It leaves when you ask it to</h3><p>One button removes the drivers, clears what was added to HidHide and deletes its own settings. Nothing of it is left behind.</p></article>
+<article class="tile"><h3>Six languages, and it fits your screen</h3><p>English, Russian, Spanish, French, German and Japanese throughout. Light and dark, and a scale from 90 to 150 percent.</p></article></div>
+  </div>
 </section>
 
 <section class="wrap">

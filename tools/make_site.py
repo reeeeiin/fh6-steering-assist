@@ -104,6 +104,8 @@ def app_page() -> str:
     cfg = dict(fa.DEFAULTS)
     cfg["setup_done"] = True
     cfg["telemetry_seen"] = True
+    # the first-run round dims the very thing this page is showing
+    cfg["tour_seen"] = True
     cfg["slots"] = {}
     stub = (STUB.replace("__CFG__", json.dumps(cfg))
                 .replace("__BTN__", json.dumps(fa.BUTTON_NAMES))
@@ -143,15 +145,24 @@ FEATURES = [
     ("Smooth, not twitchy",
      "Steady through the transitions, and it will not start a pendulum of "
      "its own when a slide swings back through straight."),
-    ("Tune it, then keep it",
-     "Five sliders that each do one thing, and three presets of your own to "
-     "save them in and switch between."),
-    ("Six languages, and it fits your screen",
-     "English, Russian, Spanish, French, German and Japanese throughout. "
-     "Light and dark, and a scale from 90 to 150 percent."),
+    ("Five sliders, each doing one thing",
+     "Strength, damping, the shape of the stick, how fast it answers, and "
+     "the speed below which it leaves you alone entirely."),
+    ("It shows you what it is doing",
+     "Your own input and the assisted one side by side, live, with the "
+     "speed and the rate the game is talking at."),
+    ("Works when your buttons do not",
+     "On some machines a hidden controller costs you gears and camera. One "
+     "switch hands every button back, and the FAQ takes you to it."),
     ("Nothing to install by hand",
      "One exe. Everything it needs is inside it and sets itself up on first "
      "run, and it hands your controller back exactly as it found it."),
+    ("It leaves when you ask it to",
+     "One button removes the drivers, clears what was added to HidHide and "
+     "deletes its own settings. Nothing of it is left behind."),
+    ("Six languages, and it fits your screen",
+     "English, Russian, Spanish, French, German and Japanese throughout. "
+     "Light and dark, and a scale from 90 to 150 percent."),
 ]
 
 STEPS = [
@@ -167,10 +178,13 @@ STEPS = [
 def index_page(app_html: str) -> str:
     logo = fa._icon("applogo")
     faq = fa.FAQ_ITEMS["en"]
-    ver = fa.APP_VERSION
+    # The series, not the build. The page is regenerated whenever the
+    # source moves, so a full number here goes stale against the
+    # release the download button actually hands over.
+    ver = fa.APP_SERIES
 
     feats = "\n".join(
-        '<article class="card"><h3>%s</h3><p>%s</p></article>' % (t, b)
+        '<article class="tile"><h3>%s</h3><p>%s</p></article>' % (t, b)
         for t, b in FEATURES)
     steps = "\n".join(
         '<li><b>%s.</b> %s</li>' % (t, b) for t, b in STEPS)
@@ -217,9 +231,36 @@ section.wrap{padding:36px 24px}
 h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
 .lede{color:var(--dim);margin:0 0 34px;max-width:680px}
 .frame{border:1px solid var(--line);border-radius:14px;overflow:hidden;
-       background:#0f0f0f;width:__FRAME_W__px;max-width:100%;margin:0 auto}
+       background:#0f0f0f;width:__FRAME_W__px;max-width:100%}
 .frame iframe{display:block;width:100%;height:__FRAME_H__px;border:0}
 .note{color:var(--dim);font-size:13px;margin-top:12px;text-align:center}
+/* The interface on the left with what it does beside it, so the two are
+   read together rather than one after the other. The preview stays put
+   while the column moves, because it is taller than any one tile and
+   there is no reason to scroll away from it. */
+.showcase-wrap{max-width:1200px}
+.showcase{display:grid;gap:26px;align-items:start;
+          grid-template-columns:__FRAME_W__px minmax(320px,1fr)}
+.shot{position:sticky;top:24px}
+.tiles{display:flex;flex-direction:column;gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;
+      padding:16px 18px;
+      transition:transform .18s cubic-bezier(.4,0,.2,1),
+                 border-color .18s ease,background .18s ease}
+.tile:hover{transform:translateY(-2px) scale(1.015);
+            border-color:var(--accent);background:#171717}
+.tile h3{margin:0 0 5px;font-size:15px}
+.tile p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.55}
+@media (prefers-reduced-motion:reduce){
+  .tile{transition:border-color .18s ease}
+  .tile:hover{transform:none}
+}
+@media (max-width:1060px){
+  .showcase{grid-template-columns:1fr}
+  .shot{position:static}
+  .frame{margin:0 auto}
+  .tiles{max-width:__FRAME_W__px;margin:0 auto}
+}
 .grid{display:grid;gap:22px;
       grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
@@ -252,20 +293,20 @@ footer a{color:var(--dim)}
   version __VER__</div>
 </div></header>
 
-<section class="wrap">
+<section class="wrap showcase-wrap">
   <h2>The actual interface</h2>
   <p class="lede">Not a screenshot. This is the app's own page, built from
-  the same source as the exe, with made-up telemetry behind it. Every tab,
-  slider and preset works - try them.</p>
-  <div class="frame"><iframe src="app.html" title="Steering Assist interface"
-       loading="lazy"></iframe></div>
-  <p class="note">Driving data is invented for the preview. Everything else
-  is the real thing.</p>
-</section>
-
-<section class="wrap">
-  <h2>What it does</h2>
-  <div class="grid">__FEATURES__</div>
+  the same source as the exe, with made-up telemetry behind it. Every tab
+  and slider works - try them.</p>
+  <div class="showcase">
+    <div class="shot">
+      <div class="frame"><iframe src="app.html"
+           title="Steering Assist interface" loading="lazy"></iframe></div>
+      <p class="note">Driving data is invented for the preview. Everything
+      else is the real thing.</p>
+    </div>
+    <div class="tiles">__FEATURES__</div>
+  </div>
 </section>
 
 <section class="wrap">
