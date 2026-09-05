@@ -1,5 +1,61 @@
 # Changelog
 
+## v2.1
+
+Everything here came from somebody running the app on a machine that was
+not the one it was written on.
+
+### Added
+
+- **Release all buttons**, under a new **Input** block. Only the handbrake
+  and the clutch normally reach the game through the assist; the rest it
+  is meant to read from your controller directly. On machines where it
+  cannot, every other button went nowhere - the steering worked and gears,
+  camera and menus did not. Switch this on and they all come through.
+  Switch it back off if a single press starts arriving twice.
+- **A first look round** after the first launch: Settings, FAQ and About,
+  one at a time, with everything else dimmed. Shown once.
+- **Links from the FAQ straight to the setting** an answer is about. The
+  settings screen opens, the row scrolls into view and marks itself.
+
+### Changed
+
+- **The app no longer makes your controller vibrate.** It used to add
+  rumble of its own whenever the game was quiet, so the pad buzzed even
+  with the game's own vibration switched off. Only what the game sends is
+  passed on now, and that is off unless you ask for it.
+- **The first settings block is Steering**, and the port sits in Input
+  beside the button switch. The port field looks like something you can
+  type in, and says so in blue when it is not the usual 20777.
+- **The launch-order notice says what to do first** - reconnect the
+  controller and the game finds it again - and keeps the order to use next
+  time.
+- Saving presets is out of the way until the useful version of the idea
+  exists, which is one preset per car.
+
+### Fixed
+
+- **The pad is found and hidden whatever language Windows is in.** Paths
+  under a profile named in anything but Latin came back with the letters
+  replaced by question marks, and a controller was recognised by reading
+  "xbox" out of a name that Windows writes in its own language. Both are
+  read from ids now, which are the same everywhere. Windows is asked
+  directly rather than through a shell, which is also one less scripted
+  process for a security suite to wonder about.
+- **A device list that will not parse no longer stops the setup.**
+  HidHide's tooling stops writing at the first character its code page
+  cannot hold, so on many machines the list ended mid-word and the pad was
+  never hidden at all. The paths are read out of it regardless, and
+  Windows is asked as a second source so a pad is never hidden by half of
+  its interfaces.
+- **"Hidden" no longer appears when nothing was hidden.** It could say
+  that after hiding zero devices, which looks exactly like success while
+  the game still sees your controller.
+- Two FAQ answers had stopped being true: one sent people to a preset and
+  a setting that were removed in 2.0, the other described launching
+  behaviour from before it changed.
+
+
 ## v2.0.163
 
 Setup and launching, made to cope with the state a real machine is in.

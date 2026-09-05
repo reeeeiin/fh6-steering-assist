@@ -61,7 +61,7 @@ def load_vgamepad():
 # The series is what the window shows: it says which generation of the app
 # this is and nothing more. The build number after it says which one of
 # them, and that is what belongs in a bug report.
-APP_SERIES = "2.0"
+APP_SERIES = "2.1"
 
 
 def _build_id() -> str:
