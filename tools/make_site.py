@@ -179,12 +179,16 @@ STEPS = [
      "machine. The steps run themselves and say where they are up to. If "
      "Windows wants a restart, a driver has asked for one, and the app "
      "opens again by itself afterwards."),
-    (["inst3", "inst3.5"], "Turn on Data Out in the game",
-     "The last setup step spells out what to set, and the game keeps it "
-     "under Settings, HUD and Gameplay, Telemetry: Data Out on, IP "
-     "127.0.0.1, port 20777. Put Steering on Simulation while you are "
-     "there, or the game corrects on top of the assist and cancels much "
-     "of it."),
+    (["inst3"], "Note down what it asks for",
+     "The last setup step is the only thing the assist cannot do for you: "
+     "the game has to be told to send its telemetry. The values are on "
+     "screen - Data Out on, IP 127.0.0.1, port 20777 - and the app waits "
+     "here until they arrive."),
+    (["inst3.5"], "Set it in the game",
+     "Forza keeps them under Settings, HUD and Gameplay, at the bottom of "
+     "the list: Telemetry. Put Steering on Simulation while you are in "
+     "there, or the game applies a correction of its own on top of this "
+     "one and cancels much of it."),
     (["inst5"], "Drive",
      "Telemetry arrives, the readout comes alive, and the pad reads as "
      "hidden - the game is seeing the assist rather than your controller. "
@@ -223,11 +227,17 @@ def index_page(app_html: str) -> str:
         for t, b in FEATURES)
     steps = "\n".join(
         '<figure class="step">'
-        '%s<h3><span class="num">%d</span>%s</h3>'
+        '%s<h3><span class="num">%d</span><span class="gttl">%s</span>'
+        '<span class="gnav">'
+        '<button class="gbtn" data-gdir="-1">Previous</button>'
+        '<button class="gbtn next" data-gdir="1">Next</button></span></h3>'
         '<figcaption>%s</figcaption></figure>'
-        % ("".join('<img src="%s.webp" width="%d" height="%d" alt="%s" '
-                    'loading="lazy">'
-                    % ((n,) + shot_size(n) + (title,))
+        % ("".join('<div class="gshot">'
+                    '<img class="gglow" src="%s.webp" alt="" aria-hidden='
+                    '"true" loading="lazy">'
+                    '<img src="%s.webp" width="%d" height="%d" alt="%s" '
+                    'loading="lazy"></div>'
+                    % ((n, n) + shot_size(n) + (title,))
                     for n in names),
            i + 1, title, body)
         for i, (names, title, body) in enumerate(STEPS))
@@ -326,19 +336,37 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
 .step{margin:0;position:absolute;top:0;left:0;right:0;
       opacity:0;pointer-events:none;transition:opacity .3s ease}
 .step.on{opacity:1;pointer-events:auto}
-.gnav{margin-top:26px;display:flex;align-items:center;justify-content:center;
-      gap:18px}
-.gbtn{height:38px;padding:0 18px;border-radius:9px;border:1px solid var(--line);
-      background:var(--card);color:var(--fg);font:inherit;font-size:14px;
+/* The controls belong on the line that names the step: they are what you
+   reach for once you have read it, and the heading is where the eye
+   already is. Every step carries its own pair - they all do the same
+   thing, and one shared row could not sit on a heading whose height moves
+   with the picture above it. */
+.gnav{margin-left:auto;display:flex;gap:10px;flex:none}
+.gbtn{height:36px;padding:0 16px;border-radius:9px;border:1px solid var(--line);
+      background:var(--card);color:var(--fg);font:inherit;font-size:13.5px;
       font-weight:600;cursor:pointer;
       transition:border-color .2s ease,color .2s ease,background .2s ease}
 .gbtn:hover{border-color:var(--accent);color:var(--accent);background:#171717}
+.gbtn.next{background:var(--accent);border-color:var(--accent);color:#fff}
+.gbtn.next:hover{background:linear-gradient(180deg,var(--accent),
+                 var(--accent-lit));color:#fff}
 .gbtn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.gcount{color:var(--dim);font-size:13px;min-width:52px;text-align:center}
-.gcount b{color:var(--fg);font-weight:600}
-.step h3{margin:0 0 14px;font-size:18px;display:flex;align-items:baseline;
+.step h3{margin:0 0 14px;font-size:18px;display:flex;align-items:center;
          gap:10px}
+.step .gttl{min-width:0}
 .step .num{color:var(--accent);font-size:18px;font-weight:700;flex:none}
+/* The shot again underneath itself, blurred to nothing but its colour, so
+   the picture sits in its own light instead of on a flat panel. */
+.gshot{position:relative}
+.gshot > img{position:relative;z-index:1}
+.gshot .gglow{position:absolute;inset:0;width:100%;height:100%;z-index:0;
+              border:0;border-radius:0;pointer-events:none;
+              opacity:.55;filter:blur(48px) saturate(1.35);
+              transform:translateY(22px) scale(.94)}
+@media (max-width:700px){
+  .step h3{flex-wrap:wrap}
+  .gnav{margin-left:0;width:100%}
+}
 .step img{display:block;width:100%;height:auto;border-radius:12px;
           border:1px solid var(--line);background:#0f0f0f}
 .step img + img{margin-top:14px}
@@ -424,14 +452,7 @@ footer a{color:var(--dim)}
 <section class="wrap showcase-wrap">
   <h2>Getting started</h2>
   <p class="lede">A real first run, in the order it happens.</p>
-  <div class="guide">
-    <div class="gstage">__STEPS__</div>
-    <div class="gnav">
-      <button class="gbtn" data-gdir="-1">Previous</button>
-      <span class="gcount"><b id="g-at">1</b> / <span id="g-of">0</span></span>
-      <button class="gbtn" data-gdir="1">Next</button>
-    </div>
-  </div>
+  <div class="guide"><div class="gstage">__STEPS__</div></div>
 </section>
 
 <section class="wrap showcase-wrap">
@@ -460,7 +481,6 @@ footer a{color:var(--dim)}
   if (!stage) return;
   var steps = [].slice.call(stage.children);
   var at = 0;
-  document.getElementById('g-of').textContent = steps.length;
 
   function show(){
     for (var i = 0; i < steps.length; i++)
@@ -468,7 +488,6 @@ footer a{color:var(--dim)}
     /* the shots carry their size in the markup, so the height is right
        before a single one of them has loaded */
     stage.style.height = steps[at].offsetHeight + 'px';
-    document.getElementById('g-at').textContent = at + 1;
   }
 
   var gbtns = document.querySelectorAll('.gbtn');
