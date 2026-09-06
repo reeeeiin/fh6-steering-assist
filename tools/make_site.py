@@ -293,17 +293,17 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
 .card p{margin:0;color:var(--dim);font-size:14px}
 /* Each step is its shot at the width of everything else on the page,
    with what to do above it and why underneath. */
-.steps{display:flex;flex-direction:column;gap:40px}
+.steps{display:flex;flex-direction:column;gap:52px}
 .step{margin:0}
-.step h3{margin:0 0 8px;font-size:18px;display:flex;align-items:center;
+.step h3{margin:0 0 14px;font-size:18px;display:flex;align-items:center;
          gap:12px}
 .step .num{display:inline-flex;align-items:center;justify-content:center;
            width:26px;height:26px;border-radius:50%;flex:none;
            background:var(--accent);color:#fff;font-size:13px}
 .step img{display:block;width:100%;height:auto;border-radius:12px;
           border:1px solid var(--line);background:#0f0f0f}
-.step figcaption{margin:0 0 16px;color:var(--dim);font-size:14px;
-                 max-width:760px}
+.step figcaption{margin:0 0 24px;color:var(--dim);font-size:14px;
+                 line-height:1.6;max-width:760px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
 ol li{margin-bottom:10px}
 ol b{color:var(--fg)}
