@@ -165,14 +165,28 @@ FEATURES = [
      "Light and dark, and a scale from 90 to 150 percent."),
 ]
 
+# Four shots of a real first run, in the order they happen. The file
+# names are what sits in assets/; the page gets webp copies of them.
 STEPS = [
-    ("Turn on Data Out", "In Forza: Settings, HUD and Gameplay, Data Out. "
-     "IP 127.0.0.1, port 20777."),
-    ("Run the assist", "First launch installs the two drivers it needs and "
-     "asks for admin once. Nothing is downloaded on your machine."),
-    ("Drive", "It stays out of the way until the car actually steps out, "
-     "and hands the wheel straight back when you steer against it."),
+    ("inst1", "Download &amp; Launch",
+     "One file, and nothing to install. Take the latest release and run it. "
+     "Windows asks for administrator once - that is the moment the two "
+     "drivers go in."),
+    ("inst2", "Let it set itself up",
+     "Both drivers are inside the exe, so nothing is downloaded on your "
+     "machine. The steps run themselves and say where they are up to. If "
+     "Windows wants a restart, a driver has asked for one, and the app "
+     "opens again by itself afterwards."),
+    ("inst3", "Turn on Data Out in the game",
+     "The last step spells out what to set: Data Out on, IP 127.0.0.1, port "
+     "20777, under HUD and Gameplay. Put Steering on Simulation too, or the "
+     "game corrects on top of the assist and cancels much of it."),
+    ("inst4", "Drive",
+     "Telemetry starts arriving and the readout comes alive. Start the "
+     "assist before the game: the game looks for controllers when it "
+     "starts, and a virtual pad made afterwards is invisible to it."),
 ]
+STEP_W = 1440
 
 
 def index_page(app_html: str) -> str:
@@ -187,7 +201,12 @@ def index_page(app_html: str) -> str:
         '<article class="tile"><h3>%s</h3><p>%s</p></article>' % (t, b)
         for t, b in FEATURES)
     steps = "\n".join(
-        '<li><b>%s.</b> %s</li>' % (t, b) for t, b in STEPS)
+        '<figure class="step">'
+        '<h3><span class="num">%d</span>%s</h3>'
+        '<img src="%s.webp" width="%d" height="%d" alt="%s" loading="lazy">'
+        '<figcaption>%s</figcaption></figure>'
+        % (i + 1, title, name, STEP_W, round(STEP_W * 9 / 16), title, body)
+        for i, (name, title, body) in enumerate(STEPS))
     faqs = "\n".join(
         '<details><summary>%s</summary>%s</details>'
         % (q, "".join("<p>%s</p>" % p for p in a))
@@ -271,6 +290,19 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
       padding:24px 26px}
 .card h3{margin:0 0 8px;font-size:16px}
 .card p{margin:0;color:var(--dim);font-size:14px}
+/* Each step is its shot at the width of everything else on the page,
+   with what to do above it and why underneath. */
+.steps{display:flex;flex-direction:column;gap:40px}
+.step{margin:0}
+.step h3{margin:0 0 12px;font-size:18px;display:flex;align-items:center;
+         gap:12px}
+.step .num{display:inline-flex;align-items:center;justify-content:center;
+           width:26px;height:26px;border-radius:50%;flex:none;
+           background:var(--accent);color:#fff;font-size:13px}
+.step img{display:block;width:100%;height:auto;border-radius:12px;
+          border:1px solid var(--line);background:#0f0f0f}
+.step figcaption{margin-top:12px;color:var(--dim);font-size:14px;
+                 max-width:760px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
 ol li{margin-bottom:10px}
 ol b{color:var(--fg)}
@@ -298,7 +330,7 @@ footer a{color:var(--dim)}
 </div></header>
 
 <section class="wrap showcase-wrap">
-  <h2>The actual interface</h2>
+  <h2>What it does</h2>
   <p class="lede">Not a screenshot. This is the app's own page, built from
   the same source as the exe, with made-up telemetry behind it. Every tab
   and slider works - try them.</p>
@@ -313,9 +345,10 @@ footer a{color:var(--dim)}
   </div>
 </section>
 
-<section class="wrap">
+<section class="wrap showcase-wrap">
   <h2>Getting started</h2>
-  <ol>__STEPS__</ol>
+  <p class="lede">A real first run, in the order it happens.</p>
+  <div class="steps">__STEPS__</div>
 </section>
 
 <section class="wrap">
@@ -339,6 +372,31 @@ footer a{color:var(--dim)}
    .replace("__REPO__", REPO) \
    .replace("__VER__", ver) \
    .replace("__FRAME_H__", str(int(round(PREVIEW_H * fa.UI_SCALE)) + 8))    .replace("__FRAME_W__", str(int(round(fa.DESIGN_W * fa.UI_SCALE)) + 2))
+
+
+def write_steps():
+    """Screenshots for Getting started, shrunk and re-encoded.
+
+    Straight from the capture they are a megabyte each and the page would
+    carry five of them before a word is read. At the width they are shown
+    the extra pixels buy nothing, and webp does the rest: about forty
+    kilobytes apiece.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        print("Pillow missing - the step shots were not rebuilt")
+        return
+    for name, _title, _body in STEPS:
+        src = os.path.join(ROOT, "assets", name + ".png")
+        if not os.path.isfile(src):
+            print("missing: %s" % src)
+            continue
+        im = Image.open(src).convert("RGB")
+        h = round(STEP_W * im.height / im.width)
+        im.resize((STEP_W, h), Image.LANCZOS).save(
+            os.path.join(DOCS, name + ".webp"), format="WEBP",
+            quality=88, method=6)
 
 
 def write_icons():
@@ -376,11 +434,13 @@ def main():
     io.open(os.path.join(DOCS, "index.html"), "w", encoding="utf-8",
             newline="\n").write(index_page(app))
     write_icons()
+    write_steps()
     # Pages runs Jekyll otherwise, which eats files starting with an
     # underscore and slows every build down for nothing.
     io.open(os.path.join(DOCS, ".nojekyll"), "w", encoding="utf-8").write("")
-    for name in ("index.html", "app.html", "favicon.ico", "icon-32.png",
-                 "icon-180.png"):
+    for name in ([n + ".webp" for n, _t, _b in STEPS]
+                 + ["index.html", "app.html", "favicon.ico", "icon-32.png",
+                    "icon-180.png"]):
         p = os.path.join(DOCS, name)
         if os.path.isfile(p):
             print("%-14s %6.1f KB" % (name, os.path.getsize(p) / 1024))

@@ -78,6 +78,19 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
       padding:24px 26px}
 .card h3{margin:0 0 8px;font-size:16px}
 .card p{margin:0;color:var(--dim);font-size:14px}
+/* Each step is its shot at the width of everything else on the page,
+   with what to do above it and why underneath. */
+.steps{display:flex;flex-direction:column;gap:40px}
+.step{margin:0}
+.step h3{margin:0 0 12px;font-size:18px;display:flex;align-items:center;
+         gap:12px}
+.step .num{display:inline-flex;align-items:center;justify-content:center;
+           width:26px;height:26px;border-radius:50%;flex:none;
+           background:var(--accent);color:#fff;font-size:13px}
+.step img{display:block;width:100%;height:auto;border-radius:12px;
+          border:1px solid var(--line);background:#0f0f0f}
+.step figcaption{margin-top:12px;color:var(--dim);font-size:14px;
+                 max-width:760px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
 ol li{margin-bottom:10px}
 ol b{color:var(--fg)}
@@ -124,7 +137,7 @@ footer a{color:var(--dim)}
 </div></header>
 
 <section class="wrap showcase-wrap">
-  <h2>The actual interface</h2>
+  <h2>What it does</h2>
   <p class="lede">Not a screenshot. This is the app's own page, built from
   the same source as the exe, with made-up telemetry behind it. Every tab
   and slider works - try them.</p>
@@ -147,11 +160,13 @@ footer a{color:var(--dim)}
   </div>
 </section>
 
-<section class="wrap">
+<section class="wrap showcase-wrap">
   <h2>Getting started</h2>
-  <ol><li><b>Turn on Data Out.</b> In Forza: Settings, HUD and Gameplay, Data Out. IP 127.0.0.1, port 20777.</li>
-<li><b>Run the assist.</b> First launch installs the two drivers it needs and asks for admin once. Nothing is downloaded on your machine.</li>
-<li><b>Drive.</b> It stays out of the way until the car actually steps out, and hands the wheel straight back when you steer against it.</li></ol>
+  <p class="lede">A real first run, in the order it happens.</p>
+  <div class="steps"><figure class="step"><h3><span class="num">1</span>Download &amp; Launch</h3><img src="inst1.webp" width="1440" height="810" alt="Download &amp; Launch" loading="lazy"><figcaption>One file, and nothing to install. Take the latest release and run it. Windows asks for administrator once - that is the moment the two drivers go in.</figcaption></figure>
+<figure class="step"><h3><span class="num">2</span>Let it set itself up</h3><img src="inst2.webp" width="1440" height="810" alt="Let it set itself up" loading="lazy"><figcaption>Both drivers are inside the exe, so nothing is downloaded on your machine. The steps run themselves and say where they are up to. If Windows wants a restart, a driver has asked for one, and the app opens again by itself afterwards.</figcaption></figure>
+<figure class="step"><h3><span class="num">3</span>Turn on Data Out in the game</h3><img src="inst3.webp" width="1440" height="810" alt="Turn on Data Out in the game" loading="lazy"><figcaption>The last step spells out what to set: Data Out on, IP 127.0.0.1, port 20777, under HUD and Gameplay. Put Steering on Simulation too, or the game corrects on top of the assist and cancels much of it.</figcaption></figure>
+<figure class="step"><h3><span class="num">4</span>Drive</h3><img src="inst4.webp" width="1440" height="810" alt="Drive" loading="lazy"><figcaption>Telemetry starts arriving and the readout comes alive. Start the assist before the game: the game looks for controllers when it starts, and a virtual pad made afterwards is invisible to it.</figcaption></figure></div>
 </section>
 
 <section class="wrap">
