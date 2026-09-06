@@ -203,9 +203,10 @@ def index_page(app_html: str) -> str:
     steps = "\n".join(
         '<figure class="step">'
         '<h3><span class="num">%d</span>%s</h3>'
+        '<figcaption>%s</figcaption>'
         '<img src="%s.webp" width="%d" height="%d" alt="%s" loading="lazy">'
-        '<figcaption>%s</figcaption></figure>'
-        % (i + 1, title, name, STEP_W, round(STEP_W * 9 / 16), title, body)
+        '</figure>'
+        % (i + 1, title, body, name, STEP_W, round(STEP_W * 9 / 16), title)
         for i, (name, title, body) in enumerate(STEPS))
     faqs = "\n".join(
         '<details><summary>%s</summary>%s</details>'
@@ -294,14 +295,14 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
    with what to do above it and why underneath. */
 .steps{display:flex;flex-direction:column;gap:40px}
 .step{margin:0}
-.step h3{margin:0 0 12px;font-size:18px;display:flex;align-items:center;
+.step h3{margin:0 0 8px;font-size:18px;display:flex;align-items:center;
          gap:12px}
 .step .num{display:inline-flex;align-items:center;justify-content:center;
            width:26px;height:26px;border-radius:50%;flex:none;
            background:var(--accent);color:#fff;font-size:13px}
 .step img{display:block;width:100%;height:auto;border-radius:12px;
           border:1px solid var(--line);background:#0f0f0f}
-.step figcaption{margin-top:12px;color:var(--dim);font-size:14px;
+.step figcaption{margin:0 0 16px;color:var(--dim);font-size:14px;
                  max-width:760px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
 ol li{margin-bottom:10px}
