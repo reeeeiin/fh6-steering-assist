@@ -223,13 +223,13 @@ def index_page(app_html: str) -> str:
         for t, b in FEATURES)
     steps = "\n".join(
         '<figure class="step">'
-        '<h3><span class="num">%d</span>%s</h3>'
-        '<figcaption>%s</figcaption>%s</figure>'
-        % (i + 1, title, body,
-           "".join('<img src="%s.webp" width="%d" height="%d" alt="%s" '
-                   'loading="lazy">'
-                   % ((n,) + shot_size(n) + (title,))
-                   for n in names))
+        '%s<h3><span class="num">%d</span>%s</h3>'
+        '<figcaption>%s</figcaption></figure>'
+        % ("".join('<img src="%s.webp" width="%d" height="%d" alt="%s" '
+                    'loading="lazy">'
+                    % ((n,) + shot_size(n) + (title,))
+                    for n in names),
+           i + 1, title, body)
         for i, (names, title, body) in enumerate(STEPS))
     faqs = "\n".join(
         '<article class="qcard"><h3>%s</h3>%s</article>'
@@ -317,20 +317,34 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
       padding:24px 26px}
 .card h3{margin:0 0 8px;font-size:16px}
 .card p{margin:0;color:var(--dim);font-size:14px}
-/* Each step is its shot at the width of everything else on the page,
-   with what to do above it and why underneath. */
-.steps{display:flex;flex-direction:column;gap:52px}
-.step{margin:0}
-.step h3{margin:0 0 14px;font-size:18px;display:flex;align-items:center;
-         gap:12px}
-.step .num{display:inline-flex;align-items:center;justify-content:center;
-           width:26px;height:26px;border-radius:50%;flex:none;
-           background:var(--accent);color:#fff;font-size:13px}
+/* One step at a time, crossfading. They are stacked on top of each other
+   and the stage is given the height of whichever is showing, so the change
+   is a fade and a resize rather than a jump. */
+.guide{margin:0}
+.gstage{position:relative;
+        transition:height .34s cubic-bezier(.4,0,.2,1)}
+.step{margin:0;position:absolute;top:0;left:0;right:0;
+      opacity:0;pointer-events:none;transition:opacity .3s ease}
+.step.on{opacity:1;pointer-events:auto}
+.gnav{margin-top:26px;display:flex;align-items:center;justify-content:center;
+      gap:18px}
+.gbtn{height:38px;padding:0 18px;border-radius:9px;border:1px solid var(--line);
+      background:var(--card);color:var(--fg);font:inherit;font-size:14px;
+      font-weight:600;cursor:pointer;
+      transition:border-color .2s ease,color .2s ease,background .2s ease}
+.gbtn:hover{border-color:var(--accent);color:var(--accent);background:#171717}
+.gbtn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.gcount{color:var(--dim);font-size:13px;min-width:52px;text-align:center}
+.gcount b{color:var(--fg);font-weight:600}
+.step h3{margin:0 0 14px;font-size:18px;display:flex;align-items:baseline;
+         gap:10px}
+.step .num{color:var(--accent);font-size:18px;font-weight:700;flex:none}
 .step img{display:block;width:100%;height:auto;border-radius:12px;
           border:1px solid var(--line);background:#0f0f0f}
 .step img + img{margin-top:14px}
-.step figcaption{margin:0 0 24px;color:var(--dim);font-size:14px;
-                 line-height:1.6;max-width:760px}
+.step img:last-of-type{margin-bottom:20px}
+.step figcaption{margin:0;color:var(--dim);font-size:14px;
+                 line-height:1.6;max-width:820px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
 ol li{margin-bottom:10px}
 ol b{color:var(--fg)}
@@ -340,7 +354,11 @@ ol b{color:var(--fg)}
    the jump back to the middle happens while nothing is moving. */
 .carousel{display:grid;grid-template-columns:auto 1fr auto;gap:14px;
           align-items:center}
-.cview{overflow:hidden}
+.cview{overflow:hidden;
+       -webkit-mask-image:linear-gradient(to right,transparent 0,
+              #000 14%,#000 86%,transparent 100%);
+       mask-image:linear-gradient(to right,transparent 0,
+              #000 14%,#000 86%,transparent 100%)}
 .ctrack{display:flex;gap:18px;align-items:stretch;
         transition:transform .42s cubic-bezier(.4,0,.2,1)}
 .qcard{flex:0 0 62%;box-sizing:border-box;background:var(--card);
@@ -406,7 +424,14 @@ footer a{color:var(--dim)}
 <section class="wrap showcase-wrap">
   <h2>Getting started</h2>
   <p class="lede">A real first run, in the order it happens.</p>
-  <div class="steps">__STEPS__</div>
+  <div class="guide">
+    <div class="gstage">__STEPS__</div>
+    <div class="gnav">
+      <button class="gbtn" data-gdir="-1">Previous</button>
+      <span class="gcount"><b id="g-at">1</b> / <span id="g-of">0</span></span>
+      <button class="gbtn" data-gdir="1">Next</button>
+    </div>
+  </div>
 </section>
 
 <section class="wrap showcase-wrap">
@@ -430,6 +455,35 @@ footer a{color:var(--dim)}
   <a href="__REPO__/blob/main/LICENSE">Steering Assist Licence 2.0</a> — all rights reserved.</p>
 </div></footer>
 <script>
+(function(){
+  var stage = document.querySelector('.gstage');
+  if (!stage) return;
+  var steps = [].slice.call(stage.children);
+  var at = 0;
+  document.getElementById('g-of').textContent = steps.length;
+
+  function show(){
+    for (var i = 0; i < steps.length; i++)
+      steps[i].classList.toggle('on', i === at);
+    /* the shots carry their size in the markup, so the height is right
+       before a single one of them has loaded */
+    stage.style.height = steps[at].offsetHeight + 'px';
+    document.getElementById('g-at').textContent = at + 1;
+  }
+
+  var gbtns = document.querySelectorAll('.gbtn');
+  for (var b = 0; b < gbtns.length; b++)
+    gbtns[b].addEventListener('click', function(){
+      at = (at + parseInt(this.getAttribute('data-gdir'), 10)
+            + steps.length) % steps.length;
+      show();
+    });
+
+  addEventListener('resize', show);
+  addEventListener('load', show);
+  show();
+})();
+
 (function(){
   var track = document.querySelector('.ctrack');
   if (!track) return;
