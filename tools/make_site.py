@@ -208,6 +208,8 @@ ROADMAP = [
      "language bugs happened."),
     ("Keys for the settings you change most",
      "Strength up and down without leaving the car."),
+    ("An overlay, inside the game",
+     "Everything above, without alt-tabbing to see it."),
 ]
 
 STEPS = [
@@ -444,6 +446,15 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
 .ritem h3{margin:0 0 4px;font-size:15px}
 .ritem p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.6}
 
+/* The page ends where it began - the same mark and the same two buttons,
+   smaller, after everything has been said. */
+.outro{text-align:center;padding-top:20px;padding-bottom:64px}
+.outro .logo{width:420px;margin-bottom:28px}
+.oline{font-size:clamp(20px,2.4vw,28px);font-weight:700;margin:0 0 10px;
+       letter-spacing:-.01em}
+.osub{color:var(--dim);max-width:560px;margin:0 auto 28px;
+      font-size:15px;line-height:1.6}
+
 .gshot{position:relative}
 .gshot > img{position:relative;z-index:1}
 .gshot .gglow{position:absolute;inset:0;width:100%;height:100%;z-index:0;
@@ -557,21 +568,30 @@ footer a{color:var(--dim)}
 __BAND1__
 
 <section class="wrap">
+  <h2>What is coming</h2>
+  <p class="lede">Roughly in the order it is likely to happen. None of it
+  is a promise with a date on it.</p>
+  <ol class="road">__ROAD__</ol>
+</section>
+
+__BAND2__
+
+<section class="wrap">
   <h2>Known problems</h2>
   <p class="lede">Everything here is real, and none of it is a surprise to
   us. It is being worked on.</p>
   <ul class="known">__KNOWN__</ul>
 </section>
 
-__BAND2__
-
-<section class="wrap">
-  <h2>What is coming</h2>
-  <p class="lede">Roughly in the order it is likely to happen. None of it
-  is a promise with a date on it.</p>
-  <ol class="road">__ROAD__</ol>
-  <p class="note">The rest, and why some of it may never happen, is in
-  <a href="__REPO__/blob/main/ROADMAP.md">ROADMAP.md</a>.</p>
+<section class="wrap outro">
+  <div class="logo">__LOGO__</div>
+  <p class="oline">Stop fighting your own car.</p>
+  <p class="osub">Switch it on, keep your foot in it, and enjoy the roads
+  of Horizon the way you imagined them.</p>
+  <div class="cta">
+    <a class="btn" href="__REPO__/releases/latest">Download</a>
+    <a class="btn sec" href="__REPO__">Source on GitHub</a>
+  </div>
 </section>
 
 <footer><div class="wrap">
