@@ -331,8 +331,8 @@ header{padding:96px 0 64px;text-align:center;position:relative}
    gesture the setup screen offers, sitting against the wordmark: it is
    hung off the logo box rather than off the corner, so it stays beside
    the letters at any width the lockup is given. */
-.lbtn{position:absolute;left:100%;top:50%;transform:translateY(-50%);
-      margin-left:14px;min-width:40px;height:28px;padding:0 10px;
+.lbtn{position:absolute;left:100%;top:0;margin-left:14px;
+      min-width:40px;height:28px;padding:0 10px;
       border-radius:8px;border:1px solid var(--line);
       background-color:var(--card);color:var(--dim);font:inherit;
       font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
@@ -543,11 +543,22 @@ ol b{color:var(--fg)}
 footer{padding:40px 0 60px;color:var(--dim);font-size:13px;
        border-top:1px solid var(--line);margin-top:30px}
 footer a{color:var(--dim)}
+/* The page comes in from the top down, a block at a time. The state
+   before the fade is put on from script, so with script off nothing is
+   ever left invisible. */
+.rv{opacity:0;transform:translateY(16px)}
+.rv.in{opacity:1;transform:none;
+       transition:opacity .55s ease,
+                  transform .55s cubic-bezier(.22,.61,.36,1)}
+@media (prefers-reduced-motion:reduce){
+  .rv,.rv.in{opacity:1;transform:none;transition:none}
+}
+
 @media (max-width:900px){
   /* Beaten by the .logo rule below it otherwise - same weight, and that
      one comes later. */
   header .logo{position:static}
-  .lbtn{left:auto;right:24px;top:18px;transform:none;margin-left:0}
+  .lbtn{left:auto;right:24px;top:18px;margin-left:0}
 }
 
 /* The preview is the app at its own fixed width - it cannot be reflowed,
@@ -726,6 +737,59 @@ var RELAYOUT = [];
   /* The preview loads late, and it is English until it is told. */
   var frame = document.querySelector('.frame iframe');
   if (frame) frame.addEventListener('load', function(){ paint(at); });
+})();
+
+(function(){
+  /* A refresh should start the page again, not drop the reader back where
+     they were - the whole point of what follows is the order things
+     arrive in. */
+  try{ if (history.scrollRestoration) history.scrollRestoration = 'manual'; }
+  catch(e){}
+  scrollTo(0, 0);
+  addEventListener('load', function(){ scrollTo(0, 0); });
+
+  var slow = false;
+  try{
+    slow = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }catch(e){}
+  /* A page nobody is looking at yet is never hidden by this: a browser
+     that is not drawing does not advance a transition either, and the
+     blocks would sit at the start of it until the tab is opened. */
+  if (document.visibilityState && document.visibilityState !== 'visible')
+    slow = true;
+  if (slow) return;
+
+  var items = [].slice.call(document.querySelectorAll(
+    'header .logo, header h1, header .sub, header .band, header .cta,' +
+    ' header .ver, section.wrap, .bandw'));
+  for (var i = 0; i < items.length; i++) items[i].classList.add('rv');
+  /* the hidden state has to be laid out once before the change to it can
+     be a transition rather than a jump */
+  void document.body.offsetWidth;
+
+  var STEP = 70;
+  for (var k = 0; k < items.length; k++)
+    (function(el, n){
+      setTimeout(function(){ el.classList.add('in'); }, n * STEP);
+    })(items[k], k);
+
+  /* Nothing on this page is allowed to stay invisible because an
+     animation did not run. Once the cascade is over the classes come off
+     and the blocks are left in their ordinary styles. */
+  setTimeout(function(){
+    for (var c = 0; c < items.length; c++){
+      var el = items[c];
+      /* written on the element, so a transition frozen part way through
+         is cancelled rather than waited on */
+      el.style.transition = 'none';
+      el.style.opacity = '1';
+      el.style.transform = 'none';
+      el.classList.remove('rv', 'in');
+      el.style.transition = '';
+      el.style.opacity = '';
+      el.style.transform = '';
+    }
+  }, items.length * STEP + 1400);
 })();
 
 (function(){
