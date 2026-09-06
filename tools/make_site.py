@@ -19,6 +19,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import forza_assist_lite as fa   # noqa: E402
+import site_i18n as i18n         # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
@@ -135,36 +136,6 @@ def fonts_from(html: str) -> str:
     return "\n".join(re.findall(r"@font-face\{[^}]*\}", html))
 
 
-FEATURES = [
-    ("Catches the slide, you keep the drift",
-     "Countersteer arrives as the car steps out and eases away as it comes "
-     "back, so a drift holds instead of snapping into a spin."),
-    ("Steps aside the moment you disagree",
-     "Steer against it and the wheel is yours. It never fights you for it, "
-     "and it stays quiet entirely until the car is actually sliding."),
-    ("Smooth, not twitchy",
-     "Steady through the transitions, and it will not start a pendulum of "
-     "its own when a slide swings back through straight."),
-    ("Five sliders, each doing one thing",
-     "Strength, damping, the shape of the stick, how fast it answers, and "
-     "the speed below which it leaves you alone entirely."),
-    ("It shows you what it is doing",
-     "Your own input and the assisted one side by side, live, with the "
-     "speed and the rate the game is talking at."),
-    ("Works when your buttons do not",
-     "On some machines a hidden controller costs you gears and camera. One "
-     "switch hands every button back, and the FAQ takes you to it."),
-    ("Nothing to install by hand",
-     "One exe. Everything it needs is inside it and sets itself up on first "
-     "run, and it hands your controller back exactly as it found it."),
-    ("It leaves when you ask it to",
-     "One button removes the drivers, clears what was added to HidHide and "
-     "deletes its own settings. Nothing of it is left behind."),
-    ("Six languages, and it fits your screen",
-     "English, Russian, Spanish, French, German and Japanese throughout. "
-     "Light and dark, and a scale from 90 to 150 percent."),
-]
-
 # Four shots of a real first run, in the order they happen. The file
 # names are what sits in assets/; the page gets webp copies of them.
 BANNER = "inst6"
@@ -177,70 +148,9 @@ BANDS = [
 ]
 BANNERS = [BANNER] + [n for n, _a in BANDS]
 
-KNOWN = [
-    ("PlayStation controllers are only half supported",
-     "A DualShock or DualSense is read differently from an Xbox pad, and "
-     "not everything lands where it should yet."),
-    ("The correction pauses while you shift",
-     "Press a gear, the camera, or anything else the assist does not carry, "
-     "and the game reads your own controller for that moment - steering "
-     "included. It is brief, and it is why the wheel can twitch mid-drift. "
-     "<a class=\'flink\' data-goto=\'mirror_all_buttons\'>Release all "
-     "buttons</a> removes it on machines where that switch is safe."),
-    ("Setup does not go smoothly on every machine",
-     "Two drivers, an installer that sometimes wants a restart, and an exe "
-     "nobody has signed. Most of what has gone wrong so far happened here."),
-    ("Several launches in one sitting can leave it unreliable",
-     "Restarting Windows clears it. Most of the causes are fixed; if you "
-     "still meet this one, it is worth telling us about."),
-]
-
-ROADMAP = [
-    ("Presets that follow the car",
-     "The telemetry already names what you are driving."),
-    ("An oversteer assist",
-     "Catching the car before it is sideways, not only after."),
-    ("Drift angle and stability, as dials",
-     "The numbers exist; they are just shown as numbers."),
-    ("Statistics, on a screen of their own",
-     "Time sideways, longest drift, how often it saved you."),
-    ("PlayStation controllers, properly",
-     "Needs a pad in hand - guessing from documentation is how the "
-     "language bugs happened."),
-    ("Keys for the settings you change most",
-     "Strength up and down without leaving the car."),
-    ("An overlay, inside the game",
-     "Everything above, without alt-tabbing to see it."),
-]
-
-STEPS = [
-    (["inst1"], "Download &amp; Launch",
-     "One file, and nothing to install. Take the latest release and run it. "
-     "Windows asks for administrator once - that is the moment the two "
-     "drivers go in."),
-    (["inst2"], "Let it set itself up",
-     "Both drivers are inside the exe, so nothing is downloaded on your "
-     "machine. The steps run themselves and say where they are up to. If "
-     "Windows wants a restart, a driver has asked for one, and the app "
-     "opens again by itself afterwards."),
-    (["inst3"], "Note down what it asks for",
-     "The last setup step is the only thing the assist cannot do for you: "
-     "the game has to be told to send its telemetry. The values are on "
-     "screen - Data Out on, IP 127.0.0.1, port 20777 - and the app waits "
-     "here until they arrive."),
-    (["inst3.5"], "Set it in the game",
-     "Forza keeps these under <b>Settings &rarr; HUD and Gameplay</b>, at "
-     "the very bottom of the list, under Telemetry. One more setting "
-     "matters and lives somewhere else entirely: <b>Settings &rarr; "
-     "Difficulty &rarr; Steering</b>, which has to be on Simulation. On "
-     "anything else the game steers on top of the assist and cancels most "
-     "of what it does."),
-    (["inst5"], "Drive",
-     "Telemetry arrives, the readout comes alive, and the pad reads as "
-     "hidden - the game is seeing the assist rather than your controller. "
-     "Start the assist before the game: it looks for controllers when it "
-     "starts, and a virtual pad made afterwards is invisible to it."),
-]
+# The shots for Getting started, one list per step.
+STEP_SHOTS = [["inst1"], ["inst2"], ["inst3"], ["inst3.5"],
+              ["inst5"]]
 STEP_W = 1440
 SHOTS = {}          # name -> (width, height) of what was actually written
 
@@ -258,6 +168,46 @@ def shot_size(name):
         size = (STEP_W, round(STEP_W * 9 / 16))
     SHOTS[name] = size
     return size
+
+
+def setting_name(lang):
+    """The switch as the app labels it in that language.
+
+    The page must not invent its own name for it: somebody reading this
+    goes looking for those exact words in the settings.
+    """
+    return ('<span class="flink">%s</span>'
+            % fa.TR[lang]["mirror_all_buttons"])
+
+
+def phrases():
+    """Every string the page can show, keyed the way the markup asks.
+
+    The questions come from the app's own FAQ, which is already
+    translated and already reviewed - the page holds no second copy of
+    them to fall out of step.
+    """
+    out = {}
+    n_faq = len(fa.FAQ_ITEMS["en"])
+    for lang in i18n.LANGS:
+        t = dict(i18n.UI[lang])
+        for i, (a, b) in enumerate(i18n.FEATURES[lang]):
+            t["f%dt" % i], t["f%db" % i] = a, b
+        for i, (a, b) in enumerate(i18n.STEPS[lang]):
+            t["s%dt" % i], t["s%db" % i] = a, b
+        for i, (a, b) in enumerate(i18n.KNOWN[lang]):
+            t["k%dt" % i] = a
+            t["k%db" % i] = b.replace("__SETTING__", setting_name(lang))
+        for i, (a, b) in enumerate(i18n.ROADMAP[lang]):
+            t["r%dt" % i], t["r%db" % i] = a, b
+        faq = fa.FAQ_ITEMS[lang]
+        assert len(faq) == n_faq, "%s: %d questions, English has %d" % (
+            lang, len(faq), n_faq)
+        for i, (q, a) in enumerate(faq):
+            t["q%dt" % i] = q
+            t["q%da" % i] = "".join("<p>%s</p>" % p for p in a)
+        out[lang] = t
+    return out
 
 
 def download_url():
@@ -314,20 +264,26 @@ def index_page(app_html: str) -> str:
     dl = download_url()
 
     feats = "\n".join(
-        '<article class="tile"><h3>%s</h3><p>%s</p></article>' % (t, b)
-        for t, b in FEATURES)
+        '<article class="tile"><h3 data-t="f%dt">%s</h3>'
+        '<p data-t="f%db">%s</p></article>' % (i, t, i, b)
+        for i, (t, b) in enumerate(i18n.FEATURES["en"]))
     knowns = "\n".join(
-        '<li><h3>%s</h3><p>%s</p></li>' % (t, b) for t, b in KNOWN)
+        '<li><h3 data-t="k%dt">%s</h3><p data-t="k%db">%s</p></li>'
+        % (i, t, i, b.replace("__SETTING__", setting_name("en")))
+        for i, (t, b) in enumerate(i18n.KNOWN["en"]))
     road = "\n".join(
-        '<li class="ritem"><h3>%s</h3><p>%s</p></li>' % (t, b)
-        for t, b in ROADMAP)
+        '<li class="ritem"><h3 data-t="r%dt">%s</h3>'
+        '<p data-t="r%db">%s</p></li>' % (i, t, i, b)
+        for i, (t, b) in enumerate(i18n.ROADMAP["en"]))
     steps = "\n".join(
         '<figure class="step">'
-        '%s<h3><span class="num">%d</span><span class="gttl">%s</span>'
+        '%s<h3><span class="num">%d</span>'
+        '<span class="gttl" data-t="s%dt">%s</span>'
         '<span class="gnav">'
-        '<button class="gbtn" data-gdir="-1">Previous</button>'
-        '<button class="gbtn next" data-gdir="1">Next</button></span></h3>'
-        '<figcaption>%s</figcaption></figure>'
+        '<button class="gbtn" data-gdir="-1" data-t="prev">Previous</button>'
+        '<button class="gbtn next" data-gdir="1" data-t="next">Next</button>'
+        '</span></h3>'
+        '<figcaption data-t="s%db">%s</figcaption></figure>'
         % ("".join('<div class="gshot">'
                     '<img class="gglow" src="%s.webp" alt="" aria-hidden='
                     '"true" loading="lazy">'
@@ -335,12 +291,19 @@ def index_page(app_html: str) -> str:
                     'loading="lazy"></div>'
                     % ((n, n) + shot_size(n) + (title,))
                     for n in names),
-           i + 1, title, body)
-        for i, (names, title, body) in enumerate(STEPS))
+           i + 1, i, title, i, body)
+        for i, ((title, body), names)
+        in enumerate(zip(i18n.STEPS["en"], STEP_SHOTS)))
     faqs = "\n".join(
-        '<article class="qcard"><h3>%s</h3>%s</article>'
-        % (q, "".join("<p>%s</p>" % p for p in a))
-        for q, a in faq)
+        '<article class="qcard"><h3 data-t="q%dt">%s</h3>'
+        '<div class="qa" data-t="q%da">%s</div></article>'
+        % (i, q, i, "".join("<p>%s</p>" % p for p in a))
+        for i, (q, a) in enumerate(faq))
+    langbar = "".join(
+        '<button class="lbtn" type="button" data-lang="%s">%s</button>'
+        % (code, i18n.SHORT[code]) for code in i18n.LANGS)
+    # No unescaped </ inside a script element, whatever the words are.
+    words = json.dumps(phrases(), ensure_ascii=False).replace("</", "<\\/")
 
     return """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -362,7 +325,21 @@ body{margin:0;background:var(--bg);color:var(--fg);
      font-family:Chiron,-apple-system,"Segoe UI",Roboto,sans-serif;
      line-height:1.55;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-header{padding:96px 0 64px;text-align:center}
+header{padding:96px 0 64px;text-align:center;position:relative}
+/* The page picks the language up from the browser; this is for when
+   that guess is wrong - a VPN, a borrowed machine, an English
+   Windows in a Russian flat. */
+.langbar{position:absolute;top:18px;right:24px;z-index:5;
+         display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.lbtn{padding:6px 10px;border-radius:9px;border:1px solid var(--line);
+      background-color:var(--card);color:var(--dim);font:inherit;
+      font-size:12.5px;font-weight:600;cursor:pointer;
+      transition:border-color .2s ease,color .2s ease,
+                 background-color .2s ease}
+.lbtn:hover{border-color:var(--accent);color:var(--fg)}
+.lbtn.on{border-color:var(--accent);background-color:var(--accent);
+         color:#fff}
+.lbtn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .logo{width:660px;max-width:86vw;margin:0 auto 34px;display:block}
 /* The mark carries the colour; the wordmark stays as it is. The class
    is on the shape in the artwork itself, so re-exporting the lockup
@@ -566,30 +543,31 @@ footer a{color:var(--dim)}
 </style></head><body>
 
 <header><div class="wrap">
+  <div class="langbar" id="langbar" aria-label="Language">__LANGBAR__</div>
   <div class="logo">__LOGO__</div>
-  <h1>Gamepad Drift assist for Forza Horizon</h1>
-  <p class="sub">Telemetry based steering assist, for smooth, stable and
+  <h1 data-t="h1">Gamepad Drift assist for Forza Horizon</h1>
+  <p class="sub" data-t="sub">Telemetry based steering assist, for smooth, stable and
   enjoyable drifting in the Forza Horizon series. 100% Free To Use!</p>
   <div class="band"><img src="__BANNER__.webp" width="__BW__"
        height="__BH__" alt="Steering Assist livery" loading="lazy"></div>
   <div class="cta">
-    <a class="btn" href="__DL__">Download</a>
-    <a class="btn sec" href="__REPO__">Source on GitHub</a>
+    <a class="btn" href="__DL__" data-t="dl">Download</a>
+    <a class="btn sec" href="__REPO__" data-t="src">Source on GitHub</a>
   </div>
-  <div class="ver">Free to use - source available - Windows -
+  <div class="ver" data-t="ver">Free to use - source available - Windows -
   version __VER__</div>
 </div></header>
 
 <section class="wrap showcase-wrap">
-  <h2>What it does</h2>
-  <p class="lede">Not a screenshot. This is the app's own page, built from
+  <h2 data-t="h_what">What it does</h2>
+  <p class="lede" data-t="l_what">Not a screenshot. This is the app's own page, built from
   the same source as the exe, with made-up telemetry behind it. Every tab
   and slider works - try them.</p>
   <div class="showcase">
     <div class="shot">
       <div class="frame"><iframe src="app.html"
            title="Steering Assist interface" loading="lazy"></iframe></div>
-      <p class="note">Driving data is invented for the preview. Everything
+      <p class="note" data-t="shotnote">Driving data is invented for the preview. Everything
       else is the real thing.</p>
     </div>
     <div class="tiles">__FEATURES__</div>
@@ -597,14 +575,14 @@ footer a{color:var(--dim)}
 </section>
 
 <section class="wrap showcase-wrap">
-  <h2>Getting started</h2>
-  <p class="lede">A real first run, in the order it happens.</p>
+  <h2 data-t="h_start">Getting started</h2>
+  <p class="lede" data-t="l_start">A real first run, in the order it happens.</p>
   <div class="guide"><div class="gstage">__STEPS__</div></div>
 </section>
 
 <section class="wrap showcase-wrap">
-  <h2>Questions</h2>
-  <p class="lede">Every one of these was somebody's actual problem.</p>
+  <h2 data-t="h_q">Questions</h2>
+  <p class="lede" data-t="l_q">Every one of these was somebody's actual problem.</p>
   <div class="carousel">
     <button class="cbtn" data-dir="-1" aria-label="Previous question">
       &#8249;</button>
@@ -618,8 +596,8 @@ footer a{color:var(--dim)}
 __BAND1__
 
 <section class="wrap">
-  <h2>What is coming</h2>
-  <p class="lede">Roughly in the order it is likely to happen. None of it
+  <h2 data-t="h_road">What is coming</h2>
+  <p class="lede" data-t="l_road">Roughly in the order it is likely to happen. None of it
   is a promise with a date on it.</p>
   <ol class="road">__ROAD__</ol>
 </section>
@@ -627,8 +605,8 @@ __BAND1__
 __BAND2__
 
 <section class="wrap">
-  <h2>Known problems</h2>
-  <p class="lede">Everything here is real, and none of it is a surprise to
+  <h2 data-t="h_known">Known problems</h2>
+  <p class="lede" data-t="l_known">Everything here is real, and none of it is a surprise to
   us. It is being worked on.</p>
   <ul class="known">__KNOWN__</ul>
 </section>
@@ -637,12 +615,12 @@ __BAND3__
 
 <section class="wrap outro">
   <div class="logo">__LOGO__</div>
-  <p class="oline">Stop fighting your own car.</p>
-  <p class="osub">Switch it on, keep your foot in it, and enjoy the roads
+  <p class="oline" data-t="oline">Stop fighting your own car.</p>
+  <p class="osub" data-t="osub">Switch it on, keep your foot in it, and enjoy the roads
   of Horizon the way you imagined them.</p>
   <div class="cta">
-    <a class="btn" href="__DL__">Download</a>
-    <a class="btn sec" href="__REPO__">Source on GitHub</a>
+    <a class="btn" href="__DL__" data-t="dl">Download</a>
+    <a class="btn sec" href="__REPO__" data-t="src">Source on GitHub</a>
   </div>
 </section>
 
@@ -654,6 +632,73 @@ __BAND3__
   <a href="__REPO__/blob/main/LICENSE">Steering Assist Licence 2.0</a> — all rights reserved.</p>
 </div></footer>
 <script>
+/* Whatever has to be measured again when the words change length. The
+   guide sets its own height, and the carousel centres a card. */
+var RELAYOUT = [];
+
+(function(){
+  var T = __T__;
+
+  function have(code){ return code && T[code] ? code : null; }
+
+  /* The browser's own preference first, the last choice made here
+     before it: somebody who picked a language once meant it. */
+  function pick(){
+    try{
+      var kept = have(localStorage.getItem('sa_lang'));
+      if (kept) return kept;
+    }catch(e){}
+    var want = navigator.languages || [navigator.language || 'en'];
+    for (var i = 0; i < want.length; i++){
+      var code = have(String(want[i]).toLowerCase().split('-')[0]);
+      if (code) return code;
+    }
+    return 'en';
+  }
+
+  function paint(lang){
+    var t = T[lang];
+    if (!t) return;
+    document.documentElement.lang = lang;
+    var nodes = document.querySelectorAll('[data-t]');
+    for (var i = 0; i < nodes.length; i++){
+      var word = t[nodes[i].getAttribute('data-t')];
+      if (word != null) nodes[i].innerHTML = word;
+    }
+    var bar = document.getElementById('langbar');
+    if (bar) bar.setAttribute('aria-label', t.lang);
+    var pills = document.querySelectorAll('.lbtn');
+    for (var p = 0; p < pills.length; p++)
+      pills[p].classList.toggle('on',
+        pills[p].getAttribute('data-lang') === lang);
+    for (var r = 0; r < RELAYOUT.length; r++){
+      try{ RELAYOUT[r](); }catch(e){}
+    }
+    /* The preview is the app itself, served from this origin, so it can
+       be put into the same language instead of sitting in English. */
+    try{
+      var frame = document.querySelector('.frame iframe');
+      if (frame && frame.contentWindow && frame.contentWindow.segPick)
+        frame.contentWindow.segPick('lang', lang);
+    }catch(e){}
+  }
+
+  var at = pick();
+  paint(at);
+
+  var pills = document.querySelectorAll('.lbtn');
+  for (var p = 0; p < pills.length; p++)
+    pills[p].addEventListener('click', function(){
+      at = this.getAttribute('data-lang');
+      try{ localStorage.setItem('sa_lang', at); }catch(e){}
+      paint(at);
+    });
+
+  /* The preview loads late, and it is English until it is told. */
+  var frame = document.querySelector('.frame iframe');
+  if (frame) frame.addEventListener('load', function(){ paint(at); });
+})();
+
 (function(){
   var stage = document.querySelector('.gstage');
   if (!stage) return;
@@ -678,6 +723,7 @@ __BAND3__
 
   addEventListener('resize', show);
   addEventListener('load', show);
+  RELAYOUT.push(show);
   show();
 })();
 
@@ -748,6 +794,7 @@ __BAND3__
   /* the cards are sized in percent, so wait for the first layout */
   place(false);
   addEventListener('load', function(){ place(false); });
+  RELAYOUT.push(function(){ place(false); });
 })();
 </script>
 </body></html>
@@ -756,6 +803,8 @@ __BAND3__
    .replace("__FEATURES__", feats) \
    .replace("__STEPS__", steps) \
    .replace("__FAQ__", faqs) \
+   .replace("__LANGBAR__", langbar) \
+   .replace("__T__", words) \
    .replace("__KNOWN__", knowns) \
    .replace("__ROAD__", road) \
    .replace("__BAND1__", band(*BANDS[0])) \
@@ -783,7 +832,7 @@ def write_steps():
     except ImportError:
         print("Pillow missing - the step shots were not rebuilt")
         return
-    for names, _title, _body in STEPS + [(BANNERS, "", "")]:
+    for names in STEP_SHOTS + [BANNERS]:
         for name in names:
             src = os.path.join(ROOT, "assets", name + ".png")
             if not os.path.isfile(src):
@@ -836,7 +885,7 @@ def main():
     # Pages runs Jekyll otherwise, which eats files starting with an
     # underscore and slows every build down for nothing.
     io.open(os.path.join(DOCS, ".nojekyll"), "w", encoding="utf-8").write("")
-    for name in ([n + ".webp" for ns, _t, _b in STEPS for n in ns]
+    for name in ([n + ".webp" for ns in STEP_SHOTS for n in ns]
                  + [n + ".webp" for n in BANNERS]
                  + ["index.html", "app.html", "favicon.ico", "icon-32.png",
                     "icon-180.png"]):
