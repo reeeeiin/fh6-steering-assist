@@ -185,10 +185,12 @@ STEPS = [
      "screen - Data Out on, IP 127.0.0.1, port 20777 - and the app waits "
      "here until they arrive."),
     (["inst3.5"], "Set it in the game",
-     "Forza keeps them under Settings, HUD and Gameplay, at the bottom of "
-     "the list: Telemetry. Put Steering on Simulation while you are in "
-     "there, or the game applies a correction of its own on top of this "
-     "one and cancels much of it."),
+     "Forza keeps these under <b>Settings &rarr; HUD and Gameplay</b>, at "
+     "the very bottom of the list, under Telemetry. One more setting "
+     "matters and lives somewhere else entirely: <b>Settings &rarr; "
+     "Difficulty &rarr; Steering</b>, which has to be on Simulation. On "
+     "anything else the game steers on top of the assist and cancels most "
+     "of what it does."),
     (["inst5"], "Drive",
      "Telemetry arrives, the readout comes alive, and the pad reads as "
      "hidden - the game is seeing the assist rather than your controller. "
@@ -295,7 +297,7 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
    read together rather than one after the other. The preview stays put
    while the column moves, because it is taller than any one tile and
    there is no reason to scroll away from it. */
-.band{max-width:1200px;margin:0 auto;padding:8px 24px 30px}
+.band{margin:26px 0 24px}
 .band img{display:block;width:100%;height:auto;border-radius:14px;
           border:1px solid var(--line)}
 .showcase-wrap{max-width:1200px}
@@ -420,6 +422,8 @@ footer a{color:var(--dim)}
 <header><div class="wrap">
   <div class="logo">__LOGO__</div>
   <h1>Gamepad Drift assist for Forza Horizon</h1>
+  <div class="band"><img src="__BANNER__.webp" width="__BW__"
+       height="__BH__" alt="Steering Assist livery" loading="lazy"></div>
   <p class="sub">Telemetry based steering assist, for smooth, stable and
   enjoyable drifting in the Forza Horizon series. 100% Free To Use!</p>
   <div class="cta">
@@ -429,9 +433,6 @@ footer a{color:var(--dim)}
   <div class="ver">Free to use - source available - Windows -
   version __VER__</div>
 </div></header>
-
-<div class="band"><img src="__BANNER__.webp" width="__BW__"
-     height="__BH__" alt="Steering Assist livery" loading="lazy"></div>
 
 <section class="wrap showcase-wrap">
   <h2>What it does</h2>
