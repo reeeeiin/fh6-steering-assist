@@ -209,7 +209,7 @@ def index_page(app_html: str) -> str:
         % (i + 1, title, body, name, STEP_W, round(STEP_W * 9 / 16), title)
         for i, (name, title, body) in enumerate(STEPS))
     faqs = "\n".join(
-        '<details><summary>%s</summary>%s</details>'
+        '<details class="tile qa"><summary><h3>%s</h3></summary>%s</details>'
         % (q, "".join("<p>%s</p>" % p for p in a))
         for q, a in faq)
 
@@ -307,10 +307,28 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
 ol li{margin-bottom:10px}
 ol b{color:var(--fg)}
-details{background:var(--card);border:1px solid var(--line);
-        border-radius:10px;padding:14px 18px;margin-bottom:10px}
-details summary{cursor:pointer;font-weight:600}
-details p{color:var(--dim);font-size:14px;margin:10px 0 0}
+.faqgrid{display:grid;gap:12px;align-items:start;
+         grid-template-columns:repeat(3,1fr)}
+.tile.qa{padding:0}
+.tile.qa summary{cursor:pointer;list-style:none;padding:16px 18px;
+                 display:flex;align-items:center;gap:10px}
+.tile.qa summary::-webkit-details-marker{display:none}
+.tile.qa summary::after{content:"";width:8px;height:8px;flex:none;
+                        margin-left:auto;border-right:2px solid var(--dim);
+                        border-bottom:2px solid var(--dim);
+                        transform:rotate(45deg) translate(-2px,-2px);
+                        transition:transform .2s ease,border-color .2s ease}
+.tile.qa[open] summary::after{transform:rotate(-135deg) translate(-3px,-3px);
+                              border-color:var(--accent)}
+.tile.qa summary h3{margin:0;font-size:15px}
+.tile.qa p{color:var(--dim);font-size:13.5px;line-height:1.55;
+           margin:0 18px 14px}
+.tile.qa p:first-of-type{padding-top:2px}
+/* An open one is being read, and a card that lifts under the pointer while
+   you read it is a card in the way. */
+.tile.qa[open]:hover{transform:none}
+@media (max-width:1060px){.faqgrid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:700px){.faqgrid{grid-template-columns:1fr}}
 footer{padding:40px 0 60px;color:var(--dim);font-size:13px;
        border-top:1px solid var(--line);margin-top:30px}
 footer a{color:var(--dim)}
@@ -352,9 +370,10 @@ footer a{color:var(--dim)}
   <div class="steps">__STEPS__</div>
 </section>
 
-<section class="wrap">
+<section class="wrap showcase-wrap">
   <h2>Questions</h2>
-  __FAQ__
+  <p class="lede">Every one of these was somebody's actual problem.</p>
+  <div class="faqgrid">__FAQ__</div>
 </section>
 
 <footer><div class="wrap">
