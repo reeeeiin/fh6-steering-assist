@@ -167,6 +167,8 @@ FEATURES = [
 
 # Four shots of a real first run, in the order they happen. The file
 # names are what sits in assets/; the page gets webp copies of them.
+BANNER = "inst6"
+
 STEPS = [
     (["inst1"], "Download &amp; Launch",
      "One file, and nothing to install. Take the latest release and run it. "
@@ -190,6 +192,22 @@ STEPS = [
      "starts, and a virtual pad made afterwards is invisible to it."),
 ]
 STEP_W = 1440
+SHOTS = {}          # name -> (width, height) of what was actually written
+
+
+def shot_size(name):
+    """The size the page should reserve, read from the file itself."""
+    if name in SHOTS:
+        return SHOTS[name]
+    try:
+        from PIL import Image
+        with Image.open(os.path.join(ROOT, "assets", name + ".png")) as im:
+            w, h = im.size
+        size = (STEP_W, round(STEP_W * h / w))
+    except Exception:
+        size = (STEP_W, round(STEP_W * 9 / 16))
+    SHOTS[name] = size
+    return size
 
 
 def index_page(app_html: str) -> str:
@@ -210,11 +228,11 @@ def index_page(app_html: str) -> str:
         % (i + 1, title, body,
            "".join('<img src="%s.webp" width="%d" height="%d" alt="%s" '
                    'loading="lazy">'
-                   % (n, STEP_W, round(STEP_W * 9 / 16), title)
+                   % ((n,) + shot_size(n) + (title,))
                    for n in names))
         for i, (names, title, body) in enumerate(STEPS))
     faqs = "\n".join(
-        '<details class="tile qa"><summary><h3>%s</h3></summary>%s</details>'
+        '<article class="qcard"><h3>%s</h3>%s</article>'
         % (q, "".join("<p>%s</p>" % p for p in a))
         for q, a in faq)
 
@@ -267,6 +285,9 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
    read together rather than one after the other. The preview stays put
    while the column moves, because it is taller than any one tile and
    there is no reason to scroll away from it. */
+.band{max-width:1200px;margin:0 auto;padding:8px 24px 30px}
+.band img{display:block;width:100%;height:auto;border-radius:14px;
+          border:1px solid var(--line)}
 .showcase-wrap{max-width:1200px}
 .showcase{display:grid;gap:26px;align-items:start;
           grid-template-columns:__FRAME_W__px minmax(320px,1fr)}
@@ -313,27 +334,37 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
 ol li{margin-bottom:10px}
 ol b{color:var(--fg)}
-.faqgrid{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
-.tile.qa{padding:0}
-.tile.qa summary{cursor:pointer;list-style:none;padding:16px 18px;
-                 display:flex;align-items:center;gap:10px}
-.tile.qa summary::-webkit-details-marker{display:none}
-.tile.qa summary::after{content:"";width:8px;height:8px;flex:none;
-                        margin-left:auto;border-right:2px solid var(--dim);
-                        border-bottom:2px solid var(--dim);
-                        transform:rotate(45deg) translate(-2px,-2px);
-                        transition:transform .2s ease,border-color .2s ease}
-.tile.qa[open] summary::after{transform:rotate(-135deg) translate(-3px,-3px);
-                              border-color:var(--accent)}
-.tile.qa summary h3{margin:0;font-size:15px}
-.tile.qa p{color:var(--dim);font-size:13.5px;line-height:1.55;
-           margin:0 18px 14px}
-.tile.qa p:first-of-type{padding-top:2px}
-/* An open one is being read, and a card that lifts under the pointer while
-   you read it is a card in the way. */
-.tile.qa[open]:hover{transform:none}
-@media (max-width:1060px){.faqgrid{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:700px){.faqgrid{grid-template-columns:1fr}}
+/* One question at a time, with its neighbours showing at the edges so it
+   is obvious there are more. The list is written once and repeated three
+   times by script: stepping off either end then lands inside a copy, and
+   the jump back to the middle happens while nothing is moving. */
+.carousel{display:grid;grid-template-columns:auto 1fr auto;gap:14px;
+          align-items:center}
+.cview{overflow:hidden}
+.ctrack{display:flex;gap:18px;align-items:stretch;
+        transition:transform .42s cubic-bezier(.4,0,.2,1)}
+.qcard{flex:0 0 62%;box-sizing:border-box;background:var(--card);
+       border:1px solid var(--line);border-radius:14px;padding:22px 26px;
+       opacity:.3;filter:blur(2px);
+       transition:opacity .42s ease,filter .42s ease,border-color .42s ease}
+.qcard.on{opacity:1;filter:none;border-color:var(--accent)}
+.qcard h3{margin:0 0 10px;font-size:17px}
+.qcard p{margin:0 0 9px;color:var(--dim);font-size:14px;line-height:1.6}
+.qcard p:last-child{margin-bottom:0}
+.cbtn{width:44px;height:44px;flex:none;border-radius:50%;
+      border:1px solid var(--line);background:var(--card);color:var(--fg);
+      font-size:22px;line-height:1;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      transition:border-color .2s ease,color .2s ease,background .2s ease}
+.cbtn:hover{border-color:var(--accent);color:var(--accent);background:#171717}
+.cbtn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.ccount{margin:18px 0 0;text-align:center;color:var(--dim);font-size:13px}
+.ccount b{color:var(--fg);font-weight:600}
+@media (max-width:820px){.qcard{flex-basis:80%}}
+@media (prefers-reduced-motion:reduce){
+  .ctrack{transition:none}
+  .qcard{transition:none}
+}
 footer{padding:40px 0 60px;color:var(--dim);font-size:13px;
        border-top:1px solid var(--line);margin-top:30px}
 footer a{color:var(--dim)}
@@ -352,6 +383,9 @@ footer a{color:var(--dim)}
   <div class="ver">Free to use - source available - Windows -
   version __VER__</div>
 </div></header>
+
+<div class="band"><img src="__BANNER__.webp" width="__BW__"
+     height="__BH__" alt="Steering Assist livery" loading="lazy"></div>
 
 <section class="wrap showcase-wrap">
   <h2>What it does</h2>
@@ -378,7 +412,14 @@ footer a{color:var(--dim)}
 <section class="wrap showcase-wrap">
   <h2>Questions</h2>
   <p class="lede">Every one of these was somebody's actual problem.</p>
-  <div class="faqgrid">__FAQ__</div>
+  <div class="carousel">
+    <button class="cbtn" data-dir="-1" aria-label="Previous question">
+      &#8249;</button>
+    <div class="cview"><div class="ctrack">__FAQ__</div></div>
+    <button class="cbtn" data-dir="1" aria-label="Next question">
+      &#8250;</button>
+  </div>
+  <p class="ccount"><b id="c-at">1</b> / <span id="c-of">0</span></p>
 </section>
 
 <footer><div class="wrap">
@@ -388,12 +429,85 @@ footer a{color:var(--dim)}
   <p>Steering Assist &#8482; 2026. Released under the
   <a href="__REPO__/blob/main/LICENSE">Steering Assist Licence 2.0</a> — all rights reserved.</p>
 </div></footer>
+<script>
+(function(){
+  var track = document.querySelector('.ctrack');
+  if (!track) return;
+  var N = track.children.length;
+  if (!N) return;
+  document.getElementById('c-of').textContent = N;
+  /* three copies of the list: stepping past either end lands inside a copy
+     rather than at a wall, and the silent jump back to the middle happens
+     between animations where nobody can see it */
+  track.innerHTML = track.innerHTML + track.innerHTML + track.innerHTML;
+  var all = [].slice.call(track.children);
+  var at = N;
+
+  function step(){
+    var card = all[0];
+    var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+    return card.offsetWidth + gap;
+  }
+
+  function place(animate){
+    var view = track.parentNode.clientWidth;
+    var card = all[0].offsetWidth;
+    track.style.transition = animate ? '' : 'none';
+    track.style.transform =
+      'translateX(' + ((view - card) / 2 - at * step()) + 'px)';
+    if (!animate){ void track.offsetWidth; track.style.transition = ''; }
+    for (var i = 0; i < all.length; i++)
+      all[i].classList.toggle('on', i === at);
+    document.getElementById('c-at').textContent = (at % N) + 1;
+  }
+
+  /* A timer rather than transitionend: that event does not arrive if the
+     move is interrupted, and it does not arrive at all on a page the
+     browser has stopped drawing - measured. Clicks are ignored while one
+     is running, so a move is never cut short and the index can never walk
+     out of the three copies. */
+  var busy = false;
+
+  function go(d){
+    if (busy) return;
+    busy = true;
+    at += d;
+    place(true);
+    setTimeout(function(){
+      if (at < N || at >= 2 * N){
+        at = N + ((at % N) + N) % N;
+        place(false);
+      }
+      busy = false;
+    }, 460);
+  }
+
+  var btns = document.querySelectorAll('.cbtn');
+  for (var b = 0; b < btns.length; b++)
+    btns[b].addEventListener('click', function(){
+      go(parseInt(this.getAttribute('data-dir'), 10));
+    });
+
+  addEventListener('keydown', function(e){
+    if (e.key === 'ArrowLeft') go(-1);
+    if (e.key === 'ArrowRight') go(1);
+  });
+
+  addEventListener('resize', function(){ place(false); });
+  /* the cards are sized in percent, so wait for the first layout */
+  place(false);
+  addEventListener('load', function(){ place(false); });
+})();
+</script>
 </body></html>
 """.replace("__FONTS__", fonts_from(app_html)) \
    .replace("__LOGO__", logo) \
    .replace("__FEATURES__", feats) \
    .replace("__STEPS__", steps) \
    .replace("__FAQ__", faqs) \
+   .replace("__BANNER__", BANNER) \
+   .replace("__BW__", str(shot_size(BANNER)[0])) \
+   .replace("__BH__", str(shot_size(BANNER)[1])) \
    .replace("__REPO__", REPO) \
    .replace("__VER__", ver) \
    .replace("__FRAME_H__", str(int(round(PREVIEW_H * fa.UI_SCALE)) + 8))    .replace("__FRAME_W__", str(int(round(fa.DESIGN_W * fa.UI_SCALE)) + 2))
@@ -412,7 +526,7 @@ def write_steps():
     except ImportError:
         print("Pillow missing - the step shots were not rebuilt")
         return
-    for names, _title, _body in STEPS:
+    for names, _title, _body in STEPS + [([BANNER], "", "")]:
         for name in names:
             src = os.path.join(ROOT, "assets", name + ".png")
             if not os.path.isfile(src):
@@ -420,6 +534,7 @@ def write_steps():
                 continue
             im = Image.open(src).convert("RGB")
             h = round(STEP_W * im.height / im.width)
+            SHOTS[name] = (STEP_W, h)
             im.resize((STEP_W, h), Image.LANCZOS).save(
                 os.path.join(DOCS, name + ".webp"), format="WEBP",
                 quality=88, method=6)
@@ -465,6 +580,7 @@ def main():
     # underscore and slows every build down for nothing.
     io.open(os.path.join(DOCS, ".nojekyll"), "w", encoding="utf-8").write("")
     for name in ([n + ".webp" for ns, _t, _b in STEPS for n in ns]
+                 + [BANNER + ".webp"]
                  + ["index.html", "app.html", "favicon.ico", "icon-32.png",
                     "icon-180.png"]):
         p = os.path.join(DOCS, name)
