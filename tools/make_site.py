@@ -299,9 +299,8 @@ def index_page(app_html: str) -> str:
         '<div class="qa" data-t="q%da">%s</div></article>'
         % (i, q, i, "".join("<p>%s</p>" % p for p in a))
         for i, (q, a) in enumerate(faq))
-    langbar = "".join(
-        '<button class="lbtn" type="button" data-lang="%s">%s</button>'
-        % (code, i18n.SHORT[code]) for code in i18n.LANGS)
+    langs = json.dumps([[code, i18n.SHORT[code]] for code in i18n.LANGS],
+                       ensure_ascii=False)
     # No unescaped </ inside a script element, whatever the words are.
     words = json.dumps(phrases(), ensure_ascii=False).replace("</", "<\\/")
 
@@ -327,20 +326,25 @@ body{margin:0;background:var(--bg);color:var(--fg);
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
 header{padding:96px 0 64px;text-align:center;position:relative}
 /* The page picks the language up from the browser; this is for when
-   that guess is wrong - a VPN, a borrowed machine, an English
-   Windows in a Russian flat. */
-.langbar{position:absolute;top:18px;right:24px;z-index:5;
-         display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.lbtn{padding:6px 10px;border-radius:9px;border:1px solid var(--line);
+   that guess is wrong - a VPN, a borrowed machine, an English Windows in
+   a Russian flat. One pill that steps to the next language, the same
+   gesture the setup screen offers, sitting against the wordmark: it is
+   hung off the logo box rather than off the corner, so it stays beside
+   the letters at any width the lockup is given. */
+.lbtn{position:absolute;left:100%;top:50%;transform:translateY(-50%);
+      margin-left:14px;min-width:40px;height:28px;padding:0 10px;
+      border-radius:8px;border:1px solid var(--line);
       background-color:var(--card);color:var(--dim);font:inherit;
-      font-size:12.5px;font-weight:600;cursor:pointer;
+      font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
       transition:border-color .2s ease,color .2s ease,
                  background-color .2s ease}
-.lbtn:hover{border-color:var(--accent);color:var(--fg)}
-.lbtn.on{border-color:var(--accent);background-color:var(--accent);
-         color:#fff}
+.lbtn:hover{border-color:var(--accent);color:var(--accent);
+            background-color:#171717}
 .lbtn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.logo{width:660px;max-width:86vw;margin:0 auto 34px;display:block}
+/* Where the lockup takes most of the width there is nothing to sit
+   beside, so it goes back to the corner. */
+.logo{width:660px;max-width:86vw;margin:0 auto 34px;display:block;
+      position:relative}
 /* The mark carries the colour; the wordmark stays as it is. The class
    is on the shape in the artwork itself, so re-exporting the lockup
    does not quietly move it onto a letter. */
@@ -539,12 +543,28 @@ ol b{color:var(--fg)}
 footer{padding:40px 0 60px;color:var(--dim);font-size:13px;
        border-top:1px solid var(--line);margin-top:30px}
 footer a{color:var(--dim)}
+@media (max-width:900px){
+  /* Beaten by the .logo rule below it otherwise - same weight, and that
+     one comes later. */
+  header .logo{position:static}
+  .lbtn{left:auto;right:24px;top:18px;transform:none;margin-left:0}
+}
+
+/* The preview is the app at its own fixed width - it cannot be reflowed,
+   only carried. Below the width where it fits beside the tiles the two
+   stack, and the preview scrolls inside its own box rather than pushing
+   the whole page sideways. */
+@media (max-width:1000px){
+  .showcase{grid-template-columns:minmax(0,1fr)}
+  .shot{position:static;overflow-x:auto}
+  .frame{max-width:none}
+}
 @media (max-width:640px){.frame iframe{height:__FRAME_H__px}}
 </style></head><body>
 
 <header><div class="wrap">
-  <div class="langbar" id="langbar" aria-label="Language">__LANGBAR__</div>
-  <div class="logo">__LOGO__</div>
+  <div class="logo">__LOGO__<button class="lbtn" id="lang" type="button"
+       aria-label="Language">En</button></div>
   <h1 data-t="h1">Gamepad Drift assist for Forza Horizon</h1>
   <p class="sub" data-t="sub">Telemetry based steering assist, for smooth, stable and
   enjoyable drifting in the Forza Horizon series. 100% Free To Use!</p>
@@ -638,8 +658,15 @@ var RELAYOUT = [];
 
 (function(){
   var T = __T__;
+  var LANGS = __LANGS__;          // [[code, what the pill shows], ...]
 
   function have(code){ return code && T[code] ? code : null; }
+
+  function shortOf(code){
+    for (var i = 0; i < LANGS.length; i++)
+      if (LANGS[i][0] === code) return LANGS[i][1];
+    return code;
+  }
 
   /* The browser's own preference first, the last choice made here
      before it: somebody who picked a language once meant it. */
@@ -665,12 +692,12 @@ var RELAYOUT = [];
       var word = t[nodes[i].getAttribute('data-t')];
       if (word != null) nodes[i].innerHTML = word;
     }
-    var bar = document.getElementById('langbar');
-    if (bar) bar.setAttribute('aria-label', t.lang);
-    var pills = document.querySelectorAll('.lbtn');
-    for (var p = 0; p < pills.length; p++)
-      pills[p].classList.toggle('on',
-        pills[p].getAttribute('data-lang') === lang);
+    var pill = document.getElementById('lang');
+    if (pill){
+      pill.textContent = shortOf(lang);
+      pill.setAttribute('aria-label', t.lang);
+      pill.title = t.lang;
+    }
     for (var r = 0; r < RELAYOUT.length; r++){
       try{ RELAYOUT[r](); }catch(e){}
     }
@@ -686,13 +713,15 @@ var RELAYOUT = [];
   var at = pick();
   paint(at);
 
-  var pills = document.querySelectorAll('.lbtn');
-  for (var p = 0; p < pills.length; p++)
-    pills[p].addEventListener('click', function(){
-      at = this.getAttribute('data-lang');
-      try{ localStorage.setItem('sa_lang', at); }catch(e){}
-      paint(at);
-    });
+  var pill = document.getElementById('lang');
+  if (pill) pill.addEventListener('click', function(){
+    var i = 0;
+    for (var k = 0; k < LANGS.length; k++)
+      if (LANGS[k][0] === at) i = k;
+    at = LANGS[(i + 1) % LANGS.length][0];
+    try{ localStorage.setItem('sa_lang', at); }catch(e){}
+    paint(at);
+  });
 
   /* The preview loads late, and it is English until it is told. */
   var frame = document.querySelector('.frame iframe');
@@ -803,7 +832,7 @@ var RELAYOUT = [];
    .replace("__FEATURES__", feats) \
    .replace("__STEPS__", steps) \
    .replace("__FAQ__", faqs) \
-   .replace("__LANGBAR__", langbar) \
+   .replace("__LANGS__", langs) \
    .replace("__T__", words) \
    .replace("__KNOWN__", knowns) \
    .replace("__ROAD__", road) \
