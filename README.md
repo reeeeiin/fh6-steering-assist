@@ -5,7 +5,7 @@ is actually doing, and feeds the countersteer you would be reaching for into a
 virtual Xbox controller. The game sees a normal gamepad — **no memory access,
 no reading or writing game files, no injection of any kind.**
 
-<img width="1920" height="1080" alt="frame38" src="https://github.com/user-attachments/assets/7a5bb2da-235d-4cfa-bfcd-97b26e13ba2b" />
+<img src="docs/inst5.webp" width="1440" height="810" alt="Steering Assist 2.1 running over Forza Horizon" />
 
 ![status](https://img.shields.io/badge/status-playable-brightgreen) ![python](https://img.shields.io/badge/python-3.10+-blue)
 
