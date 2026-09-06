@@ -51,6 +51,9 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
    while the column moves, because it is taller than any one tile and
    there is no reason to scroll away from it. */
 .band{margin:26px 0 48px}
+/* Standing on its own between two sections it needs its own breathing
+   room, and evenly: it belongs to neither of them. */
+.bandw .band{margin:10px 0}
 .band img{display:block;width:100%;height:auto;border-radius:14px;
           border:1px solid var(--line)}
 .showcase-wrap{max-width:1200px}
@@ -267,30 +270,6 @@ footer a{color:var(--dim)}
 <figure class="step"><div class="gshot"><img class="gglow" src="inst5.webp" alt="" aria-hidden="true" loading="lazy"><img src="inst5.webp" width="1440" height="810" alt="Drive" loading="lazy"></div><h3><span class="num">5</span><span class="gttl">Drive</span><span class="gnav"><button class="gbtn" data-gdir="-1">Previous</button><button class="gbtn next" data-gdir="1">Next</button></span></h3><figcaption>Telemetry arrives, the readout comes alive, and the pad reads as hidden - the game is seeing the assist rather than your controller. Start the assist before the game: it looks for controllers when it starts, and a virtual pad made afterwards is invisible to it.</figcaption></figure></div></div>
 </section>
 
-<section class="wrap">
-  <h2>Known problems</h2>
-  <p class="lede">Everything here is real, and none of it is a surprise to
-  us. It is being worked on.</p>
-  <ul class="known"><li><h3>PlayStation controllers are only half supported</h3><p>A DualShock or DualSense is read differently from an Xbox pad, and not everything lands where it should yet.</p></li>
-<li><h3>The correction pauses while you shift</h3><p>Press a gear, the camera, or anything else the assist does not carry, and the game reads your own controller for that moment - steering included. It is brief, and it is why the wheel can twitch mid-drift. <a class='flink' data-goto='mirror_all_buttons'>Release all buttons</a> removes it on machines where that switch is safe.</p></li>
-<li><h3>Setup does not go smoothly on every machine</h3><p>Two drivers, an installer that sometimes wants a restart, and an exe nobody has signed. Most of what has gone wrong so far happened here.</p></li>
-<li><h3>Several launches in one sitting can leave it unreliable</h3><p>Restarting Windows clears it. Most of the causes are fixed; if you still meet this one, it is worth telling us about.</p></li></ul>
-</section>
-
-<section class="wrap">
-  <h2>What is coming</h2>
-  <p class="lede">Roughly in the order it is likely to happen. None of it
-  is a promise with a date on it.</p>
-  <ol class="road"><li class="ritem"><h3>Presets that follow the car</h3><p>The telemetry already names what you are driving.</p></li>
-<li class="ritem"><h3>An oversteer assist</h3><p>Catching the car before it is sideways, not only after.</p></li>
-<li class="ritem"><h3>Drift angle and stability, as dials</h3><p>The numbers exist; they are just shown as numbers.</p></li>
-<li class="ritem"><h3>Statistics, on a screen of their own</h3><p>Time sideways, longest drift, how often it saved you.</p></li>
-<li class="ritem"><h3>PlayStation controllers, properly</h3><p>Needs a pad in hand - guessing from documentation is how the language bugs happened.</p></li>
-<li class="ritem"><h3>Keys for the settings you change most</h3><p>Strength up and down without leaving the car.</p></li></ol>
-  <p class="note">The rest, and why some of it may never happen, is in
-  <a href="https://github.com/reeeeiin/fh6-steering-assist/blob/main/ROADMAP.md">ROADMAP.md</a>.</p>
-</section>
-
 <section class="wrap showcase-wrap">
   <h2>Questions</h2>
   <p class="lede">Every one of these was somebody's actual problem.</p>
@@ -314,6 +293,34 @@ footer a{color:var(--dim)}
       &#8250;</button>
   </div>
   <p class="ccount"><b id="c-at">1</b> / <span id="c-of">0</span></p>
+</section>
+
+<div class="wrap bandw"><div class="band"><img src="inst7.webp" width="1440" height="411" alt="Steering Assist livery, sideways in the smoke" loading="lazy"></div></div>
+
+<section class="wrap">
+  <h2>Known problems</h2>
+  <p class="lede">Everything here is real, and none of it is a surprise to
+  us. It is being worked on.</p>
+  <ul class="known"><li><h3>PlayStation controllers are only half supported</h3><p>A DualShock or DualSense is read differently from an Xbox pad, and not everything lands where it should yet.</p></li>
+<li><h3>The correction pauses while you shift</h3><p>Press a gear, the camera, or anything else the assist does not carry, and the game reads your own controller for that moment - steering included. It is brief, and it is why the wheel can twitch mid-drift. <a class='flink' data-goto='mirror_all_buttons'>Release all buttons</a> removes it on machines where that switch is safe.</p></li>
+<li><h3>Setup does not go smoothly on every machine</h3><p>Two drivers, an installer that sometimes wants a restart, and an exe nobody has signed. Most of what has gone wrong so far happened here.</p></li>
+<li><h3>Several launches in one sitting can leave it unreliable</h3><p>Restarting Windows clears it. Most of the causes are fixed; if you still meet this one, it is worth telling us about.</p></li></ul>
+</section>
+
+<div class="wrap bandw"><div class="band"><img src="inst8.webp" width="1440" height="411" alt="Steering Assist livery on a mountain road" loading="lazy"></div></div>
+
+<section class="wrap">
+  <h2>What is coming</h2>
+  <p class="lede">Roughly in the order it is likely to happen. None of it
+  is a promise with a date on it.</p>
+  <ol class="road"><li class="ritem"><h3>Presets that follow the car</h3><p>The telemetry already names what you are driving.</p></li>
+<li class="ritem"><h3>An oversteer assist</h3><p>Catching the car before it is sideways, not only after.</p></li>
+<li class="ritem"><h3>Drift angle and stability, as dials</h3><p>The numbers exist; they are just shown as numbers.</p></li>
+<li class="ritem"><h3>Statistics, on a screen of their own</h3><p>Time sideways, longest drift, how often it saved you.</p></li>
+<li class="ritem"><h3>PlayStation controllers, properly</h3><p>Needs a pad in hand - guessing from documentation is how the language bugs happened.</p></li>
+<li class="ritem"><h3>Keys for the settings you change most</h3><p>Strength up and down without leaving the car.</p></li></ol>
+  <p class="note">The rest, and why some of it may never happen, is in
+  <a href="https://github.com/reeeeiin/fh6-steering-assist/blob/main/ROADMAP.md">ROADMAP.md</a>.</p>
 </section>
 
 <footer><div class="wrap">

@@ -168,6 +168,13 @@ FEATURES = [
 # Four shots of a real first run, in the order they happen. The file
 # names are what sits in assets/; the page gets webp copies of them.
 BANNER = "inst6"
+# The liveries that break up the tail of the page, in the order they
+# appear. Same treatment as the one in the header.
+BANDS = [
+    ("inst7", "Steering Assist livery, sideways in the smoke"),
+    ("inst8", "Steering Assist livery on a mountain road"),
+]
+BANNERS = [BANNER] + [n for n, _a in BANDS]
 
 KNOWN = [
     ("PlayStation controllers are only half supported",
@@ -248,6 +255,14 @@ def shot_size(name):
         size = (STEP_W, round(STEP_W * 9 / 16))
     SHOTS[name] = size
     return size
+
+
+def band(name, alt):
+    """A full width picture between two sections."""
+    w, h = shot_size(name)
+    return ('<div class="wrap bandw"><div class="band">'
+            '<img src="%s.webp" width="%d" height="%d" alt="%s" '
+            'loading="lazy"></div></div>' % (name, w, h, alt))
 
 
 def index_page(app_html: str) -> str:
@@ -338,6 +353,9 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
    while the column moves, because it is taller than any one tile and
    there is no reason to scroll away from it. */
 .band{margin:26px 0 48px}
+/* Standing on its own between two sections it needs its own breathing
+   room, and evenly: it belongs to neither of them. */
+.bandw .band{margin:10px 0}
 .band img{display:block;width:100%;height:auto;border-radius:14px;
           border:1px solid var(--line)}
 .showcase-wrap{max-width:1200px}
@@ -523,22 +541,6 @@ footer a{color:var(--dim)}
   <div class="guide"><div class="gstage">__STEPS__</div></div>
 </section>
 
-<section class="wrap">
-  <h2>Known problems</h2>
-  <p class="lede">Everything here is real, and none of it is a surprise to
-  us. It is being worked on.</p>
-  <ul class="known">__KNOWN__</ul>
-</section>
-
-<section class="wrap">
-  <h2>What is coming</h2>
-  <p class="lede">Roughly in the order it is likely to happen. None of it
-  is a promise with a date on it.</p>
-  <ol class="road">__ROAD__</ol>
-  <p class="note">The rest, and why some of it may never happen, is in
-  <a href="__REPO__/blob/main/ROADMAP.md">ROADMAP.md</a>.</p>
-</section>
-
 <section class="wrap showcase-wrap">
   <h2>Questions</h2>
   <p class="lede">Every one of these was somebody's actual problem.</p>
@@ -550,6 +552,26 @@ footer a{color:var(--dim)}
       &#8250;</button>
   </div>
   <p class="ccount"><b id="c-at">1</b> / <span id="c-of">0</span></p>
+</section>
+
+__BAND1__
+
+<section class="wrap">
+  <h2>Known problems</h2>
+  <p class="lede">Everything here is real, and none of it is a surprise to
+  us. It is being worked on.</p>
+  <ul class="known">__KNOWN__</ul>
+</section>
+
+__BAND2__
+
+<section class="wrap">
+  <h2>What is coming</h2>
+  <p class="lede">Roughly in the order it is likely to happen. None of it
+  is a promise with a date on it.</p>
+  <ol class="road">__ROAD__</ol>
+  <p class="note">The rest, and why some of it may never happen, is in
+  <a href="__REPO__/blob/main/ROADMAP.md">ROADMAP.md</a>.</p>
 </section>
 
 <footer><div class="wrap">
@@ -664,6 +686,8 @@ footer a{color:var(--dim)}
    .replace("__FAQ__", faqs) \
    .replace("__KNOWN__", knowns) \
    .replace("__ROAD__", road) \
+   .replace("__BAND1__", band(*BANDS[0])) \
+   .replace("__BAND2__", band(*BANDS[1])) \
    .replace("__BANNER__", BANNER) \
    .replace("__BW__", str(shot_size(BANNER)[0])) \
    .replace("__BH__", str(shot_size(BANNER)[1])) \
@@ -685,7 +709,7 @@ def write_steps():
     except ImportError:
         print("Pillow missing - the step shots were not rebuilt")
         return
-    for names, _title, _body in STEPS + [([BANNER], "", "")]:
+    for names, _title, _body in STEPS + [(BANNERS, "", "")]:
         for name in names:
             src = os.path.join(ROOT, "assets", name + ".png")
             if not os.path.isfile(src):
@@ -739,7 +763,7 @@ def main():
     # underscore and slows every build down for nothing.
     io.open(os.path.join(DOCS, ".nojekyll"), "w", encoding="utf-8").write("")
     for name in ([n + ".webp" for ns, _t, _b in STEPS for n in ns]
-                 + [BANNER + ".webp"]
+                 + [n + ".webp" for n in BANNERS]
                  + ["index.html", "app.html", "favicon.ico", "icon-32.png",
                     "icon-180.png"]):
         p = os.path.join(DOCS, name)
