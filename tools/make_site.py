@@ -168,22 +168,25 @@ FEATURES = [
 # Four shots of a real first run, in the order they happen. The file
 # names are what sits in assets/; the page gets webp copies of them.
 STEPS = [
-    ("inst1", "Download &amp; Launch",
+    (["inst1"], "Download &amp; Launch",
      "One file, and nothing to install. Take the latest release and run it. "
      "Windows asks for administrator once - that is the moment the two "
      "drivers go in."),
-    ("inst2", "Let it set itself up",
+    (["inst2"], "Let it set itself up",
      "Both drivers are inside the exe, so nothing is downloaded on your "
      "machine. The steps run themselves and say where they are up to. If "
      "Windows wants a restart, a driver has asked for one, and the app "
      "opens again by itself afterwards."),
-    ("inst3", "Turn on Data Out in the game",
-     "The last step spells out what to set: Data Out on, IP 127.0.0.1, port "
-     "20777, under HUD and Gameplay. Put Steering on Simulation too, or the "
-     "game corrects on top of the assist and cancels much of it."),
-    ("inst4", "Drive",
-     "Telemetry starts arriving and the readout comes alive. Start the "
-     "assist before the game: the game looks for controllers when it "
+    (["inst3", "inst3.5"], "Turn on Data Out in the game",
+     "The last setup step spells out what to set, and the game keeps it "
+     "under Settings, HUD and Gameplay, Telemetry: Data Out on, IP "
+     "127.0.0.1, port 20777. Put Steering on Simulation while you are "
+     "there, or the game corrects on top of the assist and cancels much "
+     "of it."),
+    (["inst5"], "Drive",
+     "Telemetry arrives, the readout comes alive, and the pad reads as "
+     "hidden - the game is seeing the assist rather than your controller. "
+     "Start the assist before the game: it looks for controllers when it "
      "starts, and a virtual pad made afterwards is invisible to it."),
 ]
 STEP_W = 1440
@@ -203,11 +206,13 @@ def index_page(app_html: str) -> str:
     steps = "\n".join(
         '<figure class="step">'
         '<h3><span class="num">%d</span>%s</h3>'
-        '<figcaption>%s</figcaption>'
-        '<img src="%s.webp" width="%d" height="%d" alt="%s" loading="lazy">'
-        '</figure>'
-        % (i + 1, title, body, name, STEP_W, round(STEP_W * 9 / 16), title)
-        for i, (name, title, body) in enumerate(STEPS))
+        '<figcaption>%s</figcaption>%s</figure>'
+        % (i + 1, title, body,
+           "".join('<img src="%s.webp" width="%d" height="%d" alt="%s" '
+                   'loading="lazy">'
+                   % (n, STEP_W, round(STEP_W * 9 / 16), title)
+                   for n in names))
+        for i, (names, title, body) in enumerate(STEPS))
     faqs = "\n".join(
         '<details class="tile qa"><summary><h3>%s</h3></summary>%s</details>'
         % (q, "".join("<p>%s</p>" % p for p in a))
@@ -302,13 +307,13 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
            background:var(--accent);color:#fff;font-size:13px}
 .step img{display:block;width:100%;height:auto;border-radius:12px;
           border:1px solid var(--line);background:#0f0f0f}
+.step img + img{margin-top:14px}
 .step figcaption{margin:0 0 24px;color:var(--dim);font-size:14px;
                  line-height:1.6;max-width:760px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
 ol li{margin-bottom:10px}
 ol b{color:var(--fg)}
-.faqgrid{display:grid;gap:12px;align-items:start;
-         grid-template-columns:repeat(3,1fr)}
+.faqgrid{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
 .tile.qa{padding:0}
 .tile.qa summary{cursor:pointer;list-style:none;padding:16px 18px;
                  display:flex;align-items:center;gap:10px}
@@ -407,16 +412,17 @@ def write_steps():
     except ImportError:
         print("Pillow missing - the step shots were not rebuilt")
         return
-    for name, _title, _body in STEPS:
-        src = os.path.join(ROOT, "assets", name + ".png")
-        if not os.path.isfile(src):
-            print("missing: %s" % src)
-            continue
-        im = Image.open(src).convert("RGB")
-        h = round(STEP_W * im.height / im.width)
-        im.resize((STEP_W, h), Image.LANCZOS).save(
-            os.path.join(DOCS, name + ".webp"), format="WEBP",
-            quality=88, method=6)
+    for names, _title, _body in STEPS:
+        for name in names:
+            src = os.path.join(ROOT, "assets", name + ".png")
+            if not os.path.isfile(src):
+                print("missing: %s" % src)
+                continue
+            im = Image.open(src).convert("RGB")
+            h = round(STEP_W * im.height / im.width)
+            im.resize((STEP_W, h), Image.LANCZOS).save(
+                os.path.join(DOCS, name + ".webp"), format="WEBP",
+                quality=88, method=6)
 
 
 def write_icons():
@@ -458,7 +464,7 @@ def main():
     # Pages runs Jekyll otherwise, which eats files starting with an
     # underscore and slows every build down for nothing.
     io.open(os.path.join(DOCS, ".nojekyll"), "w", encoding="utf-8").write("")
-    for name in ([n + ".webp" for n, _t, _b in STEPS]
+    for name in ([n + ".webp" for ns, _t, _b in STEPS for n in ns]
                  + ["index.html", "app.html", "favicon.ico", "icon-32.png",
                     "icon-180.png"]):
         p = os.path.join(DOCS, name)

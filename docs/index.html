@@ -89,13 +89,13 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px}
            background:var(--accent);color:#fff;font-size:13px}
 .step img{display:block;width:100%;height:auto;border-radius:12px;
           border:1px solid var(--line);background:#0f0f0f}
+.step img + img{margin-top:14px}
 .step figcaption{margin:0 0 24px;color:var(--dim);font-size:14px;
                  line-height:1.6;max-width:760px}
 ol{padding-left:20px;color:var(--dim);max-width:720px}
 ol li{margin-bottom:10px}
 ol b{color:var(--fg)}
-.faqgrid{display:grid;gap:12px;align-items:start;
-         grid-template-columns:repeat(3,1fr)}
+.faqgrid{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
 .tile.qa{padding:0}
 .tile.qa summary{cursor:pointer;list-style:none;padding:16px 18px;
                  display:flex;align-items:center;gap:10px}
@@ -183,8 +183,8 @@ footer a{color:var(--dim)}
   <p class="lede">A real first run, in the order it happens.</p>
   <div class="steps"><figure class="step"><h3><span class="num">1</span>Download &amp; Launch</h3><figcaption>One file, and nothing to install. Take the latest release and run it. Windows asks for administrator once - that is the moment the two drivers go in.</figcaption><img src="inst1.webp" width="1440" height="810" alt="Download &amp; Launch" loading="lazy"></figure>
 <figure class="step"><h3><span class="num">2</span>Let it set itself up</h3><figcaption>Both drivers are inside the exe, so nothing is downloaded on your machine. The steps run themselves and say where they are up to. If Windows wants a restart, a driver has asked for one, and the app opens again by itself afterwards.</figcaption><img src="inst2.webp" width="1440" height="810" alt="Let it set itself up" loading="lazy"></figure>
-<figure class="step"><h3><span class="num">3</span>Turn on Data Out in the game</h3><figcaption>The last step spells out what to set: Data Out on, IP 127.0.0.1, port 20777, under HUD and Gameplay. Put Steering on Simulation too, or the game corrects on top of the assist and cancels much of it.</figcaption><img src="inst3.webp" width="1440" height="810" alt="Turn on Data Out in the game" loading="lazy"></figure>
-<figure class="step"><h3><span class="num">4</span>Drive</h3><figcaption>Telemetry starts arriving and the readout comes alive. Start the assist before the game: the game looks for controllers when it starts, and a virtual pad made afterwards is invisible to it.</figcaption><img src="inst4.webp" width="1440" height="810" alt="Drive" loading="lazy"></figure></div>
+<figure class="step"><h3><span class="num">3</span>Turn on Data Out in the game</h3><figcaption>The last setup step spells out what to set, and the game keeps it under Settings, HUD and Gameplay, Telemetry: Data Out on, IP 127.0.0.1, port 20777. Put Steering on Simulation while you are there, or the game corrects on top of the assist and cancels much of it.</figcaption><img src="inst3.webp" width="1440" height="810" alt="Turn on Data Out in the game" loading="lazy"><img src="inst3.5.webp" width="1440" height="810" alt="Turn on Data Out in the game" loading="lazy"></figure>
+<figure class="step"><h3><span class="num">4</span>Drive</h3><figcaption>Telemetry arrives, the readout comes alive, and the pad reads as hidden - the game is seeing the assist rather than your controller. Start the assist before the game: it looks for controllers when it starts, and a virtual pad made afterwards is invisible to it.</figcaption><img src="inst5.webp" width="1440" height="810" alt="Drive" loading="lazy"></figure></div>
 </section>
 
 <section class="wrap showcase-wrap">
