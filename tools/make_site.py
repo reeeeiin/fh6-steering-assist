@@ -260,6 +260,42 @@ def shot_size(name):
     return size
 
 
+def download_url():
+    """The exe of the newest release, straight from GitHub.
+
+    The asset carries its version in its name, so there is no fixed URL
+    GitHub can resolve by itself - the newest one is looked up while the
+    page is built and written into the button. If nothing answers, the
+    releases page goes in instead: a link that is never wrong, only one
+    click longer than it could be.
+
+    It is written into a static page, so it is right for as long as the
+    page is rebuilt with each release. That is what the release routine
+    does, and the exe it names is printed below so a stale one shows.
+    """
+    api = ("https://api.github.com/repos/"
+           + REPO.split("github.com/", 1)[1] + "/releases/latest")
+    try:
+        import urllib.request
+        req = urllib.request.Request(api, headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "steering-assist-site"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.load(r)
+        exes = [a for a in data.get("assets", [])
+                if a.get("name", "").lower().endswith(".exe")]
+        if exes:
+            best = max(exes, key=lambda a: a.get("size", 0))
+            print("download    %s  (%s)" % (best["name"],
+                                            data.get("tag_name")))
+            return best["browser_download_url"]
+        print("download    %s has no exe - linking the releases page"
+              % data.get("tag_name"))
+    except Exception as exc:
+        print("download    %s - linking the releases page" % exc)
+    return REPO + "/releases/latest"
+
+
 def band(name, alt):
     """A full width picture between two sections."""
     w, h = shot_size(name)
@@ -275,6 +311,7 @@ def index_page(app_html: str) -> str:
     # source moves, so a full number here goes stale against the
     # release the download button actually hands over.
     ver = fa.APP_SERIES
+    dl = download_url()
 
     feats = "\n".join(
         '<article class="tile"><h3>%s</h3><p>%s</p></article>' % (t, b)
@@ -536,7 +573,7 @@ footer a{color:var(--dim)}
   <div class="band"><img src="__BANNER__.webp" width="__BW__"
        height="__BH__" alt="Steering Assist livery" loading="lazy"></div>
   <div class="cta">
-    <a class="btn" href="__REPO__/releases/latest">Download</a>
+    <a class="btn" href="__DL__">Download</a>
     <a class="btn sec" href="__REPO__">Source on GitHub</a>
   </div>
   <div class="ver">Free to use - source available - Windows -
@@ -604,7 +641,7 @@ __BAND3__
   <p class="osub">Switch it on, keep your foot in it, and enjoy the roads
   of Horizon the way you imagined them.</p>
   <div class="cta">
-    <a class="btn" href="__REPO__/releases/latest">Download</a>
+    <a class="btn" href="__DL__">Download</a>
     <a class="btn sec" href="__REPO__">Source on GitHub</a>
   </div>
 </section>
@@ -727,6 +764,7 @@ __BAND3__
    .replace("__BANNER__", BANNER) \
    .replace("__BW__", str(shot_size(BANNER)[0])) \
    .replace("__BH__", str(shot_size(BANNER)[1])) \
+   .replace("__DL__", dl) \
    .replace("__REPO__", REPO) \
    .replace("__VER__", ver) \
    .replace("__FRAME_H__", str(int(round(PREVIEW_H * fa.UI_SCALE)) + 8))    .replace("__FRAME_W__", str(int(round(fa.DESIGN_W * fa.UI_SCALE)) + 2))
