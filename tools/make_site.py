@@ -180,6 +180,22 @@ def setting_name(lang):
             % fa.TR[lang]["mirror_all_buttons"])
 
 
+def every_key(page, words):
+    """No key in the markup may be missing from any language.
+
+    A page is built in English and swapped by key in the browser, so a
+    key that never made it into the table does not fail - it leaves one
+    line in English among the rest. That has happened once already, from
+    an edit that quietly moved an assignment out of its loop.
+    """
+    keys = set(re.findall(r'data-t="([a-z0-9_]+)"', page))
+    assert keys, "no keys in the markup at all"
+    for lang in sorted(words):
+        gone = sorted(k for k in keys if k not in words[lang])
+        assert not gone, "%s has no %s" % (lang, ", ".join(gone))
+    return len(keys)
+
+
 def phrases():
     """Every string the page can show, keyed the way the markup asks.
 
@@ -191,6 +207,8 @@ def phrases():
     n_faq = len(fa.FAQ_ITEMS["en"])
     for lang in i18n.LANGS:
         t = dict(i18n.UI[lang])
+        # the button says what the app's own button says
+        t["sup"] = fa.TR[lang]["nav_support"]
         for i, (a, b) in enumerate(i18n.FEATURES[lang]):
             t["f%dt" % i], t["f%db" % i] = a, b
         for i, (a, b) in enumerate(i18n.STEPS[lang]):
@@ -299,12 +317,14 @@ def index_page(app_html: str) -> str:
         '<div class="qa" data-t="q%da">%s</div></article>'
         % (i, q, i, "".join("<p>%s</p>" % p for p in a))
         for i, (q, a) in enumerate(faq))
+    boosty = "https://boosty.to/reeeeiin"
     langs = json.dumps([[code, i18n.SHORT[code]] for code in i18n.LANGS],
                        ensure_ascii=False)
     # No unescaped </ inside a script element, whatever the words are.
-    words = json.dumps(phrases(), ensure_ascii=False).replace("</", "<\\/")
+    table = phrases()
+    words = json.dumps(table, ensure_ascii=False).replace("</", "<\\/")
 
-    return """<!doctype html>
+    page = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Steering Assist - telemetry drift assist for Forza Horizon on gamepad</title>
@@ -364,6 +384,18 @@ h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
 .btn.sec{background-color:transparent;background-image:none;color:var(--fg);
          border:1px solid var(--line)}
 .btn.sec:hover{background-color:#181818;background-image:none}
+/* The same amber the app gives it, and the same lift on hover. Written
+   as longhands like the others, so leaving it never shows a hole. */
+.btn.sup{background-color:var(--warn);
+         background-image:linear-gradient(180deg,var(--warn),var(--warn));
+         color:#101010;
+         transition:background-color .2s ease,background-image .2s ease,
+                    box-shadow .2s ease,filter .2s ease}
+.btn.sup:hover{background-color:var(--warn);
+               background-image:linear-gradient(180deg,var(--warn),
+                                var(--warn));
+               filter:brightness(1.08);
+               box-shadow:0 3px 12px rgba(255,204,0,.25)}
 .ver{color:var(--dim);font-size:13px;margin-top:14px}
 section.wrap{padding:36px 24px}
 h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
@@ -584,6 +616,8 @@ footer a{color:var(--dim)}
   <div class="cta">
     <a class="btn" href="__DL__" data-t="dl">Download</a>
     <a class="btn sec" href="__REPO__" data-t="src">Source on GitHub</a>
+    <a class="btn sup" href="__BOOSTY__" target="_blank" rel="noopener"
+       data-t="sup">Support</a>
   </div>
   <div class="ver" data-t="ver">Free to use - source available - Windows -
   version __VER__</div>
@@ -652,6 +686,8 @@ __BAND3__
   <div class="cta">
     <a class="btn" href="__DL__" data-t="dl">Download</a>
     <a class="btn sec" href="__REPO__" data-t="src">Source on GitHub</a>
+    <a class="btn sup" href="__BOOSTY__" target="_blank" rel="noopener"
+       data-t="sup">Support</a>
   </div>
 </section>
 
@@ -897,6 +933,7 @@ var RELAYOUT = [];
    .replace("__STEPS__", steps) \
    .replace("__FAQ__", faqs) \
    .replace("__LANGS__", langs) \
+   .replace("__BOOSTY__", boosty) \
    .replace("__T__", words) \
    .replace("__KNOWN__", knowns) \
    .replace("__ROAD__", road) \
@@ -910,6 +947,9 @@ var RELAYOUT = [];
    .replace("__REPO__", REPO) \
    .replace("__VER__", ver) \
    .replace("__FRAME_H__", str(int(round(PREVIEW_H * fa.UI_SCALE)) + 8))    .replace("__FRAME_W__", str(int(round(fa.DESIGN_W * fa.UI_SCALE)) + 2))
+
+    every_key(page, table)
+    return page
 
 
 def write_steps():
