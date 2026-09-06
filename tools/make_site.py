@@ -169,6 +169,40 @@ FEATURES = [
 # names are what sits in assets/; the page gets webp copies of them.
 BANNER = "inst6"
 
+KNOWN = [
+    ("PlayStation controllers are only half supported",
+     "A DualShock or DualSense is read differently from an Xbox pad, and "
+     "not everything lands where it should yet."),
+    ("The correction pauses while you shift",
+     "Press a gear, the camera, or anything else the assist does not carry, "
+     "and the game reads your own controller for that moment - steering "
+     "included. It is brief, and it is why the wheel can twitch mid-drift. "
+     "<a class=\'flink\' data-goto=\'mirror_all_buttons\'>Release all "
+     "buttons</a> removes it on machines where that switch is safe."),
+    ("Setup does not go smoothly on every machine",
+     "Two drivers, an installer that sometimes wants a restart, and an exe "
+     "nobody has signed. Most of what has gone wrong so far happened here."),
+    ("Several launches in one sitting can leave it unreliable",
+     "Restarting Windows clears it. Most of the causes are fixed; if you "
+     "still meet this one, it is worth telling us about."),
+]
+
+ROADMAP = [
+    ("Presets that follow the car",
+     "The telemetry already names what you are driving."),
+    ("An oversteer assist",
+     "Catching the car before it is sideways, not only after."),
+    ("Drift angle and stability, as dials",
+     "The numbers exist; they are just shown as numbers."),
+    ("Statistics, on a screen of their own",
+     "Time sideways, longest drift, how often it saved you."),
+    ("PlayStation controllers, properly",
+     "Needs a pad in hand - guessing from documentation is how the "
+     "language bugs happened."),
+    ("Keys for the settings you change most",
+     "Strength up and down without leaving the car."),
+]
+
 STEPS = [
     (["inst1"], "Download &amp; Launch",
      "One file, and nothing to install. Take the latest release and run it. "
@@ -227,6 +261,11 @@ def index_page(app_html: str) -> str:
     feats = "\n".join(
         '<article class="tile"><h3>%s</h3><p>%s</p></article>' % (t, b)
         for t, b in FEATURES)
+    knowns = "\n".join(
+        '<li><h3>%s</h3><p>%s</p></li>' % (t, b) for t, b in KNOWN)
+    road = "\n".join(
+        '<li class="ritem"><h3>%s</h3><p>%s</p></li>' % (t, b)
+        for t, b in ROADMAP)
     steps = "\n".join(
         '<figure class="step">'
         '%s<h3><span class="num">%d</span><span class="gttl">%s</span>'
@@ -261,7 +300,8 @@ virtual controller, touches no game files. Free and open source.">
 <style>
 __FONTS__
 :root{--bg:#0b0b0b;--card:#141414;--line:rgba(255,255,255,.07);
-      --fg:#ededed;--dim:#8a8a8a;--accent:#0492F8;--accent-lit:#52CBFF}
+      --fg:#ededed;--dim:#8a8a8a;--accent:#0492F8;--accent-lit:#52CBFF;
+      --warn:#FFCC00}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
      font-family:Chiron,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -359,6 +399,32 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
 .step .num{color:var(--accent);font-size:18px;font-weight:700;flex:none}
 /* The shot again underneath itself, blurred to nothing but its colour, so
    the picture sits in its own light instead of on a flat panel. */
+/* Said plainly, in a list, with the amber the app uses for the same kind
+   of thing - a state worth knowing about rather than a fault. */
+.known{max-width:760px;margin:0 auto;padding:0;list-style:none}
+.known li{position:relative;padding:0 0 20px 26px}
+.known li::before{content:"";position:absolute;left:0;top:7px;width:8px;
+                  height:8px;border-radius:50%;background:var(--warn)}
+.known h3{margin:0 0 5px;font-size:15px}
+.known p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.6}
+.known a{color:var(--accent);text-decoration:underline;
+         text-underline-offset:2px}
+
+/* A rail rather than another list of cards: this is a sequence, and it
+   should not look like the things that are already done. */
+.road{max-width:760px;margin:0 auto;padding:0 0 0 30px;list-style:none;
+      position:relative}
+.road::before{content:"";position:absolute;left:5px;top:8px;bottom:24px;
+              width:2px;border-radius:2px;
+              background:linear-gradient(var(--accent),
+                         rgba(4,146,248,.12))}
+.ritem{position:relative;padding:0 0 24px}
+.ritem::before{content:"";position:absolute;left:-30px;top:5px;width:12px;
+               height:12px;border-radius:50%;box-sizing:border-box;
+               background:var(--bg);border:2px solid var(--accent)}
+.ritem h3{margin:0 0 4px;font-size:15px}
+.ritem p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.6}
+
 .gshot{position:relative}
 .gshot > img{position:relative;z-index:1}
 .gshot .gglow{position:absolute;inset:0;width:100%;height:100%;z-index:0;
@@ -454,6 +520,22 @@ footer a{color:var(--dim)}
   <h2>Getting started</h2>
   <p class="lede">A real first run, in the order it happens.</p>
   <div class="guide"><div class="gstage">__STEPS__</div></div>
+</section>
+
+<section class="wrap">
+  <h2>Known problems</h2>
+  <p class="lede">Everything here is real, and none of it is a surprise to
+  us. It is being worked on.</p>
+  <ul class="known">__KNOWN__</ul>
+</section>
+
+<section class="wrap">
+  <h2>What is coming</h2>
+  <p class="lede">Roughly in the order it is likely to happen. None of it
+  is a promise with a date on it.</p>
+  <ol class="road">__ROAD__</ol>
+  <p class="note">The rest, and why some of it may never happen, is in
+  <a href="__REPO__/blob/main/ROADMAP.md">ROADMAP.md</a>.</p>
 </section>
 
 <section class="wrap showcase-wrap">
@@ -579,6 +661,8 @@ footer a{color:var(--dim)}
    .replace("__FEATURES__", feats) \
    .replace("__STEPS__", steps) \
    .replace("__FAQ__", faqs) \
+   .replace("__KNOWN__", knowns) \
+   .replace("__ROAD__", road) \
    .replace("__BANNER__", BANNER) \
    .replace("__BW__", str(shot_size(BANNER)[0])) \
    .replace("__BH__", str(shot_size(BANNER)[1])) \
