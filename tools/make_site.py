@@ -173,6 +173,7 @@ BANNER = "inst6"
 BANDS = [
     ("inst7", "Steering Assist livery, sideways in the smoke"),
     ("inst8", "Steering Assist livery on a mountain road"),
+    ("inst9", "Steering Assist livery"),
 ]
 BANNERS = [BANNER] + [n for n, _a in BANDS]
 
@@ -335,13 +336,16 @@ h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
 .sub{color:var(--dim);font-size:clamp(15px,1.6vw,18px);max-width:640px;
      margin:0 auto 30px}
 .cta{display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.btn{display:inline-block;padding:12px 22px;border-radius:8px;
-     background:var(--accent);color:#fff;text-decoration:none;font-weight:600;
-     transition:background .2s ease}
-.btn:hover{background:linear-gradient(180deg,var(--accent),var(--accent-lit))}
-.btn.sec{background:transparent;color:var(--fg);
+.btn{display:inline-block;padding:12px 22px;border-radius:14px;
+     background-color:var(--accent);
+     background-image:linear-gradient(180deg,var(--accent),var(--accent));
+     color:#fff;text-decoration:none;font-weight:600;
+     transition:background-color .2s ease,background-image .2s ease}
+.btn:hover{background-image:linear-gradient(180deg,var(--accent),
+           var(--accent-lit))}
+.btn.sec{background-color:transparent;background-image:none;color:var(--fg);
          border:1px solid var(--line)}
-.btn.sec:hover{background:#181818}
+.btn.sec:hover{background-color:#181818;background-image:none}
 .ver{color:var(--dim);font-size:13px;margin-top:14px}
 section.wrap{padding:36px 24px}
 h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
@@ -404,14 +408,22 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
    thing, and one shared row could not sit on a heading whose height moves
    with the picture above it. */
 .gnav{margin-left:auto;display:flex;gap:10px;flex:none}
-.gbtn{height:36px;padding:0 16px;border-radius:9px;border:1px solid var(--line);
-      background:var(--card);color:var(--fg);font:inherit;font-size:13.5px;
+.gbtn{height:36px;padding:0 16px;border-radius:12px;
+      border:1px solid var(--line);
+      background-color:var(--card);background-image:none;
+      color:var(--fg);font:inherit;font-size:13.5px;
       font-weight:600;cursor:pointer;
-      transition:border-color .2s ease,color .2s ease,background .2s ease}
-.gbtn:hover{border-color:var(--accent);color:var(--accent);background:#171717}
-.gbtn.next{background:var(--accent);border-color:var(--accent);color:#fff}
-.gbtn.next:hover{background:linear-gradient(180deg,var(--accent),
-                 var(--accent-lit));color:#fff}
+      transition:border-color .2s ease,color .2s ease,
+                 background-color .2s ease,background-image .2s ease}
+.gbtn:hover{border-color:var(--accent);color:var(--accent);
+            background-color:#171717}
+.gbtn.next{background-color:var(--accent);
+           background-image:linear-gradient(180deg,var(--accent),
+                            var(--accent));
+           border-color:var(--accent);color:#fff}
+.gbtn.next:hover{background-color:var(--accent);
+                 background-image:linear-gradient(180deg,var(--accent),
+                                  var(--accent-lit));color:#fff}
 .gbtn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .step h3{margin:0 0 14px;font-size:18px;display:flex;align-items:center;
          gap:10px}
@@ -449,7 +461,8 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
 /* The page ends where it began - the same mark and the same two buttons,
    smaller, after everything has been said. */
 .outro{text-align:center;padding-top:20px;padding-bottom:64px}
-.outro .logo{width:420px;margin-bottom:28px}
+.outro .logo{width:340px;margin-bottom:28px}
+.outro .logo .mark{fill:var(--fg)}
 .oline{font-size:clamp(20px,2.4vw,28px);font-weight:700;margin:0 0 10px;
        letter-spacing:-.01em}
 .osub{color:var(--dim);max-width:560px;margin:0 auto 28px;
@@ -583,6 +596,8 @@ __BAND2__
   <ul class="known">__KNOWN__</ul>
 </section>
 
+__BAND3__
+
 <section class="wrap outro">
   <div class="logo">__LOGO__</div>
   <p class="oline">Stop fighting your own car.</p>
@@ -708,6 +723,7 @@ __BAND2__
    .replace("__ROAD__", road) \
    .replace("__BAND1__", band(*BANDS[0])) \
    .replace("__BAND2__", band(*BANDS[1])) \
+   .replace("__BAND3__", band(*BANDS[2])) \
    .replace("__BANNER__", BANNER) \
    .replace("__BW__", str(shot_size(BANNER)[0])) \
    .replace("__BH__", str(shot_size(BANNER)[1])) \
