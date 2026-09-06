@@ -120,8 +120,9 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
                   height:8px;border-radius:50%;background:var(--warn)}
 .known h3{margin:0 0 5px;font-size:15px}
 .known p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.6}
-.known a{color:var(--accent);text-decoration:underline;
-         text-underline-offset:2px}
+/* The same name the app gives it, not a link: nothing on this page can
+   open a setting, and the FAQ card names it the same plain way. */
+.known .flink{color:var(--fg);font-weight:600}
 
 /* A rail rather than another list of cards: this is a sequence, and it
    should not look like the things that are already done. */
