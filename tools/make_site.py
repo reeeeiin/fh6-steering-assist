@@ -422,10 +422,10 @@ footer a{color:var(--dim)}
 <header><div class="wrap">
   <div class="logo">__LOGO__</div>
   <h1>Gamepad Drift assist for Forza Horizon</h1>
-  <div class="band"><img src="__BANNER__.webp" width="__BW__"
-       height="__BH__" alt="Steering Assist livery" loading="lazy"></div>
   <p class="sub">Telemetry based steering assist, for smooth, stable and
   enjoyable drifting in the Forza Horizon series. 100% Free To Use!</p>
+  <div class="band"><img src="__BANNER__.webp" width="__BW__"
+       height="__BH__" alt="Steering Assist livery" loading="lazy"></div>
   <div class="cta">
     <a class="btn" href="__REPO__/releases/latest">Download</a>
     <a class="btn sec" href="__REPO__">Source on GitHub</a>
