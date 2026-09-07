@@ -1074,7 +1074,7 @@ MINE = "HID\\VID_045E&PID_028E&IG_04\\9&abc&0&0000"
 THEIRS = "HID\\VID_054C&PID_09CC&IG_00\\7&xyz&0&0000"
 
 
-def _hidhide(cloak_on=False, already=(), present=()):
+def _hidhide(cloak_on=False, already=(), present=(), ledger=()):
     """A HidHide with the CLI replaced by a recorder."""
     h = fa.HidHide.__new__(fa.HidHide)
     h.cli = "cli.exe"
@@ -1092,7 +1092,12 @@ def _hidhide(cloak_on=False, already=(), present=()):
     # __new__ skips __init__, so anything the class gained since this stub
     # was written has to be named here. Three tests went red the day the
     # crash-recovery note was added, which is the stub telling the truth.
-    h.state_file = os.path.join(tempfile.mkdtemp(prefix="hh-"), "state.json")
+    _dir = tempfile.mkdtemp(prefix="hh-")
+    h.state_file = os.path.join(_dir, "state.json")
+    h.ledger_file = os.path.join(_dir, "ours.json")
+    if ledger:
+        with open(h.ledger_file, "w", encoding="utf-8") as f:
+            json.dump({"paths": sorted(ledger)}, f)
     h.extra_apps = []
     h.calls = []
 
@@ -1143,6 +1148,51 @@ def test_a_device_somebody_else_hid_is_left_hidden():
     h.disengage()
     assert ("--dev-unhide", THEIRS) not in h.calls, h.calls
     assert ("--dev-unhide", MINE) in h.calls, h.calls
+
+
+def test_our_own_leftover_is_recognised_and_taken_back():
+    """The bug this was written for.
+
+    A path we hid on an earlier run and never managed to release was, on
+    the next launch, indistinguishable from a device somebody else had
+    hidden - so it stayed hidden for ever, and the list grew by one every
+    time an exit went badly. Now the app remembers what it hid.
+    """
+    stale = "HID" + chr(92) + "VID_045E&PID_028E&IG_00" + chr(92) + "9&old&0"
+    h = _hidhide(already=[stale], present=[MINE], ledger=[stale])
+    h.engage()
+    assert stale in h.hidden, "our own leftover was left for somebody else"
+    assert stale not in h._prior_hidden
+    h.calls.clear()
+    h.disengage()
+    assert ("--dev-unhide", stale) in h.calls, h.calls
+    assert h._ledger() == set(), "the ledger still names a released device"
+
+
+def test_somebody_elses_device_is_still_left_alone_with_a_ledger():
+    """The ledger must not become an excuse to unhide anything at all."""
+    h = _hidhide(already=[THEIRS], present=[MINE], ledger=[MINE])
+    h.engage()
+    assert THEIRS in h._prior_hidden
+    h.calls.clear()
+    h.disengage()
+    assert ("--dev-unhide", THEIRS) not in h.calls, h.calls
+
+
+def test_the_ledger_remembers_what_this_run_hid():
+    h = _hidhide(present=[MINE])
+    h.engage()
+    assert MINE in h._ledger()
+    h.disengage()
+    assert h._ledger() == set()
+
+
+def test_the_ledger_does_not_grow_for_ever():
+    """A pad gets a new path per port; without a cap this file is a leak."""
+    h = _hidhide(present=[MINE])
+    many = ["HID" + chr(92) + "PORT%03d" % i for i in range(80)]
+    h._ledger_write(many)
+    assert len(h._ledger()) == h.LEDGER_MAX
 
 
 def test_a_cloak_that_was_already_on_stays_on():

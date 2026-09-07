@@ -2283,6 +2283,18 @@ class HidHide:
         # else's and will not touch it.
         self.state_file = os.path.join(os.path.dirname(CONFIG_FILE),
                                        "hidhide_state.json")
+        # Every path we have ever hidden, kept across runs.
+        #
+        # Without it, a device of ours that was still on the blacklist when
+        # a launch began was indistinguishable from one somebody else had
+        # hidden, so it was left alone - for ever. A pad gets a new
+        # instance path each time it is plugged into a different port, and
+        # the list grew by one every time an exit did not manage to clean
+        # up. Found on a machine carrying five of them: harmless while the
+        # cloak is off, and the moment anything turns the cloak on, that
+        # pad is invisible to everything.
+        self.ledger_file = os.path.join(os.path.dirname(CONFIG_FILE),
+                                        "hidhide_ours.json")
         # Process names allowed to keep seeing the pad. Pad software that
         # cannot see its own device stops working, and there is no list of
         # every vendor tool in existence - so this one can be added to
@@ -2330,6 +2342,13 @@ class HidHide:
                 # Better to hide nothing back than to guess wrong and
                 # unhide a device somebody else put there.
                 self._prior_cloak, self._prior_hidden = None, set()
+            # What was already hidden is somebody else's business - except
+            # the entries we can prove are ours from an earlier run. Those
+            # go back on our own list, so this exit takes them away.
+            mine = self._prior_hidden & self._ledger()
+            if mine:
+                self._prior_hidden -= mine
+                self.hidden |= mine
             self._run("--app-reg", sys.executable)
             self._apps.add(sys.executable.lower())
             self.whitelist_companions()
@@ -2340,6 +2359,7 @@ class HidHide:
                 self._run("--dev-hide", path)
                 if path not in self._prior_hidden:
                     self.hidden.add(path)
+                    self._ledger_add(path)
                     self._save_state()
             self._run("--cloak-on")
             self.active = True
@@ -2596,6 +2616,39 @@ class HidHide:
         except Exception:
             pass
 
+    # Enough to cover a pad moved around every port on a machine a few
+    # times over; past that the oldest are of no use to anyone.
+    LEDGER_MAX = 32
+
+    def _ledger(self) -> set:
+        """The paths this app has hidden before, on any earlier run."""
+        try:
+            with open(self.ledger_file, encoding="utf-8") as f:
+                return set(json.load(f).get("paths") or [])
+        except (OSError, ValueError, AttributeError):
+            return set()
+
+    def _ledger_write(self, paths):
+        try:
+            os.makedirs(os.path.dirname(self.ledger_file), exist_ok=True)
+            with open(self.ledger_file, "w", encoding="utf-8") as f:
+                json.dump({"paths": sorted(paths)[-self.LEDGER_MAX:]}, f)
+        except Exception:
+            pass
+
+    def _ledger_add(self, path):
+        self._ledger_write(self._ledger() | {path})
+
+    def _ledger_drop(self, paths):
+        left = self._ledger() - set(paths)
+        if left:
+            self._ledger_write(left)
+        else:
+            try:
+                os.remove(self.ledger_file)
+            except Exception:
+                pass
+
     def _save_state(self):
         try:
             os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
@@ -2630,12 +2683,14 @@ class HidHide:
         except (OSError, ValueError):
             return 0
         freed = 0
-        for path in left.get("hidden") or []:
+        taken = left.get("hidden") or []
+        for path in taken:
             try:
                 self._run("--dev-unhide", path)
                 freed += 1
             except Exception:
                 pass
+        self._ledger_drop(taken)
         if left.get("cloak_was") is False:
             try:
                 self._run("--cloak-off")
@@ -2659,6 +2714,7 @@ class HidHide:
                 freed += 1
             except Exception:
                 pass
+        self._ledger_drop(self.hidden)
         self.hidden.clear()
         try:
             if self._prior_cloak is False:
