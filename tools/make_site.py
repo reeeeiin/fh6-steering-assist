@@ -41,7 +41,8 @@ STUB = """<script>
     return {
       hz: 250, pad_hz: 250, age: 4, car: "Toyota Supra RZ",
       car_name: "Toyota Supra RZ", car_drive: "RWD", car_class: "S1",
-      car_pi: 800, auto_strength: 54,
+      car_pi: 800, auto_strength: 48, auto_window: [42, 54],
+      car_type: "rwd",
       alive: true, recv: true, tele_err: "", port: 20777,
       speed: Math.round(96 + Math.sin(t * 0.3) * 22),
       slip: Math.abs(slip).toFixed(2) * 1,

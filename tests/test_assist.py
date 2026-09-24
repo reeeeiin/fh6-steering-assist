@@ -529,12 +529,13 @@ def test_the_override_replaces_the_slider_value_and_nothing_else():
 
 
 def test_car_strengths_are_the_numbers_the_slider_shows():
-    """The slider runs 0-120 inside and shows 0-100. Tuned by eye at 45 and
-    30, the assist must get 54 and 36 - the first version gave it 38 and
-    25 because the table was written as raw gains."""
-    assert fa.CAR_TYPE_STRENGTH["rwd"] == 45
+    """The slider runs 0-120 inside and shows 0-100. Tuned by eye at 40 and
+    30, the assist must get 48 and 36 - the first version of the table was
+    written as raw gains and gave it far too little."""
+    assert fa.CAR_TYPE_STRENGTH["rwd"] == 40
     assert fa.CAR_TYPE_STRENGTH["fd"] == 30
-    assert fa.gain_from_shown(45) == 54.0
+    assert fa.CAR_TYPE_ROOM == 5
+    assert fa.gain_from_shown(40) == 48.0
     assert fa.gain_from_shown(30) == 36.0
     lo, hi = fa.CONFIG_RANGES["counter_gain"]
     for shown in fa.CAR_TYPE_STRENGTH.values():
@@ -575,6 +576,95 @@ def test_car_type_detect_decides_only_while_it_is_on():
     _T.car_type = "rwd"
     b.cfg["car_detect"] = False
     assert b._auto_strength() is None, "switched off: the slider rules"
+
+
+def _detect_bridge(kind, own=None):
+    class _T:
+        car_type = kind
+    b = fa.Bridge.__new__(fa.Bridge)
+    b.cfg = dict(fa.DEFAULTS)
+    b.cfg["car_strength"] = dict(own or {})
+    b.telemetry = _T()
+    return b
+
+
+def test_the_driver_gets_five_either_side_of_the_cars_strength():
+    """40 and 30 by default, 35-45 and 25-35 to move in."""
+    rwd = _detect_bridge("rwd")
+    assert rwd._auto_window() == [fa.gain_from_shown(35), fa.gain_from_shown(45)]
+    assert rwd._auto_strength() == fa.gain_from_shown(40)
+    fd = _detect_bridge("fd")
+    assert fd._auto_window() == [fa.gain_from_shown(25), fa.gain_from_shown(35)]
+    assert _detect_bridge("fd", {"fd": 33})._auto_strength() == fa.gain_from_shown(33)
+    # a value from outside the band - an edited file, an old version - is
+    # brought back to its edge rather than obeyed
+    assert _detect_bridge("rwd", {"rwd": 90})._auto_strength() == fa.gain_from_shown(45)
+    assert _detect_bridge("", {})._auto_window() is None
+
+
+def test_the_drivers_own_strength_is_kept_per_kind_of_car():
+    b = _detect_bridge("fd")
+    api = fa.Api.__new__(fa.Api)
+    api._b = b
+    saved = []
+    real = fa.save_config_soon
+    fa.save_config_soon = lambda cfg, delay=0.4: saved.append(dict(cfg))
+    try:
+        assert api.set_car_strength("fd", 34) == 34
+        assert api.set_car_strength("rwd", 99) == 45, "kept to the band"
+        assert api.set_car_strength("nonsense", 40) is None
+    finally:
+        fa.save_config_soon = real
+    assert b.cfg["car_strength"] == {"fd": 34, "rwd": 45}
+    assert b.cfg["counter_gain"] == fa.DEFAULTS["counter_gain"], \
+        "the preset's own strength is never the one moved"
+    assert saved
+
+
+def test_a_stray_car_strength_in_the_file_is_cleaned():
+    cfg = dict(fa.DEFAULTS)
+    cfg["car_strength"] = {"rwd": 12, "fd": "33", "awd": "x", "moon": 5}
+    fa.sanitize_config(cfg)
+    assert cfg["car_strength"] == {"rwd": 35, "fd": 33}
+
+
+def _awd_run(beta_deg, frames, start=1.0):
+    a = fa.Assist(dict(fa.DEFAULTS))
+    a.angle_adaptive = True
+    a._adapt = start
+    beta = beta_deg / 57.29578
+    shares = []
+    for _ in range(frames):
+        tm = fa.Telemetry(90 / 3.6, 0.0, beta, beta * 2.0, beta)
+        a.update(0.0, tm, 1 / 60, brake=0.0, telemetry_alive=True)
+        shares.append(a._adapt)
+    return shares
+
+
+def test_all_wheel_drive_eases_off_at_a_shallow_angle():
+    """The driven front axle straightens the car by itself; at a shallow
+    angle the assist runs at three quarters of its strength."""
+    shallow = _awd_run(5.0, 240)
+    assert abs(shallow[-1] - fa.AWD_FLOOR) < 1e-6, shallow[-1]
+    deep = _awd_run(45.0, 240, start=fa.AWD_FLOOR)
+    assert abs(deep[-1] - 1.0) < 1e-6, deep[-1]
+
+
+def test_all_wheel_drive_changes_its_strength_gently():
+    """Never faster than AWD_RATE of itself per second - a strength that
+    jumped with the angle would start a pendulum of its own."""
+    shares = _awd_run(5.0, 30)
+    steps = [abs(b - a) for a, b in zip([1.0] + shares, shares)]
+    assert max(steps) <= fa.AWD_RATE / 60 + 1e-9, max(steps)
+
+
+def test_only_all_wheel_drive_follows_the_angle():
+    a = fa.Assist(dict(fa.DEFAULTS))
+    beta = 5.0 / 57.29578
+    for _ in range(120):
+        a.update(0.0, fa.Telemetry(90 / 3.6, 0.0, beta, beta * 2.0, beta),
+                 1 / 60, brake=0.0, telemetry_alive=True)
+    assert a._adapt == 1.0
 
 
 def test_fh6_has_eight_classes_and_r_comes_before_x():

@@ -455,9 +455,25 @@ DRIVETRAINS = ("FWD", "RWD", "AWD")
 # follows the drift angle, shaped from logged runs rather than guessed.
 #
 # These are the numbers the slider SHOWS. Inside, the strength runs 0-120
-# and is shown as 0-100 percent, so the 45 a driver tunes by is a gain of
-# 54. Written as raw gains, the first version handed the assist 38 and 25.
-CAR_TYPE_STRENGTH = {"rwd": 45, "fd": 30, "awd": 45, "fwd": 45}
+# and is shown as 0-100 percent, so a 40 tuned by eye is a gain of 48.
+# Written as raw gains, the first version handed the assist far too little.
+CAR_TYPE_STRENGTH = {"rwd": 40, "fd": 30, "awd": 40, "fwd": 40}
+# How far the driver may move it either way while the car decides. The
+# default is a starting point, not a verdict; the setting stays near it.
+CAR_TYPE_ROOM = 5
+
+# All-wheel drive: the strength follows the drift angle. The driven front
+# axle pulls the car straight by itself, so at a shallow angle - and on
+# the way out of a slide, when the angle is falling - countersteer tuned
+# for rear drive throws the car the other way. The assist therefore runs
+# at AWD_FLOOR of its strength below AWD_ANGLE_LO degrees, at the whole of
+# it above AWD_ANGLE_HI, smoothly between, and never changes by more than
+# AWD_RATE of itself per second, so it cannot start a pendulum of its own.
+# Starting values, not measured yet: to be shaped from logged AWD runs.
+AWD_FLOOR = 0.75
+AWD_ANGLE_LO = 12.0
+AWD_ANGLE_HI = 35.0
+AWD_RATE = 1.5
 
 
 def gain_from_shown(percent) -> float:
@@ -773,6 +789,10 @@ class Assist:
         # Set by Car type detect. None leaves the slider's own value in
         # charge; a number replaces it without ever being written back.
         self.strength_override = None
+        # Set by Car type detect on all-wheel drive: the strength follows
+        # the drift angle. _adapt is the share of it in use right now.
+        self.angle_adaptive = False
+        self._adapt = 1.0
         self.angle = 0.0
         self._slip_f = 0.0
         self._beta_f = 0.0
@@ -905,6 +925,16 @@ class Assist:
 
         gain = (c["counter_gain"] if self.strength_override is None
                 else self.strength_override)
+        if self.angle_adaptive:
+            deg = abs(sig) / BETA_GAIN * 57.29578
+            t = clamp((deg - AWD_ANGLE_LO) / (AWD_ANGLE_HI - AWD_ANGLE_LO),
+                      0.0, 1.0)
+            share = AWD_FLOOR + (1.0 - AWD_FLOOR) * t * t * (3.0 - 2.0 * t)
+            step = AWD_RATE * dt
+            self._adapt += clamp(share - self._adapt, -step, step)
+            gain *= self._adapt
+        else:
+            self._adapt = 1.0
         magnitude = min(1.0, (gain / 100.0) * excess * STEER_PER_SLIP)
         counter = magnitude * want
         counter *= (1.0 - brake * BRAKE_SUPPRESS) * speed_gate * authority
@@ -988,6 +1018,8 @@ DEFAULTS = {
     "steer_in_general": False,
     "ext_telemetry": False,
     "car_detect": True,
+    # the driver's own strength per kind of car, as the slider shows it
+    "car_strength": {},
     "profile": "default",
     "custom": {},
     "slots": {},
@@ -1974,6 +2006,18 @@ def sanitize_config(cfg: dict) -> dict:
         cfg["ui_scale"] = DEFAULTS["ui_scale"]
     if cfg.get("profile") not in PROFILE_ORDER:
         cfg["profile"] = DEFAULTS["profile"]
+    own = cfg.get("car_strength")
+    held = {}
+    if isinstance(own, dict):
+        for kind, base in CAR_TYPE_STRENGTH.items():
+            try:
+                v = float(own[kind])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if math.isfinite(v):
+                held[kind] = clamp(round(v), base - CAR_TYPE_ROOM,
+                                   base + CAR_TYPE_ROOM)
+    cfg["car_strength"] = held
     snap = cfg.get("custom")
     clean = {}
     if isinstance(snap, dict):
@@ -3122,13 +3166,36 @@ class Bridge:
         if old is not fresh:
             old.stop()
 
+    def _car_shown(self):
+        """The kind of car and the strength for it, as the slider shows it:
+        the driver's own for that kind if they moved it, kept within the
+        room either side of the default. (None, None) if the car is not
+        known yet."""
+        kind = self.telemetry.car_type
+        base = CAR_TYPE_STRENGTH.get(kind)
+        if base is None:
+            return None, None
+        mine = (self.cfg.get("car_strength") or {}).get(kind, base)
+        return kind, clamp(mine, base - CAR_TYPE_ROOM, base + CAR_TYPE_ROOM)
+
     def _auto_strength(self):
         """What Car type detect sets the strength to, or None to leave the
         preset's own - it is off, or the car is not known yet."""
         if not self.cfg.get("car_detect"):
             return None
-        shown = CAR_TYPE_STRENGTH.get(self.telemetry.car_type)
+        _kind, shown = self._car_shown()
         return None if shown is None else gain_from_shown(shown)
+
+    def _auto_window(self):
+        """How far the slider may go while Car type detect holds it, as raw
+        gains, or None when it does not hold it."""
+        if not self.cfg.get("car_detect"):
+            return None
+        base = CAR_TYPE_STRENGTH.get(self.telemetry.car_type)
+        if base is None:
+            return None
+        return [gain_from_shown(base - CAR_TYPE_ROOM),
+                gain_from_shown(base + CAR_TYPE_ROOM)]
 
     def _note(self, text):
         ev = getattr(self, "events", None)
@@ -3456,6 +3523,9 @@ class Bridge:
                 tm = self.telemetry.get()
 
                 self.assist.strength_override = self._auto_strength()
+                self.assist.angle_adaptive = bool(
+                    self.cfg.get("car_detect")
+                    and self.telemetry.car_type == "awd")
                 out_x = self.assist.update(stick_x, tm, dt, brake, alive)
 
                 in_menu = self.telemetry.receiving and not alive
@@ -3623,7 +3693,7 @@ TR = {
         "steer_in_general": 'Display steering settings in general',
         "ext_telemetry": 'Display extended telemetry',
         "car_detect": 'Car type detect',
-        "car_detect_hint": 'Sets the assist strength for the car you are in: 45 on rear-wheel drive, 30 on Formula Drift cars. While it is on, the strength slider follows the car and cannot be moved; switch it off to set the strength yourself.',
+        "car_detect_hint": 'Sets the assist strength for the car you are in: 40 on rear-wheel drive, 30 on Formula Drift cars. On all-wheel drive it also eases off at shallow angles and on the way out of a slide, where the front axle straightens the car by itself. The slider can still move 5 either way, and keeps where you leave it for that kind of car. Switch this off to use the whole range.',
         "mirror_all_buttons": 'Release all buttons',
         "mirror_all_buttons_hint": 'Turn this on if gears, camera or menu buttons stopped working while the assist runs. Turn it off again if a single press starts arriving twice.',
         "st_waiting": 'Waiting',
@@ -3760,7 +3830,7 @@ TR = {
         "steer_in_general": 'Отображать настройки помощника на главной',
         "ext_telemetry": 'Отображать расширенную телеметрию',
         "car_detect": 'Определять тип машины',
-        "car_detect_hint": 'Подбирает силу ассиста под машину: 45 для заднего привода, 30 для машин Formula Drift. Пока включено, ползунок силы следует за машиной и не двигается; выключите, чтобы задать силу самому.',
+        "car_detect_hint": 'Подбирает силу ассиста под машину: 40 для заднего привода, 30 для машин Formula Drift. На полном приводе сила ещё и снижается на малых углах и на выходе из заноса, где передняя ось сама выпрямляет машину. Ползунок можно сдвинуть на 5 в любую сторону — положение запоминается для этого типа машин. Выключите, чтобы пользоваться всей шкалой.',
         "mirror_all_buttons": 'Освободить все кнопки',
         "mirror_all_buttons_hint": 'Включите, если при работающем ассисте перестали работать передачи, камера или кнопки меню. Выключите обратно, если одно нажатие стало срабатывать дважды.',
         "st_waiting": 'Ожидание',
@@ -3897,7 +3967,7 @@ TR = {
         "steer_in_general": 'Lenkeinstellungen auf der Startseite zeigen',
         "ext_telemetry": 'Erweiterte Telemetrie anzeigen',
         "car_detect": 'Fahrzeugtyp erkennen',
-        "car_detect_hint": 'Stellt die Assistenzstaerke passend zum Auto ein: 45 bei Heckantrieb, 30 bei Formula-Drift-Autos. Solange es an ist, folgt der Staerke-Regler dem Auto und laesst sich nicht verschieben; zum eigenen Einstellen ausschalten.',
+        "car_detect_hint": 'Stellt die Assistenzstaerke passend zum Auto ein: 40 bei Heckantrieb, 30 bei Formula-Drift-Autos. Bei Allradantrieb nimmt sie ausserdem bei kleinen Winkeln und beim Herausfahren aus dem Drift ab, wo die Vorderachse das Auto von selbst geraderichtet. Der Regler laesst sich um 5 in jede Richtung verschieben und merkt sich die Stellung fuer diese Art von Auto. Ausschalten, um den ganzen Bereich zu nutzen.',
         "mirror_all_buttons": 'Alle Tasten freigeben',
         "mirror_all_buttons_hint": 'Einschalten, wenn Gaenge, Kamera oder Menuetasten bei laufender Assistenz nicht mehr reagieren. Wieder ausschalten, wenn ein Druck doppelt ankommt.',
         "st_waiting": 'Wartet',
@@ -4034,7 +4104,7 @@ TR = {
         "steer_in_general": 'Afficher les reglages de direction sur l\'accueil',
         "ext_telemetry": 'Afficher la telemetrie detaillee',
         "car_detect": 'Detecter le type de voiture',
-        "car_detect_hint": "Regle la force de l'assistant selon la voiture : 45 en propulsion, 30 sur les voitures Formula Drift. Tant que c'est active, le curseur de force suit la voiture et ne se deplace pas ; desactivez pour regler la force vous-meme.",
+        "car_detect_hint": "Regle la force de l'assistant selon la voiture : 40 en propulsion, 30 sur les voitures Formula Drift. En transmission integrale, elle diminue aussi aux petits angles et en sortie de glisse, la ou l'essieu avant redresse la voiture tout seul. Le curseur peut bouger de 5 dans chaque sens et garde sa position pour ce type de voiture. Desactivez pour utiliser toute la plage.",
         "mirror_all_buttons": 'Liberer tous les boutons',
         "mirror_all_buttons_hint": "A activer si les vitesses, la camera ou les boutons de menu ne repondent plus quand l'assistance tourne. A desactiver si un appui arrive deux fois.",
         "st_waiting": 'Attente',
@@ -4171,7 +4241,7 @@ TR = {
         "steer_in_general": 'Mostrar los ajustes de direccion en general',
         "ext_telemetry": 'Mostrar telemetria ampliada',
         "car_detect": 'Detectar tipo de coche',
-        "car_detect_hint": 'Ajusta la fuerza del asistente al coche: 45 con traccion trasera, 30 en los coches Formula Drift. Mientras esta activo, el deslizador de fuerza sigue al coche y no se puede mover; desactivalo para elegir la fuerza tu mismo.',
+        "car_detect_hint": 'Ajusta la fuerza del asistente al coche: 40 con traccion trasera, 30 en los coches Formula Drift. Con traccion total, ademas se suaviza en angulos pequenos y al salir del derrape, donde el eje delantero endereza el coche solo. El deslizador se puede mover 5 hacia cada lado y recuerda la posicion para ese tipo de coche. Desactivalo para usar todo el rango.',
         "mirror_all_buttons": 'Liberar todos los botones',
         "mirror_all_buttons_hint": 'Activalo si las marchas, la camara o los botones de menu dejan de funcionar con la asistencia activa. Desactivalo si una pulsacion llega dos veces.',
         "st_waiting": 'Esperando',
@@ -4315,7 +4385,7 @@ TR = {
         "steer_in_general": '操舵設定をメイン画面に表示',
         "ext_telemetry": '詳細なテレメトリーを表示',
         "car_detect": '車種を自動判別',
-        "car_detect_hint": '乗っている車に合わせてアシスト強度を設定します。後輪駆動は45、Formula Drift の車は30。オンの間は強度スライダーが車に合わせて動き、手動では変更できません。自分で設定する場合はオフにしてください。',
+        "car_detect_hint": '乗っている車に合わせてアシスト強度を設定します。後輪駆動は40、Formula Drift の車は30。四輪駆動では、前輪が自然に車をまっすぐに戻す浅い角度やドリフトの立ち上がりで、強度をさらに弱めます。スライダーは上下5の範囲で調整でき、車の種類ごとに位置を記憶します。全範囲を使う場合はオフにしてください。',
         "mirror_all_buttons": 'すべてのボタンを解放',
         "mirror_all_buttons_hint": 'アシスト作動中にギアやカメラ、メニューのボタンが効かない場合にオンにします。1回の操作が2回入る場合はオフに戻してください。',
         "st_waiting": '待機中',
@@ -4911,7 +4981,13 @@ body.t-light{
 
 /* ---------- slider ---------- */
 .sl{flex:1;height:14px;position:relative;cursor:pointer;min-width:60px}
-/* Car type detect holds the strength: it is shown, dimmed, and not taken */
+/* Car type detect holds the strength. With the car known, the band on
+   the track is how far the driver may move it; with no car yet, it is
+   held still and dimmed. */
+.sl .win{position:absolute;top:50%;height:10px;margin-top:-5px;
+         border-radius:5px;background:var(--accent);opacity:.22;
+         display:none;pointer-events:none}
+.row.windowed .sl .win{display:block}
 .row.locked .sl,.row.locked .rval{opacity:.4;transition:opacity .2s ease}
 .row.locked .sl{pointer-events:none}
 .row.locked{cursor:default}
@@ -5329,7 +5405,9 @@ function sliderRow(key){
   return '<div class="row" data-hint="' + key + '_hint">' +
     '<span class="rname">' + t(key) + '</span>' +
     '<span class="sl" data-slider="' + key + '">' +
-      '<i class="trk"></i><i class="fil"></i><i class="knb"></i></span>' +
+      '<i class="trk"></i>' +
+      (key === 'counter_gain' ? '<i class="win"></i>' : '') +
+      '<i class="fil"></i><i class="knb"></i></span>' +
     '<span class="rval" data-val="' + key + '"></span></div>';
 }
 
@@ -5803,6 +5881,9 @@ function render(){
    and shows their own value, which was never overwritten. */
 let gainShown = null;
 function strengthLocked(){ return !!(cfg && cfg.car_detect); }
+function strengthWindow(){
+  return state && state.auto_window ? state.auto_window : null;
+}
 function strengthTarget(){
   return state && state.auto_strength != null ? state.auto_strength
                                                : cfg.counter_gain;
@@ -5821,8 +5902,16 @@ function drawSlider(el){
   const v = document.querySelector('[data-val="' + key + '"]');
   if (v) v.textContent = shown(key, val);
   const row = el.closest('.row');
-  if (row) row.classList.toggle('locked',
-                                key === 'counter_gain' && strengthLocked());
+  if (!row || key !== 'counter_gain') return;
+  const w = strengthLocked() ? strengthWindow() : null;
+  row.classList.toggle('locked', strengthLocked() && !w);
+  row.classList.toggle('windowed', !!w);
+  const band = el.querySelector('.win');
+  if (band && w){
+    const a = (w[0] - r[1]) / (r[2] - r[1]), b = (w[1] - r[1]) / (r[2] - r[1]);
+    band.style.left = (a * 100) + '%';
+    band.style.width = ((b - a) * 100) + '%';
+  }
 }
 function stepStrength(){
   if (!strengthLocked()){ gainShown = null; return; }
@@ -6036,13 +6125,25 @@ function bindRows(){
     const key = el.dataset.slider;
     const r = ALLS.find(x => x[0] === key);
     const drag = e => {
-      if (key === 'counter_gain' && strengthLocked()) return;
       const b = el.getBoundingClientRect();
       let p = (e.clientX - b.left) / b.width;
       p = Math.max(0, Math.min(1, p));
       let v = r[1] + p * (r[2] - r[1]);
       v = Math.max(r[1], Math.min(r[2], Math.round(v / r[3]) * r[3]));
       v = +v.toFixed(4);
+      if (key === 'counter_gain' && strengthLocked()){
+        /* the car's strength, moved within its band and kept for that
+           kind of car - the preset's own value is not touched */
+        const w = strengthWindow();
+        if (!w || !state.car_type) return;
+        v = Math.max(w[0], Math.min(w[1], v));
+        gainShown = v;
+        state.auto_strength = v;
+        drawSlider(el);
+        try{ pywebview.api.set_car_strength(state.car_type,
+                                            +shown(key, v)); }catch(e){}
+        return;
+      }
       stopProfAnim();
       cfg[key] = v;
       if (SLOT_KEYS.indexOf(cfg.profile) < 0) cfg.profile = 'custom';
@@ -7337,6 +7438,8 @@ class Api:
             "car_pi": b.telemetry.car_pi,
             "car_drive": b.telemetry.car_drive,
             "auto_strength": b._auto_strength(),
+            "auto_window": b._auto_window(),
+            "car_type": b.telemetry.car_type,
             "alive": b.telemetry.alive,
             "recv": b.telemetry.receiving,
             "tele_err": b.telemetry.error,
@@ -7405,6 +7508,28 @@ class Api:
             sanitize_config(cfg)
             save_config_soon(cfg)
         return True
+
+    def set_car_strength(self, kind, shown):
+        """The driver's own strength for one kind of car, kept within the
+        room Car type detect allows around its default. Returns what was
+        kept, so the slider can show it."""
+        base = CAR_TYPE_STRENGTH.get(kind)
+        if base is None:
+            return None
+        try:
+            v = float(shown)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(v):
+            return None
+        v = clamp(round(v), base - CAR_TYPE_ROOM, base + CAR_TYPE_ROOM)
+        cfg = self._b.cfg
+        held = dict(cfg.get("car_strength") or {})
+        held[kind] = v
+        cfg["car_strength"] = held
+        sanitize_config(cfg)
+        save_config_soon(cfg)
+        return v
 
     def set_port(self, value):
         """Change the port the game is expected to send to. Returns what the
