@@ -1474,6 +1474,7 @@ def _hidhide(cloak_on=False, already=(), present=(), ledger=()):
         with open(h.ledger_file, "w", encoding="utf-8") as f:
             json.dump({"paths": sorted(ledger)}, f)
     h.extra_apps = []
+    h.xinput_hidden = False
     h.calls = []
 
     gaming = json.dumps([{"devices": [{"deviceInstancePath": p,
@@ -1568,6 +1569,67 @@ def test_the_ledger_does_not_grow_for_ever():
     many = ["HID" + chr(92) + "PORT%03d" % i for i in range(80)]
     h._ledger_write(many)
     assert len(h._ledger()) == h.LEDGER_MAX
+
+
+# The two chains read off the machine the bug was found on, from each
+# pad's HID node upwards: the real pad hangs off a USB hub, ours off ViGEm.
+REAL_CHAIN = [
+    ("USB" + chr(92) + "VID_045E&PID_028E&IG_02" + chr(92) + "9&e725bfe&0&02", "HIDClass"),
+    ("USB" + chr(92) + "VID_045E&PID_028E" + chr(92) + "Flydigi_Direwolf_4", "XnaComposite"),
+    ("USB" + chr(92) + "VID_05E3&PID_0608" + chr(92) + "6&26c36cb0&0&1", "USB"),
+    ("USB" + chr(92) + "ROOT_HUB30" + chr(92) + "5&2de1419a&0&0", "USB")]
+OUR_CHAIN = [
+    ("USB" + chr(92) + "VID_045E&PID_028E&IG_03" + chr(92) + "2&dee0f28&0&03", "HIDClass"),
+    ("USB" + chr(92) + "VID_045E&PID_028E" + chr(92) + "01", "XnaComposite"),
+    ("ROOT" + chr(92) + "SYSTEM" + chr(92) + "0004", "System"),
+    ("HTREE" + chr(92) + "ROOT" + chr(92) + "0", "")]
+XNODE = "USB" + chr(92) + "VID_045E&PID_028E" + chr(92) + "Flydigi_Direwolf_4"
+
+
+def test_the_xinput_node_is_found_above_the_hid_node():
+    assert fa.xinput_node_of(REAL_CHAIN) == XNODE
+
+
+def test_our_own_pad_is_never_hidden_from_xinput():
+    """The game has to keep seeing ours - it lives under a software bus."""
+    assert fa.xinput_node_of(OUR_CHAIN) == ""
+    assert fa.xinput_node_of([]) == "", "nothing known, nothing hidden"
+    assert fa.xinput_node_of(REAL_CHAIN[:2]) == "", \
+        "no parent to judge by: leave it alone"
+
+
+def test_the_pad_is_hidden_from_xinput_as_well_as_hid():
+    """The bug: the HID node was hidden, the XInput node was not, and the
+    game read the physical pad over XInput whenever it was touched."""
+    real = fa._device_ancestors
+    fa._device_ancestors = lambda path: REAL_CHAIN if path == MINE else []
+    try:
+        h = _hidhide(present=[MINE])
+        h.engage()
+        assert ("--dev-hide", MINE) in h.calls
+        assert ("--dev-hide", XNODE) in h.calls, h.calls
+        assert h.xinput_hidden is True
+        assert XNODE in h._ledger(), "it must be ours to take back"
+        assert h.arg == 1, "one pad, however many nodes it takes"
+        h.calls.clear()
+        h.disengage()
+        assert ("--dev-unhide", XNODE) in h.calls, h.calls
+        assert ("--dev-unhide", MINE) in h.calls
+        assert h.xinput_hidden is False
+    finally:
+        fa._device_ancestors = real
+
+
+def test_with_the_pad_gone_from_xinput_every_button_goes_through_ours():
+    """The game can no longer read gears and camera from the player's pad,
+    so ours carries them - without anyone having to find the switch."""
+    class _H:
+        xinput_hidden = True
+    b = _menu_bridge()
+    b.hidhide = _H()
+    assert b._mirrors_everything()
+    b.hidhide.xinput_hidden = False
+    assert not b._mirrors_everything()
 
 
 def test_a_cloak_that_was_already_on_stays_on():

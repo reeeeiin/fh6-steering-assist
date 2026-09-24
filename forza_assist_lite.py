@@ -2409,6 +2409,60 @@ class DriverSetup:
             self.code = "done"
             self.info = "drivers installed: " + ", ".join(self.installed)
 
+# The node XInput opens for a pad is not its HID node. An Xbox-style pad
+# is a device in the XnaComposite class (XboxComposite for the newer ones),
+# and the HID "game controller" two levels below it is only what DirectInput
+# reads. Hiding the HID node alone left the pad on XInput, where the game
+# went on reading it: on the machine this was found on, every touch of the
+# stick or the throttle handed the game back to the physical pad, and the
+# assist vanished until both were let go.
+XINPUT_CLASSES = ("xnacomposite", "xboxcomposite")
+CM_DRP_CLASS = 0x00000008
+
+
+def _device_ancestors(instance_id, depth=4):
+    """[(instance id, device class)] from a device's parent upwards, asked
+    of Windows directly - no tool output to parse, no language to depend on.
+    """
+    try:
+        cm = ctypes.windll.cfgmgr32
+    except (AttributeError, OSError):
+        return []
+    node = ctypes.c_ulong()
+    if cm.CM_Locate_DevNodeW(ctypes.byref(node),
+                             ctypes.c_wchar_p(instance_id), 0) != 0:
+        return []
+    out = []
+    for _ in range(depth):
+        parent = ctypes.c_ulong()
+        if cm.CM_Get_Parent(ctypes.byref(parent), node, 0) != 0:
+            break
+        node = parent
+        ident = ctypes.create_unicode_buffer(512)
+        if cm.CM_Get_Device_IDW(node, ident, 512, 0) != 0:
+            break
+        klass = ctypes.create_unicode_buffer(128)
+        size = ctypes.c_ulong(ctypes.sizeof(klass))
+        got = cm.CM_Get_DevNode_Registry_PropertyW(
+            node, CM_DRP_CLASS, None, klass, ctypes.byref(size), 0)
+        out.append((ident.value, klass.value if got == 0 else ""))
+    return out
+
+
+def xinput_node_of(chain) -> str:
+    """From a HID node's ancestors, the XInput node to hide - or "" when
+    there is none, or when it hangs off a software bus. Our own virtual pad
+    lives under ROOT (ViGEm is a root-enumerated bus), and that one the game
+    has to keep seeing; a real pad hangs off a USB hub or a radio."""
+    for i, (ident, klass) in enumerate(chain):
+        if (klass or "").lower() in XINPUT_CLASSES:
+            parent = chain[i + 1][0] if i + 1 < len(chain) else ""
+            if not parent or parent.upper().startswith(("ROOT\\", "HTREE\\")):
+                return ""
+            return ident
+    return ""
+
+
 class HidHide:
     CLI_PATHS = [
         r"C:\Program Files\Nefarius Software Solutions\HidHide\x64\HidHideCLI.exe",
@@ -2427,6 +2481,9 @@ class HidHide:
         self.arg = 0
         self.hidden = set()
         self.allowed = set()
+        # True once the pad's XInput node is hidden as well - from then on
+        # the game sees only our pad and every button has to go through it.
+        self.xinput_hidden = False
         # What HidHide looked like before we touched it. Closing puts it
         # back to exactly this: anything the user hid for their own reasons
         # stays hidden, and the cloak goes back on or off as we found it.
@@ -2524,7 +2581,8 @@ class HidHide:
                 if path not in self._prior_hidden:
                     self.hidden.add(path)
                     self._ledger_add(path)
-                    self._save_state()
+                self._hide_xinput_of(path)
+                self._save_state()
             self._run("--cloak-on")
             self.active = True
             # The loop's own shutdown does this too. This is for the exits
@@ -2535,7 +2593,7 @@ class HidHide:
             # this can report: the game still sees the pad, the assist has
             # no effect, and the one place that would explain it agrees
             # everything is fine.
-            total = len(self.hidden) + len(self._prior_hidden)
+            total = self._pads_hidden()
             if total:
                 self.code, self.arg = "hidden", total
                 self.info = f"pad hidden from the game ({total} devices)"
@@ -2744,9 +2802,12 @@ class HidHide:
                     hook = getattr(self, "on_event", None)
                     if hook:
                         hook("hid a new device: %s" % path)
+                    node = self._hide_xinput_of(path)
+                    if node and hook:
+                        hook("hid its XInput node: %s" % node)
                 self._save_state()
-            if len(self.hidden) != self.arg:
-                self.arg = len(self.hidden)
+            if self._pads_hidden() != self.arg:
+                self.arg = self._pads_hidden()
                 self.info = f"pad hidden from the game ({self.arg} devices)"
         except Exception:
             pass
@@ -2823,6 +2884,28 @@ class HidHide:
             except Exception:
                 pass
 
+    def _hide_xinput_of(self, path):
+        """Hide the XInput node above a HID path we have just hidden."""
+        try:
+            node = xinput_node_of(_device_ancestors(path))
+        except Exception:
+            node = ""
+        if not node:
+            return ""
+        if node in self.hidden or node in self._prior_hidden:
+            self.xinput_hidden = True
+            return ""
+        self._run("--dev-hide", node)
+        self.hidden.add(node)
+        self._ledger_add(node)
+        self.xinput_hidden = True
+        return node
+
+    def _pads_hidden(self) -> int:
+        """Pads, not device nodes: one pad is now two nodes on the list."""
+        return sum(1 for p in self.hidden | self._prior_hidden
+                   if p.upper().startswith("HID\\"))
+
     def _save_state(self):
         try:
             os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
@@ -2890,6 +2973,7 @@ class HidHide:
                 pass
         self._ledger_drop(self.hidden)
         self.hidden.clear()
+        self.xinput_hidden = False
         try:
             if self._prior_cloak is False:
                 self._run("--cloak-off")
@@ -3026,8 +3110,14 @@ class Bridge:
         """
         # the hid_mode test comes first, as it always did: it is the
         # one that decides whether mirror_all means anything
+        hh = getattr(self, "hidhide", None)
+        # With the pad's XInput node hidden too, the game has no other pad
+        # to read its gears and camera from: every button goes through ours
+        # without anyone having to find the switch.
+        gone = (not self.hid_mode and hh is not None
+                and bool(getattr(hh, "xinput_hidden", False)))
         return bool((self.hid_mode and self.mirror_all)
-                    or self.cfg.get("mirror_all_buttons"))
+                    or self.cfg.get("mirror_all_buttons") or gone)
 
     def _virtual_buttons(self, buttons: int, alive: bool, now: float) -> int:
         if self._mirrors_everything():
@@ -3442,10 +3532,12 @@ class Bridge:
             if self.boot_error == "no_pad":
                 self.boot_error = ""
             self.physical_slot = min(before) if before else None
-            self._note("started %s - %s; our pad on %s, player's on %s" % (
+            self._note("started %s - %s; our pad on %s, player's on %s; "
+                       "hidden from XInput: %s" % (
                 APP_VERSION, self.mode_info or "wired",
                 sorted(self.virtual_slots) or "unknown",
-                "hid" if self.hid_mode else self.physical_slot))
+                "hid" if self.hid_mode else self.physical_slot,
+                "yes" if self.hidhide.xinput_hidden else "no"))
             self.boot_step = 5
             self.status_code = "ok"
 
