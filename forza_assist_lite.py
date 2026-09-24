@@ -443,6 +443,54 @@ class Telemetry:
 _CARS = {}
 
 
+# FH6 has eight classes - R is new, between S2 and X. Read with seven, an
+# R car was labelled X.
+CLASS_NAMES = ("D", "C", "B", "A", "S1", "S2", "R", "X")
+DRIVETRAINS = ("FWD", "RWD", "AWD")
+
+# What the assist is set to, per kind of car, while Car type detect is on.
+# Rear drive is the baseline the assist is tuned on. Formula Drift cars
+# carry far more steering lock and want much less. All-wheel and front
+# drive sit at the baseline for now: the plan for them is a strength that
+# follows the drift angle, shaped from logged runs rather than guessed.
+#
+# These are the numbers the slider SHOWS. Inside, the strength runs 0-120
+# and is shown as 0-100 percent, so the 45 a driver tunes by is a gain of
+# 54. Written as raw gains, the first version handed the assist 38 and 25.
+CAR_TYPE_STRENGTH = {"rwd": 45, "fd": 30, "awd": 45, "fwd": 45}
+
+
+def gain_from_shown(percent) -> float:
+    """The raw gain behind a strength as the slider shows it."""
+    lo, hi = CONFIG_RANGES["counter_gain"]
+    return lo + (hi - lo) * percent / 100.0
+
+_FD = set()
+
+
+def is_formula_drift(ordinal) -> bool:
+    """Formula Drift cars, found in the car table by name."""
+    if not _FD:
+        _car_name(0)                       # loads the table
+        _FD.update(k for k, v in _CARS.items()
+                   if "formula drift" in (v or "").lower())
+        _FD.add("")                        # an empty table is not rescanned
+    return bool(ordinal) and str(ordinal) in _FD
+
+
+def car_type(ordinal, drive) -> str:
+    """fd, rwd, awd or fwd - or empty while the car is not known.
+
+    Formula Drift comes first: those are rear-drive cars too, but set up
+    so differently that the drive alone would put them in the wrong place.
+    """
+    if not ordinal:
+        return ""
+    if is_formula_drift(ordinal):
+        return "fd"
+    return {0: "fwd", 1: "rwd", 2: "awd"}.get(drive, "")
+
+
 def _car_name(ordinal) -> str:
     """Car ids to names, read once from the table beside the app."""
     if not _CARS:
@@ -470,6 +518,7 @@ class TelemetryListener:
     OFF_CAR_ORDINAL = 212
     OFF_CAR_CLASS = 216
     OFF_CAR_PI = 220
+    OFF_DRIVETRAIN = 224
     F32 = struct.Struct("<f")
     S32 = struct.Struct("<i")
 
@@ -481,6 +530,7 @@ class TelemetryListener:
         self._t_race = 0.0
         self.error = ""
         self.car = (0, 0, 0)
+        self.drive = -1
         self._run = threading.Event()
 
     def start(self):
@@ -501,9 +551,32 @@ class TelemetryListener:
         name = _car_name(ordinal)
         if name:
             return name
-        names = ("D", "C", "B", "A", "S1", "S2", "X")
-        klass_name = names[klass] if 0 <= klass < len(names) else "?"
+        klass_name = (CLASS_NAMES[klass] if 0 <= klass < len(CLASS_NAMES)
+                      else "?")
         return "%s %d" % (klass_name, pi) if pi else klass_name
+
+    @property
+    def car_name(self) -> str:
+        return _car_name(self.car[0]) if self.car[0] else ""
+
+    @property
+    def car_class(self) -> str:
+        k = self.car[1]
+        return (CLASS_NAMES[k] if self.car[0] and 0 <= k < len(CLASS_NAMES)
+                else "")
+
+    @property
+    def car_pi(self) -> int:
+        return self.car[2] if self.car[0] else 0
+
+    @property
+    def car_drive(self) -> str:
+        return (DRIVETRAINS[self.drive]
+                if self.car[0] and 0 <= self.drive < len(DRIVETRAINS) else "")
+
+    @property
+    def car_type(self) -> str:
+        return car_type(self.car[0], self.drive)
 
     @property
     def alive(self) -> bool:
@@ -551,6 +624,7 @@ class TelemetryListener:
                     self.S32.unpack_from(pkt, self.OFF_CAR_ORDINAL)[0],
                     self.S32.unpack_from(pkt, self.OFF_CAR_CLASS)[0],
                     self.S32.unpack_from(pkt, self.OFF_CAR_PI)[0])
+                self.drive = self.S32.unpack_from(pkt, self.OFF_DRIVETRAIN)[0]
                 vx = self.F32.unpack_from(pkt, self.OFF_VEL_X)[0]
                 vz = self.F32.unpack_from(pkt, self.OFF_VEL_Z)[0]
                 if all(map(math.isfinite, (fl, fr, rl, rr, yaw, spd, vx, vz))):
@@ -696,6 +770,9 @@ SHAPE_TAU = 0.9
 class Assist:
     def __init__(self, cfg: dict):
         self.cfg = cfg
+        # Set by Car type detect. None leaves the slider's own value in
+        # charge; a number replaces it without ever being written back.
+        self.strength_override = None
         self.angle = 0.0
         self._slip_f = 0.0
         self._beta_f = 0.0
@@ -826,8 +903,9 @@ class Assist:
         authority = max(0.0, 1.0 - against * against)
         gyro_force = -self._yaw_f * c["gyro"] * self._slide
 
-        magnitude = min(1.0, (c["counter_gain"] / 100.0)
-                        * excess * STEER_PER_SLIP)
+        gain = (c["counter_gain"] if self.strength_override is None
+                else self.strength_override)
+        magnitude = min(1.0, (gain / 100.0) * excess * STEER_PER_SLIP)
         counter = magnitude * want
         counter *= (1.0 - brake * BRAKE_SUPPRESS) * speed_gate * authority
         counter *= 1.0 - SWING_CUT * self._swing
@@ -909,6 +987,7 @@ DEFAULTS = {
     "ui_scale": 1.0,
     "steer_in_general": False,
     "ext_telemetry": False,
+    "car_detect": True,
     "profile": "default",
     "custom": {},
     "slots": {},
@@ -1869,7 +1948,7 @@ def sanitize_config(cfg: dict) -> dict:
         cfg[key] = clamp(v, lo, hi) if math.isfinite(v) else float(DEFAULTS[key])
     for key in ("enabled", "auto_hide", "telemetry_seen", "setup_done",
                 "rumble", "steer_in_general", "ext_telemetry",
-                "mirror_all_buttons", "tour_seen"):
+                "mirror_all_buttons", "tour_seen", "car_detect"):
         cfg[key] = bool(cfg.get(key, DEFAULTS[key]))
     for key in ("btn_handbrake", "btn_clutch"):
         try:
@@ -3043,6 +3122,14 @@ class Bridge:
         if old is not fresh:
             old.stop()
 
+    def _auto_strength(self):
+        """What Car type detect sets the strength to, or None to leave the
+        preset's own - it is off, or the car is not known yet."""
+        if not self.cfg.get("car_detect"):
+            return None
+        shown = CAR_TYPE_STRENGTH.get(self.telemetry.car_type)
+        return None if shown is None else gain_from_shown(shown)
+
     def _note(self, text):
         ev = getattr(self, "events", None)
         if ev is not None:
@@ -3368,6 +3455,7 @@ class Bridge:
                     save_config(self.cfg)
                 tm = self.telemetry.get()
 
+                self.assist.strength_override = self._auto_strength()
                 out_x = self.assist.update(stick_x, tm, dt, brake, alive)
 
                 in_menu = self.telemetry.receiving and not alive
@@ -3534,6 +3622,8 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Display steering settings in general',
         "ext_telemetry": 'Display extended telemetry',
+        "car_detect": 'Car type detect',
+        "car_detect_hint": 'Sets the assist strength for the car you are in: 45 on rear-wheel drive, 30 on Formula Drift cars. While it is on, the strength slider follows the car and cannot be moved; switch it off to set the strength yourself.',
         "mirror_all_buttons": 'Release all buttons',
         "mirror_all_buttons_hint": 'Turn this on if gears, camera or menu buttons stopped working while the assist runs. Turn it off again if a single press starts arriving twice.',
         "st_waiting": 'Waiting',
@@ -3669,6 +3759,8 @@ TR = {
         "theme_light": "Светлая",
         "steer_in_general": 'Отображать настройки помощника на главной',
         "ext_telemetry": 'Отображать расширенную телеметрию',
+        "car_detect": 'Определять тип машины',
+        "car_detect_hint": 'Подбирает силу ассиста под машину: 45 для заднего привода, 30 для машин Formula Drift. Пока включено, ползунок силы следует за машиной и не двигается; выключите, чтобы задать силу самому.',
         "mirror_all_buttons": 'Освободить все кнопки',
         "mirror_all_buttons_hint": 'Включите, если при работающем ассисте перестали работать передачи, камера или кнопки меню. Выключите обратно, если одно нажатие стало срабатывать дважды.',
         "st_waiting": 'Ожидание',
@@ -3804,6 +3896,8 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Lenkeinstellungen auf der Startseite zeigen',
         "ext_telemetry": 'Erweiterte Telemetrie anzeigen',
+        "car_detect": 'Fahrzeugtyp erkennen',
+        "car_detect_hint": 'Stellt die Assistenzstaerke passend zum Auto ein: 45 bei Heckantrieb, 30 bei Formula-Drift-Autos. Solange es an ist, folgt der Staerke-Regler dem Auto und laesst sich nicht verschieben; zum eigenen Einstellen ausschalten.',
         "mirror_all_buttons": 'Alle Tasten freigeben',
         "mirror_all_buttons_hint": 'Einschalten, wenn Gaenge, Kamera oder Menuetasten bei laufender Assistenz nicht mehr reagieren. Wieder ausschalten, wenn ein Druck doppelt ankommt.',
         "st_waiting": 'Wartet',
@@ -3939,6 +4033,8 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Afficher les reglages de direction sur l\'accueil',
         "ext_telemetry": 'Afficher la telemetrie detaillee',
+        "car_detect": 'Detecter le type de voiture',
+        "car_detect_hint": "Regle la force de l'assistant selon la voiture : 45 en propulsion, 30 sur les voitures Formula Drift. Tant que c'est active, le curseur de force suit la voiture et ne se deplace pas ; desactivez pour regler la force vous-meme.",
         "mirror_all_buttons": 'Liberer tous les boutons',
         "mirror_all_buttons_hint": "A activer si les vitesses, la camera ou les boutons de menu ne repondent plus quand l'assistance tourne. A desactiver si un appui arrive deux fois.",
         "st_waiting": 'Attente',
@@ -4074,6 +4170,8 @@ TR = {
         "theme_light": "Light",
         "steer_in_general": 'Mostrar los ajustes de direccion en general',
         "ext_telemetry": 'Mostrar telemetria ampliada',
+        "car_detect": 'Detectar tipo de coche',
+        "car_detect_hint": 'Ajusta la fuerza del asistente al coche: 45 con traccion trasera, 30 en los coches Formula Drift. Mientras esta activo, el deslizador de fuerza sigue al coche y no se puede mover; desactivalo para elegir la fuerza tu mismo.',
         "mirror_all_buttons": 'Liberar todos los botones',
         "mirror_all_buttons_hint": 'Activalo si las marchas, la camara o los botones de menu dejan de funcionar con la asistencia activa. Desactivalo si una pulsacion llega dos veces.',
         "st_waiting": 'Esperando',
@@ -4216,6 +4314,8 @@ TR = {
         "theme_light": 'ライト',
         "steer_in_general": '操舵設定をメイン画面に表示',
         "ext_telemetry": '詳細なテレメトリーを表示',
+        "car_detect": '車種を自動判別',
+        "car_detect_hint": '乗っている車に合わせてアシスト強度を設定します。後輪駆動は45、Formula Drift の車は30。オンの間は強度スライダーが車に合わせて動き、手動では変更できません。自分で設定する場合はオフにしてください。',
         "mirror_all_buttons": 'すべてのボタンを解放',
         "mirror_all_buttons_hint": 'アシスト作動中にギアやカメラ、メニューのボタンが効かない場合にオンにします。1回の操作が2回入る場合はオフに戻してください。',
         "st_waiting": '待機中',
@@ -4695,11 +4795,14 @@ body.t-light{
 .warn-b:hover{filter:brightness(1.12)}
 
 /* ---------- extended telemetry ---------- */
-/* fixed geometry: two columns of 232 with a 10 gap, 160 tall on the first
-   row and 36 on the second, so no box resizes with its contents */
+/* fixed geometry: two columns of 232 with a 10 gap. On the left the
+   telemetry card (160) over the car (69); on the right the pad's state
+   (36) over the four readouts. Both columns come to 239, and no box
+   resizes with its contents */
 .tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tcol{display:flex;flex-direction:column;gap:10px;min-width:0}
 .tgrid .telecard{height:160px;padding:0 15px;box-sizing:border-box}
-.tside{height:160px}
+.tside{height:193px}
 .tside.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
              grid-template-rows:repeat(2,minmax(0,1fr));gap:10px;
              background:none;border-radius:0;padding:0}
@@ -4727,9 +4830,36 @@ body.t-light{
       border:1px solid var(--line);white-space:nowrap;
       overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%;
       flex:0 1 auto}
+.tcar.gone{display:none}
 .tbot .trow .rname{flex:none}
+/* The car: its name over a line, then the name, drive and class as chips.
+   The name gives way first - it shortens - while the two short chips keep
+   their width. */
+.tcarcard{height:69px;padding:9px 15px;box-sizing:border-box;
+          display:flex;flex-direction:column;justify-content:space-between}
+.tcarcard .trow{min-height:18px}
+.tchips{display:flex;align-items:center;gap:4px;min-width:0;
+        padding-top:7.5px;border-top:1px solid var(--line)}
+.tchip{height:18px;box-sizing:border-box;padding:0 6px;border-radius:5px;
+       border:1px solid;display:flex;align-items:center;
+       justify-content:center;flex:none;font-size:8px;font-weight:600;
+       color:var(--row-fg);white-space:nowrap}
+.tchip:empty{display:none}
+.dchip{width:36px}
+.cchip{width:40px}
+.dchip[data-v="RWD"]{border-color:#E91F1F;background:rgba(233,31,31,.1)}
+.dchip[data-v="AWD"]{border-color:#0DDE64;background:rgba(13,222,100,.1)}
+.dchip[data-v="FWD"]{border-color:#FFCC00;background:rgba(255,204,0,.1)}
+.cchip[data-v="D"]{border-color:#44BCEA;background:rgba(68,188,234,.1)}
+.cchip[data-v="C"]{border-color:#F8C838;background:rgba(248,200,56,.1)}
+.cchip[data-v="B"]{border-color:#FA6629;background:rgba(250,102,41,.1)}
+.cchip[data-v="A"]{border-color:#F71847;background:rgba(247,24,71,.1)}
+.cchip[data-v="S1"]{border-color:#B767EA;background:rgba(183,103,234,.1)}
+.cchip[data-v="S2"]{border-color:#185ADA;background:rgba(24,90,218,.1)}
+.cchip[data-v="R"]{border-color:#D61997;background:rgba(214,25,151,.1)}
+.cchip[data-v="X"]{border-color:#17D857;background:rgba(23,216,87,.1)}
 /* the same box, carrying the setup the game needs when nothing arrives */
-.tsetup{height:160px;box-sizing:border-box;padding:0 15px;
+.tsetup{height:100%;box-sizing:border-box;padding:0 15px;
         display:flex;flex-direction:column;justify-content:center}
 .tsetup .shead{display:flex;align-items:flex-start;justify-content:space-between;
                gap:10px;padding-bottom:10px}
@@ -4781,6 +4911,10 @@ body.t-light{
 
 /* ---------- slider ---------- */
 .sl{flex:1;height:14px;position:relative;cursor:pointer;min-width:60px}
+/* Car type detect holds the strength: it is shown, dimmed, and not taken */
+.row.locked .sl,.row.locked .rval{opacity:.4;transition:opacity .2s ease}
+.row.locked .sl{pointer-events:none}
+.row.locked{cursor:default}
 .sl .trk{position:absolute;top:50%;left:0;right:0;height:4px;border-radius:2px;
          background:var(--track);transform:translateY(-50%)}
 .sl .fil{position:absolute;top:50%;left:0;height:4px;border-radius:2px;
@@ -5236,8 +5370,7 @@ function screenMain(){
     livePort() + '</b></div>' +
     '</div>';
 
-  h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>' +
-       (cfg.ext_telemetry ? '<div class="tgrid">' : '') +
+  const tele =
        '<div class="card telecard' + (live ? '' : ' idle') + '">' +
        '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
        '<span class="tstat" id="tstat">-</span></div>' +
@@ -5255,22 +5388,29 @@ function screenMain(){
        '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
        '<div class="bar"><i id="outbar"></i><u></u></div></div>' +
        '</div>';
-  if (cfg.ext_telemetry){
-    /* the readouts have nothing to say without telemetry, so the box tells
-       the player how to turn it on instead */
-    h += live
-      ? '<div class="tside tiles">' + tile('w-mode', 'mode_status') +
-        tile('w-speed', 'w_speed') + tile('w-callback', 'w_callback') +
-        tile('w-latency', 'w_latency') + '</div>'
-      : '<div class="tside">' + setup + '</div>';
-    h += '<div class="card tbot"><div class="trow">' +
-         '<span class="rname">' + t('w_car') + '</span>' +
-         '<span class="tcar" id="w-car">-</span></div></div>' +
-         '<div class="card tbot"><div class="trow">' +
-         '<span class="rname">' + t('pad_status') + '</span>' +
-         '<span class="rval" id="padstat">-</span></div></div>';
-  }
-  return h + (cfg.ext_telemetry ? '</div>' : '') + '</div>';
+
+  h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>';
+  if (!cfg.ext_telemetry) return h + tele + '</div>';
+
+  /* the readouts have nothing to say without telemetry, so their place
+     tells the player how to turn it on instead */
+  const readouts = live
+    ? '<div class="tside tiles">' + tile('w-mode', 'mode_status') +
+      tile('w-speed', 'w_speed') + tile('w-callback', 'w_callback') +
+      tile('w-latency', 'w_latency') + '</div>'
+    : '<div class="tside">' + setup + '</div>';
+  const car = '<div class="card tcarcard"><div class="trow">' +
+    '<span class="rname">' + t('w_car') + '</span></div>' +
+    '<div class="tchips"><span class="tcar" id="w-car">-</span>' +
+    '<span class="tchip dchip" id="w-drive"></span>' +
+    '<span class="tchip cchip" id="w-class"></span></div></div>';
+  const pad = '<div class="card tbot"><div class="trow">' +
+    '<span class="rname">' + t('pad_status') + '</span>' +
+    '<span class="rval" id="padstat">-</span></div></div>';
+  return h + '<div class="tgrid">' +
+    '<div class="tcol">' + tele + car + '</div>' +
+    '<div class="tcol">' + pad + readouts + '</div>' +
+    '</div></div>';
 }
 
 /* About: how the assist works, the components this build ships with, the
@@ -5373,6 +5513,7 @@ function screenSettings(){
           '<span class="rname">' + t('profile') + '</span>' +
           segEl('profile', profItems(), cfg.profile) + '</div>';
   SLIDERS.forEach(s => { h += sliderRow(s[0]); });
+  h += toggleRow('car_detect', 'car_detect');
   /* Saving presets is out of the way for now - nobody was using it, and
      the useful version of the idea is one preset per car. The machinery
      stays; only the row is gone. */
@@ -5656,16 +5797,45 @@ function render(){
   reportHeight();
 }
 
+/* With Car type detect on, the strength belongs to the car: the slider
+   shows what the assist is using, travels there by itself when the car
+   changes, and cannot be dragged. Switched off, it is the player's again
+   and shows their own value, which was never overwritten. */
+let gainShown = null;
+function strengthLocked(){ return !!(cfg && cfg.car_detect); }
+function strengthTarget(){
+  return state && state.auto_strength != null ? state.auto_strength
+                                               : cfg.counter_gain;
+}
+function sliderValue(key){
+  if (key !== 'counter_gain' || !strengthLocked()) return cfg[key];
+  return gainShown !== null ? gainShown : strengthTarget();
+}
+function drawSlider(el){
+  const key = el.dataset.slider;
+  const r = ALLS.find(x => x[0] === key);
+  const val = sliderValue(key);
+  const p = (val - r[1]) / (r[2] - r[1]);
+  el.querySelector('.fil').style.width = (p * 100) + '%';
+  el.querySelector('.knb').style.left = (p * 100) + '%';
+  const v = document.querySelector('[data-val="' + key + '"]');
+  if (v) v.textContent = shown(key, val);
+  const row = el.closest('.row');
+  if (row) row.classList.toggle('locked',
+                                key === 'counter_gain' && strengthLocked());
+}
+function stepStrength(){
+  if (!strengthLocked()){ gainShown = null; return; }
+  const to = strengthTarget();
+  const from = gainShown === null ? to : gainShown;
+  const next = Math.abs(to - from) < 0.2 ? to : from + (to - from) * 0.25;
+  if (next === gainShown) return;
+  gainShown = next;
+  $$('[data-slider="counter_gain"]').forEach(drawSlider);
+}
+
 function refresh(){
-  $$('[data-slider]').forEach(el => {
-    const key = el.dataset.slider;
-    const r = ALLS.find(x => x[0] === key);
-    const p = (cfg[key] - r[1]) / (r[2] - r[1]);
-    el.querySelector('.fil').style.width = (p * 100) + '%';
-    el.querySelector('.knb').style.left = (p * 100) + '%';
-    const v = document.querySelector('[data-val="' + key + '"]');
-    if (v) v.textContent = shown(key, cfg[key]);
-  });
+  $$('[data-slider]').forEach(drawSlider);
   $$('[data-toggle]').forEach(el =>
     el.classList.toggle('on', !!cfg[el.dataset.toggle]));
   const pin = document.getElementById('tele-port');
@@ -5854,6 +6024,8 @@ function bindRows(){
     el.addEventListener('click', () => {
       const f = el.dataset.toggle;
       cfg[f] = !cfg[f];
+      // switched on, the slider travels from where the player had it
+      if (f === 'car_detect') gainShown = cfg[f] ? cfg.counter_gain : null;
       refresh();
       try{ pywebview.api.set(f, cfg[f]); }catch(e){}
       if (f === 'steer_in_general' || f === 'ext_telemetry')
@@ -5864,6 +6036,7 @@ function bindRows(){
     const key = el.dataset.slider;
     const r = ALLS.find(x => x[0] === key);
     const drag = e => {
+      if (key === 'counter_gain' && strengthLocked()) return;
       const b = el.getBoundingClientRect();
       let p = (e.clientX - b.left) / b.width;
       p = Math.max(0, Math.min(1, p));
@@ -5916,6 +6089,7 @@ function updateWarning(){
 function liveUpdate(){
   if (!state || !cfg) return;
   updateWarning();
+  stepStrength();
   const ts = $('#tstat');
   if (ts){
     let cls = 'wait', txt = t('st_waiting');
@@ -5953,8 +6127,25 @@ function liveUpdate(){
   set('#w-latency', state.pad_hz || '—', 'Hz', '');
   const car = $('#w-car');
   if (car){
-    car.textContent = state.car || t('btn_none');
-    car.title = state.car || '';
+    /* The name alone: class and drive have chips of their own now, so the
+       old stand-in of "S1 713" for a car missing from the table would say
+       the class twice. Unnamed but known, the chips speak for it. */
+    const name = state.car_name != null ? state.car_name : (state.car || '');
+    const known = !!(name || state.car_class);
+    car.textContent = name || t('btn_none');
+    car.classList.toggle('gone', known && !name);
+    car.title = name;
+  }
+  const dv = $('#w-drive');
+  if (dv){
+    dv.textContent = state.car_drive || '';
+    dv.dataset.v = state.car_drive || '';
+  }
+  const cv = $('#w-class');
+  if (cv){
+    const c = state.car_class || '';
+    cv.textContent = c ? c + ' ' + (state.car_pi || '') : '';
+    cv.dataset.v = c;
   }
   const ps = $('#padstat');
   if (ps){
@@ -7141,6 +7332,11 @@ class Api:
             "pad_hz": b.pad_hz,
             "age": round(min(999.0, b.telemetry.age_ms)),
             "car": b.telemetry.car_label,
+            "car_name": b.telemetry.car_name,
+            "car_class": b.telemetry.car_class,
+            "car_pi": b.telemetry.car_pi,
+            "car_drive": b.telemetry.car_drive,
+            "auto_strength": b._auto_strength(),
             "alive": b.telemetry.alive,
             "recv": b.telemetry.receiving,
             "tele_err": b.telemetry.error,

@@ -504,6 +504,122 @@ def _slide_entry(cfg=None, frames=90, sign=1.0):
     return out
 
 
+def _slide_with_override(gain_cfg, override):
+    cfg = dict(fa.DEFAULTS)
+    cfg["counter_gain"] = gain_cfg
+    a = fa.Assist(cfg)
+    a.strength_override = override
+    a.update(0.0, fa.Telemetry(120 / 3.6, 0.0, 0.0, 0.0, 0.0), 1 / 60,
+             brake=0.0, telemetry_alive=True)
+    out = []
+    for i in range(90):
+        beta = min(0.5, 0.03 * i)
+        tm = fa.Telemetry(120 / 3.6, 0.0, beta, beta * 2.0, beta)
+        out.append(a.update(0.0, tm, 1 / 60, brake=0.0, telemetry_alive=True))
+    return out
+
+
+def test_the_override_replaces_the_slider_value_and_nothing_else():
+    """Car type detect hands the assist a strength; the result must be
+    exactly what that strength would give from the slider itself."""
+    via_override = _slide_with_override(80.0, 36.0)
+    via_slider = _slide_with_override(36.0, None)
+    assert via_override == via_slider
+    assert via_override != _slide_with_override(80.0, None)
+
+
+def test_car_strengths_are_the_numbers_the_slider_shows():
+    """The slider runs 0-120 inside and shows 0-100. Tuned by eye at 45 and
+    30, the assist must get 54 and 36 - the first version gave it 38 and
+    25 because the table was written as raw gains."""
+    assert fa.CAR_TYPE_STRENGTH["rwd"] == 45
+    assert fa.CAR_TYPE_STRENGTH["fd"] == 30
+    assert fa.gain_from_shown(45) == 54.0
+    assert fa.gain_from_shown(30) == 36.0
+    lo, hi = fa.CONFIG_RANGES["counter_gain"]
+    for shown in fa.CAR_TYPE_STRENGTH.values():
+        gain = fa.gain_from_shown(shown)
+        # the same sum the slider uses to print its number
+        assert round((gain - lo) / (hi - lo) * 100) == shown
+
+
+def test_formula_drift_cars_are_found_by_name():
+    assert fa.is_formula_drift(3744), "Forsberg's Z is a Formula Drift car"
+    assert fa.is_formula_drift("2996"), "the #13 Mustang is too"
+    assert not fa.is_formula_drift(247), "a 2000 GT is not"
+    assert not fa.is_formula_drift(0)
+    fd = [k for k in fa._CARS if k and fa.is_formula_drift(k)]
+    assert len(fd) == 13, len(fd)
+
+
+def test_the_car_type_puts_formula_drift_before_the_drive():
+    assert fa.car_type(3744, 1) == "fd"
+    assert fa.car_type(3744, 2) == "fd", "a swap does not make it another car"
+    assert fa.car_type(247, 0) == "fwd"
+    assert fa.car_type(247, 1) == "rwd"
+    assert fa.car_type(247, 2) == "awd"
+    assert fa.car_type(247, -1) == "", "drive not known yet"
+    assert fa.car_type(0, 1) == "", "no car yet"
+
+
+def test_car_type_detect_decides_only_while_it_is_on():
+    class _T:
+        car_type = "fd"
+    b = fa.Bridge.__new__(fa.Bridge)
+    b.cfg = dict(fa.DEFAULTS)
+    b.telemetry = _T()
+    assert fa.DEFAULTS["car_detect"] is True
+    assert b._auto_strength() == 36.0
+    _T.car_type = ""
+    assert b._auto_strength() is None, "no car known: leave the preset alone"
+    _T.car_type = "rwd"
+    b.cfg["car_detect"] = False
+    assert b._auto_strength() is None, "switched off: the slider rules"
+
+
+def test_fh6_has_eight_classes_and_r_comes_before_x():
+    """R is new in FH6, between S2 and X. With seven names an R car was
+    shown as X."""
+    assert fa.CLASS_NAMES == ("D", "C", "B", "A", "S1", "S2", "R", "X")
+
+
+def test_the_drive_and_class_come_out_of_the_packet():
+    port = 20994
+    t = fa.TelemetryListener(port=port)
+    t.start()
+    time.sleep(0.2)
+    try:
+        pkt = bytearray(make_packet(race_on=1))
+        L = fa.TelemetryListener
+        struct.pack_into("<i", pkt, L.OFF_CAR_ORDINAL, 3744)
+        struct.pack_into("<i", pkt, L.OFF_CAR_CLASS, 6)
+        struct.pack_into("<i", pkt, L.OFF_CAR_PI, 998)
+        struct.pack_into("<i", pkt, L.OFF_DRIVETRAIN, 1)
+        send(port, bytes(pkt))
+        assert t.car_drive == "RWD", t.car_drive
+        assert t.car_class == "R", t.car_class
+        assert t.car_pi == 998
+        assert "Formula Drift" in t.car_name, t.car_name
+        assert t.car_type == "fd"
+    finally:
+        t.stop()
+
+
+def test_the_car_table_has_the_latest_cars_spelled_right():
+    names = fa._CARS or {}
+    fa._car_name(0)
+    for ordinal in ("278", "335", "1534", "2235", "3429", "3624", "3958",
+                    "3980", "4067", "4118", "4354"):
+        assert fa._CARS.get(ordinal), ordinal
+    assert fa._CARS["4067"] == "2025 Bentley Continental GT"
+
+
+def test_car_type_detect_is_named_in_every_language():
+    for lang in fa.TR:
+        assert fa.TR[lang].get("car_detect"), lang
+        assert fa.TR[lang].get("car_detect_hint"), lang
+
+
 def test_assist_never_steps_on_slide_entry():
     out = _slide_entry()
     limit = fa.DEFAULTS["corr_slew"] / 60.0 + 1e-6
