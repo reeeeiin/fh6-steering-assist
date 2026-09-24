@@ -345,6 +345,143 @@ def test_axes_keep_flowing_when_no_race():
     assert pad.report.sThumbRY == 333
     assert pad.report.bLeftTrigger == 44 and pad.report.bRightTrigger == 55
 
+def _menu_bridge(**over):
+    b = _bridge(**over)
+    b.hid_mode = False
+    b.mirror_all = False
+    b._btn_state = 0
+    b._btn_lock_until = [0.0] * 16
+    return b
+
+
+def _live_report():
+    gp = _FakeReport()
+    gp.wButtons = A | X
+    gp.sThumbLY, gp.sThumbRX, gp.sThumbRY = 111, 222, 333
+    gp.bLeftTrigger, gp.bRightTrigger = 44, 55
+    return gp
+
+
+def test_in_a_menu_our_pad_goes_quiet():
+    """Where the game sees the player's pad too, anything ours sends in a
+    menu arrives twice - the cursor jumps two rows, a trigger flips two
+    tabs. In a menu the game has told us about, ours falls silent."""
+    b = _menu_bridge()
+    pad = _FakePad()
+    virt = b._write_report(pad, _live_report(), out_x=-0.5, alive=False,
+                           now=1.0, in_menu=True)
+    r = pad.report
+    assert virt == 0
+    assert (r.wButtons, r.bLeftTrigger, r.bRightTrigger) == (0, 0, 0)
+    assert (r.sThumbLX, r.sThumbLY, r.sThumbRX, r.sThumbRY) == (0, 0, 0, 0)
+
+
+def test_in_a_menu_our_pad_speaks_if_it_is_the_only_one():
+    """Release all buttons means the game cannot see the player's pad, so
+    silence there would leave the menus with no controller at all."""
+    b = _menu_bridge(mirror_all_buttons=True)
+    pad = _FakePad()
+    virt = b._write_report(pad, _live_report(), out_x=0.0, alive=False,
+                           now=1.0, in_menu=True)
+    assert virt == A | X, "every button must reach the menu"
+    assert pad.report.sThumbLY == 111 and pad.report.bLeftTrigger == 44
+
+
+def test_in_a_menu_hid_mode_keeps_talking():
+    """HID mode with the pad kept off XInput: ours is the game's only pad."""
+    b = _menu_bridge()
+    b.hid_mode = True
+    b.mirror_all = True
+    pad = _FakePad()
+    virt = b._write_report(pad, _live_report(), out_x=0.0, alive=False,
+                           now=1.0, in_menu=True)
+    assert virt == A | X
+    assert pad.report.sThumbRX == 222
+
+
+def test_without_telemetry_the_axes_still_flow():
+    """No menu has been reported - telemetry may simply not be set up yet -
+    so nothing changes from how it always worked."""
+    b = _menu_bridge()
+    pad = _FakePad()
+    b._write_report(pad, _live_report(), out_x=0.0, alive=False, now=1.0,
+                    in_menu=False)
+    assert pad.report.sThumbLY == 111 and pad.report.bRightTrigger == 55
+
+
+def test_a_pad_that_comes_back_on_another_slot_is_found(monkeypatch=None):
+    b = _menu_bridge()
+    b.virtual_slots = {1}
+    b.physical_slot = 0
+    notes = []
+    b._note = notes.append
+    real = fa.xinput_connected_slots
+    try:
+        fa.xinput_connected_slots = lambda: {1, 2}   # ours on 1, the pad on 2
+        b._find_physical_slot()
+        assert b.physical_slot == 2, b.physical_slot
+        assert notes and "slot 2" in notes[0]
+    finally:
+        fa.xinput_connected_slots = real
+
+
+def test_our_own_slot_is_never_taken_for_the_players():
+    b = _menu_bridge()
+    b.virtual_slots = {1}
+    b.physical_slot = 0
+    b._note = lambda text: None
+    real = fa.xinput_connected_slots
+    try:
+        fa.xinput_connected_slots = lambda: {1}       # only ours is left
+        b._find_physical_slot()
+        assert b.physical_slot == 0, "must not start reading our own output"
+        b.virtual_slots = set()                       # ours never found
+        fa.xinput_connected_slots = lambda: {3}
+        b._find_physical_slot()
+        assert b.physical_slot == 0, "cannot tell ours apart - must not guess"
+    finally:
+        fa.xinput_connected_slots = real
+
+
+def test_the_event_log_keeps_to_its_size_and_survives_a_restart():
+    path = os.path.join(tempfile.mkdtemp(prefix="ev-"), "events.log")
+    log = fa.EventLog(path)
+    for i in range(fa.EventLog.KEEP + 50):
+        log.note("event %d" % i)
+    again = fa.EventLog(path)
+    assert len(again.lines) == fa.EventLog.KEEP
+    assert again.tail(1)[0].endswith("event %d" % (fa.EventLog.KEEP + 49))
+
+
+def test_only_a_state_that_holds_is_written_down():
+    """A loading screen flickers between states; a second of it is noise."""
+    b = _menu_bridge()
+    b._seen_state = b._pending_state = None
+    b._pending_t = 0.0
+    notes = []
+    b._note = notes.append
+    b._watch_state(True, False, 0.0)
+    b._watch_state(False, True, 0.3)      # a blink of menu
+    b._watch_state(True, False, 0.6)
+    b._watch_state(True, False, 1.7)
+    assert notes == ["game: race"], notes
+    b._watch_state(False, True, 2.0)
+    b._watch_state(False, True, 3.1)
+    assert notes[-1] == "game: menu", notes
+
+
+def test_the_sweep_writes_down_what_it_hides():
+    """A device picked up later is ours like any other - if the ledger
+    does not name it, it becomes a ghost the moment an exit goes badly."""
+    h = _hidhide(present=[MINE])
+    h.engage()
+    late = "HID" + chr(92) + "VID_045E&PID_028E&IG_02" + chr(92) + "9&new&0"
+    h._present_paths = lambda: {MINE, late}
+    h.sweep()
+    assert late in h.hidden
+    assert late in h._ledger(), "the sweep hid it without writing it down"
+
+
 def test_hold_buttons_still_mirrored_during_race():
     b = _bridge()
     b.hid_mode = False
@@ -817,6 +954,38 @@ def _build_id_module():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def test_the_build_number_counts_only_what_goes_into_the_exe():
+    """Counted across every commit, the first fix build of 2.1 would have
+    come out as 2.1.28 - twenty-six of those commits were the website."""
+    import subprocess
+    bid = _build_id_module()
+    repo = tempfile.mkdtemp(prefix="bid-")
+
+    def git(*args):
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t",
+                        "-c", "commit.gpgsign=false"] + list(args),
+                       cwd=repo, check=True, capture_output=True)
+
+    def commit(rel, text, msg):
+        path = os.path.join(repo, *rel.split("/"))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        git("add", "-A")
+        git("commit", "-qm", msg)
+
+    git("init", "-q")
+    commit("forza_assist_lite.py", 'APP_SERIES = "9.9"\n', "open the series")
+    commit("docs/index.html", "a page", "the site")
+    commit("README.md", "words", "the readme")
+    commit("assets/inst1.png", "a screenshot", "a site picture")
+    assert bid.build_id(repo) == "0", "none of that is in the exe"
+
+    commit("forza_assist_lite.py", 'APP_SERIES = "9.9"\nX = 1\n', "a fix")
+    commit("assets/cars.json", "{}", "the car table ships inside")
+    assert bid.build_id(repo) == "2"
 
 
 def test_the_window_shows_the_series_and_the_full_build_is_kept():

@@ -561,6 +561,45 @@ class TelemetryListener:
                                                  (rl + rr) * 0.5, yaw, beta)
                         self._t_race = now
 
+class EventLog:
+    """The few things worth knowing after the fact, kept on disk.
+
+    A pad that drops out for a second during a cutscene is gone by the
+    time anyone looks, and the next launch starts clean. This keeps the
+    rare events - the pad lost and found, a device newly hidden, the game
+    going in and out of a race - with the time each happened, so the next
+    report can say what the app saw rather than what somebody remembers.
+    Small on purpose: a line per event, a few hundred lines at most.
+    """
+    KEEP = 400
+
+    def __init__(self, path):
+        import collections
+        self.path = path
+        self._lock = threading.Lock()
+        self.lines = collections.deque(maxlen=self.KEEP)
+        try:
+            with open(path, encoding="utf-8") as f:
+                self.lines.extend(line.rstrip("\n") for line in f)
+        except (OSError, ValueError):
+            pass
+
+    def note(self, text):
+        line = time.strftime("%Y-%m-%d %H:%M:%S") + "  " + text
+        with self._lock:
+            self.lines.append(line)
+            try:
+                os.makedirs(os.path.dirname(self.path), exist_ok=True)
+                with open(self.path, "w", encoding="utf-8") as f:
+                    f.write("\n".join(self.lines) + "\n")
+            except OSError:
+                pass
+
+    def tail(self, n):
+        with self._lock:
+            return list(self.lines)[-n:]
+
+
 def process_list():
     """Every running process as (pid, parent pid, name, full path).
 
@@ -1266,7 +1305,7 @@ FAQ_ITEMS = {
     ('The assist does nothing in game', [
         'Nine times out of ten it is the launch order. The game looks for controllers when it starts, so a virtual pad created afterwards is invisible to it.',
         'If the game is already open you do not have to restart it: unplug your controller and plug it back in, or switch a wireless one off and on. The game rescans its inputs and picks the assist up.',
-        'Also check that Steering is set to Simulation in the game. On the other settings the game steers on top of the assist and fights it.',
+        'Also check that Steering is set to Simulation in the game, under Settings → Difficulty → Steering. On the other settings the game steers on top of the assist and fights it.',
     ]),
     ('It worked, then started behaving erratically', [
         'Usually a second controller appeared. Plugging in a wheel or waking a wireless pad gives the game another device to read, and it may not be the one the assist is driving.',
@@ -1291,7 +1330,7 @@ FAQ_ITEMS = {
     ('The wheels barely turn', [
         'Assist strength is probably low. Raise it and try again - it is the first slider, and the one that decides how much countersteer you get.',
         'Steering curve reshapes the middle of the stick travel. Set high it eats most of it, leaving little to steer with.',
-        'Make sure the game is on Simulation steering. The assisted setting applies its own correction on top and cancels much of this one.',
+        'Make sure the game is on Simulation steering, under Settings → Difficulty → Steering. The assisted setting applies its own correction on top and cancels much of this one.',
     ]),
     ('Nothing happens at low speed', [
         'That is deliberate. Below the minimum speed the assist stays completely out of the way, so donuts and parking are still yours.',
@@ -1330,7 +1369,7 @@ FAQ_ITEMS = {
         ('Ассист ничего не делает в игре', [
             'В девяти случаях из десяти дело в порядке запуска. Игра ищет контроллеры при старте, поэтому виртуальный геймпад, созданный позже, для неё не существует.',
             'Если игра уже запущена, перезапускать её не нужно: отключите геймпад и подключите снова, а беспроводной выключите и включите. Игра пересканирует устройства и подхватит ассист.',
-            'Проверьте, что в игре выбрано управление Simulation. На других настройках игра подруливает поверх ассиста и борется с ним.',
+            'Проверьте, что в игре выбрано управление Simulation: Settings → Difficulty → Steering. На других настройках игра подруливает поверх ассиста и борется с ним.',
         ]),
         ('Работал, потом начал вести себя странно', [
             'Обычно в системе появился второй контроллер. Подключённый руль или проснувшийся беспроводной геймпад дают игре ещё одно устройство, и она может читать не то, которым управляет ассист.',
@@ -1355,7 +1394,7 @@ FAQ_ITEMS = {
         ('Руль почти не поворачивается', [
             'Скорее всего занижена сила ассиста. Поднимите её и попробуйте снова: это первый ползунок, он же решает, сколько будет доворота.',
             'Кривая руля перестраивает середину хода стика. Выставленная высоко, она съедает большую её часть, и рулить почти нечем.',
-            'Убедитесь, что в игре стоит управление Simulation. Режим с ассистом накладывает свою коррекцию сверху и гасит нашу.',
+            'Убедитесь, что в игре стоит управление Simulation: Settings → Difficulty → Steering. Режим с ассистом накладывает свою коррекцию сверху и гасит нашу.',
         ]),
         ('На малой скорости ничего не происходит', [
             'Так задумано. Ниже минимальной скорости ассист полностью убирает руки, чтобы пончики и парковка остались вашими.',
@@ -1394,7 +1433,7 @@ FAQ_ITEMS = {
         ('El asistente no hace nada en el juego', [
             'Nueve de cada diez veces es el orden de arranque. El juego busca mandos al iniciarse, asi que un mando virtual creado despues le resulta invisible.',
             'Si el juego ya esta abierto no hace falta reiniciarlo: desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico. El juego vuelve a buscar dispositivos y detecta el asistente.',
-            'Comprueba tambien que la direccion este en Simulation. En los demas ajustes el juego dirige por encima del asistente y lo contrarresta.',
+            'Comprueba tambien que la direccion este en Simulation, en Settings → Difficulty → Steering. En los demas ajustes el juego dirige por encima del asistente y lo contrarresta.',
         ]),
         ('Funcionaba y luego empezo a comportarse de forma erratica', [
             'Normalmente ha aparecido un segundo mando. Conectar un volante o despertar un mando inalambrico le da al juego otro dispositivo, y puede no ser el que el asistente controla.',
@@ -1419,7 +1458,7 @@ FAQ_ITEMS = {
         ('Las ruedas apenas giran', [
             'Probablemente la fuerza del asistente sea baja. Subela y prueba otra vez: es el primer control, y el que decide cuanto contravolante recibes.',
             'La curva de direccion reconfigura el centro del recorrido del stick. Muy alta, se come casi todo y deja poco con lo que dirigir.',
-            'Asegurate de que el juego este en direccion Simulation. El ajuste asistido aplica su propia correccion encima y anula gran parte de esta.',
+            'Asegurate de que el juego este en direccion Simulation, en Settings → Difficulty → Steering. El ajuste asistido aplica su propia correccion encima y anula gran parte de esta.',
         ]),
         ('A baja velocidad no pasa nada', [
             'Es intencionado. Por debajo de la velocidad minima el asistente se aparta del todo, para que los trompos y el aparcamiento sigan siendo tuyos.',
@@ -1458,7 +1497,7 @@ FAQ_ITEMS = {
         ("L'assistance ne fait rien en jeu", [
             "Neuf fois sur dix, c'est l'ordre de lancement. Le jeu cherche les manettes a son demarrage, donc une manette virtuelle creee apres lui reste invisible.",
             'Si le jeu est deja ouvert, inutile de le relancer : debranchez la manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil. Le jeu rescanne ses entrees et prend l\'assistance en compte.',
-            "Verifiez aussi que la direction est reglee sur Simulation. Sur les autres reglages, le jeu dirige par-dessus l'assistance et la contrarie.",
+            "Verifiez aussi que la direction est reglee sur Simulation, dans Settings → Difficulty → Steering. Sur les autres reglages, le jeu dirige par-dessus l'assistance et la contrarie.",
         ]),
         ("Cela marchait, puis c'est devenu erratique", [
             "En general, une seconde manette est apparue. Brancher un volant ou reveiller une manette sans fil donne au jeu un autre peripherique, qui n'est pas forcement celui que l'assistance pilote.",
@@ -1483,7 +1522,7 @@ FAQ_ITEMS = {
         ('Les roues tournent a peine', [
             "La force de l’assistance est sans doute basse. Augmentez-la et reessayez : c’est le premier curseur, celui qui decide de la quantite de contre-braquage.",
             "La courbe de direction remodele le centre de la course du stick. Reglee haut, elle en mange l’essentiel et laisse peu de quoi diriger.",
-            'Assurez-vous que le jeu est en direction Simulation. Le reglage assiste applique sa propre correction par-dessus et annule une grande partie de celle-ci.',
+            'Assurez-vous que le jeu est en direction Simulation, dans Settings → Difficulty → Steering. Le reglage assiste applique sa propre correction par-dessus et annule une grande partie de celle-ci.',
         ]),
         ('Rien ne se passe a basse vitesse', [
             "C'est voulu. En dessous de la vitesse minimale, l'assistance s'efface completement, pour que les donuts et le creneau restent les votres.",
@@ -1522,7 +1561,7 @@ FAQ_ITEMS = {
         ('Die Lenkhilfe tut im Spiel nichts', [
             'In neun von zehn Fallen liegt es an der Startreihenfolge. Das Spiel sucht beim Start nach Controllern, ein spater erzeugtes virtuelles Pad bleibt fur es unsichtbar.',
             'Lauft das Spiel schon, musst du es nicht neu starten: ziehe den Controller ab und stecke ihn wieder an, oder schalte einen kabellosen aus und ein. Das Spiel sucht erneut und findet die Hilfe.',
-            'Prufe ausserdem, ob die Lenkung im Spiel auf Simulation steht. Bei den anderen Einstellungen lenkt das Spiel uber die Hilfe hinweg und arbeitet gegen sie.',
+            'Prufe ausserdem, ob die Lenkung im Spiel auf Simulation steht, unter Settings → Difficulty → Steering. Bei den anderen Einstellungen lenkt das Spiel uber die Hilfe hinweg und arbeitet gegen sie.',
         ]),
         ('Es lief, dann wurde es unberechenbar', [
             'Meist ist ein zweiter Controller dazugekommen. Ein angestecktes Lenkrad oder ein aufgewachtes Funkpad gibt dem Spiel ein weiteres Gerat, und das muss nicht das sein, das die Hilfe steuert.',
@@ -1547,7 +1586,7 @@ FAQ_ITEMS = {
         ('Die Rader schlagen kaum ein', [
             'Wahrscheinlich ist die Starke niedrig. Erhohe sie und versuche es erneut - es ist der erste Regler und der, der uber die Menge Gegenlenkung entscheidet.',
             'Die Lenkkurve formt die Mitte des Stickwegs um. Hoch eingestellt frisst sie den grossten Teil davon und lasst wenig zum Lenken ubrig.',
-            'Stelle sicher, dass das Spiel auf Simulation steht. Die unterstutzte Einstellung legt ihre eigene Korrektur daruber und hebt vieles davon auf.',
+            'Stelle sicher, dass das Spiel auf Simulation steht, unter Settings → Difficulty → Steering. Die unterstutzte Einstellung legt ihre eigene Korrektur daruber und hebt vieles davon auf.',
         ]),
         ('Bei niedriger Geschwindigkeit passiert nichts', [
             'Das ist Absicht. Unterhalb der Mindestgeschwindigkeit halt sich die Hilfe vollstandig heraus, damit Donuts und Einparken dir gehoren.',
@@ -1586,7 +1625,7 @@ FAQ_ITEMS = {
         ('ゲーム内でアシストが効かない', [
             '十中八九は起動順です。ゲームは起動時にコントローラーを探すため、後から作られた仮想パッドは認識されません。',
             'ゲームがすでに開いている場合、再起動は不要です。コントローラーを抜き差しするか、無線なら電源を入れ直してください。ゲームが入力を再検出してアシストを認識します。',
-            'ゲーム側のステアリングが Simulation になっているかも確認してください。他の設定ではゲームがアシストの上から操舵して打ち消してしまいます。',
+            'ゲーム側のステアリングが Simulation になっているかも確認してください（Settings → Difficulty → Steering）。他の設定ではゲームがアシストの上から操舵して打ち消してしまいます。',
         ]),
         ('動いていたのに挙動がおかしくなった', [
             'たいていは二台目のコントローラーが増えています。ハンドルを接続したり、ワイヤレスパッドが復帰したりすると、ゲームが別の機器を読むことがあります。',
@@ -1611,7 +1650,7 @@ FAQ_ITEMS = {
         ('ハンドルがほとんど切れない', [
             'アシスト強度が低い可能性があります。最初のスライダーで、カウンターステアの量を決める項目です。上げて試してください。',
             'ステアリングカーブはスティックの中央域を作り変えます。高く設定すると中央域の大半を使い切り、操舵に残る余地がわずかになります。',
-            'ゲームのステアリングが Simulation か確認してください。アシスト設定は独自の補正を上から掛け、こちらの効果を大きく打ち消します。',
+            'ゲームのステアリングが Simulation か確認してください（Settings → Difficulty → Steering）。アシスト設定は独自の補正を上から掛け、こちらの効果を大きく打ち消します。',
         ]),
         ('低速では何も起きない', [
             '仕様です。最低速度を下回るとアシストは完全に手を引くので、ドーナツターンや駐車はあなたのものになります。',
@@ -2295,6 +2334,8 @@ class HidHide:
         # pad is invisible to everything.
         self.ledger_file = os.path.join(os.path.dirname(CONFIG_FILE),
                                         "hidhide_ours.json")
+        # set by the bridge, so what the sweep does lands in its event log
+        self.on_event = None
         # Process names allowed to keep seeing the pad. Pad software that
         # cannot see its own device stops working, and there is no list of
         # every vendor tool in existence - so this one can be added to
@@ -2571,6 +2612,16 @@ class HidHide:
                 for path in new:
                     self._run("--dev-hide", path)
                     self.hidden.add(path)
+                    # written down like everything else we hide, or a
+                    # device picked up here is a ghost the moment an exit
+                    # goes badly - the very thing the ledger is for
+                    self._ledger_add(path)
+                    # getattr: this whole block sits under a bare except,
+                    # and a missing attribute would quietly skip the save
+                    hook = getattr(self, "on_event", None)
+                    if hook:
+                        hook("hid a new device: %s" % path)
+                self._save_state()
             if len(self.hidden) != self.arg:
                 self.arg = len(self.hidden)
                 self.info = f"pad hidden from the game ({self.arg} devices)"
@@ -2771,6 +2822,11 @@ class Bridge:
         # then every press it makes arrives twice.
         self.mirror_all = False
         self.virtual_slots = set()
+        self.events = EventLog(os.path.join(os.path.dirname(CONFIG_FILE),
+                                            "events.log"))
+        self._seen_state = None
+        self._pending_state = None
+        self._pending_t = 0.0
         self.mode_info = "starting"
         self.hz = 0.0
         self.pad_hz = 0
@@ -2838,18 +2894,38 @@ class Bridge:
             self._pad_packets = 0
             self._pad_t0 = now
 
-    def _virtual_buttons(self, buttons: int, alive: bool, now: float) -> int:
+    def _mirrors_everything(self) -> bool:
+        """True when our pad is the only one the game can see.
+
+        That is either HID mode with the pad kept off XInput, or the player
+        switching on Release all buttons - which they only need to do on a
+        machine where the game cannot see their pad at all.
+        """
         # the hid_mode test comes first, as it always did: it is the
         # one that decides whether mirror_all means anything
-        if ((self.hid_mode and self.mirror_all)
-                or self.cfg.get("mirror_all_buttons")):
+        return bool((self.hid_mode and self.mirror_all)
+                    or self.cfg.get("mirror_all_buttons"))
+
+    def _virtual_buttons(self, buttons: int, alive: bool, now: float) -> int:
+        if self._mirrors_everything():
             return self._debounce(buttons, now)
         if MENU_NEUTRAL and not alive:
             return 0
         return self._mirror_buttons(buttons, now)
 
     def _write_report(self, pad, gp, out_x: float, alive: bool,
-                      now: float) -> int:
+                      now: float, in_menu: bool = False) -> int:
+        # In a menu there is nothing to correct, and where the game can see
+        # the player's own pad as well, everything our pad sends there
+        # arrives twice: the stick moves the cursor two rows, a trigger
+        # flips two tabs. So our pad goes quiet and the game reads the
+        # player's. Not when ours is the only pad the game has, though -
+        # silence there would leave the menus with no controller at all.
+        # And only in a menu the game has told us about: with no telemetry
+        # at all the axes carry on through, as they always did.
+        if MENU_NEUTRAL and in_menu and not self._mirrors_everything():
+            self._neutral(pad)
+            return 0
         virt = self._virtual_buttons(gp.wButtons, alive, now)
         r = pad.report
         r.wButtons = virt
@@ -2966,6 +3042,46 @@ class Bridge:
         self.telemetry = fresh
         if old is not fresh:
             old.stop()
+
+    def _note(self, text):
+        ev = getattr(self, "events", None)
+        if ev is not None:
+            ev.note(text)
+
+    def _watch_state(self, alive, in_menu, now):
+        """Write down the game going in and out of a race.
+
+        Only a state that has held for a second counts, so the flicker of a
+        loading screen does not fill the log.
+        """
+        state = "race" if alive else "menu" if in_menu else "no telemetry"
+        if state == self._seen_state:
+            self._pending_state = None
+            return
+        if state != self._pending_state:
+            self._pending_state, self._pending_t = state, now
+        elif now - self._pending_t >= 1.0:
+            self._note("game: %s" % state)
+            self._seen_state, self._pending_state = state, None
+
+    def _find_physical_slot(self):
+        """A pad that dropped out may come back on another XInput slot.
+
+        Reading the old slot would then find nothing for ever, and the
+        assist would sit dead until restarted. Only done while we know
+        which slot is our own pad - otherwise the one we picked could be
+        ours, and we would be reading our own output back as input.
+        """
+        if not self.virtual_slots:
+            return
+        try:
+            others = xinput_connected_slots() - self.virtual_slots
+        except Exception:
+            return
+        if others and self.physical_slot not in others:
+            old, self.physical_slot = self.physical_slot, min(others)
+            self._note("pad found on slot %d (was %s)"
+                       % (self.physical_slot, old))
 
     def _recheck_mirror(self):
         """A pad read over HID may also be sitting on XInput, where the game
@@ -3093,6 +3209,7 @@ class Bridge:
             # running, so anything still written down belongs to a session
             # that ended without putting the pad back.
             self.hidhide.extra_apps = list(self.cfg.get("extra_apps") or [])
+            self.hidhide.on_event = self._note
             self.hidhide.restore_leftovers()
             if self.cfg["auto_hide"]:
                 self.hidhide.engage()
@@ -3171,6 +3288,10 @@ class Bridge:
             if self.boot_error == "no_pad":
                 self.boot_error = ""
             self.physical_slot = min(before) if before else None
+            self._note("started %s - %s; our pad on %s, player's on %s" % (
+                APP_VERSION, self.mode_info or "wired",
+                sorted(self.virtual_slots) or "unknown",
+                "hid" if self.hid_mode else self.physical_slot))
             self.boot_step = 5
             self.status_code = "ok"
 
@@ -3198,11 +3319,19 @@ class Bridge:
                     gp, packet = xinput_read_state(self.physical_slot)
                     self._count_pad_packet(packet, now)
                 if gp is None:
+                    if self.status_code != "pad_lost":
+                        self._note("pad lost (%s)" % (
+                            "hid" if self.hid_mode
+                            else "slot %s" % self.physical_slot))
                     self.status_code = "pad_lost"
                     self._neutral(pad)
                     pad.update()
+                    if not self.hid_mode:
+                        self._find_physical_slot()
                     time.sleep(0.5)
                     continue
+                if self.status_code == "pad_lost":
+                    self._note("pad back")
                 self.status_code = "ok"
 
                 self.buttons = gp.wButtons
@@ -3241,8 +3370,10 @@ class Bridge:
 
                 out_x = self.assist.update(stick_x, tm, dt, brake, alive)
 
-                virt_out = 0
-                virt_out = self._write_report(pad, gp, out_x, alive, now)
+                in_menu = self.telemetry.receiving and not alive
+                self._watch_state(alive, in_menu, now)
+                virt_out = self._write_report(pad, gp, out_x, alive, now,
+                                              in_menu)
                 pad.update()
 
                 if DEBUG_LOG and alive:
@@ -4576,7 +4707,10 @@ body.t-light{
                    justify-content:space-between;box-sizing:border-box}
 .tbot{height:36px;display:flex;align-items:center;padding:0 15px;
       box-sizing:border-box}
-.tbot .trow{flex:1}
+/* min-width lets the row be narrower than the car's name; without it a
+   flex row is as wide as its longest word, and a Formula Drift name
+   pushed the chip straight out of the card instead of shortening */
+.tbot .trow{flex:1;min-width:0}
 .twval{font-size:17px;font-weight:600;color:var(--row-fg);line-height:1.05;
        white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .twval u{text-decoration:none;font-size:12px;font-weight:500;
@@ -4591,7 +4725,8 @@ body.t-light{
       display:block;line-height:16px;font-size:8px;font-weight:600;
       color:var(--row-fg);background:var(--card-2);
       border:1px solid var(--line);white-space:nowrap;
-      overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%}
+      overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%;
+      flex:0 1 auto}
 .tbot .trow .rname{flex:none}
 /* the same box, carrying the setup the game needs when nothing arrives */
 .tsetup{height:160px;box-sizing:border-box;padding:0 15px;
@@ -6719,6 +6854,10 @@ class Api:
             "Language: %s" % b.cfg.get("lang", "-"),
             "Scale: %s" % b.cfg.get("ui_scale", 1.0),
         ]
+        ev = getattr(b, "events", None)
+        recent = ev.tail(15) if ev is not None else []
+        if recent:
+            lines += ["", "Recent events:"] + recent
         body = ("### What happened\n\n\n"
                 "### What you expected\n\n\n"
                 "### Steps to reproduce\n\n\n"

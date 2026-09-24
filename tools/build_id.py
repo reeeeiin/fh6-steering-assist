@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """Print the build id for the version string.
 
-The number is how many commits are behind this build, so it only ever goes
-up and it points at exactly one state of the source. A side branch adds its
+The number is how many commits changed the exe since its series opened,
+so it only ever goes up, and two builds with the same number are the
+same program. A side branch adds its
 letter, which is how a trial build is told apart from the release line.
 """
 import re
@@ -10,6 +11,15 @@ import subprocess
 import sys
 
 CREATE_NO_WINDOW = 0x08000000
+
+# What goes into the exe. A commit that touches none of it - the site, the
+# README, the roadmap - changes nothing anyone runs, and counting it made
+# the first fix build of 2.1 come out as 2.1.28, twenty-six of those being
+# pages of the website. The screenshots in assets/ are the site's too: the
+# app never opens them, and the build leaves them out.
+BUILD_INPUTS = ("forza_assist_lite.py", "build.bat", "steering.ico",
+                "assets", "licenses", "LICENSE", "NOTICE.md",
+                ":(exclude)assets/inst*", ":(exclude)assets/build.txt")
 
 
 def _git(cwd, *args) -> str:
@@ -47,7 +57,7 @@ def build_id(cwd: str = "") -> str:
     # no history to read - a shallow copy, or no git at all - so fall back
     # to counting everything, which is wrong by a lot but never repeats
     span = ("%s..HEAD" % since) if since else "HEAD"
-    count = _git(cwd, "rev-list", "--count", span)
+    count = _git(cwd, "rev-list", "--count", span, "--", *BUILD_INPUTS)
     if not count.isdigit():
         return "dev"
     return count + branch_mark(_git(cwd, "rev-parse", "--abbrev-ref", "HEAD"))

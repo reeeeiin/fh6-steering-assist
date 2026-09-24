@@ -46,15 +46,24 @@ rem network on a user machine. Fetched once, at build time.
 %PY% tools\fetch_drivers.py
 if errorlevel 1 goto fail
 
+rem assets\ also holds the website's screenshots - fifteen megabytes the
+rem app never opens. A copy without them is what gets packed.
+if exist build\assets_pack rmdir /s /q build\assets_pack
+robocopy assets build\assets_pack /e /xf inst*.png >nul
+if errorlevel 8 goto fail
+
 set EXTRA=
 if exist drivers set EXTRA=%EXTRA% --add-data "drivers;drivers"
-if exist assets set EXTRA=%EXTRA% --add-data "assets;assets"
+if exist build\assets_pack set EXTRA=%EXTRA% --add-data "build\assets_pack;assets"
 if exist licenses set EXTRA=%EXTRA% --add-data "licenses;licenses"
 if exist NOTICE.md set EXTRA=%EXTRA% --add-data "NOTICE.md;."
 if exist LICENSE set EXTRA=%EXTRA% --add-data "LICENSE;."
 if exist steering.ico set EXTRA=%EXTRA% --icon steering.ico
 
-%PY% -m PyInstaller --onefile --noconsole --uac-admin --name SteeringAssist-%VER% --collect-all vgamepad --collect-all webview --collect-all pygame %EXTRA% forza_assist_lite.py
+rem pygame drags numpy in whenever it is installed on the build machine -
+rem ten megabytes the app never imports. Named out, so what ships does
+rem not depend on what somebody happened to pip install.
+%PY% -m PyInstaller --onefile --noconsole --uac-admin --name SteeringAssist-%VER% --collect-all vgamepad --collect-all webview --collect-all pygame --exclude-module numpy %EXTRA% forza_assist_lite.py
 if errorlevel 1 goto fail
 
 echo.
