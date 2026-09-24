@@ -1,5 +1,46 @@
 # Changelog
 
+## v2.1.6 (not released yet - builds 2.1.3 to 2.1.6)
+
+### Fixed
+
+- **The assist no longer drops out when you touch the pad.** It hid the
+  controller's HID node from the game - the one DirectInput reads - and
+  left its XInput node alone. So the game still saw your controller next
+  to the assist's, and followed whichever had moved last: touch the stick
+  or the throttle and it went back to yours, and the correction vanished
+  until both were let go. It showed after a few restarts of the game and
+  the app, and a reboot usually hid it again. The controller is now hidden
+  from XInput as well, and since the game then has no other pad to read
+  gears and camera from, every button goes through the assist's pad
+  without Release all buttons having to be found.
+- **In menus the assist's pad goes quiet** where the game can also see your
+  own controller, so a press or a stick flick no longer arrives twice.
+- **A controller that drops out and comes back on another slot is found
+  again**, instead of the assist sitting dead until restarted.
+- **Leftovers in HidHide no longer pile up.** Devices the app had hidden in
+  an earlier run and failed to release were treated as somebody else's and
+  never taken back; the app now keeps a note of what it hid.
+- **Long car names shorten** instead of running out of their box.
+- **R-class cars** are called R. FH6 has eight classes; the app knew seven
+  and called R cars X.
+
+### Added
+
+- **Car type detect**, the last switch under Steering, on by default. It
+  sets the assist strength for the car you are in - 40 on rear-wheel
+  drive, 30 on Formula Drift cars - and you can move it 5 either way; it
+  keeps where you leave it for that kind of car. Switch it off to use the
+  whole range. Your preset's own value is never changed.
+- **All-wheel drive eases off at shallow angles**: three quarters of the
+  strength below 12 degrees, the whole of it above 35. These are starting
+  values, not yet measured.
+- **The car's drive and class** as chips next to its name.
+- **An event log** beside the settings: controller lost and back, devices
+  hidden, the game going in and out of a race. The last lines go into
+  Send feedback.
+- **Eleven new cars** in the table, and a tool to keep it current.
+
 ## v2.1
 
 Everything here came from somebody running the app on a machine that was
