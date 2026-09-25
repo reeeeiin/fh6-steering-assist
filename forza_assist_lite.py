@@ -146,6 +146,7 @@ BUTTON_NAMES = {
 }
 VIRTUAL_NO_BUTTONS = True
 MENU_NEUTRAL = True
+ODO_SAVE_SEC = 20.0
 BUTTON_DEBOUNCE_MS = 60   # a hand cannot press faster; a contact can
 DEBUG_LOG = os.environ.get("ASSIST_DEBUG_LOG") == "1"
 
@@ -440,6 +441,145 @@ class Telemetry:
     yaw_rate: float
     sideslip: float
 
+
+@dataclass
+class Engine:
+    rpm: float
+    rpm_max: float
+    rpm_idle: float
+    gear: int
+
+
+@dataclass
+class DriftSample:
+    angle: float        # degrees off the direction of travel, signed
+    speed: float        # m/s
+    throttle: float     # the pedals as the game has them, 0-1
+    brake: float
+    clutch: float
+    handbrake: float
+
+
+# ---------------- drift watch ----------------
+#
+# The game reports no skills, so how a drift began is read off the inputs
+# just before it. A drift starts when the car is DRIFT_ENTER degrees off
+# its direction of travel at DRIFT_SPEED or more, and ends once it has
+# been back under DRIFT_LEAVE for DRIFT_MERGE seconds - so a transition,
+# which passes through straight on its way to the other side, stays the
+# same drift. At the start the last DRIFT_LOOK seconds decide the entry,
+# the first rule that fits winning:
+#   ebrake  the handbrake was pulled
+#   clutch  the clutch went in with the throttle open: a clutch kick
+#   feint   the car was sliding the other way first: a feint or a flick
+#   brake   the brakes were on
+#   lift    the throttle was open and has just been closed
+#   power   the throttle is open: power over
+#   drift   none of these
+DRIFT_ENTER = 12.0
+DRIFT_LEAVE = 6.0
+DRIFT_SPEED = 25.0 / 3.6
+DRIFT_MERGE = 0.6
+DRIFT_HOLD = 1.5        # seconds the entry stays on show once it is over
+DRIFT_LOOK = 1.0
+DRIFT_NEAR = 0.8        # handbrake and clutch count only this recently
+DRIFT_FEINT = 3.0       # degrees the other way that make it a feint
+DRIFT_BACKWARD = 90.0
+DRIFT_GAP = 0.5         # packets further apart than this: a pause or rewind
+
+
+class DriftWatch:
+    """The drift angle, how the drift began and how far it went. Fed the
+    game's packets one at a time; knows nothing of sockets."""
+
+    def __init__(self, total=0.0):
+        import collections
+        self.total = total          # metres drifted, ever
+        self._hist = collections.deque()
+        self.reset()
+
+    def reset(self):
+        self.angle = 0.0
+        self.drifting = False
+        self.entry = ""
+        self.dist = 0.0             # metres of this drift, or the last one
+        self.transitions = 0
+        self._sign = 0
+        self._t = None
+        self._now = 0.0
+        self._out_since = None
+        self._ended = float("-inf")
+        self._hist.clear()
+
+    @property
+    def label(self):
+        return self.label_at(self._now)
+
+    def label_at(self, now):
+        if self.drifting:
+            return ("backward" if abs(self.angle) > DRIFT_BACKWARD
+                    else self.entry)
+        if self.entry and now - self._ended <= DRIFT_HOLD:
+            return self.entry
+        return "driving"
+
+    def update(self, now, s):
+        if self._t is not None and now - self._t > DRIFT_GAP:
+            total = self.total
+            self.reset()
+            self.total = total
+        dt = 0.0 if self._t is None else now - self._t
+        self._t = self._now = now
+        self.angle = s.angle
+        self._hist.append((now, s))
+        while self._hist and now - self._hist[0][0] > DRIFT_LOOK + 0.2:
+            self._hist.popleft()
+        a = abs(s.angle)
+        moving = s.speed >= DRIFT_SPEED
+        sign = 1 if s.angle > 0 else -1
+        if self.drifting:
+            if a < DRIFT_LEAVE or not moving:
+                if self._out_since is None:
+                    self._out_since = now
+                elif now - self._out_since > DRIFT_MERGE:
+                    self.drifting = False
+                    self._ended = self._out_since
+                    self._out_since = None
+                return
+            if self._out_since is not None:
+                self._out_since = None
+                if sign != self._sign:
+                    self.transitions += 1
+            self._sign = sign
+            self.dist += s.speed * dt
+            self.total += s.speed * dt
+        elif a >= DRIFT_ENTER and moving:
+            self.drifting = True
+            self._sign = sign
+            self.entry = self._classify(now, sign)
+            self.dist = 0.0
+            self.transitions = 0
+            self._out_since = None
+
+    def _classify(self, now, sign):
+        hist = [(t, x) for t, x in self._hist if now - t <= DRIFT_LOOK]
+        near = [x for t, x in hist if now - t <= DRIFT_NEAR]
+        cur = hist[-1][1]
+        if any(x.handbrake > 0.5 for x in near):
+            return "ebrake"
+        if (any(x.clutch > 0.5 for x in near)
+                and max(x.throttle for x in near) > 0.6):
+            return "clutch"
+        if any(x.angle * sign <= -DRIFT_FEINT for _, x in hist):
+            return "feint"
+        if any(x.brake > 0.3 for t, x in hist if now - t <= 0.6):
+            return "brake"
+        if cur.throttle < 0.2 and any(x.throttle > 0.6 for _, x in hist):
+            return "lift"
+        if cur.throttle >= 0.6:
+            return "power"
+        return "drift"
+
 _CARS = {}
 
 
@@ -522,6 +662,9 @@ def _car_name(ordinal) -> str:
 class TelemetryListener:
     PACKET_SIZE = 324
     OFF_RACE_ON = 0
+    OFF_RPM_MAX = 8
+    OFF_RPM_IDLE = 12
+    OFF_RPM = 16
     OFF_VEL_X = 32
     OFF_VEL_Z = 40
     OFF_YAW = 48
@@ -535,6 +678,12 @@ class TelemetryListener:
     OFF_CAR_CLASS = 216
     OFF_CAR_PI = 220
     OFF_DRIVETRAIN = 224
+    # the dash block: pedals 0-255, gear 0 for reverse and 11 for neutral
+    OFF_ACCEL = 315
+    OFF_BRAKE = 316
+    OFF_CLUTCH = 317
+    OFF_HANDBRAKE = 318
+    OFF_GEAR = 319
     F32 = struct.Struct("<f")
     S32 = struct.Struct("<i")
 
@@ -547,6 +696,11 @@ class TelemetryListener:
         self.error = ""
         self.car = (0, 0, 0)
         self.drive = -1
+        self.engine = Engine(0.0, 0.0, 0.0, -1)
+        # the highest rpm this car has shown: where its limiter really is
+        self.rpm_top = 0.0
+        self._rpm_car = None
+        self.drift = DriftWatch()
         self._run = threading.Event()
 
     def start(self):
@@ -595,6 +749,19 @@ class TelemetryListener:
         return car_type(self.car[0], self.drive)
 
     @property
+    def rpm_frac(self) -> float:
+        """How far round the rev counter is, 0 to exactly 1.
+
+        The game's maximum is not quite where every limiter sits. Once the
+        car has shown a peak close to it, that peak is the end of the scale,
+        so the limiter fills it to the end and never past it."""
+        e = self.engine
+        if not self.alive or e.rpm_max <= 0.0:
+            return 0.0
+        top = self.rpm_top if self.rpm_top > 0.9 * e.rpm_max else e.rpm_max
+        return clamp(e.rpm / top, 0.0, 1.0)
+
+    @property
     def alive(self) -> bool:
         return time.monotonic() - self._t_race < self.stale_sec
 
@@ -641,9 +808,29 @@ class TelemetryListener:
                     self.S32.unpack_from(pkt, self.OFF_CAR_CLASS)[0],
                     self.S32.unpack_from(pkt, self.OFF_CAR_PI)[0])
                 self.drive = self.S32.unpack_from(pkt, self.OFF_DRIVETRAIN)[0]
+                rpm = self.F32.unpack_from(pkt, self.OFF_RPM)[0]
+                rpm_max = self.F32.unpack_from(pkt, self.OFF_RPM_MAX)[0]
+                if not (math.isfinite(rpm) and math.isfinite(rpm_max)):
+                    rpm = rpm_max = 0.0
+                self.engine = Engine(
+                    rpm, rpm_max,
+                    self.F32.unpack_from(pkt, self.OFF_RPM_IDLE)[0],
+                    pkt[self.OFF_GEAR])
+                if self.car[0] != self._rpm_car:
+                    self._rpm_car, self.rpm_top = self.car[0], 0.0
+                self.rpm_top = max(self.rpm_top, rpm)
                 vx = self.F32.unpack_from(pkt, self.OFF_VEL_X)[0]
                 vz = self.F32.unpack_from(pkt, self.OFF_VEL_Z)[0]
                 if all(map(math.isfinite, (fl, fr, rl, rr, yaw, spd, vx, vz))):
+                    # all the way round, unlike the assist's: backwards is
+                    # an angle too
+                    ang = (math.degrees(math.atan2(-vx, vz))
+                           if math.hypot(vx, vz) > 2.0 else 0.0)
+                    self.drift.update(now, DriftSample(
+                        ang, max(0.0, spd), pkt[self.OFF_ACCEL] / 255.0,
+                        pkt[self.OFF_BRAKE] / 255.0,
+                        pkt[self.OFF_CLUTCH] / 255.0,
+                        pkt[self.OFF_HANDBRAKE] / 255.0))
                     beta = math.atan2(-vx, vz) if vz > 1.0 else 0.0
                     with self._lock:
                         self._latest = Telemetry(max(0.0, spd),
@@ -1020,6 +1207,8 @@ DEFAULTS = {
     "car_detect": True,
     # the driver's own strength per kind of car, as the slider shows it
     "car_strength": {},
+    # metres drifted, ever - the Drift Odo
+    "drift_odo": 0.0,
     "profile": "default",
     "custom": {},
     "slots": {},
@@ -2019,6 +2208,11 @@ def sanitize_config(cfg: dict) -> dict:
                                    base + CAR_TYPE_ROOM)
     cfg["car_strength"] = held
     snap = cfg.get("custom")
+    try:
+        odo = float(cfg.get("drift_odo", 0.0))
+    except (TypeError, ValueError):
+        odo = 0.0
+    cfg["drift_odo"] = odo if math.isfinite(odo) and odo > 0.0 else 0.0
     clean = {}
     if isinstance(snap, dict):
         for key, lo, hi, *_ in SLIDERS:
@@ -2989,6 +3183,8 @@ class Bridge:
         self.cfg = load_config()
         self.assist = Assist(self.cfg)
         self.telemetry = TelemetryListener(port=self.cfg["port"])
+        self.telemetry.drift.total = self.cfg.get("drift_odo", 0.0)
+        self._odo_t = 0.0
         self.drivers = DriverSetup()
         self.hidhide = HidHide()
         self.first_run = not self.cfg.get("setup_done", False)
@@ -3251,6 +3447,7 @@ class Bridge:
         """
         old = self.telemetry
         fresh = TelemetryListener(port=int(port))
+        fresh.drift = old.drift          # the odometer goes with it
         fresh.start()
         self.telemetry = fresh
         if old is not fresh:
@@ -3636,6 +3833,10 @@ class Bridge:
                 # the game was quiet - so the pad buzzed even with the
                 # game's own vibration switched off, which is not this
                 # app's call to make.
+                if now - self._odo_t >= ODO_SAVE_SEC:
+                    self._odo_t = now
+                    self._keep_odo()
+
                 gl, gs = self._game_rumble
                 if not self.cfg["rumble"]:
                     gl = gs = 0.0
@@ -3652,10 +3853,18 @@ class Bridge:
             self.status_detail = f"{type(e).__name__}: {e}"[:80]
         finally:
             self.telemetry.stop()
+            self._keep_odo(now=True)
             self.hidhide.disengage()
             self.xusb.enable_all()
             ctypes.windll.winmm.timeEndPeriod(1)
             self._dump_log()
+
+    def _keep_odo(self, now=False):
+        """The odometer to disk - every so often, not every metre."""
+        total = round(self.telemetry.drift.total, 1)
+        if total - self.cfg.get("drift_odo", 0.0) >= (0.1 if now else 1.0):
+            self.cfg["drift_odo"] = total
+            (save_config if now else save_config_soon)(self.cfg)
 
     def _dump_log(self):
         if self._dumped or not self.log:
@@ -3841,6 +4050,19 @@ TR = {
         "w_callback": 'Callback',
         "w_latency": 'Latency',
         "w_car": 'Current car',
+        "w_angle": "Angle",
+        "w_odo": "Drift Odo",
+        "odo_km": "Kilometers",
+        "kmh": "Km/h",
+        "drift_driving": "Driving",
+        "drift_ebrake": "E-Drift",
+        "drift_clutch": "Clutch kick",
+        "drift_feint": "Feint",
+        "drift_brake": "Brake drift",
+        "drift_lift": "Lift-off",
+        "drift_power": "Power over",
+        "drift_drift": "Drift",
+        "drift_backward": "Backward",
         "st_driving": 'Driving',
         "st_menu": 'In menu',
     },
@@ -3978,6 +4200,19 @@ TR = {
         "w_callback": 'Отклик',
         "w_latency": 'Частота',
         "w_car": 'Машина',
+        "w_angle": "Угол",
+        "w_odo": "Дрифт одо",
+        "odo_km": "Километры",
+        "kmh": "км/ч",
+        "drift_driving": "Езда",
+        "drift_ebrake": "Ручник",
+        "drift_clutch": "Сцепление",
+        "drift_feint": "Флай",
+        "drift_brake": "Тормоз",
+        "drift_lift": "Сброс газа",
+        "drift_power": "Газ",
+        "drift_drift": "Занос",
+        "drift_backward": "Задом",
         "st_driving": 'В игре',
         "st_menu": 'В меню',
     },
@@ -4115,6 +4350,19 @@ TR = {
         "w_callback": 'Antwort',
         "w_latency": 'Frequenz',
         "w_car": 'Fahrzeug',
+        "w_angle": "Winkel",
+        "w_odo": "Drift-Odo",
+        "odo_km": "Kilometer",
+        "kmh": "km/h",
+        "drift_driving": "Fahrt",
+        "drift_ebrake": "Handbremse",
+        "drift_clutch": "Kupplung",
+        "drift_feint": "Pendel",
+        "drift_brake": "Bremsdrift",
+        "drift_lift": "Lastwechsel",
+        "drift_power": "Leistung",
+        "drift_drift": "Drift",
+        "drift_backward": "Rueckwaerts",
         "st_driving": 'Im Rennen',
         "st_menu": 'Im Menu',
     },
@@ -4252,6 +4500,19 @@ TR = {
         "w_callback": 'Reponse',
         "w_latency": 'Frequence',
         "w_car": 'Voiture',
+        "w_angle": "Angle",
+        "w_odo": "Odo drift",
+        "odo_km": "Kilometres",
+        "kmh": "km/h",
+        "drift_driving": "Conduite",
+        "drift_ebrake": "Frein a main",
+        "drift_clutch": "Embrayage",
+        "drift_feint": "Feinte",
+        "drift_brake": "Freinage",
+        "drift_lift": "Lever de pied",
+        "drift_power": "Puissance",
+        "drift_drift": "Drift",
+        "drift_backward": "A reculons",
         "st_driving": 'En piste',
         "st_menu": 'Menu',
     },
@@ -4389,6 +4650,19 @@ TR = {
         "w_callback": 'Respuesta',
         "w_latency": 'Frecuencia',
         "w_car": 'Coche',
+        "w_angle": "Angulo",
+        "w_odo": "Odo drift",
+        "odo_km": "Kilometros",
+        "kmh": "km/h",
+        "drift_driving": "Conduccion",
+        "drift_ebrake": "Freno de mano",
+        "drift_clutch": "Embrague",
+        "drift_feint": "Finta",
+        "drift_brake": "Frenada",
+        "drift_lift": "Soltar gas",
+        "drift_power": "Potencia",
+        "drift_drift": "Derrape",
+        "drift_backward": "Marcha atras",
         "st_driving": 'En pista',
         "st_menu": 'En menu',
     },
@@ -4540,6 +4814,19 @@ TR = {
         "w_callback": '応答',
         "w_latency": '周波数',
         "w_car": '車両',
+        "w_angle": "角度",
+        "w_odo": "ドリフト距離",
+        "odo_km": "キロメートル",
+        "kmh": "km/h",
+        "drift_driving": "走行中",
+        "drift_ebrake": "サイドブレーキ",
+        "drift_clutch": "クラッチ蹴り",
+        "drift_feint": "フェイント",
+        "drift_brake": "ブレーキ",
+        "drift_lift": "アクセルオフ",
+        "drift_power": "パワー",
+        "drift_drift": "ドリフト",
+        "drift_backward": "後ろ向き",
         "st_driving": '走行中',
         "st_menu": 'メニュー',
     },
@@ -4600,12 +4887,14 @@ def _icon_names():
     return []
 
 
-def _icon(name: str) -> str:
-    """Inline an exported Figma icon, recoloured to follow the text colour."""
+def _icon(name: str, sized: bool = False) -> str:
+    """Inline an exported Figma icon, recoloured to follow the text colour.
+    Sized ones keep the width and height they were drawn at."""
     raw = _read_asset(os.path.join("icons", name + ".svg"))
     if not raw:
         return ""
-    raw = re.sub(r'\s(width|height)="[^"]*"', "", raw, count=2)
+    if not sized:
+        raw = re.sub(r'\s(width|height)="[^"]*"', "", raw, count=2)
     raw = raw.replace('stroke="black"', 'stroke="currentColor"')
     raw = raw.replace('fill="black"', 'fill="currentColor"')
     raw = raw.replace('fill="white"', 'fill="currentColor"')
@@ -4658,6 +4947,9 @@ def build_html() -> str:
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_DL__", json.dumps(_icon("downloadarrow")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
+    html = html.replace("__WICON__", json.dumps(
+        {n: _icon(n, sized=True) for n in ("drifticon", "speedicon",
+                                           "callbackicon", "odoicon")}))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
     html = html.replace("__LEGAL__", json.dumps(LEGAL))
     html = html.replace("__FAQ__", json.dumps(FAQ_ITEMS,
@@ -4686,7 +4978,7 @@ body.t-dark{
  --row-fg:#FFFFFF; --muted:#8A8A8A; --foot:#5A5A5A;
  --line:#2A2A2A; --track:#3A3A3A; --knob:#FFFFFF;
  --accent:#0492F8; --accent-fg:#FFFFFF; --accent-lit:#52CBFF;
- --warn:#FFCC00; --danger:#E91F1F; --ok:#0DDE64; --off:#848484;
+ --warn:#FFCC00; --danger:#E91F1F; --ok:#0DDE64; --off:#848484; --hot:#FA6629;
  --panel-bg:#1C1C1C; --panel-fg:#FFFFFF;
  --sec-bg:transparent; --sec-fg:#8A8A8A;
  --btn:#FFFFFF; --logo-fg:#FFFFFF; --bar-bg:#242424; --bar-fill:#0492F8;
@@ -4702,7 +4994,7 @@ body.t-light{
  --row-fg:#101010; --muted:#6E6E6E; --foot:#9A9A9A;
  --line:#E4E4E4; --track:#DCDCDC; --knob:#FFFFFF;
  --accent:#0492F8; --accent-fg:#FFFFFF; --accent-lit:#52CBFF;
- --warn:#FFCC00; --danger:#E91F1F; --ok:#0DDE64; --off:#848484;
+ --warn:#FFCC00; --danger:#E91F1F; --ok:#0DDE64; --off:#848484; --hot:#FA6629;
  --panel-bg:#FFFFFF; --panel-fg:#101010;
  --sec-bg:transparent; --sec-fg:#6E6E6E;
  --btn:#101010; --logo-fg:#101010; --bar-bg:#E9E9E9; --bar-fill:#0492F8;
@@ -5008,6 +5300,68 @@ body.t-light{
        color:var(--row-fg);white-space:nowrap}
 .tchip:empty{display:none}
 .dchip{width:36px}
+
+/* ---------- the four readouts ---------- */
+/* Drawn in Figma at 109 by 108-120; here each gets a quarter of the
+   fixed 232 by 193, so the dials are scaled to fit and the type keeps
+   the sizes of the rest of the page */
+.tside.tiles .wg{padding:10px 12px;justify-content:flex-start;gap:5px;
+                 overflow:hidden}
+.whead{display:flex;align-items:center;justify-content:space-between;
+       font-size:10px;font-weight:600;line-height:10px;color:var(--row-fg);
+       flex:none}
+.whead i{display:flex;color:var(--row-fg)}
+.whead svg{display:block}
+.wbody{flex:1;min-height:0;display:flex;align-items:center;
+       justify-content:center}
+.gauge{display:block;overflow:visible;height:100%;max-width:100%}
+.gauge .gbg{fill:none;stroke:var(--row-fg);stroke-width:10;
+            stroke-linecap:round}
+.ga .gbg{stroke-opacity:.05}
+.gs .gbg{stroke-opacity:.1}
+.gauge .gfill{fill:none;stroke:currentColor;stroke-width:10}
+.gs .gfill{stroke-linecap:round}
+.gauge .gcap{fill:currentColor}
+.gauge .gtick{stroke:var(--row-fg);stroke-width:2;stroke-linecap:round}
+.gauge text{text-anchor:middle;dominant-baseline:central;
+            font-family:inherit}
+.gauge .gval{font-size:24px;font-weight:600;fill:currentColor}
+.gauge .gsub{font-size:8px;fill:var(--row-fg);fill-opacity:.5}
+.gauge .ggear{font-size:14px;font-weight:600;fill:currentColor}
+.c-idle{color:var(--accent)} .c-ok{color:var(--ok)}
+.c-hot{color:var(--hot)} .c-bad{color:var(--danger)}
+.c-plain{color:var(--row-fg)}
+.cbwrap{display:flex;flex-direction:column;gap:6px;width:80px}
+.cbval{display:flex;align-items:baseline;gap:4px;font-weight:600;
+       color:var(--row-fg);line-height:18px;height:18px}
+.cbval b{font-size:24px;font-weight:600}
+.cbval u{font-size:20px;text-decoration:none;opacity:.5}
+.cbbars{display:flex;justify-content:space-between}
+.cbbars i{width:3px;height:20px;border-radius:3px;background:var(--row-fg);
+          opacity:.1;transition:opacity .15s ease,background-color .15s ease}
+.cbbars i.on{background:currentColor;opacity:1}
+.cbbars i.half{background:currentColor;opacity:.5}
+.cbbars i.faint{background:currentColor;opacity:.15}
+.cbdots{display:flex;justify-content:space-between}
+.cbdots i{width:3px;height:3px;border-radius:50%;background:var(--row-fg);
+          opacity:.1}
+/* the odometer: a window wider than the card, faded at every edge, with
+   a column per digit that jumps a row at a time */
+.odowin{position:relative;flex:none;width:161px;height:46px;
+        margin:0 -38px;overflow:hidden}
+.odorow{position:absolute;left:38px;top:0;width:85px;height:46px}
+.odotri{position:absolute;left:0;top:20px;width:6px;height:6px;
+        color:var(--accent)}
+.odotri svg{display:block}
+.odoc{position:absolute;top:0;width:15px;height:46px}
+.odos{position:absolute;left:0;top:12px;width:15px;will-change:transform}
+.odos b{display:block;height:22px;line-height:22px;font-size:24px;
+        font-weight:600;text-align:center;color:var(--row-fg)}
+.odos.go{transition:transform .46s cubic-bezier(.3,1.55,.55,1)}
+.odofade{position:absolute;inset:0;pointer-events:none;
+         box-shadow:inset 0 0 12px 11px var(--card)}
+.odofoot{display:flex;justify-content:space-between;flex:none;
+         font-size:6px;line-height:6px;color:var(--row-fg);opacity:.25}
 .cchip{width:40px}
 .dchip[data-v="RWD"]{border-color:#E91F1F;background:rgba(233,31,31,.1)}
 .dchip[data-v="AWD"]{border-color:#0DDE64;background:rgba(13,222,100,.1)}
@@ -5528,8 +5882,6 @@ function screenMain(){
   h += '</div></div>';
 
   const live = state && (state.recv || state.alive);
-  const tile = (id, lbl) => '<div class="card"><div class="twval" id="' +
-    id + '">-</div><div class="twlbl">' + t(lbl) + '</div></div>';
   const setup =
     '<div class="card tsetup"><div class="shead">' +
     '<q>' + t('setup_where').split('|').join('<br>') + '</q>' +
@@ -5565,9 +5917,7 @@ function screenMain(){
   /* the readouts have nothing to say without telemetry, so their place
      tells the player how to turn it on instead */
   const readouts = live
-    ? '<div class="tside tiles">' + tile('w-mode', 'mode_status') +
-      tile('w-speed', 'w_speed') + tile('w-callback', 'w_callback') +
-      tile('w-latency', 'w_latency') + '</div>'
+    ? '<div class="tside tiles">' + widgets() + '</div>'
     : '<div class="tside">' + setup + '</div>';
   const car = '<div class="card tcarcard"><div class="trow">' +
     '<span class="rname">' + t('w_car') + '</span></div>' +
@@ -6279,6 +6629,215 @@ function updateWarning(){
   el.classList.toggle('off', !show);
 }
 
+/* ---------------- telemetry readouts ---------------- */
+const WICON = __WICON__;
+/* the angle dial: a circle of 34 round (39.5, 25.63), open at the top,
+   nought at the bottom and 109.8 degrees up either side */
+const GA = {cx: 39.5, cy: 25.63, r: 34, end: 109.8};
+/* the rev counter: a circle of 34.5 round (39.5, 39.5), 271.8 degrees
+   from the bottom left over the top to the bottom right */
+const GS_ARC = 'M15.5 64.28 A34.5 34.5 0 1 1 63.5 64.28';
+const ODO_N = 5, ODO_ROW = 22, ODO_STEP = 100, ODO_STAGGER = 70;
+let odoShown = null;
+
+function whead(lbl, icon){
+  return '<div class="whead"><span>' + t(lbl) + '</span><i>' +
+    (WICON[icon] || '') + '</i></div>';
+}
+
+function widgets(){
+  odoShown = null;
+  const angle = '<div class="card wg" id="wg-angle">' +
+    whead('w_angle', 'drifticon') + '<div class="wbody">' +
+    '<svg class="gauge ga c-idle" id="ga" viewBox="0 0 79 67">' +
+    '<path class="gbg" d="M7.49 14.13 A34 34 0 1 0 71.51 14.13"/>' +
+    '<path class="gfill" id="ga-fill" d=""/>' +
+    '<circle class="gcap" id="ga-cap" r="5" cx="39.5" cy="59.63"/>' +
+    '<line class="gtick" x1="39" y1="54.63" x2="39" y2="64.63"/>' +
+    '<text class="gsub" id="ga-lbl" x="39.5" y="3.6"></text>' +
+    '<text class="gval" id="ga-val" x="39.5" y="28">0°</text>' +
+    '</svg></div></div>';
+  const speed = '<div class="card wg" id="wg-speed">' +
+    whead('w_speed', 'speedicon') + '<div class="wbody">' +
+    '<svg class="gauge gs c-idle" id="gs" viewBox="0 0 79 76">' +
+    '<path class="gbg" d="M63.5 64.28 A34.5 34.5 0 1 0 15.5 64.28"/>' +
+    '<path class="gfill" id="gs-fill" pathLength="100" ' +
+    'stroke-dasharray="0 200" d="' + GS_ARC + '"/>' +
+    '<text class="gval c-plain" id="gs-val" x="39.5" y="39">-</text>' +
+    '<text class="gsub" x="39.5" y="54">' + t('kmh') + '</text>' +
+    '<text class="ggear c-plain" id="gs-gear" x="39.5" y="69"></text>' +
+    '</svg></div></div>';
+  let bars = '';
+  for (let i = 0; i < 12; i++) bars += '<i></i>';
+  const callback = '<div class="card wg" id="wg-cb">' +
+    whead('w_callback', 'callbackicon') + '<div class="wbody">' +
+    '<div class="cbwrap c-ok" id="cb"><div class="cbval">' +
+    '<b id="cb-val">-</b><u>ms</u></div>' +
+    '<div class="cbbars">' + bars + '</div>' +
+    '<div class="cbdots"><i></i><i></i><i></i></div></div>' +
+    '</div></div>';
+  let cols = '';
+  for (let i = 0; i < ODO_N; i++){
+    let strip = '<b>9</b>';
+    for (let k = 0; k < 20; k++) strip += '<b>' + (k % 10) + '</b>';
+    cols += '<div class="odoc" style="left:' + (10 + i * 15) + 'px">' +
+      '<div class="odos">' + strip + '</div></div>';
+  }
+  const odo = '<div class="card wg" id="wg-odo">' +
+    whead('w_odo', 'odoicon') + '<div class="wbody">' +
+    '<div class="odowin"><div class="odorow"><i class="odotri">' +
+    '<svg width="6" height="6" viewBox="0 0 6 6"><path fill="currentColor" ' +
+    'd="M5.4 1.957C6.2 2.42 6.2 3.58 5.4 4.043L2.4 5.782C1.333 6.401 0 ' +
+    '5.628 0 4.391L0 1.609C0 .372 1.333-.401 2.4.218Z"/></svg></i>' +
+    cols + '</div><div class="odofade"></div></div></div>' +
+    '<div class="odofoot"><span id="odo-drift">0</span>' +
+    '<span>' + t('odo_km') + '</span></div></div>';
+  return angle + speed + callback + odo;
+}
+
+/* The dials chase what the game last said, frame by frame, so a poll ten
+   times a second still moves like a needle */
+let gaTo = 0, gaNow = 0, gsTo = 0, gsNow = 0, cbNow = null, wgRaf = 0,
+    wgLast = 0;
+
+function drawAngle(ang){
+  const svg = document.getElementById('ga');
+  if (!svg) return;
+  const a = Math.min(Math.abs(ang), GA.end), side = ang < 0 ? -1 : 1;
+  const r = a * Math.PI / 180;
+  const x = GA.cx + side * GA.r * Math.sin(r);
+  const y = GA.cy + GA.r * Math.cos(r);
+  document.getElementById('ga-fill').setAttribute('d',
+    'M39.5 59.63 A34 34 0 0 ' + (side > 0 ? 0 : 1) + ' ' +
+    x.toFixed(2) + ' ' + y.toFixed(2));
+  const cap = document.getElementById('ga-cap');
+  cap.setAttribute('cx', x.toFixed(2));
+  cap.setAttribute('cy', y.toFixed(2));
+  document.getElementById('ga-val').textContent =
+    Math.round(Math.abs(ang)) + '°';
+}
+
+function drawRevs(f){
+  const fill = document.getElementById('gs-fill');
+  if (!fill) return;
+  f = Math.max(0, Math.min(1, f));
+  /* the arc is 100 long, so the dash is the share of it, never more */
+  fill.setAttribute('stroke-dasharray', (f * 100).toFixed(3) + ' 200');
+  fill.style.visibility = f > 0.002 ? '' : 'hidden';
+}
+
+function wgFrame(ts){
+  wgRaf = 0;
+  if (!document.getElementById('ga')) return;
+  const dt = wgLast ? Math.min(0.1, (ts - wgLast) / 1000) : 0.016;
+  wgLast = ts;
+  const k = 1 - Math.exp(-dt / 0.07);
+  gaNow += (gaTo - gaNow) * k;
+  gsNow += (gsTo - gsNow) * k;
+  /* land on the value itself, so a full scale is full and not nearly */
+  if (Math.abs(gaTo - gaNow) < 0.05) gaNow = gaTo;
+  if (Math.abs(gsTo - gsNow) < 0.0005) gsNow = gsTo;
+  drawAngle(gaNow);
+  drawRevs(gsNow);
+  if (gaTo !== gaNow || gsTo !== gsNow)
+    wgRaf = requestAnimationFrame(wgFrame);
+  else wgLast = 0;
+}
+
+function revClass(f){
+  return f >= 0.95 ? 'c-bad' : f >= 0.8 ? 'c-hot' : f >= 0.5 ? 'c-ok'
+       : 'c-idle';
+}
+
+function gearText(g){
+  if (g === 0) return 'R';
+  if (g === 11) return 'N';
+  return g > 0 && g < 11 ? String(g) : '';
+}
+
+/* Each column jumps a row when its digit changes, overshooting a little
+   and settling. A carry travels right to left, each column a beat after
+   the one before it. A column going past 9 runs on to the second 0 of its
+   strip and is put back on the first without anyone seeing */
+function odoPlace(el, row, animate){
+  el.classList.toggle('go', !!animate);
+  el.style.transform = 'translateY(' + (-row * ODO_ROW) + 'px)';
+}
+
+function odoSet(metres){
+  const cols = $$('.odoc .odos');
+  if (cols.length !== ODO_N) return;
+  const next = String(Math.floor(Math.max(0, metres) / ODO_STEP) %
+                      Math.pow(10, ODO_N)).padStart(ODO_N, '0');
+  if (next === odoShown) return;
+  if (odoShown === null){
+    cols.forEach((el, i) => odoPlace(el, +next[i] + 1, false));
+    odoShown = next;
+    return;
+  }
+  let delay = 0;
+  for (let i = ODO_N - 1; i >= 0; i--){
+    const a = +odoShown[i], b = +next[i];
+    if (a === b) continue;
+    const el = cols[i];
+    const row = b > a ? b + 1 : b + 11;
+    setTimeout(() => {
+      odoPlace(el, row, true);
+      if (row !== b + 1) setTimeout(() => {
+        odoPlace(el, b + 1, false);
+      }, 520);
+    }, delay);
+    delay += ODO_STAGGER;
+  }
+  odoShown = next;
+}
+
+function drawWidgets(){
+  if (!document.getElementById('ga')) return;
+  const alive = !!state.alive;
+  const ang = alive ? (+state.angle || 0) : 0;
+  const lbl = alive ? (state.drift || 'driving') : 'driving';
+  const a = Math.abs(ang);
+  document.getElementById('ga').setAttribute('class', 'gauge ga ' +
+    (lbl === 'driving' ? 'c-idle' : a > 90 ? 'c-bad' : a > 65 ? 'c-hot'
+     : 'c-ok'));
+  document.getElementById('ga-lbl').textContent = t('drift_' + lbl);
+
+  const f = alive ? (+state.rpm_f || 0) : 0;
+  document.getElementById('gs-fill').setAttribute('class',
+    'gfill ' + revClass(f));
+  document.getElementById('gs-val').textContent =
+    state.recv || alive ? state.speed : '-';
+  const gear = document.getElementById('gs-gear');
+  gear.textContent = alive ? gearText(state.gear) : '';
+  gear.setAttribute('class', 'ggear ' + (f >= 0.95 ? 'c-bad' : 'c-plain'));
+
+  gaTo = ang; gsTo = f;
+  if (!wgRaf) wgRaf = requestAnimationFrame(wgFrame);
+
+  const cb = document.getElementById('cb');
+  const age = (state.age === undefined || state.age === null) ? null
+              : +state.age;
+  const on = age !== null && (state.recv || alive);
+  cbNow = on ? (cbNow === null ? age : cbNow + (age - cbNow) * 0.3) : null;
+  document.getElementById('cb-val').textContent =
+    on ? Math.round(cbNow) : '-';
+  cb.className = 'cbwrap ' + (!on ? 'c-plain' : cbNow < 20 ? 'c-ok'
+                              : cbNow < 60 ? 'c-hot' : 'c-bad');
+  /* from the middle out: a bar either side per 20 ms, then a half and a
+     faint one past the last */
+  const lit = on ? Math.min(6, 1 + Math.floor(cbNow / 20)) : 0;
+  cb.querySelectorAll('.cbbars i').forEach((el, i) => {
+    const d = i < 6 ? 6 - i : i - 5;
+    el.className = !lit ? '' : d <= lit ? 'on' : d === lit + 1 ? 'half'
+                 : d === lit + 2 ? 'faint' : '';
+  });
+
+  odoSet(+state.odo || 0);
+  document.getElementById('odo-drift').textContent =
+    Math.round(+state.odo_drift || 0);
+}
+
 function liveUpdate(){
   if (!state || !cfg) return;
   updateWarning();
@@ -6302,22 +6861,7 @@ function liveUpdate(){
   sRaw += (state.raw - sRaw) * 0.25;
   sOut += (state.out - sOut) * 0.35;
   setBar('rawbar', sRaw); setBar('outbar', sOut);
-  const set = (id, val, unit, cls) => {
-    const el = $(id);
-    if (!el) return;
-    el.className = 'twval' + (cls ? ' ' + cls : '');
-    el.innerHTML = val + (unit ? '<u>' + unit + '</u>' : '');
-  };
-  set('#w-mode', state.alive ? t('st_driving')
-        : state.recv ? t('st_menu') : t('st_waiting'), '',
-      state.alive ? 'ok' : state.recv ? 'warn' : 'off');
-  set('#w-speed', state.recv || state.alive ? state.speed : '—', 'km/h',
-      state.alive ? 'warn' : '');
-  const age = (state.age === undefined || state.age === null) ? null
-              : state.age;
-  set('#w-callback', (age !== null && (state.recv || state.alive)) ? age : '—',
-      'ms', age > 120 ? 'bad' : '');
-  set('#w-latency', state.pad_hz || '—', 'Hz', '');
+  drawWidgets();
   const car = $('#w-car');
   if (car){
     /* The name alone: class and drive have chips of their own now, so the
@@ -6384,7 +6928,7 @@ async function poll(){
     }
     liveUpdate();
   }catch(e){}
-  setTimeout(poll, 100);
+  setTimeout(poll, document.getElementById('ga') ? 50 : 100);
 }
 
 /* ---------------- boot ---------------- */
@@ -7543,6 +8087,12 @@ class Api:
             "btn_names": BUTTON_NAMES,
             "capture": b.capture,
             "captured": b.captured,
+            "angle": round(b.telemetry.drift.angle, 1),
+            "drift": b.telemetry.drift.label,
+            "odo": round(b.telemetry.drift.total),
+            "odo_drift": round(b.telemetry.drift.dist),
+            "rpm_f": round(b.telemetry.rpm_frac, 4),
+            "gear": b.telemetry.engine.gear,
             "buttons": b.buttons,
             "bad_order": b.bad_order,
             "boot_step": b.boot_step,

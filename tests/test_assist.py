@@ -2821,6 +2821,150 @@ def test_the_launch_notice_says_what_to_do_about_it():
                     "conectarlo", "接続")), (lang, hint)
 
 
+# ---------------- drift watch, rev counter, odometer ----------------
+
+def _feed(dw, frames, t0=0.0, dt=1 / 60.0):
+    """frames: (seconds, angle, speed km/h, throttle, brake, clutch,
+    handbrake) held for that long. Returns the time it ended at."""
+    t = t0
+    for secs, ang, kmh, thr, brk, clu, hb in frames:
+        end = t + secs
+        while t < end - 1e-9:
+            dw.update(t, fa.DriftSample(ang, kmh / 3.6, thr, brk, clu, hb))
+            t += dt
+    return t
+
+
+def _entry(*frames):
+    dw = fa.DriftWatch()
+    _feed(dw, list(frames))
+    assert dw.drifting, "the frames should end in a drift"
+    return dw.entry
+
+
+STRAIGHT = (1.0, 0.0, 80, 0.4, 0.0, 0.0, 0.0)
+
+
+def test_each_way_into_a_drift_is_told_apart():
+    slide = lambda thr=0.8: (0.3, 25.0, 80, thr, 0.0, 0.0, 0.0)
+    assert _entry(STRAIGHT, (0.2, 2.0, 80, 0.4, 0.0, 0.0, 1.0),
+                  slide()) == "ebrake"
+    assert _entry(STRAIGHT, (0.2, 2.0, 80, 1.0, 0.0, 1.0, 0.0),
+                  slide()) == "clutch"
+    assert _entry(STRAIGHT, (0.3, -6.0, 80, 0.3, 0.0, 0.0, 0.0),
+                  slide()) == "feint"
+    assert _entry(STRAIGHT, (0.2, 3.0, 80, 0.0, 0.7, 0.0, 0.0),
+                  slide(0.0)) == "brake"
+    assert _entry((1.0, 0.0, 80, 0.9, 0.0, 0.0, 0.0),
+                  (0.2, 3.0, 80, 0.0, 0.0, 0.0, 0.0), slide(0.0)) == "lift"
+    assert _entry(STRAIGHT, slide(0.9)) == "power"
+    assert _entry(STRAIGHT, slide(0.4)) == "drift"
+
+
+def test_the_handbrake_wins_over_everything_else():
+    """A feint finished with the handbrake is a handbrake entry."""
+    assert _entry(STRAIGHT, (0.3, -6.0, 80, 0.3, 0.0, 0.0, 0.0),
+                  (0.2, 2.0, 80, 0.9, 0.0, 0.0, 1.0),
+                  (0.3, 25.0, 80, 0.9, 0.0, 0.0, 0.0)) == "ebrake"
+
+
+def test_a_transition_is_the_same_drift():
+    dw = fa.DriftWatch()
+    t = _feed(dw, [STRAIGHT, (0.1, 2.0, 80, 0.3, 0.0, 0.0, 1.0),
+                   (1.0, 30.0, 80, 0.9, 0.0, 0.0, 0.0),
+                   (0.2, 0.0, 80, 0.9, 0.0, 0.0, 0.0),
+                   (1.0, -30.0, 80, 0.9, 0.0, 0.0, 0.0)])
+    assert dw.drifting and dw.entry == "ebrake", "the entry is kept"
+    assert dw.transitions == 1
+    _feed(dw, [(1.0, 0.0, 80, 0.3, 0.0, 0.0, 0.0)], t0=t)
+    assert not dw.drifting
+
+
+def test_the_label_shows_backward_and_holds_after_the_drift():
+    dw = fa.DriftWatch()
+    t = _feed(dw, [STRAIGHT, (0.5, 30.0, 80, 0.9, 0.0, 0.0, 0.0)])
+    assert dw.label == "power"
+    t = _feed(dw, [(0.3, 120.0, 40, 0.9, 0.0, 0.0, 0.0)], t0=t)
+    assert dw.label == "backward"
+    t = _feed(dw, [(1.0, 0.0, 60, 0.3, 0.0, 0.0, 0.0)], t0=t)
+    assert not dw.drifting and dw.label == "power", "still on show"
+    _feed(dw, [(2.0, 0.0, 60, 0.3, 0.0, 0.0, 0.0)], t0=t)
+    assert dw.label == "driving"
+
+
+def test_the_odometer_counts_only_drifting():
+    dw = fa.DriftWatch(total=1000.0)
+    t = _feed(dw, [(2.0, 0.0, 72, 0.4, 0.0, 0.0, 0.0)])
+    assert dw.total == 1000.0, "driving straight adds nothing"
+    t = _feed(dw, [(2.0, 30.0, 72, 0.9, 0.0, 0.0, 0.0)], t0=t)
+    assert 38.0 < dw.total - 1000.0 < 41.0, dw.total   # 20 m/s for ~2 s
+    assert abs(dw.dist - (dw.total - 1000.0)) < 1e-6
+    # a pause - the packets stop - ends it, the total survives
+    _feed(dw, [(0.2, 30.0, 72, 0.9, 0.0, 0.0, 0.0)], t0=t + 5.0)
+    assert dw.total > 1000.0 and dw.dist < 5.0
+
+
+def test_slow_or_shallow_is_not_a_drift():
+    dw = fa.DriftWatch()
+    _feed(dw, [(1.0, 40.0, 15, 0.9, 0.0, 0.0, 0.0)])
+    assert not dw.drifting, "too slow"
+    _feed(dw, [(1.0, 9.0, 80, 0.9, 0.0, 0.0, 0.0)], t0=5.0)
+    assert not dw.drifting, "too shallow"
+
+
+def _revs(rpm, rpm_max, top=0.0):
+    t = fa.TelemetryListener.__new__(fa.TelemetryListener)
+    t.stale_sec = 0.5
+    t._t_race = time.monotonic()
+    t.engine = fa.Engine(rpm, rpm_max, 900.0, 3)
+    t.rpm_top = max(top, rpm)
+    return t.rpm_frac
+
+
+def test_the_rev_counter_fills_to_its_end_and_no_further():
+    assert _revs(8000.0, 8000.0) == 1.0
+    assert _revs(4000.0, 8000.0) == 0.5
+    # a limiter below the game's maximum still fills the scale exactly
+    assert _revs(7700.0, 8000.0, top=7700.0) == 1.0
+    assert _revs(3850.0, 8000.0, top=7700.0) == 0.5
+    # a peak far below the maximum is not a limiter: the maximum stands
+    assert _revs(5000.0, 8000.0, top=5000.0) == 0.625
+    for rpm in (0.0, 900.0, 7999.0, 8000.0, 8400.0):
+        f = _revs(rpm, 8000.0)
+        assert 0.0 <= f <= 1.0, (rpm, f)
+
+
+def test_the_odometer_setting_is_kept_sane():
+    for bad, want in (("x", 0.0), (-5, 0.0), (float("nan"), 0.0),
+                      (1234.5, 1234.5)):
+        cfg = dict(fa.DEFAULTS)
+        cfg["drift_odo"] = bad
+        fa.sanitize_config(cfg)
+        assert cfg["drift_odo"] == want, (bad, cfg["drift_odo"])
+
+
+def test_engine_and_drift_are_read_from_the_packet():
+    port = 20995
+    t = fa.TelemetryListener(port=port)
+    t.start()
+    time.sleep(0.2)
+    try:
+        L = fa.TelemetryListener
+        pkt = bytearray(make_packet(vx=-20.0, vz=20.0, speed=28.0))
+        struct.pack_into("<f", pkt, L.OFF_RPM_MAX, 8000.0)
+        struct.pack_into("<f", pkt, L.OFF_RPM_IDLE, 900.0)
+        struct.pack_into("<f", pkt, L.OFF_RPM, 6000.0)
+        pkt[L.OFF_GEAR] = 3
+        pkt[L.OFF_HANDBRAKE] = 255
+        send(port, bytes(pkt))
+        assert t.engine.gear == 3 and t.engine.rpm == 6000.0, t.engine
+        assert abs(t.rpm_frac - 0.75) < 1e-6
+        assert abs(t.drift.angle - 45.0) < 0.01, t.drift.angle
+        assert t.drift.drifting and t.drift.entry == "ebrake"
+    finally:
+        t.stop()
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

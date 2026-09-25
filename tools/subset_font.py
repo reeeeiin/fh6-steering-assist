@@ -19,7 +19,7 @@ DEST = os.path.join(ROOT, "assets", "fonts")
 DEFAULT_SRC = os.path.join(os.path.expanduser("~"), "Downloads",
                            "Chiron_GoRound_TC", "static")
 WEIGHTS = {"Regular": "regular", "Medium": "medium", "SemiBold": "semibold"}
-EXTRA = ("0123456789.,:;%-+()[]/'\"!?&<> "
+EXTRA = ("0123456789.,:;%-+()[]/'\"!?&<> °"
          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 
