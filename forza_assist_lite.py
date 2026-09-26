@@ -1308,6 +1308,8 @@ DEFAULTS = {
     "car_detect": True,
     # the driver's own strength per kind of car, as the slider shows it
     "car_strength": {},
+    # the kind of car last driven: the slider's room until the next one
+    "car_last_kind": "rwd",
     # metres drifted, ever - the Drift Odo
     "drift_odo": 0.0,
     "profile": "default",
@@ -2297,6 +2299,8 @@ def sanitize_config(cfg: dict) -> dict:
                                    base + CAR_TYPE_ROOM)
     cfg["car_strength"] = held
     snap = cfg.get("custom")
+    if cfg.get("car_last_kind") not in CAR_TYPE_STRENGTH:
+        cfg["car_last_kind"] = DEFAULTS["car_last_kind"]
     try:
         odo = float(cfg.get("drift_odo", 0.0))
     except (TypeError, ValueError):
@@ -3593,12 +3597,23 @@ class Bridge:
         if old is not fresh:
             old.stop()
 
+    def _kind(self):
+        """The kind of car the strength is for: the one being driven, or
+        with none known yet - in a menu, before the first drive - the last
+        one, so the slider always has its room and never sits there dead.
+        Remembered in the settings, written with the next save."""
+        kind = self.telemetry.car_type
+        if kind in CAR_TYPE_STRENGTH:
+            self.cfg["car_last_kind"] = kind
+            return kind
+        last = self.cfg.get("car_last_kind")
+        return last if last in CAR_TYPE_STRENGTH else "rwd"
+
     def _car_shown(self):
         """The kind of car and the strength for it, as the slider shows it:
         the driver's own for that kind if they moved it, kept within the
-        room either side of the default. (None, None) if the car is not
-        known yet."""
-        kind = self.telemetry.car_type
+        room either side of the default."""
+        kind = self._kind()
         base = CAR_TYPE_STRENGTH.get(kind)
         if base is None:
             return None, None
@@ -3618,7 +3633,7 @@ class Bridge:
         gains, or None when it does not hold it."""
         if not self.cfg.get("car_detect"):
             return None
-        base = CAR_TYPE_STRENGTH.get(self.telemetry.car_type)
+        base = CAR_TYPE_STRENGTH.get(self._kind())
         if base is None:
             return None
         return [gain_from_shown(base - CAR_TYPE_ROOM),
@@ -5652,13 +5667,17 @@ body.t-light{
    the track is how far the driver may move it; with no car yet, it is
    held still and dimmed. */
 /* Auto car adjust is choosing the strength */
-.autob{display:none;vertical-align:middle;margin-left:8px;height:18px;
+/* a row of its own inside the name, so the chip's height never moves
+   the words off their line */
+.rname.hasauto{display:flex;align-items:center;gap:8px}
+.autob{display:inline-flex;flex:none;opacity:0;height:18px;
+       transition:opacity .25s ease;pointer-events:none;
        box-sizing:border-box;padding:0 6px;border-radius:5px;
        border:1px solid var(--ok);background:rgba(13,222,100,.1);
        color:var(--ok);font-size:8px;font-weight:600;
        align-items:center;justify-content:center}
 .autob span{display:block;text-box:trim-both cap alphabetic}
-.row.auto .autob{display:inline-flex}
+.row.auto .autob{opacity:1}
 .row.locked .sl,.row.locked .rval{opacity:.4;transition:opacity .2s ease}
 .row.locked .sl{pointer-events:none}
 .row.locked{cursor:default}
@@ -6054,10 +6073,10 @@ function segEl(id, items, active){
 
 function sliderRow(key){
   return '<div class="row" data-hint="' + key + '_hint">' +
-    '<span class="rname">' + t(key) +
     (key === 'counter_gain'
-      ? '<span class="autob"><span>' + t('auto_badge') + '</span></span>'
-      : '') + '</span>' +
+      ? '<span class="rname hasauto">' + t(key) +
+        '<span class="autob"><span>' + t('auto_badge') + '</span></span>'
+      : '<span class="rname">' + t(key)) + '</span>' +
     '<span class="sl" data-slider="' + key + '">' +
       '<i class="trk"></i>' +
       '<i class="fil"></i><i class="knb"></i></span>' +
@@ -6609,7 +6628,10 @@ function drawSlider(el){
   el.querySelector('.fil').style.width = (p * 100) + '%';
   el.querySelector('.knb').style.left = (p * 100) + '%';
   const v = document.querySelector('[data-val="' + key + '"]');
-  if (v) v.textContent = shown(key, val);
+  if (v) v.textContent = (key === 'counter_gain' && strengthLocked() &&
+                          strengthWindow())
+    ? String(Math.round(+shown(key, val) - +shown(key, lo)))
+    : shown(key, val);
   const row = el.closest('.row');
   if (!row || key !== 'counter_gain') return;
   const w = strengthLocked() ? strengthWindow() : null;
@@ -6838,7 +6860,8 @@ function bindRows(){
         /* the car's strength, moved within its band and kept for that
            kind of car - the preset's own value is not touched */
         const w = strengthWindow();
-        if (!w || !state.car_type) return;
+        const kind = state.auto_kind || state.car_type;
+        if (!w || !kind) return;
         /* ten points end to end, and only whole ones */
         const pct = g => (g - r[1]) / (r[2] - r[1]) * 100;
         const lo = Math.round(pct(w[0])), hi = Math.round(pct(w[1]));
@@ -6847,7 +6870,7 @@ function bindRows(){
         gainShown = v;
         state.auto_strength = v;
         drawSlider(el);
-        try{ pywebview.api.set_car_strength(state.car_type,
+        try{ pywebview.api.set_car_strength(kind,
                                             +shown(key, v)); }catch(e){}
         return;
       }
@@ -8473,6 +8496,7 @@ class Api:
             "auto_strength": b._auto_strength(),
             "auto_window": b._auto_window(),
             "car_type": b.telemetry.car_type,
+            "auto_kind": b._kind(),
             "alive": b.telemetry.alive,
             "recv": b.telemetry.receiving,
             "tele_err": b.telemetry.error,

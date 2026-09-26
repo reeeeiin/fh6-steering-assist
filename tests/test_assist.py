@@ -572,7 +572,7 @@ def test_car_type_detect_decides_only_while_it_is_on():
     assert fa.DEFAULTS["car_detect"] is True
     assert b._auto_strength() == 36.0
     _T.car_type = ""
-    assert b._auto_strength() is None, "no car known: leave the preset alone"
+    assert b._auto_strength() == 36.0,         "no car known: the last kind driven keeps the slider alive"
     _T.car_type = "rwd"
     b.cfg["car_detect"] = False
     assert b._auto_strength() is None, "switched off: the slider rules"
@@ -599,7 +599,8 @@ def test_the_driver_gets_five_either_side_of_the_cars_strength():
     # a value from outside the band - an edited file, an old version - is
     # brought back to its edge rather than obeyed
     assert _detect_bridge("rwd", {"rwd": 90})._auto_strength() == fa.gain_from_shown(50)
-    assert _detect_bridge("", {})._auto_window() is None
+    # nothing driven yet: rear drive, the common case, not a dead slider
+    assert _detect_bridge("", {})._auto_window() ==         [fa.gain_from_shown(40), fa.gain_from_shown(50)]
 
 
 def test_the_drivers_own_strength_is_kept_per_kind_of_car():

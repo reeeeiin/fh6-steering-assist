@@ -42,7 +42,7 @@ STUB = """<script>
       hz: 250, pad_hz: 250, age: 4, car: "Toyota Supra RZ",
       car_name: "Toyota Supra RZ", car_drive: "RWD", car_class: "S1",
       car_pi: 800, auto_strength: 54, auto_window: [48, 60],
-      car_type: "rwd", car_ord: 0,
+      car_type: "rwd", auto_kind: "rwd", car_ord: 0,
       angle: +(slip * 90).toFixed(1),
       drift: Math.abs(slip) > 0.15 ? "feint" : "driving",
       rpm_f: +(0.62 + Math.sin(t * 1.3) * 0.36).toFixed(4),
