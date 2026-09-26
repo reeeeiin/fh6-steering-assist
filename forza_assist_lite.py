@@ -1305,7 +1305,6 @@ DEFAULTS = {
     "theme": "dark",
     "ui_scale": 1.0,
     "steer_in_general": False,
-    "ext_telemetry": False,
     "car_detect": True,
     # the driver's own strength per kind of car, as the slider shows it
     "car_strength": {},
@@ -2109,8 +2108,6 @@ LEGAL = {
         "marks": LEGAL_MARKS,
         "about": [
             "Steering Assist \u2122",
-            'Created and maintained by Nikita (reeeeiin) Pakhtin.',
-            'First release 5 August 2026.',
         ],
         "repo": ['Source on GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
@@ -2124,8 +2121,6 @@ LEGAL = {
         "marks": LEGAL_MARKS,
         "about": [
             "Steering Assist \u2122",
-            'Создано и поддерживается Никитой (reeeeiin) Пахтиным.',
-            'Первый релиз 5 августа 2026 года.',
         ],
         "repo": ['Исходный код на GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
@@ -2139,8 +2134,6 @@ LEGAL = {
         "marks": LEGAL_MARKS,
         "about": [
             "Steering Assist \u2122",
-            'Creado y mantenido por Nikita (reeeeiin) Pakhtin.',
-            'Primera version el 5 de agosto de 2026.',
         ],
         "repo": ['Codigo en GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
@@ -2154,8 +2147,6 @@ LEGAL = {
         "marks": LEGAL_MARKS,
         "about": [
             "Steering Assist \u2122",
-            'Cree et maintenu par Nikita (reeeeiin) Pakhtin.',
-            'Premiere version le 5 aout 2026.',
         ],
         "repo": ['Code source sur GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
@@ -2169,8 +2160,6 @@ LEGAL = {
         "marks": LEGAL_MARKS,
         "about": [
             "Steering Assist \u2122",
-            'Erstellt und gepflegt von Nikita (reeeeiin) Pakhtin.',
-            'Erste Veroffentlichung am 5. August 2026.',
         ],
         "repo": ['Quellcode auf GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
@@ -2184,8 +2173,6 @@ LEGAL = {
         "marks": LEGAL_MARKS,
         "about": [
             "Steering Assist \u2122",
-            '作成・保守: Nikita (reeeeiin) Pakhtin',
-            '初回リリース 2026年8月5日',
         ],
         "repo": ['GitHub のソースコード',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
@@ -2270,7 +2257,7 @@ def sanitize_config(cfg: dict) -> dict:
             v = float(DEFAULTS[key])
         cfg[key] = clamp(v, lo, hi) if math.isfinite(v) else float(DEFAULTS[key])
     for key in ("enabled", "auto_hide", "telemetry_seen", "setup_done",
-                "rumble", "steer_in_general", "ext_telemetry",
+                "rumble", "steer_in_general",
                 "mirror_all_buttons", "tour_seen", "car_detect"):
         cfg[key] = bool(cfg.get(key, DEFAULTS[key]))
     for key in ("btn_handbrake", "btn_clutch"):
@@ -4151,7 +4138,6 @@ TR = {
         "theme_dark": "Dark",
         "theme_light": "Light",
         "steer_in_general": 'Display steering settings in general',
-        "ext_telemetry": 'Display extended telemetry',
         "car_detect": 'Car type detect',
         "car_detect_hint": 'Sets the assist strength for the car you are in: 40 on rear-wheel drive, 30 on Formula Drift cars. On all-wheel drive it also eases off at shallow angles and on the way out of a slide, where the front axle straightens the car by itself. The slider can still move 5 either way, and keeps where you leave it for that kind of car. Switch this off to use the whole range.',
         "mirror_all_buttons": 'Release all buttons',
@@ -4209,6 +4195,7 @@ TR = {
         "w_callback": 'Callback',
         "w_latency": 'Latency',
         "w_car": 'Current car',
+        "auto_badge": "Auto",
         "setup_nav1": "Navigate to game settings:",
         "setup_nav2": "Hud & Gameplay / Telemetry",
         "setup_nav3": "and apply these settings",
@@ -4308,7 +4295,6 @@ TR = {
         "theme_dark": "Тёмная",
         "theme_light": "Светлая",
         "steer_in_general": 'Отображать настройки помощника на главной',
-        "ext_telemetry": 'Отображать расширенную телеметрию',
         "car_detect": 'Определять тип машины',
         "car_detect_hint": 'Подбирает силу ассиста под машину: 40 для заднего привода, 30 для машин Formula Drift. На полном приводе сила ещё и снижается на малых углах и на выходе из заноса, где передняя ось сама выпрямляет машину. Ползунок можно сдвинуть на 5 в любую сторону — положение запоминается для этого типа машин. Выключите, чтобы пользоваться всей шкалой.',
         "mirror_all_buttons": 'Освободить все кнопки',
@@ -4366,6 +4352,7 @@ TR = {
         "w_callback": 'Отклик',
         "w_latency": 'Частота',
         "w_car": 'Машина',
+        "auto_badge": "Авто",
         "setup_nav1": "Откройте настройки игры:",
         "setup_nav2": "Hud & Gameplay / Telemetry",
         "setup_nav3": "и примените эти параметры",
@@ -4465,7 +4452,6 @@ TR = {
         "theme_dark": "Dark",
         "theme_light": "Light",
         "steer_in_general": 'Lenkeinstellungen auf der Startseite zeigen',
-        "ext_telemetry": 'Erweiterte Telemetrie anzeigen',
         "car_detect": 'Fahrzeugtyp erkennen',
         "car_detect_hint": 'Stellt die Assistenzstaerke passend zum Auto ein: 40 bei Heckantrieb, 30 bei Formula-Drift-Autos. Bei Allradantrieb nimmt sie ausserdem bei kleinen Winkeln und beim Herausfahren aus dem Drift ab, wo die Vorderachse das Auto von selbst geraderichtet. Der Regler laesst sich um 5 in jede Richtung verschieben und merkt sich die Stellung fuer diese Art von Auto. Ausschalten, um den ganzen Bereich zu nutzen.',
         "mirror_all_buttons": 'Alle Tasten freigeben',
@@ -4523,6 +4509,7 @@ TR = {
         "w_callback": 'Antwort',
         "w_latency": 'Frequenz',
         "w_car": 'Fahrzeug',
+        "auto_badge": "Auto",
         "setup_nav1": "Oeffne die Spieleinstellungen:",
         "setup_nav2": "Hud & Gameplay / Telemetry",
         "setup_nav3": "und setze diese Werte",
@@ -4622,7 +4609,6 @@ TR = {
         "theme_dark": "Dark",
         "theme_light": "Light",
         "steer_in_general": 'Afficher les reglages de direction sur l\'accueil',
-        "ext_telemetry": 'Afficher la telemetrie detaillee',
         "car_detect": 'Detecter le type de voiture',
         "car_detect_hint": "Regle la force de l'assistant selon la voiture : 40 en propulsion, 30 sur les voitures Formula Drift. En transmission integrale, elle diminue aussi aux petits angles et en sortie de glisse, la ou l'essieu avant redresse la voiture tout seul. Le curseur peut bouger de 5 dans chaque sens et garde sa position pour ce type de voiture. Desactivez pour utiliser toute la plage.",
         "mirror_all_buttons": 'Liberer tous les boutons',
@@ -4680,6 +4666,7 @@ TR = {
         "w_callback": 'Reponse',
         "w_latency": 'Frequence',
         "w_car": 'Voiture',
+        "auto_badge": "Auto",
         "setup_nav1": "Ouvrez les reglages du jeu :",
         "setup_nav2": "Hud & Gameplay / Telemetry",
         "setup_nav3": "et appliquez ces reglages",
@@ -4779,7 +4766,6 @@ TR = {
         "theme_dark": "Dark",
         "theme_light": "Light",
         "steer_in_general": 'Mostrar los ajustes de direccion en general',
-        "ext_telemetry": 'Mostrar telemetria ampliada',
         "car_detect": 'Detectar tipo de coche',
         "car_detect_hint": 'Ajusta la fuerza del asistente al coche: 40 con traccion trasera, 30 en los coches Formula Drift. Con traccion total, ademas se suaviza en angulos pequenos y al salir del derrape, donde el eje delantero endereza el coche solo. El deslizador se puede mover 5 hacia cada lado y recuerda la posicion para ese tipo de coche. Desactivalo para usar todo el rango.',
         "mirror_all_buttons": 'Liberar todos los botones',
@@ -4837,6 +4823,7 @@ TR = {
         "w_callback": 'Respuesta',
         "w_latency": 'Frecuencia',
         "w_car": 'Coche',
+        "auto_badge": "Auto",
         "setup_nav1": "Abre los ajustes del juego:",
         "setup_nav2": "Hud & Gameplay / Telemetry",
         "setup_nav3": "y aplica estos ajustes",
@@ -4943,7 +4930,6 @@ TR = {
         "theme_dark": 'ダーク',
         "theme_light": 'ライト',
         "steer_in_general": '操舵設定をメイン画面に表示',
-        "ext_telemetry": '詳細なテレメトリーを表示',
         "car_detect": '車種を自動判別',
         "car_detect_hint": '乗っている車に合わせてアシスト強度を設定します。後輪駆動は40、Formula Drift の車は30。四輪駆動では、前輪が自然に車をまっすぐに戻す浅い角度やドリフトの立ち上がりで、強度をさらに弱めます。スライダーは上下5の範囲で調整でき、車の種類ごとに位置を記憶します。全範囲を使う場合はオフにしてください。',
         "mirror_all_buttons": 'すべてのボタンを解放',
@@ -5008,6 +4994,7 @@ TR = {
         "w_callback": '応答',
         "w_latency": '周波数',
         "w_car": '車両',
+        "auto_badge": "オート",
         "setup_nav1": "ゲーム設定の",
         "setup_nav2": "Hud & Gameplay / Telemetry",
         "setup_nav3": "で次の値を設定してください",
@@ -5383,6 +5370,7 @@ body.t-light{
 .faqbox::-webkit-scrollbar-thumb{background:var(--track);border-radius:2px}
 .faqbox::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .prose p{font-size:9px;line-height:1.6;color:var(--row-fg);margin:0}
+.prose p.ptitle{font-size:11px;font-weight:600}
 .bubs{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 15px}
 .bubs.repo{padding:4px 0 0}
 .card .bubs:not(:last-child){border-bottom:1px solid var(--line)}
@@ -5663,10 +5651,14 @@ body.t-light{
 /* Car type detect holds the strength. With the car known, the band on
    the track is how far the driver may move it; with no car yet, it is
    held still and dimmed. */
-.sl .win{position:absolute;top:50%;height:10px;margin-top:-5px;
-         border-radius:5px;background:var(--accent);opacity:.22;
-         display:none;pointer-events:none}
-.row.windowed .sl .win{display:block}
+/* Car type detect is choosing the strength */
+.autob{display:none;vertical-align:middle;margin-left:8px;height:18px;
+       box-sizing:border-box;padding:0 6px;border-radius:5px;
+       border:1px solid var(--ok);background:rgba(13,222,100,.1);
+       color:var(--ok);font-size:8px;font-weight:600;
+       align-items:center;justify-content:center}
+.autob span{display:block;text-box:trim-both cap alphabetic}
+.row.auto .autob{display:inline-flex}
 .row.locked .sl,.row.locked .rval{opacity:.4;transition:opacity .2s ease}
 .row.locked .sl{pointer-events:none}
 .row.locked{cursor:default}
@@ -5684,9 +5676,6 @@ body.t-light{
 .tstat{font-size:13px;font-weight:600;flex:none;transition:color .3s ease}
 .tstat.ok{color:var(--ok)} .tstat.wait{color:var(--muted)}
 .tstat.err{color:var(--danger)}
-.telecard.idle .barlbl{color:var(--off)}
-.telecard.idle .bar{opacity:.5}
-.telecard .row{border-bottom:none}
 .tstat.idle{color:var(--row-fg)}
 .barwrap{padding:5px 0}
 .barlbl{font-size:9px;color:var(--muted);margin-bottom:3px}
@@ -5702,14 +5691,6 @@ body.t-light{
 .barlbl{font-size:11px;color:var(--row-fg);margin-bottom:6px}
 .barwrap{padding:8px 0}
 .card .barwrap:last-child{padding-bottom:16px}
-
-/* ---------- footer ---------- */
-.foot{display:flex;flex-direction:column;gap:6px;padding:0 4px;
-      margin-top:auto;position:relative}
-.foot .drag{position:absolute;left:-18px;right:-18px;top:-12px;bottom:-18px;
-            z-index:0;-webkit-app-region:drag}
-.foot span{position:relative;z-index:1}
-.foot span{font-size:6px;line-height:1.55;color:var(--foot)}
 
 /* ---------- screens ---------- */
 .screen{display:none;flex-direction:column;gap:10px}
@@ -5960,10 +5941,6 @@ html[data-boot] .rz{display:none}
       <button class="warn-b" id="warn-ok"></button>
     </div>
   </div>
-  <div class="foot reveal"><span class="drag pywebview-drag-region"></span>
-    <span>Steering Assist is an independent fan project. Not affiliated with or endorsed by Microsoft, Playground Games or Turn 10 Studios.<br>Forza is a trademark of Microsoft Corporation. Created and published by reeeeiin.</span>
-    <span>Steering Assist &#8482; 2026. All rights reserved.</span>
-  </div>
 </div>
 <div id="tour">
   <div class="tmask" id="tm-t"></div>
@@ -6077,10 +6054,12 @@ function segEl(id, items, active){
 
 function sliderRow(key){
   return '<div class="row" data-hint="' + key + '_hint">' +
-    '<span class="rname">' + t(key) + '</span>' +
+    '<span class="rname">' + t(key) +
+    (key === 'counter_gain'
+      ? '<span class="autob"><span>' + t('auto_badge') + '</span></span>'
+      : '') + '</span>' +
     '<span class="sl" data-slider="' + key + '">' +
       '<i class="trk"></i>' +
-      (key === 'counter_gain' ? '<i class="win"></i>' : '') +
       '<i class="fil"></i><i class="knb"></i></span>' +
     '<span class="rval" data-val="' + key + '"></span></div>';
 }
@@ -6115,11 +6094,6 @@ function screenMain(){
        '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
        '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
        '<div class="bar"><i id="outbar"></i><u></u></div></div>';
-  const tele =
-       '<div class="card telecard' + (live ? '' : ' idle') + '">' +
-       '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
-       '<span class="tstat" id="tstat">-</span></div>' +
-       bars + '</div>';
   const stat = '<div class="card tsc"><div class="trow">' +
     '<span class="rname">' + t('tele_status') + '</span>' +
     '<span class="tstat" id="tstat">-</span></div></div>';
@@ -6135,8 +6109,6 @@ function screenMain(){
 
   h += '<div class="reveal" id="teleblock"><div class="sec">' +
        t('telemetry_sec') + '</div>';
-  if (!cfg.ext_telemetry)
-    return h + (live ? tele : stat + setupWide) + '</div>';
 
   const readouts = '<div class="tside tiles">' + widgets() + '</div>';
   const steer = '<div class="card tsteer' + (live ? '' : ' idle') + '">' +
@@ -6181,13 +6153,31 @@ function screenFaq(){
     t('feedback') + '</span></span></div></div></div>';
 }
 
+/* Left in English in every language, like the trademark notice: it says
+   who this is not affiliated with, and a translation could change that */
+const FOOT_LINES = [
+  'Steering Assist is an independent fan project. Not affiliated with or ' +
+  'endorsed by Microsoft, Playground Games or Turn 10 Studios.',
+  'Forza is a trademark of Microsoft Corporation. Created and published ' +
+  'by reeeeiin.',
+  'Steering Assist &#8482; 2026. All rights reserved.'];
+
 function screenAbout(){
   const prose = (key, paras) =>
     '<div class="reveal"><div class="sec">' + t(key) + '</div>' +
     '<div class="card"><div class="prose">' +
     paras.map(x => '<p>' + x + '</p>').join('') + '</div></div></div>';
 
-  let h = prose('how_it_works', LG().how);
+  /* first: who made it and what it is not - the lines that used to sit
+     at the foot of every screen */
+  let h = '<div class="reveal"><div class="sec">' + t('about_sec') + '</div>' +
+       '<div class="card"><div class="prose">' +
+       '<p class="ptitle">' + LG().about[0] + '</p>' +
+       FOOT_LINES.map(x => '<p>' + x + '</p>').join('') +
+       '<div class="bubs repo"><span class="bub" data-url="' +
+       LG().repo[1] + '">' + LG().repo[0] + '</span></div>' +
+       '</div></div></div>';
+  h += prose('how_it_works', LG().how);
   h += '<div class="reveal"><div class="sec">' + t('third_party') +
        '</div><div class="card">';
   Object.keys(THIRD).forEach(group => {
@@ -6199,12 +6189,6 @@ function screenAbout(){
   });
   h += '</div></div>';
   h += prose('trademarks', LG().marks);
-  h += '<div class="reveal"><div class="sec">' + t('about_sec') + '</div>' +
-       '<div class="card"><div class="prose">' +
-       LG().about.map(x => '<p>' + x + '</p>').join('') +
-       '<div class="bubs repo"><span class="bub" data-url="' +
-       LG().repo[1] + '">' + LG().repo[0] + '</span></div>' +
-       '</div></div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('version_sec') + '</div>' +
        '<div class="card">' +
@@ -6283,7 +6267,6 @@ function screenSettings(){
              label: Math.round(x * 100) + '%'})), String(cfg.ui_scale)) +
        '</div>' +
        toggleRow('steer_in_general', 'steer_in_general') +
-       toggleRow('ext_telemetry', 'ext_telemetry') +
        '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('input_sec') + '</div>' +
@@ -6565,7 +6548,7 @@ function render(){
                 : screen === 'faq' ? screenFaq()
                 : screenMain();
   if (bootPhase === 'app'){
-    const rows = [...$$('#screen .reveal'), ...$$('.foot.reveal')];
+    const rows = [...$$('#screen .reveal')];
     const staged = screen !== lastScreen;
     lastScreen = screen;
     /* a language change brings them back in its own order */
@@ -6605,11 +6588,24 @@ function sliderValue(key){
   if (key !== 'counter_gain' || !strengthLocked()) return cfg[key];
   return gainShown !== null ? gainShown : strengthTarget();
 }
+/* The ends of a slider. The strength, while the car decides it, runs only
+   over the room either side of the car's value - the whole track is those
+   ten points, not a band inside the full range */
+function sliderSpan(key){
+  const r = ALLS.find(x => x[0] === key);
+  if (key === 'counter_gain' && strengthLocked()){
+    const w = strengthWindow();
+    if (w) return [w[0], w[1]];
+  }
+  return [r[1], r[2]];
+}
+
 function drawSlider(el){
   const key = el.dataset.slider;
   const r = ALLS.find(x => x[0] === key);
   const val = sliderValue(key);
-  const p = (val - r[1]) / (r[2] - r[1]);
+  const [lo, hi] = sliderSpan(key);
+  const p = Math.max(0, Math.min(1, (val - lo) / (hi - lo)));
   el.querySelector('.fil').style.width = (p * 100) + '%';
   el.querySelector('.knb').style.left = (p * 100) + '%';
   const v = document.querySelector('[data-val="' + key + '"]');
@@ -6618,13 +6614,7 @@ function drawSlider(el){
   if (!row || key !== 'counter_gain') return;
   const w = strengthLocked() ? strengthWindow() : null;
   row.classList.toggle('locked', strengthLocked() && !w);
-  row.classList.toggle('windowed', !!w);
-  const band = el.querySelector('.win');
-  if (band && w){
-    const a = (w[0] - r[1]) / (r[2] - r[1]), b = (w[1] - r[1]) / (r[2] - r[1]);
-    band.style.left = (a * 100) + '%';
-    band.style.width = ((b - a) * 100) + '%';
-  }
+  row.classList.toggle('auto', strengthLocked());
 }
 function stepStrength(){
   if (!strengthLocked()){ gainShown = null; return; }
@@ -6756,8 +6746,7 @@ const LANG_OUT_MS = 26, LANG_IN_MS = 34, LANG_GAP_MS = 240;
 let langHold = false, langRun = 0;
 
 function langRows(){
-  return [...$$('.tbar .reveal'), ...$$('#screen .reveal'),
-          ...$$('.foot.reveal')]
+  return [...$$('.tbar .reveal'), ...$$('#screen .reveal')]
     .sort((a, b) => a.getBoundingClientRect().top -
                     b.getBoundingClientRect().top);
 }
@@ -6771,7 +6760,7 @@ function relanguage(){
     if (run !== langRun) return;
     /* the header and the footer live through the rebuild, so they are put
        back to nothing by hand before the words under them change */
-    [...$$('.tbar .reveal'), ...$$('.foot.reveal')]
+    [...$$('.tbar .reveal')]
       .forEach(el => el.classList.remove('going', 'shown'));
     langHold = true;
     render();
@@ -6830,7 +6819,7 @@ function bindRows(){
       if (f === 'car_detect') gainShown = cfg[f] ? cfg.counter_gain : null;
       refresh();
       try{ pywebview.api.set(f, cfg[f]); }catch(e){}
-      if (f === 'steer_in_general' || f === 'ext_telemetry')
+      if (f === 'steer_in_general')
         setTimeout(render, 240);
     });
   });
@@ -6841,7 +6830,8 @@ function bindRows(){
       const b = el.getBoundingClientRect();
       let p = (e.clientX - b.left) / b.width;
       p = Math.max(0, Math.min(1, p));
-      let v = r[1] + p * (r[2] - r[1]);
+      const [lo, hi] = sliderSpan(key);
+      let v = lo + p * (hi - lo);
       v = Math.max(r[1], Math.min(r[2], Math.round(v / r[3]) * r[3]));
       v = +v.toFixed(4);
       if (key === 'counter_gain' && strengthLocked()){
@@ -7303,13 +7293,12 @@ let lastH = 0;
 function reportHeight(){
   if (bootPhase !== 'app') return;
   soon(() => {
-    /* #zoom is stretched to the window so the footer can sit at the bottom,
-       so its own height says nothing about what the content needs. Adding
-       the three blocks and the gaps between them does. */
-    const bar = $('.tbar'), scr = $('#screen'), ft = $('.foot');
-    if (!bar || !scr || !ft) return;
-    const natural = bar.offsetHeight + scr.offsetHeight + ft.offsetHeight +
-                    18 * 2 + 24 * 2;
+    /* #zoom is stretched to the window, so its own height says nothing
+       about what the content needs. The title bar, the screen, the padding
+       and the gap between them do. */
+    const bar = $('.tbar'), scr = $('#screen');
+    if (!bar || !scr) return;
+    const natural = bar.offsetHeight + scr.offsetHeight + 18 * 2 + 24;
     const h = Math.round(natural * uiZoom());
     if (h && Math.abs(h - lastH) > 2){
       lastH = h;
@@ -7635,7 +7624,7 @@ function revealApp(){
   applyScale();
   $('#boot').classList.add('gone');
   const head = [...$$('.tbar .reveal')];
-  const body = [...$$('#screen .reveal'), ...$$('.foot.reveal')];
+  const body = [...$$('#screen .reveal')];
   /* nothing of the boot screen is left on screen before the window grows:
      it fades out, then the window opens, and only then do the blocks rise */
   setTimeout(() => {
