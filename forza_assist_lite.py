@@ -4050,6 +4050,10 @@ TR = {
         "w_callback": 'Callback',
         "w_latency": 'Latency',
         "w_car": 'Current car',
+        "w_steering": "Steering",
+        "st_assisting": "Assisting",
+        "st_ready": "Ready",
+        "st_assist_off": "Off",
         "w_angle": "Angle",
         "w_odo": "Drift Odo",
         "odo_km": "Kilometers",
@@ -4200,6 +4204,10 @@ TR = {
         "w_callback": 'Отклик',
         "w_latency": 'Частота',
         "w_car": 'Машина',
+        "w_steering": "Руление",
+        "st_assisting": "Помогает",
+        "st_ready": "Готов",
+        "st_assist_off": "Выкл",
         "w_angle": "Угол",
         "w_odo": "Дрифт одо",
         "odo_km": "Километры",
@@ -4350,6 +4358,10 @@ TR = {
         "w_callback": 'Antwort',
         "w_latency": 'Frequenz',
         "w_car": 'Fahrzeug',
+        "w_steering": "Lenkung",
+        "st_assisting": "Hilft",
+        "st_ready": "Bereit",
+        "st_assist_off": "Aus",
         "w_angle": "Winkel",
         "w_odo": "Drift-Odo",
         "odo_km": "Kilometer",
@@ -4500,6 +4512,10 @@ TR = {
         "w_callback": 'Reponse',
         "w_latency": 'Frequence',
         "w_car": 'Voiture',
+        "w_steering": "Direction",
+        "st_assisting": "Assiste",
+        "st_ready": "Pret",
+        "st_assist_off": "Off",
         "w_angle": "Angle",
         "w_odo": "Odo drift",
         "odo_km": "Kilometres",
@@ -4650,6 +4666,10 @@ TR = {
         "w_callback": 'Respuesta',
         "w_latency": 'Frecuencia',
         "w_car": 'Coche',
+        "w_steering": "Direccion",
+        "st_assisting": "Asistiendo",
+        "st_ready": "Listo",
+        "st_assist_off": "Apagado",
         "w_angle": "Angulo",
         "w_odo": "Odo drift",
         "odo_km": "Kilometros",
@@ -4814,6 +4834,10 @@ TR = {
         "w_callback": '応答',
         "w_latency": '周波数',
         "w_car": '車両',
+        "w_steering": "ステアリング",
+        "st_assisting": "アシスト中",
+        "st_ready": "待機中",
+        "st_assist_off": "オフ",
         "w_angle": "角度",
         "w_odo": "ドリフト距離",
         "odo_km": "キロメートル",
@@ -5249,51 +5273,43 @@ body.t-light{
 .warn-b:hover{filter:brightness(1.12)}
 
 /* ---------- extended telemetry ---------- */
-/* fixed geometry: two columns of 232 with a 10 gap. On the left the
-   telemetry card (160) over the car (69); on the right the pad's state
-   (36) over the four readouts. Both columns come to 239, and no box
-   resizes with its contents */
+/* Two columns of 232 with a 10 gap, laid out as in Figma. On the left the
+   telemetry status, the steering and the car; on the right the pad's
+   status over the four readouts. The steering card takes whatever height
+   the right column needs, so the two always end level. No dividers. */
 .tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tcol{display:flex;flex-direction:column;gap:10px;min-width:0}
-.tgrid .telecard{height:160px;padding:0 15px;box-sizing:border-box}
-.tside{height:193px}
+.tgrid .card{padding:12px 14px;box-sizing:border-box}
+.tgrid .tsc{height:42px;padding:0 14px;display:flex;align-items:center}
+.tsc .trow{flex:1;min-width:0}
+.tsc .rname{flex:none}
+.tsc .rval{font-size:13px;font-weight:600;transition:color .3s ease}
+.tsteer{flex:1;display:flex;flex-direction:column;
+        justify-content:space-between;gap:8px}
+.tgrid .tsteer .barwrap,.tgrid .tsteer .barwrap:last-child{padding:0}
+.tsteer.idle .barlbl{color:var(--off)}
+.tsteer.idle .bar{opacity:.5}
+.tside{flex:1}
+.tgrid .tsetup{padding:0 15px}
 .tside.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-             grid-template-rows:repeat(2,minmax(0,1fr));gap:10px;
-             background:none;border-radius:0;padding:0}
-.tside.tiles .card{padding:11px 13px;display:flex;flex-direction:column;
-                   justify-content:space-between;box-sizing:border-box}
-.tbot{height:36px;display:flex;align-items:center;padding:0 15px;
-      box-sizing:border-box}
-/* min-width lets the row be narrower than the car's name; without it a
-   flex row is as wide as its longest word, and a Formula Drift name
-   pushed the chip straight out of the card instead of shortening */
-.tbot .trow{flex:1;min-width:0}
-.twval{font-size:17px;font-weight:600;color:var(--row-fg);line-height:1.05;
-       white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.twval u{text-decoration:none;font-size:12px;font-weight:500;
-         color:var(--muted);margin-left:4px}
-.twval.ok{color:var(--ok)} .twval.warn{color:var(--warn)}
-.twval.bad{color:var(--danger)} .twval.off{color:var(--off)}
-.twlbl{font-size:8px;color:var(--muted);padding-top:7px;
-       border-top:1px solid var(--line)}
+             gap:10px;background:none;border-radius:0;padding:0}
 .trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .trow .rname{font-size:11px;color:var(--row-fg)}
-.tcar{height:18px;box-sizing:border-box;padding:0 9px;border-radius:5px;
-      display:block;line-height:16px;font-size:8px;font-weight:600;
-      color:var(--row-fg);background:var(--card-2);
-      border:1px solid var(--line);white-space:nowrap;
-      overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%;
-      flex:0 1 auto}
+/* the car's name in a bubble of its own on the first line; min-width lets
+   it shorten rather than push out of the card when the name is long */
+.tcar{height:20px;box-sizing:border-box;padding:0 6px;border-radius:5px;
+      display:block;line-height:18px;font-size:10px;font-weight:600;
+      color:var(--row-fg);
+      background:color-mix(in srgb,var(--row-fg) 10%,transparent);
+      border:1px solid color-mix(in srgb,var(--row-fg) 50%,transparent);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      min-width:0;max-width:100%;flex:0 1 auto}
 .tcar.gone{display:none}
-.tbot .trow .rname{flex:none}
-/* The car: its name over a line, then the name, drive and class as chips.
-   The name gives way first - it shortens - while the two short chips keep
-   their width. */
-.tcarcard{height:69px;padding:9px 15px;box-sizing:border-box;
-          display:flex;flex-direction:column;justify-content:space-between}
-.tcarcard .trow{min-height:18px}
-.tchips{display:flex;align-items:center;gap:4px;min-width:0;
-        padding-top:7.5px;border-top:1px solid var(--line)}
+/* the car: its name, then drive and class */
+.tcarcard{display:flex;flex-direction:column;gap:10px}
+.tcarcard .trow{min-height:12px}
+.tchips{display:flex;align-items:center;gap:4px;min-width:0}
+.tchips:empty{display:none}
 .tchip{height:18px;box-sizing:border-box;padding:0 6px;border-radius:5px;
        border:1px solid;display:flex;align-items:center;
        justify-content:center;flex:none;font-size:8px;font-weight:600;
@@ -5302,19 +5318,21 @@ body.t-light{
 .dchip{width:36px}
 
 /* ---------- the four readouts ---------- */
-/* Drawn in Figma at 109 by 108-120; here each gets a quarter of the
-   fixed 232 by 193, so the dials are scaled to fit and the type keeps
-   the sizes of the rest of the page */
-.tside.tiles .wg{padding:10px 12px;justify-content:flex-start;gap:5px;
+/* As drawn in Figma: 12 by 14 inside each card, the dials at full size */
+.tside.tiles .wg{padding:12px 14px;display:flex;flex-direction:column;
+                 justify-content:space-between;align-items:center;
                  overflow:hidden}
+.tside.tiles #wg-speed{justify-content:flex-start;gap:12px}
+.tside.tiles #wg-odo{justify-content:flex-start;gap:10px}
 .whead{display:flex;align-items:center;justify-content:space-between;
-       font-size:10px;font-weight:600;line-height:10px;color:var(--row-fg);
-       flex:none}
+       align-self:stretch;font-size:10px;font-weight:600;line-height:10px;
+       color:var(--row-fg);flex:none}
 .whead i{display:flex;color:var(--row-fg)}
 .whead svg{display:block}
-.wbody{flex:1;min-height:0;display:flex;align-items:center;
-       justify-content:center}
-.gauge{display:block;overflow:visible;height:100%;max-width:100%}
+.gwrap{position:relative;flex:none;width:79px}
+.ga-wrap{height:65px}
+.gs-wrap{height:77px}
+.gauge{display:block;overflow:visible;width:100%;height:100%}
 .gauge .gbg{fill:none;stroke:var(--row-fg);stroke-width:10;
             stroke-linecap:round}
 .ga .gbg{stroke-opacity:.05}
@@ -5328,6 +5346,16 @@ body.t-light{
 .gauge .gval{font-size:24px;font-weight:600;fill:currentColor}
 .gauge .gsub{font-size:8px;fill:var(--row-fg);fill-opacity:.5}
 .gauge .ggear{font-size:14px;font-weight:600;fill:currentColor}
+/* how the drift began: a new one rises into place as the old one leaves
+   upwards, with the same overshoot as the odometer */
+.galbl{position:absolute;left:0;right:0;top:0;height:8px}
+.galbl span{position:absolute;left:-10px;right:-10px;top:0;
+            text-align:center;font-size:8px;line-height:8px;
+            color:var(--row-fg);opacity:.5;white-space:nowrap;
+            transition:transform .46s cubic-bezier(.3,1.55,.55,1),
+                       opacity .3s ease}
+.galbl span.in{transform:translateY(7px);opacity:0}
+.galbl span.out{transform:translateY(-7px);opacity:0}
 .c-idle{color:var(--accent)} .c-ok{color:var(--ok)}
 .c-hot{color:var(--hot)} .c-bad{color:var(--danger)}
 .c-plain{color:var(--row-fg)}
@@ -5360,7 +5388,8 @@ body.t-light{
 .odos.go{transition:transform .46s cubic-bezier(.3,1.55,.55,1)}
 .odofade{position:absolute;inset:0;pointer-events:none;
          box-shadow:inset 0 0 12px 11px var(--card)}
-.odofoot{display:flex;justify-content:space-between;flex:none;
+.odofoot{display:flex;justify-content:flex-end;flex:none;
+         align-self:stretch;
          font-size:6px;line-height:6px;color:var(--row-fg);opacity:.25}
 .cchip{width:40px}
 .dchip[data-v="RWD"]{border-color:#E91F1F;background:rgba(233,31,31,.1)}
@@ -5455,21 +5484,24 @@ body.t-light{
 .chip b{color:var(--row-fg);font-weight:600}
 .telecard.idle .barlbl{color:var(--off)}
 .telecard.idle .bar{opacity:.5}
+.telecard .row{border-bottom:none}
+.tstat.idle{color:var(--row-fg)}
 .hintrow{display:flex;align-items:center;justify-content:space-between;
-         gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+         gap:12px;padding:10px 0}
 .hintq{font-size:9px;line-height:1.45;color:var(--muted);flex:1 1 auto;
        min-width:0;display:flex;flex-direction:column}
 .hintchips{display:flex;align-items:center;gap:12px;flex:0 0 auto;
            white-space:nowrap}
 .barwrap{padding:5px 0}
 .barlbl{font-size:9px;color:var(--muted);margin-bottom:3px}
-.bar{height:20px;border-radius:6px;background:var(--bar-bg);position:relative;
-     overflow:hidden;border:1px solid var(--btn-line)}
-.bar i{position:absolute;top:2px;height:calc(100% - 4px);border-radius:4px;
+.bar{height:18px;border-radius:4.5px;position:relative;overflow:hidden;
+     box-sizing:border-box;background:rgba(4,146,248,.1);
+     border:1px solid rgba(4,146,248,.25)}
+.bar i{position:absolute;top:1px;height:calc(100% - 2px);border-radius:3px;
        background:var(--bar-fill);
        transition:left .12s linear,width .12s linear}
 .bar{overflow:visible}
-.bar u{position:absolute;left:50%;top:-3px;width:2px;height:calc(100% + 6px);
+.bar u{position:absolute;left:50%;top:-3px;width:2px;height:calc(100% + 4px);
        background:var(--row-fg);opacity:.9;z-index:2;border-radius:1px}
 .barlbl{font-size:11px;color:var(--row-fg);margin-bottom:6px}
 .barwrap{padding:8px 0}
@@ -5892,6 +5924,11 @@ function screenMain(){
     livePort() + '</b></div>' +
     '</div>';
 
+  const bars =
+       '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
+       '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
+       '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
+       '<div class="bar"><i id="outbar"></i><u></u></div></div>';
   const tele =
        '<div class="card telecard' + (live ? '' : ' idle') + '">' +
        '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
@@ -5905,11 +5942,7 @@ function screenMain(){
          '<span class="chip">' + t('sw_ip') + ' - <b>127.0.0.1</b></span>' +
          '<span class="chip">' + t('sw_port') +
          ' - <b>' + livePort() + '</b></span></span></div>') +
-       '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
-       '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
-       '<div class="barwrap"><div class="barlbl">' + t('assisted') + '</div>' +
-       '<div class="bar"><i id="outbar"></i><u></u></div></div>' +
-       '</div>';
+       bars + '</div>';
 
   h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>';
   if (!cfg.ext_telemetry) return h + tele + '</div>';
@@ -5919,16 +5952,22 @@ function screenMain(){
   const readouts = live
     ? '<div class="tside tiles">' + widgets() + '</div>'
     : '<div class="tside">' + setup + '</div>';
+  const stat = '<div class="card tsc"><div class="trow">' +
+    '<span class="rname">' + t('tele_status') + '</span>' +
+    '<span class="tstat" id="tstat">-</span></div></div>';
+  const steer = '<div class="card tsteer' + (live ? '' : ' idle') + '">' +
+    '<div class="trow"><span class="rname">' + t('w_steering') + '</span>' +
+    '<span class="tstat" id="sstat">-</span></div>' + bars + '</div>';
   const car = '<div class="card tcarcard"><div class="trow">' +
     '<span class="rname">' + t('w_car') + '</span></div>' +
-    '<div class="tchips"><span class="tcar" id="w-car">-</span>' +
-    '<span class="tchip dchip" id="w-drive"></span>' +
+    '<div class="tchips"><span class="tcar" id="w-car">-</span></div>' +
+    '<div class="tchips"><span class="tchip dchip" id="w-drive"></span>' +
     '<span class="tchip cchip" id="w-class"></span></div></div>';
-  const pad = '<div class="card tbot"><div class="trow">' +
+  const pad = '<div class="card tsc"><div class="trow">' +
     '<span class="rname">' + t('pad_status') + '</span>' +
     '<span class="rval" id="padstat">-</span></div></div>';
   return h + '<div class="tgrid">' +
-    '<div class="tcol">' + tele + car + '</div>' +
+    '<div class="tcol">' + stat + steer + car + '</div>' +
     '<div class="tcol">' + pad + readouts + '</div>' +
     '</div></div>';
 }
@@ -6637,7 +6676,8 @@ const GA = {cx: 39.5, cy: 25.63, r: 34, end: 109.8};
 /* the rev counter: a circle of 34.5 round (39.5, 39.5), 271.8 degrees
    from the bottom left over the top to the bottom right */
 const GS_ARC = 'M15.5 64.28 A34.5 34.5 0 1 1 63.5 64.28';
-const ODO_N = 5, ODO_ROW = 22, ODO_STEP = 100, ODO_STAGGER = 70;
+/* whole kilometres, rounded down: 900 m is 0, 1100 m is 1 */
+const ODO_N = 5, ODO_ROW = 22, ODO_STEP = 1000, ODO_STAGGER = 70;
 let odoShown = null;
 
 function whead(lbl, icon){
@@ -6648,34 +6688,37 @@ function whead(lbl, icon){
 function widgets(){
   odoShown = null;
   const angle = '<div class="card wg" id="wg-angle">' +
-    whead('w_angle', 'drifticon') + '<div class="wbody">' +
-    '<svg class="gauge ga c-idle" id="ga" viewBox="0 0 79 67">' +
+    whead('w_angle', 'drifticon') + '<div class="gwrap ga-wrap">' +
+    '<svg class="gauge ga c-idle" id="ga" viewBox="0 0 79 65">' +
+    /* the fill is kept to its own half, so the rounding is only ever at
+       its far end and nought is a straight edge on the tick */
+    '<defs><clipPath id="ga-clip"><rect id="ga-half" x="39.5" y="-10" ' +
+    'width="50" height="90"/></clipPath></defs>' +
     '<path class="gbg" d="M7.49 14.13 A34 34 0 1 0 71.51 14.13"/>' +
+    '<g id="ga-fg" clip-path="url(#ga-clip)">' +
     '<path class="gfill" id="ga-fill" d=""/>' +
-    '<circle class="gcap" id="ga-cap" r="5" cx="39.5" cy="59.63"/>' +
-    '<line class="gtick" x1="39" y1="54.63" x2="39" y2="64.63"/>' +
-    '<text class="gsub" id="ga-lbl" x="39.5" y="3.6"></text>' +
-    '<text class="gval" id="ga-val" x="39.5" y="28">0°</text>' +
-    '</svg></div></div>';
+    '<circle class="gcap" id="ga-cap" r="5" cx="39.5" cy="59.63"/></g>' +
+    '<line class="gtick" x1="39.5" y1="53.63" x2="39.5" y2="65.63"/>' +
+    '<text class="gval" id="ga-val" x="39.5" y="27.5">0°</text>' +
+    '</svg><div class="galbl" id="ga-lbl"></div></div></div>';
   const speed = '<div class="card wg" id="wg-speed">' +
-    whead('w_speed', 'speedicon') + '<div class="wbody">' +
-    '<svg class="gauge gs c-idle" id="gs" viewBox="0 0 79 76">' +
+    whead('w_speed', 'speedicon') + '<div class="gwrap gs-wrap">' +
+    '<svg class="gauge gs c-idle" id="gs" viewBox="0 0 79 77">' +
     '<path class="gbg" d="M63.5 64.28 A34.5 34.5 0 1 0 15.5 64.28"/>' +
     '<path class="gfill" id="gs-fill" pathLength="100" ' +
     'stroke-dasharray="0 200" d="' + GS_ARC + '"/>' +
-    '<text class="gval c-plain" id="gs-val" x="39.5" y="39">-</text>' +
+    '<text class="gval c-plain" id="gs-val" x="39.5" y="35">-</text>' +
     '<text class="gsub" x="39.5" y="54">' + t('kmh') + '</text>' +
-    '<text class="ggear c-plain" id="gs-gear" x="39.5" y="69"></text>' +
+    '<text class="ggear c-plain" id="gs-gear" x="39.5" y="71"></text>' +
     '</svg></div></div>';
   let bars = '';
   for (let i = 0; i < 12; i++) bars += '<i></i>';
   const callback = '<div class="card wg" id="wg-cb">' +
-    whead('w_callback', 'callbackicon') + '<div class="wbody">' +
+    whead('w_callback', 'callbackicon') +
     '<div class="cbwrap c-ok" id="cb"><div class="cbval">' +
     '<b id="cb-val">-</b><u>ms</u></div>' +
     '<div class="cbbars">' + bars + '</div>' +
-    '<div class="cbdots"><i></i><i></i><i></i></div></div>' +
-    '</div></div>';
+    '<div class="cbdots"><i></i><i></i><i></i></div></div></div>';
   let cols = '';
   for (let i = 0; i < ODO_N; i++){
     let strip = '<b>9</b>';
@@ -6684,26 +6727,26 @@ function widgets(){
       '<div class="odos">' + strip + '</div></div>';
   }
   const odo = '<div class="card wg" id="wg-odo">' +
-    whead('w_odo', 'odoicon') + '<div class="wbody">' +
+    whead('w_odo', 'odoicon') +
     '<div class="odowin"><div class="odorow"><i class="odotri">' +
     '<svg width="6" height="6" viewBox="0 0 6 6"><path fill="currentColor" ' +
     'd="M5.4 1.957C6.2 2.42 6.2 3.58 5.4 4.043L2.4 5.782C1.333 6.401 0 ' +
     '5.628 0 4.391L0 1.609C0 .372 1.333-.401 2.4.218Z"/></svg></i>' +
-    cols + '</div><div class="odofade"></div></div></div>' +
-    '<div class="odofoot"><span id="odo-drift">0</span>' +
-    '<span>' + t('odo_km') + '</span></div></div>';
+    cols + '</div><div class="odofade"></div></div>' +
+    '<div class="odofoot"><span>' + t('odo_km') + '</span></div></div>';
   return angle + speed + callback + odo;
 }
 
 /* The dials chase what the game last said, frame by frame, so a poll ten
    times a second still moves like a needle */
-let gaTo = 0, gaNow = 0, gsTo = 0, gsNow = 0, cbNow = null, wgRaf = 0,
-    wgLast = 0;
+let gaTo = 0, gaNow = 0, gsTo = 0, gsNow = 0, cbNow = null, cbShown = null,
+    wgRaf = 0, wgLast = 0, steerUntil = 0;
 
 function drawAngle(ang){
   const svg = document.getElementById('ga');
   if (!svg) return;
-  const a = Math.min(Math.abs(ang), GA.end), side = ang < 0 ? -1 : 1;
+  /* the fill runs the way the car's tail swings out */
+  const a = Math.min(Math.abs(ang), GA.end), side = ang < 0 ? 1 : -1;
   const r = a * Math.PI / 180;
   const x = GA.cx + side * GA.r * Math.sin(r);
   const y = GA.cy + GA.r * Math.cos(r);
@@ -6713,6 +6756,11 @@ function drawAngle(ang){
   const cap = document.getElementById('ga-cap');
   cap.setAttribute('cx', x.toFixed(2));
   cap.setAttribute('cy', y.toFixed(2));
+  document.getElementById('ga-half').setAttribute('x',
+                                                  side > 0 ? 39.5 : -10.5);
+  /* at nought there is nothing to fill */
+  document.getElementById('ga-fg').style.visibility =
+    Math.abs(ang) < 0.5 ? 'hidden' : '';
   document.getElementById('ga-val').textContent =
     Math.round(Math.abs(ang)) + '°';
 }
@@ -6792,6 +6840,25 @@ function odoSet(metres){
   odoShown = next;
 }
 
+/* the new word rises from below as the old one leaves upwards */
+function swapLabel(el, text){
+  if (!el || el.dataset.v === text) return;
+  const first = el.dataset.v === undefined;
+  el.dataset.v = text;
+  el.querySelectorAll('span.out').forEach(x => x.remove());
+  const old = el.querySelector('span');
+  const nu = document.createElement('span');
+  nu.textContent = text;
+  if (!first) nu.className = 'in';
+  el.appendChild(nu);
+  if (old){
+    old.className = 'out';
+    setTimeout(() => old.remove(), 480);
+  }
+  void nu.offsetWidth;
+  nu.className = '';
+}
+
 function drawWidgets(){
   if (!document.getElementById('ga')) return;
   const alive = !!state.alive;
@@ -6801,7 +6868,7 @@ function drawWidgets(){
   document.getElementById('ga').setAttribute('class', 'gauge ga ' +
     (lbl === 'driving' ? 'c-idle' : a > 90 ? 'c-bad' : a > 65 ? 'c-hot'
      : 'c-ok'));
-  document.getElementById('ga-lbl').textContent = t('drift_' + lbl);
+  swapLabel(document.getElementById('ga-lbl'), t('drift_' + lbl));
 
   const f = alive ? (+state.rpm_f || 0) : 0;
   document.getElementById('gs-fill').setAttribute('class',
@@ -6820,13 +6887,16 @@ function drawWidgets(){
               : +state.age;
   const on = age !== null && (state.recv || alive);
   cbNow = on ? (cbNow === null ? age : cbNow + (age - cbNow) * 0.3) : null;
-  document.getElementById('cb-val').textContent =
-    on ? Math.round(cbNow) : '-';
-  cb.className = 'cbwrap ' + (!on ? 'c-plain' : cbNow < 20 ? 'c-ok'
-                              : cbNow < 60 ? 'c-hot' : 'c-bad');
+  /* it wanders by a few ms all the time; only a real change is shown */
+  if (!on) cbShown = null;
+  else if (cbShown === null || Math.abs(cbNow - cbShown) >= 3)
+    cbShown = Math.round(cbNow);
+  document.getElementById('cb-val').textContent = on ? cbShown : '-';
+  cb.className = 'cbwrap ' + (!on ? 'c-plain' : cbShown < 20 ? 'c-ok'
+                              : cbShown < 60 ? 'c-hot' : 'c-bad');
   /* from the middle out: a bar either side per 20 ms, then a half and a
      faint one past the last */
-  const lit = on ? Math.min(6, 1 + Math.floor(cbNow / 20)) : 0;
+  const lit = on ? Math.min(6, 1 + Math.floor(cbShown / 20)) : 0;
   cb.querySelectorAll('.cbbars i').forEach((el, i) => {
     const d = i < 6 ? 6 - i : i - 5;
     el.className = !lit ? '' : d <= lit ? 'on' : d === lit + 1 ? 'half'
@@ -6834,8 +6904,23 @@ function drawWidgets(){
   });
 
   odoSet(+state.odo || 0);
-  document.getElementById('odo-drift').textContent =
-    Math.round(+state.odo_drift || 0);
+}
+
+/* the steering card: correcting now, or a moment ago, or waiting */
+function steerStatus(){
+  const ss = document.getElementById('sstat');
+  if (!ss) return;
+  let cls = 'wait', txt = t('st_waiting');
+  if (!cfg.enabled) txt = t('st_assist_off');
+  else if (state.alive){
+    const now = Date.now();
+    if (Math.abs((+state.out || 0) - (+state.raw || 0)) > 0.03)
+      steerUntil = now + 600;
+    if (now < steerUntil){ cls = 'ok'; txt = t('st_assisting'); }
+    else { cls = 'idle'; txt = t('st_ready'); }
+  }
+  ss.className = 'tstat ' + cls;
+  ss.textContent = txt;
 }
 
 function liveUpdate(){
@@ -6862,6 +6947,7 @@ function liveUpdate(){
   sOut += (state.out - sOut) * 0.35;
   setBar('rawbar', sRaw); setBar('outbar', sOut);
   drawWidgets();
+  steerStatus();
   const car = $('#w-car');
   if (car){
     /* The name alone: class and drive have chips of their own now, so the
