@@ -137,6 +137,12 @@ RUMBLE_EPS = 0.06
 RUMBLE_STEPS = 16
 RUMBLE_FLOOR = 0.05
 SWEEP_SEC = 20.0
+# A pad whose packet number has not moved for this long is taken to have
+# gone silent. Most pads only count a packet when something changes, so an
+# idle one is silent too - which is why silence alone changes nothing, and
+# only a pad that is talking on another slot is switched to.
+PAD_SILENT_SEC = 3.0
+PAD_SILENT_NOTE_SEC = 20.0  # silence with nowhere to go, worth a line
 YIELD_FRAMES = 5
 BUTTON_NAMES = {
     0x1000: "A", 0x2000: "B", 0x4000: "X", 0x8000: "Y",
@@ -3378,6 +3384,9 @@ class Bridge:
         self.hz = 0.0
         self.pad_hz = 0
         self._pad_packet = -1
+        self._pad_moved = 0.0       # when the pad's packet number last moved
+        self._pad_silent = False
+        self._slots_seen = None
         self._pad_packets = 0
         self._pad_t0 = 0.0
         self._hz_frames = 0
@@ -3571,6 +3580,7 @@ class Bridge:
                 if self.bad_order and not game_running():
                     self.bad_order = False
                 self._recheck_mirror()
+                self._watch_slots()
                 time.sleep(1.0)
             if self.cfg.get("auto_hide"):
                 self.hidhide.sweep()
@@ -3659,6 +3669,66 @@ class Bridge:
         elif now - self._pending_t >= 1.0:
             self._note("game: %s" % state)
             self._seen_state, self._pending_state = state, None
+
+    def _watch_silence(self, packet, now):
+        """A slot that still answers but has stopped counting.
+
+        Suspected behind a pad that stopped answering, mostly after idling,
+        until it was plugged in again: if reading its slot keeps succeeding
+        with the same frozen state, nothing counts as lost and nothing looks
+        for the pad again. If the pad has turned up on another slot, that is
+        where it is read from now; if not, the silence goes in the event
+        log, so the next time it happens there is a record of it."""
+        if packet != getattr(self, "_pad_seen_packet", None):
+            self._pad_seen_packet = packet
+            self._pad_moved = now
+            if self._pad_silent:
+                self._pad_silent = False
+                self._note("pad talking again on slot %s" % self.physical_slot)
+            return
+        quiet = now - self._pad_moved
+        if quiet < PAD_SILENT_SEC:
+            return
+        if now - getattr(self, "_pad_look_t", float("-inf")) >= PAD_SILENT_SEC:
+            # every few seconds of silence: is the pad on another slot?
+            self._pad_look_t = now
+            try:
+                others = (xinput_connected_slots() - self.virtual_slots
+                          - {self.physical_slot})
+            except Exception:
+                others = set()
+            # only while we know which slot is ours - otherwise the other
+            # one could be ours, and we would read our own output back
+            if others and self.virtual_slots:
+                old, self.physical_slot = self.physical_slot, min(others)
+                self._pad_moved = now
+                self._note("pad silent on slot %s, found on slot %d"
+                           % (old, self.physical_slot))
+                return
+        if not self._pad_silent and quiet >= PAD_SILENT_NOTE_SEC:
+            self._pad_silent = True
+            try:
+                slots = sorted(xinput_connected_slots())
+            except Exception:
+                slots = "?"
+            self._note("pad silent on slot %s for %.0f s, no other pad in "
+                       "sight; slots %s, ours %s"
+                       % (self.physical_slot, quiet, slots,
+                          sorted(self.virtual_slots)))
+
+    def _watch_slots(self):
+        """Every change in the XInput slots, as this app sees them - it is
+        on HidHide's list, so the player's pad counts too."""
+        try:
+            slots = sorted(xinput_connected_slots())
+        except Exception:
+            return
+        if slots != getattr(self, "_slots_seen", None):
+            if getattr(self, "_slots_seen", None) is not None:
+                self._note("xinput slots %s (ours %s, reading %s)"
+                           % (slots, sorted(self.virtual_slots),
+                              self.physical_slot))
+            self._slots_seen = slots
 
     def _find_physical_slot(self):
         """A pad that dropped out may come back on another XInput slot.
@@ -3922,6 +3992,8 @@ class Bridge:
                 else:
                     gp, packet = xinput_read_state(self.physical_slot)
                     self._count_pad_packet(packet, now)
+                    if gp is not None:
+                        self._watch_silence(packet, now)
                 if gp is None:
                     if self.status_code != "pad_lost":
                         self._note("pad lost (%s)" % (
@@ -5564,6 +5636,7 @@ body.t-light{
 .gauge text{text-anchor:middle;dominant-baseline:central;
             font-family:inherit}
 .gauge .gval{font-size:24px;font-weight:600;fill:currentColor}
+.gs .gval{font-size:22px}
 .gauge .gsub{font-size:8px;fill:var(--row-fg);fill-opacity:.5}
 .gauge .ggear{font-size:14px;font-weight:600;fill:currentColor}
 /* how the drift began: a new one rises into place as the old one leaves
@@ -6991,6 +7064,40 @@ function widgets(){
 let gaTo = 0, gaNow = 0, gsTo = 0, gsNow = 0, cbNow = null, cbShown = null,
     wgRaf = 0, wgLast = 0, steerUntil = 0;
 
+/* The font's digits all sit in the same 600-unit box, but the ink inside
+   differs - a 1 is little more than half as wide as an 8 - so a number set
+   in it has holes around every 1. The dials place each character by its
+   ink instead: the same gap between every pair, the whole centred. Ink
+   left edge and width per 1000 units, measured from Chiron GoRound TC
+   SemiBold, the weight the dials use. */
+const INK = {'0': [41, 518], '1': [117, 318], '2': [54, 504],
+             '3': [45, 498], '4': [35, 549], '5': [64, 500],
+             '6': [50, 511], '7': [44, 510], '8': [36, 528],
+             '9': [39, 511], '\u00b0': [32, 316]};
+const INK_GAP = 60;
+
+function inkText(el, str, cx, size){
+  const k = size / 1000;
+  const chars = [...str];
+  if (!chars.length || chars.some(c => !INK[c])){
+    el.textContent = str;
+    el.setAttribute('x', cx);
+    el.style.textAnchor = '';
+    return;
+  }
+  const total = chars.reduce((w, c) => w + INK[c][1], 0) +
+                INK_GAP * (chars.length - 1);
+  let at = cx - total * k / 2;
+  const xs = chars.map(c => {
+    const x = at - INK[c][0] * k;
+    at += (INK[c][1] + INK_GAP) * k;
+    return x.toFixed(2);
+  });
+  el.textContent = str;
+  el.setAttribute('x', xs.join(' '));
+  el.style.textAnchor = 'start';
+}
+
 function drawAngle(ang){
   const svg = document.getElementById('ga');
   if (!svg) return;
@@ -7010,8 +7117,8 @@ function drawAngle(ang){
   /* at nought there is nothing to fill */
   document.getElementById('ga-fg').style.visibility =
     Math.abs(ang) < 0.5 ? 'hidden' : '';
-  document.getElementById('ga-val').textContent =
-    Math.round(Math.abs(ang)) + '°';
+  inkText(document.getElementById('ga-val'),
+          Math.round(Math.abs(ang)) + '\u00b0', 39.5, 24);
 }
 
 function drawRevs(f){
@@ -7122,8 +7229,8 @@ function drawWidgets(){
   const f = alive ? (+state.rpm_f || 0) : 0;
   document.getElementById('gs-fill').setAttribute('class',
     'gfill ' + revClass(f));
-  document.getElementById('gs-val').textContent =
-    state.recv || alive ? state.speed : '-';
+  inkText(document.getElementById('gs-val'),
+          String(state.recv || alive ? state.speed : '-'), 39.5, 22);
   const gear = document.getElementById('gs-gear');
   gear.textContent = alive ? gearText(state.gear) : '';
   gear.setAttribute('class', 'ggear ' + (f >= 0.95 ? 'c-bad' : 'c-plain'));

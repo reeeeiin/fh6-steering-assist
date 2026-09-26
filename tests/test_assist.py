@@ -3108,6 +3108,69 @@ def test_a_picture_made_while_the_app_runs_is_found():
     assert th.data_uri(3434).startswith("data:image/webp")
 
 
+# ---------------- a pad that answers but has gone silent ----------------
+
+def _silence_bridge(slots):
+    b = _menu_bridge()
+    b.virtual_slots = {1}
+    b.physical_slot = 0
+    b._pad_moved = 0.0
+    b._pad_silent = False
+    b.notes = []
+    b._note = b.notes.append
+    real = fa.xinput_connected_slots
+    fa.xinput_connected_slots = lambda: set(slots)
+    return b, real
+
+
+def _feed_packets(b, packets, t0=0.0, dt=1 / 60.0):
+    t = t0
+    for p in packets:
+        b._watch_silence(p, t)
+        t += dt
+    return t
+
+
+def test_a_silent_pad_found_on_another_slot_is_read_from_there():
+    """Frozen on slot 0, talking on slot 2: after a few seconds of the
+    same packet number, slot 2 is where the pad is read from."""
+    b, real = _silence_bridge({0, 1, 2})
+    try:
+        t = _feed_packets(b, range(60))                  # a second of talk
+        _feed_packets(b, [59] * 60 * 4, t0=t)            # four of silence
+        assert b.physical_slot == 2, b.notes
+        assert any("found on slot 2" in n for n in b.notes), b.notes
+    finally:
+        fa.xinput_connected_slots = real
+
+
+def test_an_idle_pad_with_nowhere_else_stays_and_is_noted_once():
+    """Many pads only count when something changes: an idle one is silent
+    too. Nothing is switched, and only a long silence makes one line."""
+    b, real = _silence_bridge({0, 1})
+    try:
+        _feed_packets(b, [7] * 60 * 10)
+        assert b.physical_slot == 0 and not b.notes, "ten idle seconds: quiet"
+        _feed_packets(b, [7] * 60 * 30, t0=10.0)
+        assert b.physical_slot == 0
+        assert len([n for n in b.notes if "silent" in n]) == 1, b.notes
+        _feed_packets(b, [8, 9], t0=40.0)
+        assert any("talking again" in n for n in b.notes), b.notes
+    finally:
+        fa.xinput_connected_slots = real
+
+
+def test_a_pad_that_wakes_up_elsewhere_later_is_still_found():
+    b, real = _silence_bridge({0, 1})
+    try:
+        _feed_packets(b, [7] * 60 * 5)
+        fa.xinput_connected_slots = lambda: {0, 1, 3}   # it came back late
+        _feed_packets(b, [7] * 60 * 4, t0=5.0)
+        assert b.physical_slot == 3, b.notes
+    finally:
+        fa.xinput_connected_slots = real
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
