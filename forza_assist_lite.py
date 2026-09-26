@@ -580,6 +580,108 @@ class DriftWatch:
             return "power"
         return "drift"
 
+# ---------------- car pictures ----------------
+#
+# The game renders a picture of every car the player sits in and keeps it
+# in its own cache, so nothing is shipped or downloaded: the picture is
+# read off this machine, the way the game left it. The folder holds WebP
+# files named by GUID and a .manifest that maps each picture's key to its
+# file. A key starts with the car's number - the one the telemetry sends -
+# and a car can have several (one per paint or livery); the newest is the
+# one the player last drove. Found for the Microsoft Store / Game Pass
+# game; anything else simply has no picture.
+CAR_THUMB_DIR = os.path.join(
+    os.environ.get("LOCALAPPDATA", ""), "Packages",
+    "Microsoft.ForteBaseGame_8wekyb3d8bbwe", "LocalCache", "Local",
+    "LocalStorage_Cache", "CacheThumbnails")
+
+
+def read_thumb_manifest(blob: bytes) -> list:
+    """(key, file name) for every entry: u32 version, u32 count, then per
+    entry a u32 length, the key in ASCII and a 16-byte GUID. Whatever does
+    not fit that is left out rather than guessed at."""
+    import uuid
+    out = []
+    if len(blob) < 8:
+        return out
+    _, count = struct.unpack_from("<II", blob, 0)
+    off = 8
+    for _ in range(min(count, 100000)):
+        if off + 4 > len(blob):
+            break
+        n, = struct.unpack_from("<I", blob, off)
+        off += 4
+        if n > 512 or off + n + 16 > len(blob):
+            break
+        try:
+            key = blob[off:off + n].decode("ascii")
+        except UnicodeDecodeError:
+            break
+        off += n
+        out.append((key, str(uuid.UUID(bytes_le=bytes(blob[off:off + 16])))
+                    + ".webp"))
+        off += 16
+    return out
+
+
+class CarThumbs:
+    """The newest picture the game has made of each car."""
+
+    def __init__(self, folder=None):
+        self.folder = CAR_THUMB_DIR if folder is None else folder
+        self._stamp = None
+        self._best = {}
+
+    def _refresh(self):
+        man = os.path.join(self.folder, ".manifest")
+        try:
+            st = os.stat(man)
+        except OSError:
+            self._stamp, self._best = None, {}
+            return
+        stamp = (st.st_mtime, st.st_size)
+        if stamp == self._stamp:
+            return
+        self._stamp = stamp
+        best = {}
+        try:
+            with open(man, "rb") as f:
+                entries = read_thumb_manifest(f.read())
+        except OSError:
+            entries = []
+        for key, name in entries:
+            head = key.split("_", 1)[0]
+            if not head.isdigit():
+                continue
+            path = os.path.join(self.folder, name)
+            try:
+                t = os.path.getmtime(path)
+            except OSError:
+                continue
+            car = int(head)
+            if car not in best or t > best[car][0]:
+                best[car] = (t, path)
+        self._best = best
+
+    def path_for(self, car: int) -> str:
+        self._refresh()
+        got = self._best.get(int(car or 0))
+        return got[1] if got else ""
+
+    def data_uri(self, car: int) -> str:
+        import base64
+        path = self.path_for(car)
+        if not path:
+            return ""
+        try:
+            with open(path, "rb") as f:
+                raw = f.read()
+        except OSError:
+            return ""
+        if raw[:4] != b"RIFF" or raw[8:12] != b"WEBP":
+            return ""
+        return "data:image/webp;base64," + base64.b64encode(raw).decode()
+
 _CARS = {}
 
 
@@ -3236,6 +3338,7 @@ class Bridge:
         self.telemetry.drift.total = self.cfg.get("drift_odo", 0.0)
         self._odo_t = 0.0
         self.drivers = DriverSetup()
+        self.thumbs = CarThumbs()
         self.hidhide = HidHide()
         self.first_run = not self.cfg.get("setup_done", False)
         # Read before it is written, so the launch that sets it still counts
@@ -5379,8 +5482,23 @@ body.t-light{
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
       min-width:0;max-width:100%;flex:0 1 auto}
 .tcar.gone{display:none}
-/* the car: its name, then drive and class */
-.tcarcard{display:flex;flex-direction:column;gap:10px}
+/* the car: its name, then drive and class, over the game's picture of
+   it on the right, which the card's own colour covers towards the left */
+.tcarcard{display:flex;flex-direction:column;gap:10px;position:relative;
+          overflow:hidden}
+.tcarcard > .trow,.tcarcard > .tchips{position:relative;z-index:2;
+          transition:opacity .2s ease,transform .2s ease}
+.tcarcard.swap > .trow,.tcarcard.swap > .tchips{opacity:0;
+          transform:translateY(-6px)}
+.tcimg{position:absolute;z-index:0;width:186px;height:105px;
+       left:calc(50% + 29px - 93px);top:calc(50% - 7px - 52.5px);
+       object-fit:cover;pointer-events:none;opacity:0;
+       transition:opacity .42s ease}
+.tcimg.on{opacity:1}
+.tcfade{position:absolute;inset:0;z-index:1;pointer-events:none;
+        background:var(--card);backdrop-filter:blur(2.45px);
+        -webkit-mask-image:linear-gradient(to right,#000 31%,transparent 86%);
+        mask-image:linear-gradient(to right,#000 31%,transparent 86%)}
 .tcarcard .trow{min-height:12px}
 .tchips{display:flex;align-items:center;gap:4px;min-width:0}
 /* No telemetry yet: the two statuses, then one wide card - where to go in
@@ -5407,12 +5525,14 @@ body.t-light{
 .card.tw-in{opacity:1;transform:none;
             transition:opacity .42s ease,transform .42s ease}
 .tchips:empty{display:none}
-.tchip{height:18px;box-sizing:border-box;padding:0 6px;border-radius:5px;
+.tchip span{display:block;
+       text-box:trim-both cap alphabetic}
+.tchip{height:20px;box-sizing:border-box;padding:0 7px;border-radius:5px;
        border:1px solid;display:flex;align-items:center;
        justify-content:center;flex:none;font-size:8px;font-weight:600;
        color:var(--row-fg);white-space:nowrap}
 .tchip:empty{display:none}
-.dchip{width:36px}
+.dchip{width:40px}
 
 /* ---------- the four readouts ---------- */
 /* As drawn in Figma: 12 by 14 inside each card, the dials at full size */
@@ -5488,7 +5608,7 @@ body.t-light{
 .odofoot{display:flex;justify-content:flex-end;flex:none;
          align-self:stretch;
          font-size:6px;line-height:6px;color:var(--row-fg);opacity:.25}
-.cchip{width:40px}
+.cchip{min-width:46px}
 .dchip[data-v="RWD"]{border-color:#E91F1F;background:rgba(233,31,31,.1)}
 .dchip[data-v="AWD"]{border-color:#0DDE64;background:rgba(13,222,100,.1)}
 .dchip[data-v="FWD"]{border-color:#FFCC00;background:rgba(255,204,0,.1)}
@@ -6022,7 +6142,10 @@ function screenMain(){
   const steer = '<div class="card tsteer' + (live ? '' : ' idle') + '">' +
     '<div class="trow"><span class="rname">' + t('w_steering') + '</span>' +
     '<span class="tstat" id="sstat">-</span></div>' + bars + '</div>';
-  const car = '<div class="card tcarcard"><div class="trow">' +
+  carShown = null;
+  const car = '<div class="card tcarcard"><img class="tcimg" alt="">' +
+    '<div class="tcfade"></div>' +
+    '<div class="trow">' +
     '<span class="rname">' + t('w_car') + '</span></div>' +
     '<div class="tchips"><span class="tcar" id="w-car">-</span></div>' +
     '<div class="tchips"><span class="tchip dchip" id="w-drive"></span>' +
@@ -7032,6 +7155,111 @@ function steerStatus(){
   ss.textContent = txt;
 }
 
+/* ---------------- the current car ---------------- */
+/* A word inside a chip, in a span of its own so it can be centred on its
+   capitals; an empty chip has nothing in it at all and hides */
+function chipText(el, text){
+  if (!el) return;
+  if (el.dataset.text === text) return;
+  el.dataset.text = text;
+  el.textContent = '';
+  if (!text) return;
+  const sp = document.createElement('span');
+  sp.textContent = text;
+  el.appendChild(sp);
+}
+
+function carFill(){
+  const car = $('#w-car');
+  if (car){
+    /* The name alone: class and drive have chips of their own now, so the
+       old stand-in of "S1 713" for a car missing from the table would say
+       the class twice. Unnamed but known, the chips speak for it. */
+    const name = state.car_name != null ? state.car_name : (state.car || '');
+    const known = !!(name || state.car_class);
+    chipText(car, name || t('btn_none'));
+    car.classList.toggle('gone', known && !name);
+    car.title = name;
+  }
+  const dv = $('#w-drive');
+  if (dv){
+    chipText(dv, state.car_drive || '');
+    dv.dataset.v = state.car_drive || '';
+  }
+  const cv = $('#w-class');
+  if (cv){
+    const c = state.car_class || '';
+    chipText(cv, c ? c + ' ' + (state.car_pi || '') : '');
+    cv.dataset.v = c;
+  }
+}
+
+/* The picture: asked for until the game has made it - it renders one the
+   first time the player sits in a car. Until then the place stays empty */
+let carShown = null, carSwapT = 0, thumbFor = null, thumbT = 0;
+const thumbMem = {};
+const THUMB_RETRY_MS = 1000, THUMB_GIVEUP_MS = 60000;
+
+function thumbShow(car, uri){
+  const card = document.querySelector('.tcarcard');
+  if (!card || carShown !== car) return;
+  const img = card.querySelector('.tcimg');
+  if (!uri){
+    img.classList.remove('on');
+    return;
+  }
+  if (img.dataset.car === String(car) && img.classList.contains('on')) return;
+  img.onload = () => { if (carShown === car) img.classList.add('on'); };
+  img.dataset.car = String(car);
+  img.src = uri;
+}
+
+async function thumbFetch(car){
+  if (thumbMem[car]){ thumbShow(car, thumbMem[car]); return; }
+  thumbFor = car;
+  const t0 = Date.now();
+  while (thumbFor === car && carShown === car &&
+         Date.now() - t0 < THUMB_GIVEUP_MS){
+    let r = null;
+    try{ r = await pywebview.api.car_thumb(car); }catch(e){}
+    if (thumbFor !== car || carShown !== car) return;
+    if (r && r.uri){
+      thumbMem[car] = r.uri;
+      thumbShow(car, r.uri);
+      return;
+    }
+    await new Promise(res => setTimeout(res, THUMB_RETRY_MS));
+  }
+}
+
+/* A new car: the card's words and picture fade out together, the new
+   words come in, and the picture follows as soon as there is one */
+function carUpdate(){
+  const card = document.querySelector('.tcarcard');
+  if (!card) return;
+  const car = +state.car_ord || 0;
+  if (carShown === null){
+    carShown = car;
+    carFill();
+    if (car) thumbFetch(car);
+    return;
+  }
+  if (car === carShown){
+    if (!card.classList.contains('swap')) carFill();
+    return;
+  }
+  carShown = car;
+  thumbFor = null;
+  card.classList.add('swap');
+  card.querySelector('.tcimg').classList.remove('on');
+  clearTimeout(carSwapT);
+  carSwapT = setTimeout(() => {
+    carFill();
+    card.classList.remove('swap');
+    if (car) thumbFetch(car);
+  }, 240);
+}
+
 function liveUpdate(){
   if (!state || !cfg) return;
   updateWarning();
@@ -7058,28 +7286,7 @@ function liveUpdate(){
   setBar('rawbar', sRaw); setBar('outbar', sOut);
   drawWidgets();
   steerStatus();
-  const car = $('#w-car');
-  if (car){
-    /* The name alone: class and drive have chips of their own now, so the
-       old stand-in of "S1 713" for a car missing from the table would say
-       the class twice. Unnamed but known, the chips speak for it. */
-    const name = state.car_name != null ? state.car_name : (state.car || '');
-    const known = !!(name || state.car_class);
-    car.textContent = name || t('btn_none');
-    car.classList.toggle('gone', known && !name);
-    car.title = name;
-  }
-  const dv = $('#w-drive');
-  if (dv){
-    dv.textContent = state.car_drive || '';
-    dv.dataset.v = state.car_drive || '';
-  }
-  const cv = $('#w-class');
-  if (cv){
-    const c = state.car_class || '';
-    cv.textContent = c ? c + ' ' + (state.car_pi || '') : '';
-    cv.dataset.v = c;
-  }
+  carUpdate();
   const ps = $('#padstat');
   if (ps){
     const hidden = state.hh_code === 'hidden';
@@ -8269,6 +8476,7 @@ class Api:
             "car_class": b.telemetry.car_class,
             "car_pi": b.telemetry.car_pi,
             "car_drive": b.telemetry.car_drive,
+            "car_ord": b.telemetry.car[0],
             "auto_strength": b._auto_strength(),
             "auto_window": b._auto_window(),
             "car_type": b.telemetry.car_type,
@@ -8307,6 +8515,15 @@ class Api:
             "detail": b.status_detail,
             "mode": b.mode_info,
         }
+
+    def car_thumb(self, car):
+        """The game's own picture of this car, as a data URI - or nothing
+        yet, while the game has still to render it."""
+        try:
+            car = int(car)
+        except (TypeError, ValueError):
+            return {"car": 0, "uri": ""}
+        return {"car": car, "uri": self._b.thumbs.data_uri(car)}
 
     def capture_button(self, on=True):
         self._b.captured = 0

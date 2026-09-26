@@ -3032,6 +3032,81 @@ def test_the_hidden_count_leaves_out_other_peoples_ghosts():
     assert h.arg == 1, h.arg
 
 
+# ---------------- the game's pictures of the cars ----------------
+
+WEBP = b"RIFF\x10\x00\x00\x00WEBPVP8L" + b"\x00" * 8
+
+
+def _thumb_cache(entries):
+    """A cache folder as the game writes it: (key, age in seconds, bytes)
+    per picture, a .manifest listing them."""
+    import uuid
+    d = tempfile.mkdtemp(prefix="thumbs-")
+    blob = struct.pack("<II", 2, len(entries))
+    now = time.time()
+    for key, age, data in entries:
+        g = uuid.uuid4()
+        blob += struct.pack("<I", len(key)) + key.encode() + g.bytes_le
+        path = os.path.join(d, str(g) + ".webp")
+        if data is not None:
+            with open(path, "wb") as f:
+                f.write(data)
+            os.utime(path, (now - age, now - age))
+    with open(os.path.join(d, ".manifest"), "wb") as f:
+        f.write(blob)
+    return d
+
+
+def test_the_newest_picture_of_the_car_is_the_one_shown():
+    d = _thumb_cache([
+        ("3434_26e2bad710db40dabm0_bigThumb.webp", 500, WEBP + b"old"),
+        ("3434_26e2bad710db40dau8dsqnzrnjafmn5zk_bigThumb.webp", 5,
+         WEBP + b"new"),
+        ("0363_e17d8e9bf0a77670bm0_bigThumb.webp", 50, WEBP)])
+    th = fa.CarThumbs(d)
+    import base64
+    got = th.data_uri(3434)
+    assert got.startswith("data:image/webp;base64,")
+    assert base64.b64decode(got.split(",", 1)[1]).endswith(b"new")
+    assert th.path_for(363), "a leading nought is still car 363"
+
+
+def test_no_picture_yet_is_nothing_rather_than_a_crash():
+    d = _thumb_cache([("3434_x_bigThumb.webp", 5, None),     # not written yet
+                      ("4222_y_bigThumb.webp", 5, b"not a webp at all")])
+    th = fa.CarThumbs(d)
+    assert th.data_uri(3434) == ""
+    assert th.data_uri(4222) == "", "only a real WebP goes to the page"
+    assert th.data_uri(9999) == ""
+    assert fa.CarThumbs(os.path.join(d, "missing")).data_uri(3434) == ""
+    # a manifest cut short mid-entry keeps what came before it
+    with open(os.path.join(d, ".manifest"), "rb") as f:
+        blob = f.read()
+    assert len(fa.read_thumb_manifest(blob[:-5])) == 1
+    assert fa.read_thumb_manifest(b"") == []
+
+
+def test_a_picture_made_while_the_app_runs_is_found():
+    """The game renders a car the first time the player sits in it; the
+    page keeps asking until it is there."""
+    d = _thumb_cache([("0363_a_bigThumb.webp", 50, WEBP)])
+    th = fa.CarThumbs(d)
+    assert th.data_uri(3434) == ""
+    time.sleep(0.05)
+    import uuid
+    g = uuid.uuid4()
+    with open(os.path.join(d, str(g) + ".webp"), "wb") as f:
+        f.write(WEBP)
+    with open(os.path.join(d, ".manifest"), "rb") as f:
+        blob = bytearray(f.read())
+    key = b"3434_b_bigThumb.webp"
+    struct.pack_into("<I", blob, 4, 2)
+    blob += struct.pack("<I", len(key)) + key + g.bytes_le
+    with open(os.path.join(d, ".manifest"), "wb") as f:
+        f.write(blob)
+    assert th.data_uri(3434).startswith("data:image/webp")
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

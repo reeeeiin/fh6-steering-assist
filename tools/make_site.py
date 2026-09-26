@@ -42,7 +42,7 @@ STUB = """<script>
       hz: 250, pad_hz: 250, age: 4, car: "Toyota Supra RZ",
       car_name: "Toyota Supra RZ", car_drive: "RWD", car_class: "S1",
       car_pi: 800, auto_strength: 48, auto_window: [42, 54],
-      car_type: "rwd",
+      car_type: "rwd", car_ord: 0,
       angle: +(slip * 90).toFixed(1),
       drift: Math.abs(slip) > 0.15 ? "feint" : "driving",
       rpm_f: +(0.62 + Math.sin(t * 1.3) * 0.36).toFixed(4),
@@ -62,6 +62,8 @@ STUB = """<script>
   window.pywebview = {api: {
     state: async () => live(),
     set: async (k, v) => { cfg[k] = v; return true; },
+    // the page shows no game pictures: they live on the player's machine
+    car_thumb: async (c) => ({car: c, uri: ""}),
     set_profile: async (name) => {
       const p = __PROFILES__[name] || slots[name] || {};
       Object.assign(cfg, p); cfg.profile = name; return p;
