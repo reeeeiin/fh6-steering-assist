@@ -1475,6 +1475,8 @@ def _hidhide(cloak_on=False, already=(), present=(), ledger=()):
             json.dump({"paths": sorted(ledger)}, f)
     h.extra_apps = []
     h.xinput_hidden = False
+    h._left = None
+    h._present = None
     h.calls = []
 
     gaming = json.dumps([{"devices": [{"deviceInstancePath": p,
@@ -2253,16 +2255,18 @@ def test_pad_software_can_be_named_without_a_new_build():
     assert "extra_apps" in fa.DEFAULTS
 
 
-def test_the_copy_that_is_asked_to_leave_tidies_up_first():
-    """Whoever wins the race, the pad must come back. The departing copy
-    puts everything back itself rather than trusting the window to close
-    in time - which is what made a killed copy so expensive."""
+def test_the_copy_that_is_asked_to_leave_hands_the_pad_over_first():
+    """The departing copy settles the pad before it stops and before the
+    window goes - but it hands it over hidden rather than putting it back,
+    since the copy asking is about to hide it again and a game running in
+    between would catch it."""
     import inspect
     src = inspect.getsource(fa._listen_for_quit)
+    hand = src.index("hidhide.hand_over")
     stop = src.index("bridge.stop")
-    hand = src.index("disengage")
     gone = src.index("os._exit")
-    assert stop < hand < gone, (stop, hand, gone)
+    assert hand < stop < gone, (hand, stop, gone)
+    assert "disengage" not in src.split("def wait")[1]
 
 
 def test_a_session_that_never_finished_is_undone_by_the_next_one():
@@ -2275,11 +2279,14 @@ def test_a_session_that_never_finished_is_undone_by_the_next_one():
     h.engage()
     assert os.path.isfile(h.state_file), "nothing was written down"
 
-    # a launch that dies without disengaging: the note survives it
-    later = _hidhide(present=[MINE])
+    # a launch that dies without disengaging: the note survives it, the
+    # next launch takes it over, and its own exit puts it all back
+    later = _hidhide(cloak_on=True, already=[MINE], present=[MINE])
     later.state_file = h.state_file
-    freed = later.restore_leftovers()
-    assert freed == 1, later.calls
+    assert later.restore_leftovers() == 1, later.calls
+    later.engage()
+    later.calls.clear()
+    later.disengage()
     assert ("--dev-unhide", MINE) in later.calls, later.calls
     assert ("--cloak-off",) in later.calls, later.calls
     assert not os.path.isfile(h.state_file), "the note outlived its use"
@@ -2963,6 +2970,66 @@ def test_engine_and_drift_are_read_from_the_packet():
         assert t.drift.drifting and t.drift.entry == "ebrake"
     finally:
         t.stop()
+
+
+# ---------------- handing the pad from one copy to the next ----------------
+
+def _next_copy(old, cloak_on=True, already=(), present=()):
+    """The launch that follows: same files on disk, HidHide as the last
+    copy left it."""
+    h = _hidhide(cloak_on=cloak_on, already=already, present=present)
+    h.state_file, h.ledger_file = old.state_file, old.ledger_file
+    return h
+
+
+def test_a_copy_taking_over_never_shows_the_pad_to_the_game():
+    """The bug: the old copy put the pad back on its way out and the new
+    one hid it again seconds later. A game already running picked the pad
+    up in between and kept it, so it saw two pads and every button our pad
+    passed on arrived twice."""
+    old = _hidhide(present=[MINE])
+    old.engage()
+    old.calls.clear()
+    old.hand_over()
+    assert not [c for c in old.calls if c[0] in ("--dev-unhide",
+                                                 "--cloak-off")], old.calls
+    old.disengage()                     # the loop's own shutdown after it
+    assert not [c for c in old.calls if c[0] == "--dev-unhide"], old.calls
+
+    new = _next_copy(old, already=[MINE], present=[MINE])
+    new.restore_leftovers()
+    assert not [c for c in new.calls if c[0] in ("--dev-unhide",
+                                                 "--cloak-off")], new.calls
+    new.engage()
+    assert MINE in new.hidden, "what the last copy hid is ours now"
+    new.calls.clear()
+    new.disengage()
+    assert ("--dev-unhide", MINE) in new.calls
+    assert ("--cloak-off",) in new.calls, \
+        "the cloak goes back to what the first copy found, not left on"
+
+
+def test_leftovers_go_back_if_hiding_never_happens():
+    """A new copy that takes the leftovers over but then does not hide -
+    Auto hide off, or a failed setup - must still put them back."""
+    old = _hidhide(present=[MINE])
+    old.engage()
+    old.hand_over()
+    new = _next_copy(old, already=[MINE], present=[MINE])
+    new.restore_leftovers()
+    new.put_back_leftovers()
+    assert ("--dev-unhide", MINE) in new.calls, new.calls
+    assert ("--cloak-off",) in new.calls
+
+
+def test_the_hidden_count_leaves_out_other_peoples_ghosts():
+    """Hidden (3) with one pad: two entries somebody left in HidHide for
+    pads long unplugged were counted as ours."""
+    ghost1 = MINE.replace("IG_04", "IG_05")
+    ghost2 = MINE.replace("IG_04", "IG_06")
+    h = _hidhide(already=[ghost1, ghost2], present=[MINE])
+    h.engage()
+    assert h.arg == 1, h.arg
 
 
 def main():

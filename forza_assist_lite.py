@@ -2683,6 +2683,9 @@ class HidHide:
         # stays hidden, and the cloak goes back on or off as we found it.
         self._prior_hidden = set()
         self._prior_cloak = None
+        # what the copy before this one left hidden, taken over at launch
+        self._left = None
+        self._present = None
         self._apps = set()
         # the CLI talks to the driver one caller at a time; overlapping
         # invocations fail, which reads as "an error occurred while hiding
@@ -2760,17 +2763,26 @@ class HidHide:
             # What was already hidden is somebody else's business - except
             # the entries we can prove are ours from an earlier run. Those
             # go back on our own list, so this exit takes them away.
-            mine = self._prior_hidden & self._ledger()
+            left = getattr(self, "_left", None)
+            mine = self._prior_hidden & (self._ledger() |
+                                         set((left or {}).get("hidden") or []))
             if mine:
                 self._prior_hidden -= mine
                 self.hidden |= mine
+            if left is not None and left.get("cloak_was") is not None:
+                # The cloak is on because the last copy of this app put it
+                # on, not because whoever set up this machine did - so the
+                # setting to go back to is the one that copy found.
+                self._prior_cloak = left.get("cloak_was")
             self._run("--app-reg", sys.executable)
             self._apps.add(sys.executable.lower())
             self.whitelist_companions()
             # recorded before the first change, so a crash half way through
             # still leaves enough to put everything back
             self._save_state()
-            for path in self._present_paths():
+            self._left = None           # taken over: ours to put back now
+            self._present = self._present_paths()
+            for path in self._present:
                 self._run("--dev-hide", path)
                 if path not in self._prior_hidden:
                     self.hidden.add(path)
@@ -3096,9 +3108,14 @@ class HidHide:
         return node
 
     def _pads_hidden(self) -> int:
-        """Pads, not device nodes: one pad is now two nodes on the list."""
+        """Pads, not device nodes: one pad is now two nodes on the list.
+        And pads that are plugged in: entries left in HidHide for pads long
+        gone made one pad read as three."""
+        here = getattr(self, "_present", None)
+        here = {p.upper() for p in here} if here is not None else None
         return sum(1 for p in self.hidden | self._prior_hidden
-                   if p.upper().startswith("HID\\"))
+                   if p.upper().startswith("HID\\")
+                   and (here is None or p.upper() in here))
 
     def _save_state(self):
         try:
@@ -3116,12 +3133,14 @@ class HidHide:
             pass
 
     def restore_leftovers(self):
-        """Put back what a session that never finished could not put back.
+        """Take over what the last copy left hidden - handed over, or left
+        behind by a crash.
 
-        Only what we wrote down is undone, so a device somebody else hid
-        for their own reasons stays hidden and a cloak somebody else turned
-        on stays on. Anything else would be guessing with a setting that
-        affects every game on the machine.
+        It used to be unhidden here and hidden again by engage a moment
+        later, and a game already running caught the pad in between (see
+        hand_over). Now it is only taken note of: engage adopts it as ours,
+        with the cloak setting the first copy found, and if this launch
+        never hides anything, disengage puts it back instead.
 
         Called before engage, and only once this launch is alone: the
         stale-instance check has already seen to that.
@@ -3132,6 +3151,34 @@ class HidHide:
             with open(self.state_file, encoding="utf-8") as f:
                 left = json.load(f)
         except (OSError, ValueError):
+            return 0
+        if not isinstance(left, dict):
+            return 0
+        self._left = left
+        return len(left.get("hidden") or [])
+
+    def hand_over(self):
+        """Leave, keeping the pad hidden, for the copy of this app that is
+        starting in our place.
+
+        Putting the pad back here and letting the next copy hide it again
+        opened a gap of a few seconds. A game already running saw the pad
+        arrive in it, opened it, and kept it after it was hidden again: the
+        game then had two pads, and every press ours passed on arrived
+        twice. So what we hid stays hidden and stays written down, the
+        cloak stays on, and the next copy takes all of it over."""
+        if not (self.cli and self.active):
+            return
+        self.active = False
+        self._save_state()
+        self.info = "left hidden for the next copy"
+        self.code = "handed"
+
+    def put_back_leftovers(self):
+        """What the last copy handed over, put back after all - for a copy
+        that took it over and is not going to hide anything itself."""
+        left, self._left = getattr(self, "_left", None), None
+        if not left or not self.rescan():
             return 0
         freed = 0
         taken = left.get("hidden") or []
@@ -3155,6 +3202,9 @@ class HidHide:
         returns to the setting we found - leaving it off would quietly
         break anyone using HidHide for something else, and leaving our
         devices hidden would keep the pad away from every other game."""
+        if self.cli and not self.active and getattr(self, "_left", None):
+            self.put_back_leftovers()
+            return
         if not (self.cli and self.active):
             return
         self.active = False
@@ -3651,7 +3701,13 @@ class Bridge:
             # that ended without putting the pad back.
             self.hidhide.extra_apps = list(self.cfg.get("extra_apps") or [])
             self.hidhide.on_event = self._note
-            self.hidhide.restore_leftovers()
+            handed = self.hidhide.restore_leftovers()
+            # the pad was kept hidden across the change of copies, so a game
+            # already running never saw it: nothing to restart
+            if handed:
+                self.bad_order = False
+            if not self.cfg["auto_hide"]:
+                self.hidhide.put_back_leftovers()
             if self.cfg["auto_hide"]:
                 self.hidhide.engage()
                 if self.hidhide.code == "error":
@@ -8527,8 +8583,12 @@ def _clear_killed_leftovers():
     if not cli:
         return
     try:
-        subprocess.run([cli, "--cloak-off"], capture_output=True,
-                       creationflags=0x08000000, timeout=10)
+        # Not the cloak off: that would show the pad to a game already
+        # running, and it would keep it. This copy is let through instead,
+        # and takes over what the killed one hid.
+        subprocess.run([cli, "--app-reg", sys.executable],
+                       capture_output=True, creationflags=0x08000000,
+                       timeout=10)
     except Exception:
         pass
 
@@ -8551,7 +8611,10 @@ def _listen_for_quit(close_window, bridge):
 
     def wait():
         ctypes.windll.kernel32.WaitForSingleObject(ev, 0xFFFFFFFF)
-        for step in (bridge.stop, bridge.hidhide.disengage, close_window):
+        # The pad stays hidden for the copy taking over - put back here,
+        # a game already running would pick it up before that copy hid it
+        # again, and see two pads from then on.
+        for step in (bridge.hidhide.hand_over, bridge.stop, close_window):
             try:
                 step()
             except Exception:
