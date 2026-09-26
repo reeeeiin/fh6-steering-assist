@@ -5298,7 +5298,8 @@ body.t-light{
 .tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tcol{display:flex;flex-direction:column;gap:10px;min-width:0}
 .tgrid .card{padding:12px 14px;box-sizing:border-box}
-.tgrid .tsc{height:42px;padding:0 14px;display:flex;align-items:center}
+.card.tsc{height:42px;padding:0 14px;display:flex;align-items:center;
+          box-sizing:border-box}
 .tsc .trow{flex:1;min-width:0}
 .tsc .rname{flex:none}
 .tsc .rval{font-size:13px;font-weight:600;transition:color .3s ease}
@@ -5329,7 +5330,7 @@ body.t-light{
 /* No telemetry yet: the two statuses, then one wide card - where to go in
    the game on the left behind a red rule, the three values on the right */
 .tsetw{display:flex;align-items:flex-start;gap:7.5px}
-.tgrid + .tsetw{margin-top:10px}
+.tgrid + .tsetw,.tsc + .tsetw{margin-top:10px}
 .card.tsetw{padding:14px}
 .tsnote{flex:1;min-width:0;display:flex;align-items:stretch;gap:9px}
 .tsnote i{flex:none;width:2px;border-radius:3px;background:var(--danger)}
@@ -5507,18 +5508,10 @@ body.t-light{
 .tstat{font-size:13px;font-weight:600;flex:none;transition:color .3s ease}
 .tstat.ok{color:var(--ok)} .tstat.wait{color:var(--muted)}
 .tstat.err{color:var(--danger)}
-.chip{font-size:10px;font-weight:600;color:var(--accent);flex:none}
-.chip b{color:var(--row-fg);font-weight:600}
 .telecard.idle .barlbl{color:var(--off)}
 .telecard.idle .bar{opacity:.5}
 .telecard .row{border-bottom:none}
 .tstat.idle{color:var(--row-fg)}
-.hintrow{display:flex;align-items:center;justify-content:space-between;
-         gap:12px;padding:10px 0}
-.hintq{font-size:9px;line-height:1.45;color:var(--muted);flex:1 1 auto;
-       min-width:0;display:flex;flex-direction:column}
-.hintchips{display:flex;align-items:center;gap:12px;flex:0 0 auto;
-           white-space:nowrap}
 .barwrap{padding:5px 0}
 .barlbl{font-size:9px;color:var(--muted);margin-bottom:3px}
 .bar{height:18px;border-radius:4.5px;position:relative;overflow:hidden;
@@ -5950,25 +5943,26 @@ function screenMain(){
        '<div class="card telecard' + (live ? '' : ' idle') + '">' +
        '<div class="row"><span class="rname">' + t('tele_status') + '</span>' +
        '<span class="tstat" id="tstat">-</span></div>' +
-       (cfg.ext_telemetry || live ? '' :
-         '<div class="hintrow"><span class="hintq">' +
-         t('setup_where').split('|').map(function(x){
-           return '<span>' + x + '</span>'; }).join('') + '</span>' +
-         '<span class="hintchips">' +
-         '<span class="chip">' + t('sw_dataout') + ' - <b>On</b></span>' +
-         '<span class="chip">' + t('sw_ip') + ' - <b>127.0.0.1</b></span>' +
-         '<span class="chip">' + t('sw_port') +
-         ' - <b>' + livePort() + '</b></span></span></div>') +
        bars + '</div>';
-
-  h += '<div class="reveal" id="teleblock"><div class="sec">' +
-       t('telemetry_sec') + '</div>';
-  if (!cfg.ext_telemetry) return h + tele + '</div>';
-
-  const readouts = '<div class="tside tiles">' + widgets() + '</div>';
   const stat = '<div class="card tsc"><div class="trow">' +
     '<span class="rname">' + t('tele_status') + '</span>' +
     '<span class="tstat" id="tstat">-</span></div></div>';
+  /* nothing to read yet: where to turn telemetry on, extended or not */
+  const setupWide =
+    '<div class="card tsetw"><div class="tsnote"><i></i><div>' +
+    t('setup_nav1') + '<b>' + t('setup_nav2') + '</b>' + t('setup_nav3') +
+    '</div></div><div class="tspills">' +
+    '<div class="tspill"><span>' + t('sw_dataout') + '</span><b>On</b></div>' +
+    '<div class="tspill"><span>' + t('sw_ip') + '</span><b>127.0.0.1</b></div>' +
+    '<div class="tspill"><span>' + t('sw_port') + '</span><b>' +
+    livePort() + '</b></div></div></div>';
+
+  h += '<div class="reveal" id="teleblock"><div class="sec">' +
+       t('telemetry_sec') + '</div>';
+  if (!cfg.ext_telemetry)
+    return h + (live ? tele : stat + setupWide) + '</div>';
+
+  const readouts = '<div class="tside tiles">' + widgets() + '</div>';
   const steer = '<div class="card tsteer' + (live ? '' : ' idle') + '">' +
     '<div class="trow"><span class="rname">' + t('w_steering') + '</span>' +
     '<span class="tstat" id="sstat">-</span></div>' + bars + '</div>';
@@ -5984,14 +5978,7 @@ function screenMain(){
      tells the player how to turn telemetry on instead */
   if (!live) return h + '<div class="tgrid">' +
     '<div class="tcol">' + stat + '</div>' +
-    '<div class="tcol">' + pad + '</div></div>' +
-    '<div class="card tsetw"><div class="tsnote"><i></i><div>' +
-    t('setup_nav1') + '<b>' + t('setup_nav2') + '</b>' + t('setup_nav3') +
-    '</div></div><div class="tspills">' +
-    '<div class="tspill"><span>' + t('sw_dataout') + '</span><b>On</b></div>' +
-    '<div class="tspill"><span>' + t('sw_ip') + '</span><b>127.0.0.1</b></div>' +
-    '<div class="tspill"><span>' + t('sw_port') + '</span><b>' +
-    livePort() + '</b></div></div></div></div>';
+    '<div class="tcol">' + pad + '</div></div>' + setupWide + '</div>';
   return h + '<div class="tgrid">' +
     '<div class="tcol">' + stat + steer + car + '</div>' +
     '<div class="tcol">' + pad + readouts + '</div>' +
