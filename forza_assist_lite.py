@@ -4000,7 +4000,7 @@ TR = {
         "st_waiting": 'Waiting',
         "st_ingame": "In game",
         "st_inmenu": "In menu",
-        "st_notele": 'No signal',
+        "st_notele": 'No telemetry',
         "st_port": 'Port busy',
         "st_error": "Error",
         "hh_idle": 'Waiting',
@@ -4050,6 +4050,9 @@ TR = {
         "w_callback": 'Callback',
         "w_latency": 'Latency',
         "w_car": 'Current car',
+        "setup_nav1": "Navigate to game settings:",
+        "setup_nav2": "Hud & Gameplay / Telemetry",
+        "setup_nav3": "and apply these settings",
         "w_steering": "Steering",
         "st_assisting": "Assisting",
         "st_ready": "Ready",
@@ -4204,6 +4207,9 @@ TR = {
         "w_callback": 'Отклик',
         "w_latency": 'Частота',
         "w_car": 'Машина',
+        "setup_nav1": "Откройте настройки игры:",
+        "setup_nav2": "Hud & Gameplay / Telemetry",
+        "setup_nav3": "и примените эти параметры",
         "w_steering": "Руление",
         "st_assisting": "Помогает",
         "st_ready": "Готов",
@@ -4358,6 +4364,9 @@ TR = {
         "w_callback": 'Antwort',
         "w_latency": 'Frequenz',
         "w_car": 'Fahrzeug',
+        "setup_nav1": "Oeffne die Spieleinstellungen:",
+        "setup_nav2": "Hud & Gameplay / Telemetry",
+        "setup_nav3": "und setze diese Werte",
         "w_steering": "Lenkung",
         "st_assisting": "Hilft",
         "st_ready": "Bereit",
@@ -4512,6 +4521,9 @@ TR = {
         "w_callback": 'Reponse',
         "w_latency": 'Frequence',
         "w_car": 'Voiture',
+        "setup_nav1": "Ouvrez les reglages du jeu :",
+        "setup_nav2": "Hud & Gameplay / Telemetry",
+        "setup_nav3": "et appliquez ces reglages",
         "w_steering": "Direction",
         "st_assisting": "Assiste",
         "st_ready": "Pret",
@@ -4666,6 +4678,9 @@ TR = {
         "w_callback": 'Respuesta',
         "w_latency": 'Frecuencia',
         "w_car": 'Coche',
+        "setup_nav1": "Abre los ajustes del juego:",
+        "setup_nav2": "Hud & Gameplay / Telemetry",
+        "setup_nav3": "y aplica estos ajustes",
         "w_steering": "Direccion",
         "st_assisting": "Asistiendo",
         "st_ready": "Listo",
@@ -4834,6 +4849,9 @@ TR = {
         "w_callback": '応答',
         "w_latency": '周波数',
         "w_car": '車両',
+        "setup_nav1": "ゲーム設定の",
+        "setup_nav2": "Hud & Gameplay / Telemetry",
+        "setup_nav3": "で次の値を設定してください",
         "w_steering": "ステアリング",
         "st_assisting": "アシスト中",
         "st_ready": "待機中",
@@ -5284,13 +5302,12 @@ body.t-light{
 .tsc .trow{flex:1;min-width:0}
 .tsc .rname{flex:none}
 .tsc .rval{font-size:13px;font-weight:600;transition:color .3s ease}
+.tsc .rval.off{color:var(--row-fg)}
 .tsteer{flex:1;display:flex;flex-direction:column;
         justify-content:space-between;gap:8px}
 .tgrid .tsteer .barwrap,.tgrid .tsteer .barwrap:last-child{padding:0}
 .tsteer.idle .barlbl{color:var(--off)}
 .tsteer.idle .bar{opacity:.5}
-.tside{flex:1}
-.tgrid .tsetup{padding:0 15px}
 .tside.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
              gap:10px;background:none;border-radius:0;padding:0}
 .trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -5309,6 +5326,29 @@ body.t-light{
 .tcarcard{display:flex;flex-direction:column;gap:10px}
 .tcarcard .trow{min-height:12px}
 .tchips{display:flex;align-items:center;gap:4px;min-width:0}
+/* No telemetry yet: the two statuses, then one wide card - where to go in
+   the game on the left behind a red rule, the three values on the right */
+.tsetw{display:flex;align-items:flex-start;gap:7.5px}
+.tgrid + .tsetw{margin-top:10px}
+.card.tsetw{padding:14px}
+.tsnote{flex:1;min-width:0;display:flex;align-items:stretch;gap:9px}
+.tsnote i{flex:none;width:2px;border-radius:3px;background:var(--danger)}
+.tsnote div{font-size:10px;line-height:13px;color:var(--row-fg)}
+.tsnote b{display:block;font-weight:700;color:var(--accent)}
+.tspills{flex:none;width:256px;display:flex;flex-direction:column;gap:6px}
+.tspill{height:30px;box-sizing:border-box;padding:0 14px;border-radius:8px;
+        display:flex;align-items:center;justify-content:space-between;
+        background:rgba(135,135,135,.06);
+        border:1px solid rgba(134,134,134,.5)}
+.tspill span{font-size:12px;font-weight:600;color:var(--row-fg)}
+.tspill b{font-size:14px;font-weight:600;color:var(--accent)}
+/* The telemetry cards change places card by card: the old ones fade out
+   together, the new ones come in from the top down as the tabs do */
+.tele-out .card{opacity:0;transform:translateY(-6px);
+                transition:opacity .2s ease,transform .2s ease}
+.card.tw-wait{opacity:0;transform:translateY(10px)}
+.card.tw-in{opacity:1;transform:none;
+            transition:opacity .42s ease,transform .42s ease}
 .tchips:empty{display:none}
 .tchip{height:18px;box-sizing:border-box;padding:0 6px;border-radius:5px;
        border:1px solid;display:flex;align-items:center;
@@ -5403,19 +5443,6 @@ body.t-light{
 .cchip[data-v="S2"]{border-color:#185ADA;background:rgba(24,90,218,.1)}
 .cchip[data-v="R"]{border-color:#D61997;background:rgba(214,25,151,.1)}
 .cchip[data-v="X"]{border-color:#17D857;background:rgba(23,216,87,.1)}
-/* the same box, carrying the setup the game needs when nothing arrives */
-.tsetup{height:100%;box-sizing:border-box;padding:0 15px;
-        display:flex;flex-direction:column;justify-content:center}
-.tsetup .shead{display:flex;align-items:flex-start;justify-content:space-between;
-               gap:10px;padding-bottom:10px}
-.tsetup .shead q{quotes:none;font-size:8px;line-height:1.45;color:var(--muted)}
-.tsetup .shead b{font-size:9px;font-weight:500;color:var(--row-fg);
-                 white-space:nowrap}
-.tsetup .srow{display:flex;align-items:center;justify-content:space-between;
-              gap:10px;padding:9px 0;border-top:1px solid var(--line)}
-.tsetup .srow span{font-size:9px;font-weight:500;color:var(--accent)}
-.tsetup .srow b{font-size:12px;font-weight:600;color:var(--row-fg)}
-
 /* ---------- toggle ---------- */
 .tg{width:28px;height:14px;border-radius:7px;flex:none;cursor:pointer;
     background:var(--off);position:relative;
@@ -5914,16 +5941,6 @@ function screenMain(){
   h += '</div></div>';
 
   const live = state && (state.recv || state.alive);
-  const setup =
-    '<div class="card tsetup"><div class="shead">' +
-    '<q>' + t('setup_where').split('|').join('<br>') + '</q>' +
-    '<b>' + t('setup_apply') + '</b></div>' +
-    '<div class="srow"><span>' + t('sw_dataout') + '</span><b>On</b></div>' +
-    '<div class="srow"><span>' + t('sw_ip') + '</span><b>127.0.0.1</b></div>' +
-    '<div class="srow"><span>' + t('sw_port') + '</span><b>' +
-    livePort() + '</b></div>' +
-    '</div>';
-
   const bars =
        '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
        '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
@@ -5944,14 +5961,11 @@ function screenMain(){
          ' - <b>' + livePort() + '</b></span></span></div>') +
        bars + '</div>';
 
-  h += '<div class="reveal"><div class="sec">' + t('telemetry_sec') + '</div>';
+  h += '<div class="reveal" id="teleblock"><div class="sec">' +
+       t('telemetry_sec') + '</div>';
   if (!cfg.ext_telemetry) return h + tele + '</div>';
 
-  /* the readouts have nothing to say without telemetry, so their place
-     tells the player how to turn it on instead */
-  const readouts = live
-    ? '<div class="tside tiles">' + widgets() + '</div>'
-    : '<div class="tside">' + setup + '</div>';
+  const readouts = '<div class="tside tiles">' + widgets() + '</div>';
   const stat = '<div class="card tsc"><div class="trow">' +
     '<span class="rname">' + t('tele_status') + '</span>' +
     '<span class="tstat" id="tstat">-</span></div></div>';
@@ -5966,6 +5980,18 @@ function screenMain(){
   const pad = '<div class="card tsc"><div class="trow">' +
     '<span class="rname">' + t('pad_status') + '</span>' +
     '<span class="rval" id="padstat">-</span></div></div>';
+  /* nothing to read yet: the readouts would say nothing, so the space
+     tells the player how to turn telemetry on instead */
+  if (!live) return h + '<div class="tgrid">' +
+    '<div class="tcol">' + stat + '</div>' +
+    '<div class="tcol">' + pad + '</div></div>' +
+    '<div class="card tsetw"><div class="tsnote"><i></i><div>' +
+    t('setup_nav1') + '<b>' + t('setup_nav2') + '</b>' + t('setup_nav3') +
+    '</div></div><div class="tspills">' +
+    '<div class="tspill"><span>' + t('sw_dataout') + '</span><b>On</b></div>' +
+    '<div class="tspill"><span>' + t('sw_ip') + '</span><b>127.0.0.1</b></div>' +
+    '<div class="tspill"><span>' + t('sw_port') + '</span><b>' +
+    livePort() + '</b></div></div></div></div>';
   return h + '<div class="tgrid">' +
     '<div class="tcol">' + stat + steer + car + '</div>' +
     '<div class="tcol">' + pad + readouts + '</div>' +
@@ -6327,6 +6353,40 @@ function bindSlots(){
   });
 }
 
+/* Telemetry came or went: the telemetry cards fade out together, the page
+   is drawn again, and the new cards come in one after another from the
+   top down, the way a tab's rows do. Nothing else on the page moves. */
+let teleSwap = false, teleSwapping = false;
+function swapTelemetry(){
+  const block = document.getElementById('teleblock');
+  if (!block || screen !== 'main'){ render(); return; }
+  if (teleSwapping) return;             /* the redraw will read it anyway */
+  teleSwapping = true;
+  block.classList.add('tele-out');
+  setTimeout(() => {
+    teleSwapping = false;
+    teleSwap = true;
+    render();
+  }, 220);
+}
+
+function staggerTele(start){
+  const block = document.getElementById('teleblock');
+  if (!block) return;
+  const cards = [...block.querySelectorAll('.card')];
+  const at = cards.map(c => {
+    const r = c.getBoundingClientRect();
+    return {c, top: Math.round(r.top), left: r.left};
+  }).sort((a, b) => a.top - b.top || a.left - b.left);
+  at.forEach(({c}, i) => {
+    c.classList.add('tw-wait');
+    setTimeout(() => {
+      c.classList.remove('tw-wait');
+      c.classList.add('tw-in');
+    }, start + i * 55);
+  });
+}
+
 function render(){
   if (!cfg) return;
   document.body.className = 't-' + (THEMES.includes(cfg.theme) ? cfg.theme : 'dark');
@@ -6346,6 +6406,12 @@ function render(){
     if (!langHold) rows.forEach((el, i) => staged
       ? setTimeout(() => el.classList.add('shown'), 40 + i * 55)
       : el.classList.add('shown'));
+    /* the telemetry cards come in one by one, after their title - on a
+       tab change, and when telemetry arrives or leaves */
+    const tb = document.getElementById('teleblock');
+    if (!langHold && tb && (staged || teleSwap))
+      staggerTele(staged ? 40 + rows.indexOf(tb) * 55 + 55 : 40);
+    teleSwap = false;
   }
   bindRows();
   bindSlots();
@@ -6939,8 +7005,9 @@ function liveUpdate(){
   }
   const nowLive = !!(state.recv || state.alive);
   if (nowLive !== wasLive){
+    const first = wasLive === null;
     wasLive = nowLive;
-    render();
+    if (first) render(); else swapTelemetry();
     return;
   }
   sRaw += (state.raw - sRaw) * 0.25;
