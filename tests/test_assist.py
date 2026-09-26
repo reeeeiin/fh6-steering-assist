@@ -529,13 +529,13 @@ def test_the_override_replaces_the_slider_value_and_nothing_else():
 
 
 def test_car_strengths_are_the_numbers_the_slider_shows():
-    """The slider runs 0-120 inside and shows 0-100. Tuned by eye at 40 and
-    30, the assist must get 48 and 36 - the first version of the table was
+    """The slider runs 0-120 inside and shows 0-100. Tuned by eye at 45 and
+    30, the assist must get 54 and 36 - the first version of the table was
     written as raw gains and gave it far too little."""
-    assert fa.CAR_TYPE_STRENGTH["rwd"] == 40
+    assert fa.CAR_TYPE_STRENGTH["rwd"] == 45
     assert fa.CAR_TYPE_STRENGTH["fd"] == 30
     assert fa.CAR_TYPE_ROOM == 5
-    assert fa.gain_from_shown(40) == 48.0
+    assert fa.gain_from_shown(45) == 54.0
     assert fa.gain_from_shown(30) == 36.0
     lo, hi = fa.CONFIG_RANGES["counter_gain"]
     for shown in fa.CAR_TYPE_STRENGTH.values():
@@ -589,16 +589,16 @@ def _detect_bridge(kind, own=None):
 
 
 def test_the_driver_gets_five_either_side_of_the_cars_strength():
-    """40 and 30 by default, 35-45 and 25-35 to move in."""
+    """45 and 30 by default, 40-50 and 25-35 to move in."""
     rwd = _detect_bridge("rwd")
-    assert rwd._auto_window() == [fa.gain_from_shown(35), fa.gain_from_shown(45)]
-    assert rwd._auto_strength() == fa.gain_from_shown(40)
+    assert rwd._auto_window() == [fa.gain_from_shown(40), fa.gain_from_shown(50)]
+    assert rwd._auto_strength() == fa.gain_from_shown(45)
     fd = _detect_bridge("fd")
     assert fd._auto_window() == [fa.gain_from_shown(25), fa.gain_from_shown(35)]
     assert _detect_bridge("fd", {"fd": 33})._auto_strength() == fa.gain_from_shown(33)
     # a value from outside the band - an edited file, an old version - is
     # brought back to its edge rather than obeyed
-    assert _detect_bridge("rwd", {"rwd": 90})._auto_strength() == fa.gain_from_shown(45)
+    assert _detect_bridge("rwd", {"rwd": 90})._auto_strength() == fa.gain_from_shown(50)
     assert _detect_bridge("", {})._auto_window() is None
 
 
@@ -611,11 +611,11 @@ def test_the_drivers_own_strength_is_kept_per_kind_of_car():
     fa.save_config_soon = lambda cfg, delay=0.4: saved.append(dict(cfg))
     try:
         assert api.set_car_strength("fd", 34) == 34
-        assert api.set_car_strength("rwd", 99) == 45, "kept to the band"
+        assert api.set_car_strength("rwd", 99) == 50, "kept to the band"
         assert api.set_car_strength("nonsense", 40) is None
     finally:
         fa.save_config_soon = real
-    assert b.cfg["car_strength"] == {"fd": 34, "rwd": 45}
+    assert b.cfg["car_strength"] == {"fd": 34, "rwd": 50}
     assert b.cfg["counter_gain"] == fa.DEFAULTS["counter_gain"], \
         "the preset's own strength is never the one moved"
     assert saved
@@ -625,7 +625,7 @@ def test_a_stray_car_strength_in_the_file_is_cleaned():
     cfg = dict(fa.DEFAULTS)
     cfg["car_strength"] = {"rwd": 12, "fd": "33", "awd": "x", "moon": 5}
     fa.sanitize_config(cfg)
-    assert cfg["car_strength"] == {"rwd": 35, "fd": 33}
+    assert cfg["car_strength"] == {"rwd": 40, "fd": 33}
 
 
 def _awd_run(beta_deg, frames, start=1.0):

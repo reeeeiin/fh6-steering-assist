@@ -27,11 +27,12 @@
 
 ### Added
 
-- **Car type detect**, the last switch under Steering, on by default. It
-  sets the assist strength for the car you are in - 40 on rear-wheel
-  drive, 30 on Formula Drift cars - and you can move it 5 either way; it
-  keeps where you leave it for that kind of car. Switch it off to use the
-  whole range. Your preset's own value is never changed.
+- **Auto car adjust**, the last switch under Steering, on by default. It
+  sets the assist strength for the car you are in - 40 to 50 on rear-wheel
+  drive, 25 to 35 on Formula Drift cars - and the slider then covers only
+  those ten points, in whole steps, with an Auto chip beside it; it keeps
+  where you leave it for that kind of car. Switch it off to use the whole
+  range. Your preset's own value is never changed.
 - **All-wheel drive eases off at shallow angles**: three quarters of the
   strength below 12 degrees, the whole of it above 35. These are starting
   values, not yet measured.

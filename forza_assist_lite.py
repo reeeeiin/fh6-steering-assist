@@ -690,7 +690,7 @@ _CARS = {}
 CLASS_NAMES = ("D", "C", "B", "A", "S1", "S2", "R", "X")
 DRIVETRAINS = ("FWD", "RWD", "AWD")
 
-# What the assist is set to, per kind of car, while Car type detect is on.
+# What the assist is set to, per kind of car, while Auto car adjust is on.
 # Rear drive is the baseline the assist is tuned on. Formula Drift cars
 # carry far more steering lock and want much less. All-wheel and front
 # drive sit at the baseline for now: the plan for them is a strength that
@@ -699,7 +699,7 @@ DRIVETRAINS = ("FWD", "RWD", "AWD")
 # These are the numbers the slider SHOWS. Inside, the strength runs 0-120
 # and is shown as 0-100 percent, so a 40 tuned by eye is a gain of 48.
 # Written as raw gains, the first version handed the assist far too little.
-CAR_TYPE_STRENGTH = {"rwd": 40, "fd": 30, "awd": 40, "fwd": 40}
+CAR_TYPE_STRENGTH = {"rwd": 45, "fd": 30, "awd": 40, "fwd": 40}
 # How far the driver may move it either way while the car decides. The
 # default is a starting point, not a verdict; the setting stays near it.
 CAR_TYPE_ROOM = 5
@@ -1075,10 +1075,10 @@ SHAPE_TAU = 0.9
 class Assist:
     def __init__(self, cfg: dict):
         self.cfg = cfg
-        # Set by Car type detect. None leaves the slider's own value in
+        # Set by Auto car adjust. None leaves the slider's own value in
         # charge; a number replaces it without ever being written back.
         self.strength_override = None
-        # Set by Car type detect on all-wheel drive: the strength follows
+        # Set by Auto car adjust on all-wheel drive: the strength follows
         # the drift angle. _adapt is the share of it in use right now.
         self.angle_adaptive = False
         self._adapt = 1.0
@@ -3606,7 +3606,7 @@ class Bridge:
         return kind, clamp(mine, base - CAR_TYPE_ROOM, base + CAR_TYPE_ROOM)
 
     def _auto_strength(self):
-        """What Car type detect sets the strength to, or None to leave the
+        """What Auto car adjust sets the strength to, or None to leave the
         preset's own - it is off, or the car is not known yet."""
         if not self.cfg.get("car_detect"):
             return None
@@ -3614,7 +3614,7 @@ class Bridge:
         return None if shown is None else gain_from_shown(shown)
 
     def _auto_window(self):
-        """How far the slider may go while Car type detect holds it, as raw
+        """How far the slider may go while Auto car adjust holds it, as raw
         gains, or None when it does not hold it."""
         if not self.cfg.get("car_detect"):
             return None
@@ -4138,8 +4138,8 @@ TR = {
         "theme_dark": "Dark",
         "theme_light": "Light",
         "steer_in_general": 'Display steering settings in general',
-        "car_detect": 'Car type detect',
-        "car_detect_hint": 'Sets the assist strength for the car you are in: 40 on rear-wheel drive, 30 on Formula Drift cars. On all-wheel drive it also eases off at shallow angles and on the way out of a slide, where the front axle straightens the car by itself. The slider can still move 5 either way, and keeps where you leave it for that kind of car. Switch this off to use the whole range.',
+        "car_detect": "Auto car adjust",
+        "car_detect_hint": "Sets the assist strength for the car you are in: 40 to 50 on rear-wheel drive, 25 to 35 on Formula Drift cars, and the slider then covers only those ten points. Where you leave it is kept for that kind of car. On all-wheel drive the strength also eases off at shallow angles and on the way out of a slide, where the front axle straightens the car by itself. Switch this off to use the whole range.",
         "mirror_all_buttons": 'Release all buttons',
         "mirror_all_buttons_hint": 'Turn this on if gears, camera or menu buttons stopped working while the assist runs. Turn it off again if a single press starts arriving twice.',
         "st_waiting": 'Waiting',
@@ -4295,8 +4295,8 @@ TR = {
         "theme_dark": "Тёмная",
         "theme_light": "Светлая",
         "steer_in_general": 'Отображать настройки помощника на главной',
-        "car_detect": 'Определять тип машины',
-        "car_detect_hint": 'Подбирает силу ассиста под машину: 40 для заднего привода, 30 для машин Formula Drift. На полном приводе сила ещё и снижается на малых углах и на выходе из заноса, где передняя ось сама выпрямляет машину. Ползунок можно сдвинуть на 5 в любую сторону — положение запоминается для этого типа машин. Выключите, чтобы пользоваться всей шкалой.',
+        "car_detect": "Автонастройка под машину",
+        "car_detect_hint": "Подбирает силу ассиста под машину: 40–50 для заднего привода, 25–35 для машин Formula Drift — и весь ползунок становится этими десятью пунктами. Положение запоминается для этого типа машин. На полном приводе сила ещё и снижается на малых углах и на выходе из заноса, где передняя ось сама выпрямляет машину. Выключите, чтобы пользоваться всей шкалой.",
         "mirror_all_buttons": 'Освободить все кнопки',
         "mirror_all_buttons_hint": 'Включите, если при работающем ассисте перестали работать передачи, камера или кнопки меню. Выключите обратно, если одно нажатие стало срабатывать дважды.',
         "st_waiting": 'Ожидание',
@@ -4452,8 +4452,8 @@ TR = {
         "theme_dark": "Dark",
         "theme_light": "Light",
         "steer_in_general": 'Lenkeinstellungen auf der Startseite zeigen',
-        "car_detect": 'Fahrzeugtyp erkennen',
-        "car_detect_hint": 'Stellt die Assistenzstaerke passend zum Auto ein: 40 bei Heckantrieb, 30 bei Formula-Drift-Autos. Bei Allradantrieb nimmt sie ausserdem bei kleinen Winkeln und beim Herausfahren aus dem Drift ab, wo die Vorderachse das Auto von selbst geraderichtet. Der Regler laesst sich um 5 in jede Richtung verschieben und merkt sich die Stellung fuer diese Art von Auto. Ausschalten, um den ganzen Bereich zu nutzen.',
+        "car_detect": "Automatische Fahrzeuganpassung",
+        "car_detect_hint": "Stellt die Assistenzstaerke passend zum Auto ein: 40 bis 50 bei Heckantrieb, 25 bis 35 bei Formula-Drift-Autos, und der Regler umfasst dann nur diese zehn Punkte. Die Stellung wird fuer diese Art von Auto gemerkt. Bei Allradantrieb nimmt sie ausserdem bei kleinen Winkeln und beim Herausfahren aus dem Drift ab, wo die Vorderachse das Auto von selbst geraderichtet. Ausschalten, um den ganzen Bereich zu nutzen.",
         "mirror_all_buttons": 'Alle Tasten freigeben',
         "mirror_all_buttons_hint": 'Einschalten, wenn Gaenge, Kamera oder Menuetasten bei laufender Assistenz nicht mehr reagieren. Wieder ausschalten, wenn ein Druck doppelt ankommt.',
         "st_waiting": 'Wartet',
@@ -4609,8 +4609,8 @@ TR = {
         "theme_dark": "Dark",
         "theme_light": "Light",
         "steer_in_general": 'Afficher les reglages de direction sur l\'accueil',
-        "car_detect": 'Detecter le type de voiture',
-        "car_detect_hint": "Regle la force de l'assistant selon la voiture : 40 en propulsion, 30 sur les voitures Formula Drift. En transmission integrale, elle diminue aussi aux petits angles et en sortie de glisse, la ou l'essieu avant redresse la voiture tout seul. Le curseur peut bouger de 5 dans chaque sens et garde sa position pour ce type de voiture. Desactivez pour utiliser toute la plage.",
+        "car_detect": "Reglage auto selon la voiture",
+        "car_detect_hint": "Regle la force de l'assistant selon la voiture : 40 a 50 en propulsion, 25 a 35 sur les voitures Formula Drift, et le curseur ne couvre alors que ces dix points. Sa position est gardee pour ce type de voiture. En transmission integrale, elle diminue aussi aux petits angles et en sortie de glisse, la ou l'essieu avant redresse la voiture tout seul. Desactivez pour utiliser toute la plage.",
         "mirror_all_buttons": 'Liberer tous les boutons',
         "mirror_all_buttons_hint": "A activer si les vitesses, la camera ou les boutons de menu ne repondent plus quand l'assistance tourne. A desactiver si un appui arrive deux fois.",
         "st_waiting": 'Attente',
@@ -4766,8 +4766,8 @@ TR = {
         "theme_dark": "Dark",
         "theme_light": "Light",
         "steer_in_general": 'Mostrar los ajustes de direccion en general',
-        "car_detect": 'Detectar tipo de coche',
-        "car_detect_hint": 'Ajusta la fuerza del asistente al coche: 40 con traccion trasera, 30 en los coches Formula Drift. Con traccion total, ademas se suaviza en angulos pequenos y al salir del derrape, donde el eje delantero endereza el coche solo. El deslizador se puede mover 5 hacia cada lado y recuerda la posicion para ese tipo de coche. Desactivalo para usar todo el rango.',
+        "car_detect": "Ajuste automatico por coche",
+        "car_detect_hint": "Ajusta la fuerza del asistente al coche: 40 a 50 con traccion trasera, 25 a 35 en los coches Formula Drift, y el deslizador cubre entonces solo esos diez puntos. La posicion se recuerda para ese tipo de coche. Con traccion total, ademas se suaviza en angulos pequenos y al salir del derrape, donde el eje delantero endereza el coche solo. Desactivalo para usar todo el rango.",
         "mirror_all_buttons": 'Liberar todos los botones',
         "mirror_all_buttons_hint": 'Activalo si las marchas, la camara o los botones de menu dejan de funcionar con la asistencia activa. Desactivalo si una pulsacion llega dos veces.',
         "st_waiting": 'Esperando',
@@ -4930,8 +4930,8 @@ TR = {
         "theme_dark": 'ダーク',
         "theme_light": 'ライト',
         "steer_in_general": '操舵設定をメイン画面に表示',
-        "car_detect": '車種を自動判別',
-        "car_detect_hint": '乗っている車に合わせてアシスト強度を設定します。後輪駆動は40、Formula Drift の車は30。四輪駆動では、前輪が自然に車をまっすぐに戻す浅い角度やドリフトの立ち上がりで、強度をさらに弱めます。スライダーは上下5の範囲で調整でき、車の種類ごとに位置を記憶します。全範囲を使う場合はオフにしてください。',
+        "car_detect": "車に合わせて自動調整",
+        "car_detect_hint": "乗っている車に合わせてアシスト強度を設定します。後輪駆動は40〜50、Formula Drift の車は25〜35で、スライダーはその10ポイントの範囲だけになります。位置は車の種類ごとに記憶されます。四輪駆動では、前輪が自然に車をまっすぐに戻す浅い角度やドリフトの立ち上がりで、強度をさらに弱めます。全範囲を使う場合はオフにしてください。",
         "mirror_all_buttons": 'すべてのボタンを解放',
         "mirror_all_buttons_hint": 'アシスト作動中にギアやカメラ、メニューのボタンが効かない場合にオンにします。1回の操作が2回入る場合はオフに戻してください。',
         "st_waiting": '待機中',
@@ -5648,10 +5648,10 @@ body.t-light{
 
 /* ---------- slider ---------- */
 .sl{flex:1;height:14px;position:relative;cursor:pointer;min-width:60px}
-/* Car type detect holds the strength. With the car known, the band on
+/* Auto car adjust holds the strength. With the car known, the band on
    the track is how far the driver may move it; with no car yet, it is
    held still and dimmed. */
-/* Car type detect is choosing the strength */
+/* Auto car adjust is choosing the strength */
 .autob{display:none;vertical-align:middle;margin-left:8px;height:18px;
        box-sizing:border-box;padding:0 6px;border-radius:5px;
        border:1px solid var(--ok);background:rgba(13,222,100,.1);
@@ -6571,7 +6571,7 @@ function render(){
   reportHeight();
 }
 
-/* With Car type detect on, the strength belongs to the car: the slider
+/* With Auto car adjust on, the strength belongs to the car: the slider
    shows what the assist is using, travels there by itself when the car
    changes, and cannot be dragged. Switched off, it is the player's again
    and shows their own value, which was never overwritten. */
@@ -6839,7 +6839,11 @@ function bindRows(){
            kind of car - the preset's own value is not touched */
         const w = strengthWindow();
         if (!w || !state.car_type) return;
-        v = Math.max(w[0], Math.min(w[1], v));
+        /* ten points end to end, and only whole ones */
+        const pct = g => (g - r[1]) / (r[2] - r[1]) * 100;
+        const lo = Math.round(pct(w[0])), hi = Math.round(pct(w[1]));
+        const at = Math.max(lo, Math.min(hi, Math.round(lo + p * (hi - lo))));
+        v = r[1] + at / 100 * (r[2] - r[1]);
         gainShown = v;
         state.auto_strength = v;
         drawSlider(el);
@@ -8555,7 +8559,7 @@ class Api:
 
     def set_car_strength(self, kind, shown):
         """The driver's own strength for one kind of car, kept within the
-        room Car type detect allows around its default. Returns what was
+        room Auto car adjust allows around its default. Returns what was
         kept, so the slider can show it."""
         base = CAR_TYPE_STRENGTH.get(kind)
         if base is None:
