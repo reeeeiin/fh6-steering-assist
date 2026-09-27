@@ -1,8 +1,18 @@
 # Changelog
 
-## v2.1.6 (not released yet - builds 2.1.3 to 2.1.6)
+## v2.1.6 (not released yet - builds 2.1.3 to 2.1.17)
 
 ### Fixed
+
+- **A wired pad no longer freezes mid-drive.** Hiding the pad's XInput
+  node also shut out Windows' own input service, GameInputSvc, and the
+  pad's driver stopped passing anything on: the controller stayed
+  "connected" with its buttons and triggers stuck until the cable was
+  pulled. That service is now let through before anything is hidden - the
+  game still does not see the pad.
+- **Starting a new copy with the game running no longer doubles every
+  press.** The pad stays hidden while one copy of the app hands over to
+  the next, so the game never gets a chance to pick it up.
 
 - **The assist no longer drops out when you touch the pad.** It hid the
   controller's HID node from the game - the one DirectInput reads - and

@@ -3171,6 +3171,31 @@ def test_a_pad_that_wakes_up_elsewhere_later_is_still_found():
         fa.xinput_connected_slots = real
 
 
+def test_windows_input_service_is_let_through_before_anything_is_hidden():
+    """Refused the pad's XInput node, GameInputSvc left the pad's driver
+    frozen until the cable was pulled. It has to be on the list before the
+    first device is hidden - a refusal is what sets it off."""
+    fake = os.path.join(tempfile.mkdtemp(prefix="sys-"), "GameInputSvc.exe")
+    open(fake, "w").close()
+    real = fa.HidHide.SYSTEM_READERS
+    fa.HidHide.SYSTEM_READERS = (fake, os.path.join(os.path.dirname(fake),
+                                                    "missing.exe"))
+    try:
+        h = _hidhide(present=[MINE])
+        h.engage()
+        reg = h.calls.index(("--app-reg", fake))
+        hide = next(i for i, c in enumerate(h.calls) if c[0] == "--dev-hide")
+        assert reg < hide, h.calls
+        assert not any("missing.exe" in str(c) for c in h.calls), \
+            "a service this Windows does not have is not registered"
+        n = len([c for c in h.calls if c == ("--app-reg", fake)])
+        h.whitelist_companions()
+        assert len([c for c in h.calls if c == ("--app-reg", fake)]) == n, \
+            "registered once, not on every sweep"
+    finally:
+        fa.HidHide.SYSTEM_READERS = real
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

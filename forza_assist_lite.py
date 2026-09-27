@@ -3070,9 +3070,32 @@ class HidHide:
                           "xboxaccessories", "hidguardian", "antimicro",
                           "keysticks", "controllercompanion")
 
+    # Windows' own input service, let through before anything is hidden.
+    # With the pad's XInput node hidden from it (2.1.6 on), it kept being
+    # refused the pad, and the pad's driver stopped passing anything on:
+    # the slot stayed connected with its state frozen, until the cable was
+    # pulled. Measured on the machine it was found on - hidden from
+    # everything: frozen within minutes, sometimes seconds; this service let
+    # through: 40 minutes clean, and the game still did not see the pad
+    # (it reads through its own copy of GameInput, not this service).
+    # By full path, whether or not it is running at the time.
+    SYSTEM_READERS = (r"%SystemRoot%\System32\GameInputSvc.exe",)
+
+    def whitelist_system_readers(self):
+        for raw in self.SYSTEM_READERS:
+            path = os.path.expandvars(raw)
+            if not os.path.isfile(path) or path.lower() in self._apps:
+                continue
+            try:
+                self._run("--app-reg", path)
+                self._apps.add(path.lower())
+            except Exception:
+                pass
+
     def whitelist_companions(self):
         if not self.cli:
             return
+        self.whitelist_system_readers()
         try:
             names = tuple(self.COMPANION_PATTERNS) + tuple(
                 str(x).lower() for x in self.extra_apps if str(x).strip())
