@@ -142,7 +142,18 @@ SWEEP_SEC = 20.0
 # idle one is silent too - which is why silence alone changes nothing, and
 # only a pad that is talking on another slot is switched to.
 PAD_SILENT_SEC = 3.0
-PAD_SILENT_NOTE_SEC = 20.0  # silence with nowhere to go, worth a line
+PAD_SILENT_NOTE_SEC = 20.0
+# A pad that counts packets even while nothing on it changes - the Flydigi
+# does, about 49 a second at rest - and then stops counting has frozen: its
+# slot still reads, with the last state stuck in it, triggers and all. Seen
+# again and again within a second or two of a race starting, fixed each
+# time by pulling the cable. So after PAD_FREEZE_SEC of that the report
+# goes neutral, as for a lost pad, and the pad's device is restarted - the
+# cable pull, done in software. Pads that only count when something changes
+# never qualify: holding the throttle still would look the same.
+PAD_CHATTY_TICKS = 20       # unchanged-state packets in a second: chatty
+PAD_FREEZE_SEC = 1.0
+PAD_RESTART_GAP = 10.0      # seconds between two restarts of the pad  # silence with nowhere to go, worth a line
 YIELD_FRAMES = 5
 BUTTON_NAMES = {
     0x1000: "A", 0x2000: "B", 0x4000: "X", 0x8000: "Y",
@@ -432,6 +443,19 @@ def xinput_read_state(slot: int) -> tuple:
     if _xinput.XInputGetState(slot, ctypes.byref(st)) == 0:
         return st.Gamepad, st.dwPacketNumber
     return None, 0
+
+def restart_device(instance_id: str) -> tuple:
+    """Restart one device, as unplugging and plugging it in would. Needs
+    administrator rights, which this app runs with."""
+    try:
+        cp = subprocess.run(["pnputil", "/restart-device", instance_id],
+                            capture_output=True, text=True, errors="replace",
+                            creationflags=0x08000000, timeout=20)
+    except Exception as e:
+        return False, "%s: %s" % (type(e).__name__, e)
+    out = " ".join((cp.stdout or "").split())[-160:]
+    return cp.returncode == 0, out or ("exit %d" % cp.returncode)
+
 
 def xinput_rumble(slot: int, left: float, right: float) -> None:
     vib = XINPUT_VIBRATION(int(max(0.0, min(1.0, left)) * 65535),
@@ -2777,6 +2801,7 @@ class HidHide:
         # True once the pad's XInput node is hidden as well - from then on
         # the game sees only our pad and every button has to go through it.
         self.xinput_hidden = False
+        self.xinput_nodes = set()   # the pads' XInput nodes, for a restart
         # What HidHide looked like before we touched it. Closing puts it
         # back to exactly this: anything the user hid for their own reasons
         # stays hidden, and the cloak goes back on or off as we found it.
@@ -3220,6 +3245,10 @@ class HidHide:
             node = ""
         if not node:
             return ""
+        nodes = getattr(self, "xinput_nodes", None)
+        if nodes is None:
+            nodes = self.xinput_nodes = set()
+        nodes.add(node)
         if node in self.hidden or node in self._prior_hidden:
             self.xinput_hidden = True
             return ""
@@ -3408,6 +3437,12 @@ class Bridge:
         self.pad_hz = 0
         self._pad_packet = -1
         self._pad_moved = 0.0       # when the pad's packet number last moved
+        self._pad_chatty = False
+        self._pad_idle_ticks = 0
+        self._pad_idle_t0 = 0.0
+        self._pad_last = None       # (packet, state) last read
+        self._pad_frozen = False
+        self._restart_t = float("-inf")
         self._pad_silent = False
         self._slots_seen = None
         self._pad_packets = 0
@@ -3739,6 +3774,57 @@ class Bridge:
                        % (self.physical_slot, quiet, slots,
                           sorted(self.virtual_slots)))
 
+    def _check_frozen(self, packet, gp, now) -> bool:
+        """True while a chatty pad has stopped counting (see PAD_FREEZE_SEC).
+        The first time, the pad's device is restarted."""
+        state = (gp.wButtons, gp.bLeftTrigger, gp.bRightTrigger,
+                 gp.sThumbLX, gp.sThumbLY, gp.sThumbRX, gp.sThumbRY)
+        last = getattr(self, "_pad_last", None)
+        self._pad_last = (packet, state)
+        if last is None or packet != last[0]:
+            if last is not None and state == last[1]:
+                # counted with nothing changed: what a chatty pad does
+                if now - self._pad_idle_t0 >= 1.0:
+                    self._pad_idle_t0, self._pad_idle_ticks = now, 0
+                self._pad_idle_ticks += 1
+                if (not self._pad_chatty
+                        and self._pad_idle_ticks >= PAD_CHATTY_TICKS):
+                    self._pad_chatty = True
+            self._pad_count_t = now
+            if self._pad_frozen:
+                self._pad_frozen = False
+                self._note("pad unfrozen on slot %s" % self.physical_slot)
+            return False
+        if not self._pad_chatty:
+            return False
+        if now - getattr(self, "_pad_count_t", now) < PAD_FREEZE_SEC:
+            return False
+        if not self._pad_frozen:
+            self._pad_frozen = True
+            self._note("pad frozen on slot %s: its state stuck, nothing "
+                       "counted for %.1f s" % (self.physical_slot,
+                                               now - self._pad_count_t))
+            self._restart_pad(now)
+        return True
+
+    def _restart_pad(self, now):
+        """Pull the cable in software: restart the pad's XInput device.
+        In a thread - it takes a second or two - and not too often."""
+        if now - self._restart_t < PAD_RESTART_GAP:
+            return
+        self._restart_t = now
+        nodes = sorted(getattr(self.hidhide, "xinput_nodes", None) or ())
+        if not nodes:
+            self._note("pad frozen, but its device is not known - "
+                       "replug it to get it back")
+            return
+
+        def run():
+            for node in nodes:
+                ok, why = restart_device(node)
+                self._note("restarted %s: %s" % (node, "ok" if ok else why))
+        threading.Thread(target=run, daemon=True).start()
+
     def _watch_slots(self):
         """Every change in the XInput slots, as this app sees them - it is
         on HidHide's list, so the player's pad counts too."""
@@ -4017,6 +4103,8 @@ class Bridge:
                     self._count_pad_packet(packet, now)
                     if gp is not None:
                         self._watch_silence(packet, now)
+                        if self._check_frozen(packet, gp, now):
+                            gp = None       # let go of what it is stuck on
                 if gp is None:
                     if self.status_code != "pad_lost":
                         self._note("pad lost (%s)" % (

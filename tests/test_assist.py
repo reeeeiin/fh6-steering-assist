@@ -3196,6 +3196,98 @@ def test_windows_input_service_is_let_through_before_anything_is_hidden():
         fa.HidHide.SYSTEM_READERS = real
 
 
+# ---------------- a frozen pad is let go of and restarted ----------------
+
+class _GP:
+    def __init__(self, lt=0, rt=0, lx=0, buttons=0):
+        self.wButtons, self.bLeftTrigger, self.bRightTrigger = buttons, lt, rt
+        self.sThumbLX = lx
+        self.sThumbLY = self.sThumbRX = self.sThumbRY = 0
+
+
+def _freeze_bridge():
+    b = _menu_bridge()
+    b.physical_slot = 0
+    b._pad_chatty = False
+    b._pad_idle_ticks = 0
+    b._pad_idle_t0 = 0.0
+    b._pad_last = None
+    b._pad_frozen = False
+    b._restart_t = float("-inf")
+    b.notes = []
+    b._note = b.notes.append
+
+    class _HH:
+        xinput_nodes = {"USB\\VID_045E&PID_028E\\FLYDIGI"}
+    b.hidhide = _HH()
+    return b
+
+
+def _run_pad(b, frames, t0=0.0, dt=1 / 60.0):
+    """frames: (packet, gp) per frame. Returns what _check_frozen said."""
+    out, t = [], t0
+    for packet, gp in frames:
+        out.append(b._check_frozen(packet, gp, t))
+        t += dt
+    return out, t
+
+
+def test_a_chatty_pad_that_stops_counting_is_let_go_and_restarted():
+    """The Flydigi counts about 49 packets a second at rest. When it stops,
+    its slot keeps the last state - here the brake held down - so the
+    report goes neutral and the device is restarted, once."""
+    b = _freeze_bridge()
+    restarted = []
+    real = fa.restart_device
+    fa.restart_device = lambda node: (restarted.append(node), (True, ""))[1]
+    try:
+        idle = _GP()
+        braking = _GP(lt=255)
+        frames = [(p, idle) for p in range(120)]            # chatty at rest
+        frames += [(120 + p, braking) for p in range(30)]   # driving
+        frames += [(149, braking)] * 120                    # frozen, 2 s
+        said, _ = _run_pad(b, frames)
+        assert b._pad_chatty
+        assert not any(said[:150]), "no freeze while it counts"
+        assert any(said[150 + 70:]), "frozen after a second: let go"
+        time.sleep(0.2)                                     # the thread
+        assert restarted == ["USB\\VID_045E&PID_028E\\FLYDIGI"], restarted
+        assert any("frozen" in n for n in b.notes), b.notes
+    finally:
+        fa.restart_device = real
+
+
+def test_a_quiet_pad_held_still_is_not_mistaken_for_frozen():
+    """An ordinary pad counts only when something changes: throttle held
+    steady looks exactly like a frozen one, and must be left alone."""
+    b = _freeze_bridge()
+    real = fa.restart_device
+    fa.restart_device = lambda node: (_ for _ in ()).throw(AssertionError(
+        "restarted a pad that was only being held still"))
+    try:
+        frames = [(p, _GP(rt=p % 255)) for p in range(60)]  # changing input
+        frames += [(59, _GP(rt=59))] * 600                  # held still 10 s
+        said, _ = _run_pad(b, frames)
+        assert not b._pad_chatty and not any(said)
+    finally:
+        fa.restart_device = real
+
+
+def test_restarts_are_spaced_out():
+    b = _freeze_bridge()
+    calls = []
+    real = fa.restart_device
+    fa.restart_device = lambda node: (calls.append(node), (True, ""))[1]
+    try:
+        b._restart_pad(100.0)
+        b._restart_pad(103.0)
+        b._restart_pad(111.0)
+        time.sleep(0.2)
+        assert len(calls) == 2, calls
+    finally:
+        fa.restart_device = real
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
