@@ -32,7 +32,9 @@ app speaks.
   stick, how fast it answers, and the speed below which it leaves you alone
   entirely — plus three preset slots of your own to keep them in.
 - **It shows you what it is doing.** Your own input and the assisted one side
-  by side, live, with the speed and the rate the game is talking at.
+  by side, and live dials: the drift angle and how it began, speed against the
+  revs, the game's callback, a drift odometer - and the car you are in, with
+  its picture.
 - **Works when your buttons do not.** On some machines a hidden controller
   costs you gears and camera. One switch hands every button back, and the FAQ
   in the app takes you straight to it.
@@ -87,16 +89,19 @@ Everything here is real, and none of it is a surprise to us.
 - **PlayStation controllers are only half supported.** A DualShock or DualSense
   is read differently from an Xbox pad, and not everything lands where it
   should yet.
-- **The correction pauses while you shift.** Press a gear, the camera, or
-  anything else the assist does not carry, and the game reads your own
-  controller for that moment — steering included. *Release all buttons* in
-  Settings removes it on machines where that switch is safe.
 - **Setup does not go smoothly on every machine.** Two drivers, an installer
   that sometimes wants a restart, and an exe nobody has signed. Most of what
   has gone wrong so far happened here.
-- **Several launches in one sitting can leave it unreliable.** Restarting
-  Windows clears it. Most of the causes are fixed; if you still meet this one,
-  it is worth telling us about.
+- **Some wired controllers can freeze at the start of a race.** Seen on a
+  Flydigi: the pad stops sending and its buttons stay stuck. The app now
+  notices within a second, lets go of the stuck input and restarts the pad by
+  itself. If it still happens to you, send feedback from the app.
+- ✅ **Solved: the correction paused while you shifted.** Your controller is
+  now hidden from the game completely, and every button goes through the
+  assist's pad, so steering never falls back to yours mid-drift.
+- ✅ **Solved: several launches in one sitting could leave it unreliable.**
+  The controller is now hidden from XInput as well, and handed over cleanly
+  from one launch to the next. No restart of Windows needed.
 
 ## Troubleshooting
 
@@ -180,9 +185,10 @@ Third-party components keep their own licences, listed in [NOTICE.md](NOTICE.md)
 Roughly in the order it is likely to happen. None of it is a promise with a
 date on it.
 
-- Presets that follow the car you are driving.
+- ✅ Presets that follow the car you are driving - done in 2.2 as Auto car
+  adjust.
+- ✅ Drift angle and more, shown as dials - done in 2.2.
 - An oversteer assist alongside the countersteer one.
-- Drift angle and stability shown as dials, not figures.
 - Statistics, and a screen to keep them on.
 - PlayStation controllers, properly.
 - Keys for the settings you change most.

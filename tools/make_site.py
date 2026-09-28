@@ -24,8 +24,9 @@ import site_i18n as i18n         # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
 REPO = "https://github.com/reeeeiin/fh6-steering-assist"
-# Design units, sized to the tallest screen the app has - Settings.
-PREVIEW_H = 820
+# Design units: the main page at its fullest, which is how tall the app's
+# own window is. Longer pages scroll inside it, as they do in the app.
+PREVIEW_H = 570
 
 # The stand-in for the Python side. It answers the same calls the app makes,
 # with a car that is permanently mid-drift so the readouts have something to
@@ -295,13 +296,22 @@ def index_page(app_html: str) -> str:
         '<article class="tile"><h3 data-t="f%dt">%s</h3>'
         '<p data-t="f%db">%s</p></article>' % (i, t, i, b)
         for i, (t, b) in enumerate(i18n.FEATURES["en"]))
+    ok = lambda key, word: ('<span class="tag" data-t="%s">%s</span>'
+                            % (key, word))
     knowns = "\n".join(
-        '<li><h3 data-t="k%dt">%s</h3><p data-t="k%db">%s</p></li>'
-        % (i, t, i, b.replace("__SETTING__", setting_name("en")))
+        '<li%s><h3><span data-t="k%dt">%s</span>%s</h3>'
+        '<p data-t="k%db">%s</p></li>'
+        % (' class="solved"' if i in i18n.KNOWN_SOLVED else '', i, t,
+           ok("solved", i18n.UI["en"]["solved"])
+           if i in i18n.KNOWN_SOLVED else '',
+           i, b.replace("__SETTING__", setting_name("en")))
         for i, (t, b) in enumerate(i18n.KNOWN["en"]))
     road = "\n".join(
-        '<li class="ritem"><h3 data-t="r%dt">%s</h3>'
-        '<p data-t="r%db">%s</p></li>' % (i, t, i, b)
+        '<li class="ritem%s"><h3><span data-t="r%dt">%s</span>%s</h3>'
+        '<p data-t="r%db">%s</p></li>'
+        % (' done' if i in i18n.ROADMAP_DONE else '', i, t,
+           ok("done", i18n.UI["en"]["done"])
+           if i in i18n.ROADMAP_DONE else '', i, b)
         for i, (t, b) in enumerate(i18n.ROADMAP["en"]))
     steps = "\n".join(
         '<figure class="step">'
@@ -517,6 +527,18 @@ h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
                background:var(--bg);border:2px solid var(--accent)}
 .ritem h3{margin:0 0 4px;font-size:15px}
 .ritem p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.6}
+/* What has shipped goes green - on the rail, in its name, and in a tag -
+   and what is fixed keeps its place in the list, green and quieter, so
+   anybody who met it can see it is gone. The green is the app's own. */
+.tag{display:inline-block;margin-left:9px;padding:2px 7px 1px;
+     border-radius:5px;font-size:11px;font-weight:700;line-height:1.4;
+     vertical-align:2px;color:#0DDE64;background:rgba(13,222,100,.1);
+     border:1px solid rgba(13,222,100,.55)}
+.ritem.done::before{background:#0DDE64;border-color:#0DDE64}
+.ritem.done h3 > span:first-child{color:#0DDE64}
+.known li.solved::before{background:#0DDE64}
+.known li.solved h3 > span:first-child,
+.known li.solved p{opacity:.7}
 
 /* The page ends where it began - the same mark and the same two buttons,
    smaller, after everything has been said. */

@@ -1,8 +1,10 @@
 # Changelog
 
-## v2.2 (not released yet - test builds from 2.2.0)
+## v2.2.0
 
-Everything from the unreleased 2.1.6 below goes out with it.
+A new look for the window and the settings, dials on the main page, the
+car you are in with its picture, Auto car adjust, and every fix from the
+2.1.6 builds that were never released on their own.
 
 ### Changed
 
@@ -21,17 +23,25 @@ Everything from the unreleased 2.1.6 below goes out with it.
   line.
 - **A short footer** is back at the foot of every page: the notice on the
   left and the full version on the right.
-
-## v2.1.6 (not released yet - builds 2.1.3 to 2.1.17)
+- **FAQ is one long page**, scrolled with the window, instead of a box
+  that scrolled inside itself. The scrollbar sits in the middle of the
+  right-hand margin and shows only when the pointer comes to it.
+- **Motion:** the theme and the interface scale change the way the
+  language does - the lines leave, the change is made, they come back -
+  with the colours fading and the window easing to its new size. Slider
+  knobs ride on springs: they swell while held and stretch the way they
+  move. Switching Auto car adjust fades the strength out and back in on
+  its new scale instead of jumping.
 
 ### Fixed
 
-- **A wired pad no longer freezes mid-drive.** Hiding the pad's XInput
-  node also shut out Windows' own input service, GameInputSvc, and the
-  pad's driver stopped passing anything on: the controller stayed
-  "connected" with its buttons and triggers stuck until the cable was
-  pulled. That service is now let through before anything is hidden - the
-  game still does not see the pad.
+- **A wired pad that freezes is let go of and brought back.** Some wired
+  pads - seen on a Flydigi - stop sending at the start of a race, with
+  their buttons and triggers stuck until the cable is pulled. Windows' own
+  input service is now let through before the pad is hidden, which made it
+  rarer, and when it does happen the app notices within a second, lets go
+  of the stuck input and restarts the pad itself. Still under watch - if
+  you meet it, send feedback.
 - **Starting a new copy with the game running no longer doubles every
   press.** The pad stays hidden while one copy of the app hands over to
   the next, so the game never gets a chance to pick it up.
@@ -59,6 +69,11 @@ Everything from the unreleased 2.1.6 below goes out with it.
 
 ### Added
 
+- **Dials on the main page**: the drift angle and how the drift began,
+  speed against the revs with the gear, the game's callback, and a drift
+  odometer that keeps counting across launches.
+- **The car you are in, with its picture**, taken from the game's own
+  cache - nothing is downloaded - together with its drive and class.
 - **Auto car adjust**, the last switch under Steering, on by default. It
   sets the assist strength for the car you are in - 40 to 50 on rear-wheel
   drive, 25 to 35 on Formula Drift cars - and the slider then covers only

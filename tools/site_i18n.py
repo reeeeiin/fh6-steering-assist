@@ -53,6 +53,8 @@ UI = {
     "oline": "Stop fighting your own car.",
     "osub": "Switch it on, keep your foot in it, and enjoy the roads of "
             "Horizon the way you imagined them.",
+    "done": 'Done',
+    "solved": 'Solved',
 },
 "ru": {
     "h1": "Ассист дрифта на геймпаде для Forza Horizon",
@@ -76,6 +78,8 @@ UI = {
     "l_known": "Всё перечисленное — правда, и ничто из этого для нас не новость. Мы этим занимаемся.",
     "oline": "Хватит бороться с собственной машиной.",
     "osub": "Включите ассист, держите газ и наслаждайтесь дорогами Horizon такими, какими вы их себе представляли.",
+    "done": 'Готово',
+    "solved": 'Решено',
 },
 "es": {
     "h1": "Asistente de derrape con mando para Forza Horizon",
@@ -107,6 +111,8 @@ UI = {
     "oline": "Deja de pelearte con tu propio coche.",
     "osub": "Enciéndelo, no levantes el pie y disfruta de las "
             "carreteras de Horizon como las imaginabas.",
+    "done": 'Hecho',
+    "solved": 'Resuelto',
 },
 "fr": {
     "h1": "Assistant de drift à la manette pour Forza Horizon",
@@ -141,6 +147,8 @@ UI = {
     "oline": "Arrêtez de vous battre avec votre propre voiture.",
     "osub": "Lancez-le, gardez le pied dedans et profitez des routes de "
             "Horizon telles que vous les imaginiez.",
+    "done": 'Fait',
+    "solved": 'Résolu',
 },
 "de": {
     "h1": "Drift-Assistent für den Controller in Forza Horizon",
@@ -174,6 +182,8 @@ UI = {
     "oline": "Hör auf, gegen dein eigenes Auto zu kämpfen.",
     "osub": "Einschalten, auf dem Gas bleiben und die Straßen von "
             "Horizon so genießen, wie du sie dir vorgestellt hast.",
+    "done": 'Erledigt',
+    "solved": 'Gelöst',
 },
 "ja": {
     "h1": "Forza Horizon 向けゲームパッド用ドリフトアシスト",
@@ -197,6 +207,8 @@ UI = {
     "l_known": "ここに書いたことはすべて事実で、こちらも把握しています。順次対応しています。",
     "oline": "自分の車と戦うのは、もう終わりです。",
     "osub": "オンにして、アクセルを踏んだまま、思い描いていたとおりの Horizon の道を楽しんでください。",
+    "done": '完了',
+    "solved": '解決済み',
 },
 }
 
@@ -215,8 +227,7 @@ FEATURES = {
      "Strength, damping, the shape of the stick, how fast it answers, and "
      "the speed below which it leaves you alone entirely."),
     ("It shows you what it is doing",
-     "Your own input and the assisted one side by side, live, with the "
-     "speed and the rate the game is talking at."),
+     "Your input and the assisted one side by side, and live dials: the drift angle and how it began, speed against the revs, the game's callback, a drift odometer - and the car you are in, with its picture."),
     ("Works when your buttons do not",
      "On some machines a hidden controller costs you gears and camera. One "
      "switch hands every button back, and the FAQ takes you to it."),
@@ -240,7 +251,7 @@ FEATURES = {
     ("Пять ползунков, каждый об одном",
      "Сила, демпфирование, форма стика, скорость отклика и порог, ниже которого ассист вообще не вмешивается."),
     ("Показывает, что именно делает",
-     "Ваш ввод и итоговый — рядом, в реальном времени, вместе со скоростью и частотой, с которой говорит игра."),
+     'Ваш ввод и итоговый — рядом, и живые приборы: угол заноса и способ входа, скорость на фоне оборотов, отклик игры, одометр дрифта — и машина, в которой вы едете, с её картинкой.'),
     ("Работает, даже когда кнопки — нет",
      "На части машин скрытый геймпад отбирает передачи и камеру. Один переключатель возвращает все кнопки, а FAQ ведёт прямо к нему."),
     ("Ничего не нужно ставить руками",
@@ -266,8 +277,7 @@ FEATURES = {
      "responde y la velocidad por debajo de la cual te deja del todo en "
      "paz."),
     ("Te enseña lo que está haciendo",
-     "Tu propia entrada y la asistida, una al lado de la otra y en directo, "
-     "con la velocidad y la frecuencia a la que habla el juego."),
+     'Tu entrada y la asistida, una al lado de la otra, y relojes en directo: el ángulo del derrape y cómo empezó, la velocidad frente a las revoluciones, la respuesta del juego, un cuentakilómetros de derrape, y el coche que llevas, con su imagen.'),
     ("Funciona aunque tus botones no",
      "En algunos equipos, ocultar el mando te cuesta las marchas y la "
      "cámara. Un interruptor devuelve todos los botones, y las "
@@ -299,9 +309,7 @@ FEATURES = {
      "Force, amortissement, courbe du stick, vitesse de réaction, et "
      "l'allure sous laquelle il vous laisse entièrement tranquille."),
     ("Il montre ce qu'il fait",
-     "Votre entrée et celle assistée côte à côte, "
-     "en direct, avec la vitesse et la cadence à laquelle le jeu "
-     "parle."),
+     "Votre entrée et celle assistée côte à côte, et des cadrans en direct : l'angle du drift et la façon dont il a commencé, la vitesse face au régime, la réponse du jeu, un compteur de drift, et la voiture que vous conduisez, avec son image."),
     ("Il marche même quand vos boutons non",
      "Sur certaines machines, une manette masquée vous coûte les "
      "vitesses et la caméra. Un seul réglage rend tous les "
@@ -335,8 +343,7 @@ FEATURES = {
      "Reaktionsgeschwindigkeit und das Tempo, unterhalb dessen er dich "
      "völlig in Ruhe lässt."),
     ("Er zeigt, was er tut",
-     "Deine Eingabe und die unterstützte nebeneinander, live, samt "
-     "Tempo und der Rate, mit der das Spiel sendet."),
+     'Deine Eingabe und die unterstützte nebeneinander, dazu Live-Anzeigen: Driftwinkel und wie der Drift begann, Tempo vor der Drehzahl, die Antwort des Spiels, ein Drift-Kilometerzähler - und das Auto, in dem du sitzt, mit seinem Bild.'),
     ("Läuft auch, wenn deine Tasten es nicht tun",
      "Auf manchen Rechnern kostet ein versteckter Controller Gänge und "
      "Kamera. Ein Schalter gibt alle Tasten zurück, und die Fragen "
@@ -364,7 +371,7 @@ FEATURES = {
     ("5つのスライダー、それぞれ役割はひとつ",
      "効きの強さ、減衰、スティックのカーブ、反応の速さ、そしてこの速度以下では一切手を出さないという境目。"),
     ("何をしているかが見える",
-     "自分の入力と補正後の入力を並べてリアルタイムに表示。速度と、ゲームがデータを送ってくる頻度も一緒に。"),
+     '自分の入力と補正後の入力を並べて表示。さらにライブのメーター：ドリフト角と入り方、回転数と並ぶ速度、ゲームの応答、ドリフト距離計。いま乗っている車も画像つきで。'),
     ("ボタンが効かなくなっても動く",
      "環境によっては、パッドを隠すとギアやカメラが使えなくなります。スイッチひとつで全ボタンが戻り、FAQがその場所まで案内します。"),
     ("手作業のインストールはなし",
@@ -529,107 +536,128 @@ KNOWN = {
     ("PlayStation controllers are only half supported",
      "A DualShock or DualSense is read differently from an Xbox pad, and "
      "not everything lands where it should yet."),
-    ("The correction pauses while you shift",
-     "Press a gear, the camera, or anything else the assist does not carry, "
-     "and the game reads your own controller for that moment - steering "
-     "included. It is brief, and it is why the wheel can twitch mid-drift. "
-     "__SETTING__ removes it on machines where that switch is safe."),
     ("Setup does not go smoothly on every machine",
      "Two drivers, an installer that sometimes wants a restart, and an exe "
      "nobody has signed. Most of what has gone wrong so far happened here."),
-    ("Several launches in one sitting can leave it unreliable",
-     "Restarting Windows clears it. Most of the causes are fixed; if you "
-     "still meet this one, it is worth telling us about."),
+    ("Some wired controllers can freeze at the start of a race",
+     "Seen on a Flydigi: the pad stops sending and its buttons stay stuck. "
+     "The app now notices within a second, lets go of the stuck input and "
+     "restarts the pad by itself. If it still happens to you, send feedback "
+     "from the app."),
+    ("The correction paused while you shifted",
+     "Your controller is now hidden from the game completely, and every "
+     "button goes through the assist's pad, so steering never falls back to "
+     "yours mid-drift."),
+    ("Several launches in one sitting could leave it unreliable",
+     "The controller is now hidden from XInput as well, and handed over "
+     "cleanly from one launch to the next. No restart of Windows needed."),
 ],
 "ru": [
     ("Геймпады PlayStation поддержаны наполовину",
      "DualShock и DualSense читаются иначе, чем пад Xbox, и пока не всё попадает туда, куда должно."),
-    ("Коррекция замолкает, пока вы переключаетесь",
-     "Нажали передачу, камеру или что-то ещё, чего ассист не передаёт, — и на этот момент игра читает ваш геймпад напрямую, вместе с рулём. Это доли секунды, и именно из-за них руль может дёрнуться посреди заноса. __SETTING__ убирает это на машинах, где такой переключатель безопасен."),
     ("Установка проходит гладко не на каждой машине",
      "Два драйвера, установщик, который иногда просит перезагрузку, и exe без подписи. Почти всё, что до сих пор ломалось, ломалось именно здесь."),
-    ("Несколько запусков подряд могут расшатать работу",
-     "Перезагрузка Windows это лечит. Большая часть причин уже устранена; если вы всё же на это наткнулись — расскажите нам."),
+    ("Некоторые проводные геймпады могут зависать на старте заезда",
+     "Замечено на Flydigi: пад перестаёт слать данные, кнопки «залипают». Теперь приложение замечает это за секунду, отпускает залипший ввод и само перезапускает пад. Если у вас это всё ещё случается — отправьте отзыв из приложения."),
+    ("Коррекция замолкала, пока вы переключались",
+     "Теперь ваш геймпад полностью скрыт от игры, и все кнопки идут через пад ассиста — руль больше не переходит к вам посреди заноса."),
+    ("Несколько запусков подряд расшатывали работу",
+     "Геймпад теперь скрыт и от XInput, а при перезапуске приложение аккуратно передаёт его следующей копии. Перезагружать Windows больше не нужно."),
 ],
 "es": [
     ("Los mandos de PlayStation solo están soportados a medias",
      "Un DualShock o un DualSense se leen de forma distinta a un mando de "
      "Xbox, y todavía no todo llega donde debería."),
-    ("La corrección se pausa mientras cambias de marcha",
-     "Pulsa una marcha, la cámara o cualquier otra cosa que la "
-     "asistencia no transmite y, en ese instante, el juego lee tu propio "
-     "mando, dirección incluida. Dura un momento, y por eso el volante "
-     "puede dar un tirón en pleno derrape. __SETTING__ lo elimina en "
-     "los equipos donde ese interruptor es seguro."),
     ("La instalación no va bien en todos los equipos",
      "Dos controladores, un instalador que a veces pide reiniciar y un exe "
      "que nadie ha firmado. Casi todo lo que ha salido mal hasta ahora ha "
      "pasado aquí."),
-    ("Varios arranques seguidos pueden dejarla inestable",
-     "Reiniciar Windows lo soluciona. La mayoría de las causas ya "
-     "están corregidas; si aun así te topas con esto, merece la "
-     "pena contárnoslo."),
+    ("Algunos mandos con cable pueden congelarse al empezar una carrera",
+     "Visto en un Flydigi: el mando deja de enviar y sus botones se quedan "
+     "pulsados. Ahora la app lo detecta en un segundo, suelta la entrada "
+     "atascada y reinicia el mando por sí sola. Si aún te pasa, envía un "
+     "comentario desde la app."),
+    ("La corrección se pausaba mientras cambiabas de marcha",
+     "Ahora tu mando queda oculto del todo para el juego y cada botón pasa "
+     "por el mando de la asistencia, así que la dirección ya no vuelve al "
+     "tuyo en pleno derrape."),
+    ("Varios arranques seguidos podían dejarla inestable",
+     "El mando ahora también se oculta de XInput y pasa limpiamente de un "
+     "arranque al siguiente. Ya no hace falta reiniciar Windows."),
 ],
 "fr": [
     ("Les manettes PlayStation ne sont qu'à moitié prises en "
      "charge",
      "Une DualShock ou une DualSense se lit autrement qu'une manette Xbox, "
      "et tout n'arrive pas encore là où il faudrait."),
-    ("La correction se met en pause pendant que vous passez les vitesses",
-     "Appuyez sur une vitesse, la caméra ou tout ce que l'assistance "
-     "ne transmet pas, et le jeu lit votre manette pendant cet instant, "
-     "direction comprise. C'est bref, et c'est pour cela que le volant peut "
-     "sursauter en plein drift. __SETTING__ supprime le problème sur "
-     "les machines où ce réglage est sans risque."),
     ("L'installation ne se passe pas bien sur toutes les machines",
      "Deux pilotes, un installeur qui réclame parfois un "
      "redémarrage, et un exe que personne n'a signé. L'essentiel "
      "de ce qui a raté jusqu'ici s'est produit là."),
-    ("Plusieurs lancements d'affilée peuvent la rendre instable",
-     "Redémarrer Windows règle le problème. La plupart des "
-     "causes sont corrigées ; si vous tombez encore dessus, "
-     "dites-le-nous."),
+    ("Certaines manettes filaires peuvent se figer au départ d'une course",
+     "Constaté sur une Flydigi : la manette cesse d'envoyer et ses boutons "
+     "restent bloqués. L'application le remarque désormais en une seconde, "
+     "relâche l'entrée bloquée et redémarre la manette d'elle-même. Si cela "
+     "vous arrive encore, envoyez un retour depuis l'application."),
+    ("La correction se mettait en pause pendant les changements de "
+     "vitesse",
+     "Votre manette est désormais entièrement cachée au jeu et chaque "
+     "bouton passe par la manette de l'assistance : la direction ne revient "
+     "plus à la vôtre en plein drift."),
+    ("Plusieurs lancements d'affilée pouvaient la rendre instable",
+     "La manette est maintenant cachée aussi à XInput et passe proprement "
+     "d'un lancement au suivant. Plus besoin de redémarrer Windows."),
 ],
 "de": [
     ("PlayStation-Controller werden nur halb unterstützt",
      "Ein DualShock oder DualSense wird anders gelesen als ein Xbox-Pad, "
      "und noch landet nicht alles dort, wo es hingehört."),
-    ("Die Korrektur pausiert, während du schaltest",
-     "Drückst du einen Gang, die Kamera oder sonst etwas, das die "
-     "Assistenz nicht durchreicht, liest das Spiel in diesem Moment deinen "
-     "eigenen Controller - die Lenkung eingeschlossen. Es dauert nur einen "
-     "Augenblick, und genau deshalb kann das Rad mitten im Drift zucken. "
-     "__SETTING__ nimmt das auf Rechnern weg, auf denen dieser Schalter "
-     "sicher ist."),
     ("Die Einrichtung läuft nicht auf jedem Rechner glatt",
      "Zwei Treiber, ein Installer, der manchmal einen Neustart will, und "
      "eine exe, die niemand signiert hat. Das meiste, was bisher schiefging, "
      "ging hier schief."),
-    ("Mehrere Starts hintereinander können sie unzuverlässig "
-     "machen",
-     "Ein Neustart von Windows räumt das auf. Die meisten Ursachen "
-     "sind behoben; falls es dir trotzdem begegnet, sag uns Bescheid."),
+    ("Manche kabelgebundene Controller können beim Rennstart einfrieren",
+     "Beobachtet bei einem Flydigi: Das Pad sendet nichts mehr, seine "
+     "Tasten bleiben hängen. Die App bemerkt das jetzt innerhalb einer "
+     "Sekunde, lässt die hängende Eingabe los und startet das Pad selbst "
+     "neu. Passiert es dir trotzdem, schick Feedback aus der App."),
+    ("Die Korrektur pausierte, während du geschaltet hast",
+     "Dein Controller ist jetzt vollständig vor dem Spiel verborgen, und "
+     "jede Taste läuft über das Pad der Assistenz - die Lenkung fällt mitten "
+     "im Drift nicht mehr auf deins zurück."),
+    ("Mehrere Starts hintereinander konnten sie unzuverlässig machen",
+     "Der Controller ist jetzt auch vor XInput verborgen und wird sauber von "
+     "einem Start an den nächsten übergeben. Ein Neustart von Windows ist "
+     "nicht mehr nötig."),
 ],
 "ja": [
     ("PlayStationのコントローラーは対応が半分",
      "DualShockやDualSenseはXboxパッドとは読み取り方が違い、まだすべてが正しい場所に届いていません。"),
-    ("シフト操作の間、補正が止まる",
-     "ギアやカメラなど、アシストが中継していないボタンを押すと、その瞬間だけゲームはあなたのコントローラーを直接読みます。ステアリングも含めてです。ごく短い時間ですが、ドリフト中にハンドルが跳ねるのはこれが原因です。__SETTING__ を使える環境なら、これをなくせます。"),
     ("すべての環境でセットアップがすんなり進むわけではない",
      "ドライバーが2つ、ときどき再起動を求めるインストーラー、そして署名のないexe。これまでに起きた不具合のほとんどはここで起きています。"),
-    ("同じセッションで何度も起動すると不安定になることがある",
-     "Windowsを再起動すれば直ります。原因の多くはすでに修正済みですが、それでも起きた場合はぜひ知らせてください。"),
+    ("一部の有線コントローラーがレース開始時に固まることがある",
+     "Flydigiで確認：パッドが送信をやめ、ボタンが押しっぱなしになります。アプリは1秒以内にこれを検知し、固まった入力を離してパッドを自動で再起動します。それでも起きる場合は、アプリからフィードバックを送ってください。"),
+    ("シフト操作の間、補正が止まっていた",
+     "コントローラーはゲームから完全に隠され、すべてのボタンがアシストのパッドを通るようになりました。ドリフト中にステアリングがあなたのパッドに戻ることはもうありません。"),
+    ("同じセッションで何度も起動すると不安定になっていた",
+     "コントローラーはXInputからも隠され、起動から次の起動へきちんと引き継がれるようになりました。Windowsの再起動はもう不要です。"),
 ],
 }
+
+# Solved stays on the list, marked, for a release or two: somebody who
+# met the problem should be able to see that it is gone.
+KNOWN_SOLVED = {3, 4}
 
 ROADMAP = {
 "en": [
     ("Presets that follow the car",
-     "The telemetry already names what you are driving."),
+     "Auto car adjust sets the strength for the kind of car you are in, "
+     "and keeps your own tweak for each kind."),
+    ("Drift angle and more, as dials",
+     "Angle, speed with the revs, callback and a drift odometer, live on "
+     "the main page."),
     ("An oversteer assist",
      "Catching the car before it is sideways, not only after."),
-    ("Drift angle and stability, as dials",
-     "The numbers exist; they are just shown as numbers."),
     ("Statistics, on a screen of their own",
      "Time sideways, longest drift, how often it saved you."),
     ("PlayStation controllers, properly",
@@ -642,11 +670,11 @@ ROADMAP = {
 ],
 "ru": [
     ("Пресеты, привязанные к машине",
-     "Телеметрия и так называет, на чём вы едете."),
+     "Auto car adjust подбирает силу под тип машины, на которой вы едете, и запоминает вашу поправку для каждого типа."),
+    ("Угол дрифта и не только — приборами",
+     "Угол, скорость с оборотами, отклик и одометр дрифта — вживую на главной."),
     ("Ассистент против избыточной поворачиваемости",
      "Ловить машину до того, как её развернуло, а не только после."),
-    ("Угол и стабильность дрифта — приборами",
-     "Цифры уже есть, просто показаны цифрами."),
     ("Статистика на отдельной вкладке",
      "Время в заносе, самый длинный дрифт, сколько раз вас спасли."),
     ("Геймпады PlayStation — по-настоящему",
@@ -658,11 +686,13 @@ ROADMAP = {
 ],
 "es": [
     ("Ajustes que siguen al coche",
-     "La telemetría ya dice qué estás conduciendo."),
+     "Auto car adjust ajusta la fuerza al tipo de coche que llevas y "
+     "recuerda tu retoque para cada tipo."),
+    ("El ángulo del derrape y más, como relojes",
+     "Ángulo, velocidad con las revoluciones, respuesta y cuentakilómetros "
+     "de derrape, en directo en la pantalla principal."),
     ("Un asistente contra el sobreviraje",
      "Atrapar el coche antes de que se cruce, no solo después."),
-    ("Ángulo y estabilidad del derrape, como relojes",
-     "Los números ya existen; solo que se muestran como números."),
     ("Estadísticas en su propia pantalla",
      "Tiempo de través, el derrape más largo, cuántas veces "
      "te ha salvado."),
@@ -677,14 +707,14 @@ ROADMAP = {
 ],
 "fr": [
     ("Des préréglages qui suivent la voiture",
-     "La télémétrie donne déjà le nom de ce que "
-     "vous conduisez."),
+     "Auto car adjust règle la force selon le type de voiture que vous "
+     "conduisez et garde votre retouche pour chaque type."),
+    ("L'angle du drift et plus, en cadrans",
+     "Angle, vitesse avec le régime, réponse et compteur de drift, en "
+     "direct sur l'écran principal."),
     ("Une aide contre le survirage",
      "Rattraper la voiture avant qu'elle ne se mette en travers, pas "
      "seulement après."),
-    ("Angle et stabilité du drift, en cadrans",
-     "Les chiffres existent déjà ; ils sont simplement "
-     "affichés comme des chiffres."),
     ("Des statistiques, sur leur propre écran",
      "Temps en travers, plus long drift, nombre de fois où il vous a "
      "sauvé."),
@@ -698,11 +728,13 @@ ROADMAP = {
 ],
 "de": [
     ("Presets, die zum Auto gehören",
-     "Die Telemetrie nennt ohnehin, was du fährst."),
+     "Auto car adjust stellt die Stärke auf die Art Auto ein, die du "
+     "fährst, und merkt sich deine Anpassung für jede Art."),
+    ("Driftwinkel und mehr als Anzeigen",
+     "Winkel, Tempo mit Drehzahl, Antwortzeit und Drift-Kilometerzähler, "
+     "live auf der Hauptseite."),
     ("Eine Hilfe gegen Übersteuern",
      "Das Auto fangen, bevor es quer steht, nicht erst danach."),
-    ("Driftwinkel und Stabilität als Anzeigen",
-     "Die Zahlen gibt es längst, sie stehen nur als Zahlen da."),
     ("Statistiken auf einem eigenen Bildschirm",
      "Zeit quer, längster Drift, wie oft er dich gerettet hat."),
     ("PlayStation-Controller, richtig",
@@ -716,11 +748,11 @@ ROADMAP = {
 ],
 "ja": [
     ("車ごとのプリセット",
-     "テレメトリーは今も、乗っている車の名前を送っています。"),
+     "Auto car adjust が乗っている車の種類に合わせて効きを決め、種類ごとに自分の調整を覚えます。"),
+    ("ドリフト角などをメーターで",
+     "角度、回転数つきの速度、応答、ドリフト距離計をメイン画面にライブ表示。"),
     ("オーバーステア対策のアシスト",
      "横を向いてからではなく、その前に止める。"),
-    ("ドリフト角と安定度をメーターで",
-     "数値はすでにあります。ただ数値のまま出しているだけです。"),
     ("統計を専用の画面で",
      "横を向いていた時間、最長ドリフト、助けられた回数。"),
     ("PlayStationのコントローラーに本気で対応",
@@ -731,6 +763,9 @@ ROADMAP = {
      "ここまでの機能を、Alt+Tabせずに見られるように。"),
 ],
 }
+
+# what has shipped: green on the rail, and first, the way it happened
+ROADMAP_DONE = {0, 1}
 
 
 def _check():
@@ -761,9 +796,8 @@ def _check():
         if name == "UI":
             for lang in LANGS:
                 assert "__VER__" in table[lang]["ver"], lang
-        if name == "KNOWN":
-            for lang in LANGS:
-                assert "__SETTING__" in table[lang][1][1], lang
+    for idx, table in ((KNOWN_SOLVED, KNOWN), (ROADMAP_DONE, ROADMAP)):
+        assert all(0 <= i < len(table["en"]) for i in idx), idx
 
 
 _check()
