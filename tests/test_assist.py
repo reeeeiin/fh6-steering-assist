@@ -2103,7 +2103,10 @@ def test_changing_the_language_is_not_a_bare_rebuild():
     slides."""
     html = fa.build_html()
     assert "if (id === 'lang') relanguage();" in html
-    assert "function relanguage()" in html
+    assert "function relanguage(apply)" in html
+    # the theme and the scale change behind the same leaving lines
+    assert "if (id === 'theme') relanguage(" in html
+    assert "if (id === 'ui_scale') relanguage(" in html
 
 
 def test_every_setup_fault_has_a_way_out():
@@ -3286,6 +3289,34 @@ def test_restarts_are_spaced_out():
         assert len(calls) == 2, calls
     finally:
         fa.restart_device = real
+
+
+# ---------------- the window's place and size are remembered ----------------
+
+def test_a_first_launch_has_no_place_or_size_to_go_back_to():
+    cfg = fa.sanitize_config(dict(fa.DEFAULTS))
+    assert cfg["win_x"] is None and cfg["win_y"] is None
+    assert fa._user_size(cfg) == (0, 0)
+
+
+def test_the_remembered_place_and_size_survive_a_reload_and_junk_does_not():
+    cfg = dict(fa.DEFAULTS)
+    cfg.update(win_x="-1910", win_y=40, win_w=700, win_h="820")
+    cfg = fa.sanitize_config(cfg)
+    assert (cfg["win_x"], cfg["win_y"]) == (-1910, 40), \
+        "a window on a screen left of the main one sits at negative x"
+    assert fa._user_size(cfg) == (700, 820)
+    cfg.update(win_x="left", win_w=-5, win_h=10 ** 9)
+    cfg = fa.sanitize_config(cfg)
+    assert cfg["win_x"] is None and fa._user_size(cfg) == (0, 0)
+
+
+def test_the_page_carries_a_flag_for_every_language():
+    html = fa.build_html()
+    for lang in fa.LANG_ORDER:
+        assert lang in fa.LANG_FLAGS, lang
+    assert html.count("data:image/png;base64,") >= len(fa.LANG_FLAGS)
+    assert "__FLAGS__" not in html and "__THICON__" not in html
 
 
 def main():

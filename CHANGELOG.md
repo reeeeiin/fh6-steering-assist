@@ -1,5 +1,27 @@
 # Changelog
 
+## v2.2 (not released yet - test builds from 2.2.0)
+
+Everything from the unreleased 2.1.6 below goes out with it.
+
+### Changed
+
+- **The window keeps one height** - the main page's, with a car and its
+  picture shown - instead of growing and shrinking with every tab. Taller
+  pages scroll inside it, with a thin scrollbar, soft edges, and the
+  content blurring as it passes under the header.
+- **The window opens where you left it**, at the size you dragged it to.
+  The loading screen still opens in the middle. On a smaller screen the
+  window fits the screen, and your size comes back on the larger one.
+- **The Current car card no longer shrinks** while there is nothing to say
+  about the car.
+- **Settings, redrawn:** a flag for each language instead of the row of
+  names, icons on Light and Dark, and a scale slider that snaps to its
+  steps. The version and the update check are back in Settings, on one
+  line.
+- **A short footer** is back at the foot of every page: the notice on the
+  left and the full version on the right.
+
 ## v2.1.6 (not released yet - builds 2.1.3 to 2.1.17)
 
 ### Fixed

@@ -61,7 +61,7 @@ def load_vgamepad():
 # The series is what the window shows: it says which generation of the app
 # this is and nothing more. The build number after it says which one of
 # them, and that is what belongs in a bug report.
-APP_SERIES = "2.1"   # builds are counted from the commit that sets this
+APP_SERIES = "2.2"   # builds are counted from the commit that sets this
 
 
 def _build_id() -> str:
@@ -1334,6 +1334,13 @@ DEFAULTS = {
     "lang": "en",
     "theme": "dark",
     "ui_scale": 1.0,
+    # Where the window was when it was last closed, and the size the driver
+    # dragged it to. Nothing until there is something to remember: a first
+    # launch opens in the middle at the main page's height.
+    "win_x": None,
+    "win_y": None,
+    "win_w": 0,
+    "win_h": 0,
     "steer_in_general": False,
     "car_detect": True,
     # the driver's own strength per kind of car, as the slider shows it
@@ -2316,6 +2323,18 @@ def sanitize_config(cfg: dict) -> dict:
         cfg["ui_scale"] = DEFAULTS["ui_scale"]
     if cfg.get("profile") not in PROFILE_ORDER:
         cfg["profile"] = DEFAULTS["profile"]
+    for key in ("win_x", "win_y"):
+        try:
+            v = cfg.get(key)
+            cfg[key] = None if v is None else int(v)
+        except (TypeError, ValueError):
+            cfg[key] = None
+    for key in ("win_w", "win_h"):
+        try:
+            v = int(cfg.get(key) or 0)
+        except (TypeError, ValueError):
+            v = 0
+        cfg[key] = v if 0 < v < 20000 else 0
     own = cfg.get("car_strength")
     held = {}
     if isinstance(own, dict):
@@ -5260,6 +5279,24 @@ def _font_b64(name):
     return None
 
 
+def _png_uri(name):
+    """A PNG from the icons folder as a data URI - the flags are pictures,
+    not shapes, so they cannot be inlined the way the SVG icons are."""
+    import base64
+    for base in (_app_dir(), _res_dir()):
+        p = os.path.join(base, "assets", "icons", name + ".png")
+        if os.path.isfile(p):
+            with open(p, "rb") as f:
+                return ("data:image/png;base64," +
+                        base64.b64encode(f.read()).decode())
+    return ""
+
+
+# the flag each language is shown with; English is the Union flag
+LANG_FLAGS = {"en": "flagBR", "ru": "flagRU", "es": "flagSP",
+              "de": "flagGE", "fr": "flagFR", "ja": "flagJP"}
+
+
 UI_FONT = "Chiron"
 FONT_WEIGHTS = ((400, "regular"), (500, "medium"), (600, "semibold"))
 
@@ -5336,6 +5373,13 @@ def build_html() -> str:
     html = html.replace("__WICON__", json.dumps(
         {n: _icon(n, sized=True) for n in ("drifticon", "speedicon",
                                            "callbackicon", "odoicon")}))
+    html = html.replace("__FLAGS__", json.dumps(
+        {k: _png_uri(v) for k, v in LANG_FLAGS.items()}))
+    # drawn in white; the page colours them with the text of the pill
+    html = html.replace("__THICON__", json.dumps(
+        {k: _icon(k + "-theme-icon").replace('stroke="white"',
+                                             'stroke="currentColor"')
+         for k in ("light", "dark")}))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
     html = html.replace("__LEGAL__", json.dumps(LEGAL))
     html = html.replace("__FAQ__", json.dumps(FAQ_ITEMS,
@@ -5353,6 +5397,31 @@ HTML_PAGE = r"""<!doctype html>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;
   -webkit-user-select:none;cursor:default}
 html{--uiz:1.25}
+/* The theme's colours are registered as colours, so a change of theme is
+   a fade from one set to the other rather than a cut: the window's own
+   background, the header band over it and everything drawn from them move
+   together. */
+@property --win-bg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --app-bg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --card{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --card-2{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --row-fg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --muted{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --foot{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --line{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --track{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --btn-bg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --btn-line{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --btn-fg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --logo-fg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --panel-bg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --panel-fg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --bar-bg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --tick{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --hint-bg{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --hint-border{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --hint-fg{syntax:'<color>';inherits:true;initial-value:transparent}
+body{transition:--win-bg .45s ease,--app-bg .45s ease,--card .45s ease,--card-2 .45s ease,--row-fg .45s ease,--muted .45s ease,--foot .45s ease,--line .45s ease,--track .45s ease,--btn-bg .45s ease,--btn-line .45s ease,--btn-fg .45s ease,--logo-fg .45s ease,--panel-bg .45s ease,--panel-fg .45s ease,--bar-bg .45s ease,--tick .45s ease,--hint-bg .45s ease,--hint-border .45s ease,--hint-fg .45s ease}
 html,body{width:100%;height:100%;overflow:hidden}
 body{background:var(--win-bg);
      font-family:'Chiron','Segoe UI',system-ui,sans-serif;
@@ -5436,9 +5505,58 @@ body.t-light{
       transition:background .25s ease}
 .tdot.on{background:var(--accent)}
 
-#zoom{width:100%;min-width:510px;min-height:calc(100vh / var(--uiz));
-      zoom:var(--uiz);
-      display:flex;flex-direction:column;padding:18px;gap:24px}
+/* The window keeps its height; a page taller than it scrolls under the
+   header, which stays put over a band that blurs and darkens what passes
+   beneath it, more towards the top. The scrollbar keeps its room whether
+   it is needed or not, so the layout is the same width on every page. */
+#zoom{width:100%;min-width:510px;height:calc(100vh / var(--uiz));
+      zoom:var(--uiz);position:relative;overflow:hidden}
+#zoom > .tbar{position:absolute;top:18px;left:18px;right:18px;z-index:5}
+#scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+        overscroll-behavior:contain;scrollbar-width:none;
+        padding:60px 18px 18px 18px;
+        display:flex;flex-direction:column;gap:20px}
+#scroll::-webkit-scrollbar{display:none}
+/* The scrollbar is drawn by hand: in the middle of the right-hand margin,
+   out of sight until the pointer comes to that margin, and fading away
+   again when it leaves. The strip is the margin itself, so it can be
+   found and dragged there; a page that fits has no strip at all. */
+.sbar{position:absolute;top:60px;bottom:14px;right:0;width:18px;z-index:6;
+      display:none}
+.sbar.on{display:block}
+.sbar i{position:absolute;left:7px;width:4px;border-radius:2px;
+        background:var(--track);opacity:0;
+        transition:opacity .25s ease,background .2s ease}
+.sbar:hover i,.sbar.drag i{opacity:1}
+.sbar i:hover,.sbar.drag i{background:var(--muted)}
+#screen{flex:none}
+.hband{position:absolute;left:0;right:0;top:0;height:64px;z-index:4;
+       pointer-events:none}
+.hband i{position:absolute;inset:0;display:block}
+.hband i:nth-child(1){backdrop-filter:blur(1px);
+    -webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent);
+    mask-image:linear-gradient(to bottom,#000 72%,transparent)}
+.hband i:nth-child(2){backdrop-filter:blur(3px);
+    -webkit-mask-image:linear-gradient(to bottom,#000 48%,transparent 82%);
+    mask-image:linear-gradient(to bottom,#000 48%,transparent 82%)}
+.hband i:nth-child(3){backdrop-filter:blur(7px);
+    -webkit-mask-image:linear-gradient(to bottom,#000 28%,transparent 64%);
+    mask-image:linear-gradient(to bottom,#000 28%,transparent 64%)}
+.hband::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(to bottom,var(--win-bg) 0,
+      color-mix(in srgb,var(--win-bg) 72%,transparent) 52%,transparent)}
+.sfade{position:absolute;left:0;right:0;bottom:0;height:16px;z-index:4;
+       pointer-events:none;
+       background:linear-gradient(to top,var(--win-bg),transparent)}
+/* the main page measured at its fullest, off screen */
+#probe{position:absolute;left:18px;right:18px;top:0;visibility:hidden;
+       pointer-events:none}
+/* the short footer: the notice on the left, the full version on the right */
+.foot{display:flex;align-items:center;justify-content:space-between;
+      flex:none;margin-top:auto;height:8px;font-size:6px;line-height:8px;
+      color:var(--row-fg);white-space:nowrap}
+.foot span{opacity:.25}
+.foot.reveal{transform:none}
 
 /* ---------- title bar: components are 18 px tall, radius 5 ---------- */
 .tbar{display:flex;align-items:center;gap:8px;height:18px;flex:none;
@@ -5451,8 +5569,8 @@ body.t-light{
 /* the controls are built of separate tracks, fills and knobs with gaps
    between them that belong to the row, so the pointer flickered as it
    crossed them: the whole row carries it instead */
-.row:has([data-toggle]),.row:has([data-slider]),
-.row:has([data-seg]){cursor:pointer}
+.row:has([data-toggle]),.row:has([data-slider]),.row:has([data-scale]),
+.row:has([data-seg]),.row:has(.langs){cursor:pointer}
 [data-toggle] *,[data-slider] *,[data-seg] [data-key] *{cursor:inherit}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
 .hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
@@ -5549,24 +5667,8 @@ body.t-light{
 .qa h4{margin:0;font-size:9px;font-weight:600;color:var(--accent);
        text-transform:uppercase;letter-spacing:.02em}
 .qa p{margin:0;font-size:9px;line-height:1.6;color:var(--row-fg)}
-/* the only scrolling body in the app: the card keeps its size and its
-   corners while the questions move inside it, under a fixed heading */
-.faqwrap{position:relative;padding:5px 5px 5px 0;overflow:hidden}
-/* the edges fade into the card's own colour, so the text softens against
-   the body rather than against whatever is behind it */
-.faqwrap::before,.faqwrap::after{content:"";position:absolute;left:0;right:0;
-    height:18px;pointer-events:none;z-index:2}
-.faqwrap::before{top:0;background:linear-gradient(to bottom,var(--card),
-    rgba(0,0,0,0))}
-.faqwrap::after{bottom:0;background:linear-gradient(to top,var(--card),
-    rgba(0,0,0,0))}
-.faqbox{height:560px;overflow-y:auto;overscroll-behavior:contain;
-        padding:0 15px}
-.faqbox::-webkit-scrollbar{width:4px}
-.faqbox::-webkit-scrollbar-button{display:none}
-.faqbox::-webkit-scrollbar-track{background:transparent;margin:12px 0}
-.faqbox::-webkit-scrollbar-thumb{background:var(--track);border-radius:2px}
-.faqbox::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+/* the questions are one long card; the window scrolls, not the card */
+.faqwrap{padding:0 15px}
 .prose p{font-size:9px;line-height:1.6;color:var(--row-fg);margin:0}
 .prose p.ptitle{font-size:11px;font-weight:600}
 .bubs{display:flex;flex-wrap:wrap;gap:6px;padding:11px 0 15px}
@@ -5670,8 +5772,10 @@ body.t-light{
 .tcar.gone{display:none}
 /* the car: its name, then drive and class, over the game's picture of
    it on the right, which the card's own colour covers towards the left */
+/* as tall with nothing known as with the name, drive and class shown,
+   so the window's height - the main page at its fullest - holds */
 .tcarcard{display:flex;flex-direction:column;gap:10px;position:relative;
-          overflow:hidden}
+          overflow:hidden;min-height:96px}
 .tcarcard > .trow,.tcarcard > .tchips{position:relative;z-index:2;
           transition:opacity .2s ease,transform .2s ease}
 .tcarcard.swap > .trow,.tcarcard.swap > .tchips{opacity:0;
@@ -5833,8 +5937,30 @@ body.t-light{
           padding:0 12px;min-width:67px;border-radius:7px;color:var(--muted);
           cursor:pointer;white-space:nowrap;transition:color .2s ease;}
 .seg span:hover{color:var(--row-fg)}
-[data-seg=lang] span{font-size:9px;padding:0 8px;min-width:0}
-[data-seg=ui_scale] span{padding:0 10px;min-width:0}
+/* the theme pills carry their icon before the word */
+[data-seg=theme] span{display:flex;align-items:center;justify-content:center;
+                      gap:6px;padding:0 10px;min-width:0}
+.thi{display:flex;font-style:normal}
+.thi svg{display:block;width:10px;height:10px}
+/* a flag per language, the picked one on the accent */
+.langs{display:flex;align-items:center;gap:8px;flex:none}
+.lbtn{width:24px;height:24px;box-sizing:border-box;border-radius:6px;
+      display:flex;align-items:center;justify-content:center;flex:none;
+      cursor:pointer;background:rgba(135,135,135,.06);
+      border:1px solid rgba(134,134,134,.25);
+      transition:background .2s ease,border-color .2s ease}
+.lbtn:hover{border-color:var(--accent);background:var(--btn-hov-bg)}
+.lbtn.on{background:var(--accent);border-color:var(--accent)}
+.lbtn img{display:block;width:14px;height:14px;border-radius:50%;
+          box-sizing:border-box;border:1px solid transparent;
+          transition:border-color .2s ease}
+.lbtn.on img{border-color:#fff}
+/* the version beside its name, the check at the end of the same line */
+.rname.hasver{display:flex;align-items:center;gap:8px}
+.vbub{height:18px;box-sizing:border-box;padding:0 6px;border-radius:5px;
+      display:inline-flex;align-items:center;flex:none;font-size:8px;
+      font-weight:600;color:var(--row-fg);background:var(--btn-hov-bg);
+      border:1px solid var(--accent)}
 .seg span.on{color:var(--accent-fg)}
 /* Opened on flex-basis rather than width: these are flex items, and a
    min-width beats a max-width, so a collapsing max-width does nothing.
@@ -5863,6 +5989,12 @@ body.t-light{
 .autob span{display:block;text-box:trim-both cap alphabetic}
 .row.auto .autob{opacity:1}
 .row.locked .sl,.row.locked .rval{opacity:.4;transition:opacity .2s ease}
+/* Auto car adjust swaps the strength between two scales - the whole range
+   and the car's ten points - so the slider and its number leave, change
+   while unseen, and come back */
+[data-slider=counter_gain],[data-val=counter_gain]{
+    transition:opacity .28s ease}
+.row .sl.swap,.row .rval.swap{opacity:0}
 .row.locked .sl{pointer-events:none}
 .row.locked{cursor:default}
 .sl .trk{position:absolute;top:50%;left:0;right:0;height:4px;border-radius:2px;
@@ -5871,9 +6003,13 @@ body.t-light{
          background:var(--sfill);transform:translateY(-50%)}
 .sl .knb{position:absolute;top:50%;width:18px;height:12px;border-radius:999px;
          background:#fff;transform:translate(-50%,-50%);
-         box-shadow:0 1px 3px rgba(0,0,0,.35)}
-.sl.anim .fil,.sl.anim .knb{transition:width .42s cubic-bezier(.4,0,.2,1),
-                            left .42s cubic-bezier(.4,0,.2,1)}
+         box-shadow:0 1px 3px rgba(0,0,0,.35);will-change:left,transform}
+/* the interface scale: a stop under the track for each step, and a knob
+   that settles on one with a little overshoot */
+.ssl .dot{position:absolute;top:calc(50% + 10px);width:2px;height:2px;
+          border-radius:50%;background:rgba(135,135,135,.25);
+          transform:translate(-50%,-50%)}
+
 
 /* ---------- telemetry ---------- */
 .tstat{font-size:13px;font-weight:600;flex:none;transition:color .3s ease}
@@ -6123,7 +6259,13 @@ html[data-boot] .rz{display:none}
       <span class="hbtn sq close reveal" data-win="close"><!--ICON:close--></span>
     </div>
   </div>
-  <div class="screen on" id="screen"></div>
+  <div id="scroll">
+    <div class="screen on" id="screen"></div>
+    <div class="foot reveal" id="foot"><span>Steering Assist&#8482; 2026. All rights reserved.</span><span>v__VER__</span></div>
+  </div>
+  <div class="hband"><i></i><i></i><i></i></div>
+  <div class="sbar" id="sbar"><i></i></div>
+  <div class="sfade"></div>
   <div class="warn-wrap off" id="wipe">
     <div class="warn-card">
       <div class="warn-t" id="wipe-title"></div>
@@ -6227,6 +6369,10 @@ const SLOT_KEYS = __SLOT_KEYS__;
 const BOOT = __BOOT__;
 const VER = "__VER__";
 const THEMES = ['dark','light'];
+const FLAGS = __FLAGS__;
+const THEME_ICON = __THICON__;
+/* the order the flags stand in, as drawn */
+const FLAG_ORDER = ['en', 'ru', 'es', 'de', 'fr', 'ja'];
 
 let cfg = null, state = null, screen = 'main';
 const $ = q => document.querySelector(q);
@@ -6280,7 +6426,7 @@ function toggleRow(key, field){
     '<span class="tg" data-toggle="' + field + '"><i></i></span></div>';
 }
 
-function screenMain(){
+function screenMain(force){
   const sliders = cfg.steer_in_general
     ? SLIDERS.map(s => s[0]) : ['counter_gain'];
   let h = '<div class="reveal"><div class="sec">' + t('general_sec') + '</div>' +
@@ -6291,7 +6437,8 @@ function screenMain(){
   sliders.forEach(k => { h += sliderRow(k); });
   h += '</div></div>';
 
-  const live = state && (state.recv || state.alive);
+  /* force: the page as it is at its fullest, for measuring the window */
+  const live = force || (state && (state.recv || state.alive));
   const bars =
        '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
        '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
@@ -6317,7 +6464,6 @@ function screenMain(){
   const steer = '<div class="card tsteer' + (live ? '' : ' idle') + '">' +
     '<div class="trow"><span class="rname">' + t('w_steering') + '</span>' +
     '<span class="tstat" id="sstat">-</span></div>' + bars + '</div>';
-  carShown = null;
   const car = '<div class="card tcarcard"><img class="tcimg" alt="">' +
     '<div class="tcfade"></div>' +
     '<div class="trow">' +
@@ -6392,16 +6538,6 @@ function screenAbout(){
   });
   h += '</div></div>';
   h += prose('trademarks', LG().marks);
-
-  h += '<div class="reveal"><div class="sec">' + t('version_sec') + '</div>' +
-       '<div class="card">' +
-       '<div class="row"><span class="rname">' + t('cur_version') + '</span>' +
-       '<span class="vbadge">v' + VER + '</span></div>' +
-       '<div class="row"><span class="rname">' + t('check_updates') + '</span>' +
-       '<span class="updwrap" id="updwrap">' +
-       '<span class="updbtn" id="btn-update">' + t('check') + '</span>' +
-       '</span></div>' +
-       '</div></div>';
   return h;
 }
 
@@ -6460,15 +6596,19 @@ function screenSettings(){
   h += '<div class="reveal"><div class="sec">' + t('interface_sec') + '</div>' +
        '<div class="card">' +
        '<div class="row"><span class="rname">' + t('lang') + '</span>' +
-       segEl('lang', LANGS.map(l => ({key: l, label: TR[l].lang_name})), cfg.lang) +
-       '</div>' +
+       langButtons() + '</div>' +
        '<div class="row"><span class="rname">' + t('theme') + '</span>' +
-       segEl('theme', THEMES.map(x => ({key: x, label: t('theme_' + x)})), cfg.theme) +
+       segEl('theme', ['light', 'dark'].map(x => ({key: x,
+             label: '<i class="thi">' + (THEME_ICON[x] || '') + '</i>' +
+                    t('theme_' + x)})), cfg.theme) +
        '</div><div class="row" data-hint="scale_hint">' +
        '<span class="rname">' + t('scale') + '</span>' +
-       segEl('ui_scale', UI_STEPS.map(x => ({key: String(x),
-             label: Math.round(x * 100) + '%'})), String(cfg.ui_scale)) +
-       '</div>' +
+       '<span class="sl ssl" id="scale-sl" data-scale="1"><i class="trk"></i>' +
+       '<i class="fil"></i>' +
+       UI_STEPS.map((x, i) => '<i class="dot" style="left:' +
+         (i / (UI_STEPS.length - 1) * 100) + '%"></i>').join('') +
+       '<i class="knb"></i></span>' +
+       '<span class="rval" id="scale-val"></span></div>' +
        toggleRow('steer_in_general', 'steer_in_general') +
        '</div></div>';
 
@@ -6477,12 +6617,171 @@ function screenSettings(){
        toggleRow('mirror_all_buttons', 'mirror_all_buttons') +
        portRow() + '</div></div>';
 
+  /* one line: the version this is, and the check for a newer one */
+  h += '<div class="reveal"><div class="sec">' + t('version_sec') + '</div>' +
+       '<div class="card"><div class="row">' +
+       '<span class="rname hasver">' + t('cur_version') +
+       '<span class="vbub">v' + VER + '</span></span>' +
+       '<span class="updwrap" id="updwrap">' +
+       '<span class="updbtn" id="btn-update">' + t('check') + '</span>' +
+       '</span></div></div></div>';
+
   h += '<div class="reveal"><div class="sec">' + t('wipe_sec') + '</div>' +
        '<div class="card"><div class="row" data-hint="wipe_hint">' +
        '<span class="rname">' + t('wipe_row') + '</span>' +
        '<span class="pbtns"><span class="pbtn danger" id="btn-wipe">' +
        t('wipe_btn') + '</span></span></div></div></div>';
   return h;
+}
+
+function langButtons(){
+  return '<span class="langs">' + FLAG_ORDER.filter(l => TR[l]).map(l =>
+    '<span class="lbtn' + (l === cfg.lang ? ' on' : '') + '" data-lang="' +
+    l + '" title="' + TR[l].lang_name + '"><img alt="" src="' +
+    (FLAGS[l] || '') + '"></span>').join('') + '</span>';
+}
+
+/* The interface scale: five stops. The knob leans into the nearest one as
+   it passes, settles on one with a little overshoot when let go, and only
+   then is the new size applied - resizing under a moving pointer would
+   pull the track out from under it. */
+let scaleDrag = false;
+function scaleIndex(){
+  const i = UI_STEPS.indexOf(+cfg.ui_scale);
+  return i < 0 ? UI_STEPS.indexOf(1) : i;
+}
+/* ---------------- the knobs ----------------
+   Every slider's knob is on a spring. Under the pointer it follows closely
+   but with a little weight; let go, it settles with a small overshoot. It
+   swells while held, and stretches along the way it is travelling - more
+   the faster it goes - squashing a touch in height, so a flick reads as a
+   flick. The fill follows the knob, not the value. */
+const KNOB = new Map();
+const KNOB_HELD = {resp: .13, zeta: .88};   // seconds to settle, damping
+const KNOB_FREE = {resp: .34, zeta: .6};
+const KNOB_GROW = 1.12, KNOB_STRETCH_PX = 1400, KNOB_STRETCH_MAX = .32;
+function knobState(el){
+  let st = KNOB.get(el);
+  if (!st){
+    st = {pos: null, tgt: 0, vel: 0, press: 1, pv: 0, held: false, w: 0};
+    KNOB.set(el, st);
+  }
+  return st;
+}
+/* where the knob should go; a slider seen for the first time is put
+   there, not sent there from nothing */
+function knobTo(el, p){
+  const st = knobState(el);
+  st.tgt = p;
+  if (st.pos === null){ st.pos = p; st.vel = 0; knobPaint(el, st); }
+  knobKick();
+}
+function knobHold(el, on){
+  const st = knobState(el);
+  st.held = on;
+  if (on) st.w = el.offsetWidth;
+  knobKick();
+}
+/* frames when there are frames, a timer when the window is not drawn -
+   a knob left half way is a setting that looks wrong */
+let knobPending = false, knobLast = 0;
+function knobKick(){
+  if (knobPending) return;
+  knobPending = true;
+  const run = () => {
+    if (!knobPending) return;
+    knobPending = false;
+    knobTick();
+  };
+  requestAnimationFrame(run);
+  setTimeout(run, 34);
+}
+function knobTick(){
+  const now = performance.now();
+  const dt = Math.min(0.05, knobLast ? (now - knobLast) / 1000 : 1 / 60);
+  knobLast = now;
+  let busy = false;
+  KNOB.forEach((st, el) => {
+    if (!el.isConnected){ KNOB.delete(el); return; }
+    const sp = st.held ? KNOB_HELD : KNOB_FREE;
+    const k = Math.pow(2 * Math.PI / sp.resp, 2), c = 2 * sp.zeta * Math.sqrt(k);
+    const pk = Math.pow(2 * Math.PI / .3, 2), pc = 2 * .5 * Math.sqrt(pk);
+    const pt = st.held ? KNOB_GROW : 1;
+    const n = Math.max(1, Math.ceil(dt / .004)), h = dt / n;
+    for (let i = 0; i < n; i++){
+      st.vel += (k * (st.tgt - st.pos) - c * st.vel) * h;
+      st.pos += st.vel * h;
+      st.pv += (pk * (pt - st.press) - pc * st.pv) * h;
+      st.press += st.pv * h;
+    }
+    if (Math.abs(st.tgt - st.pos) < 1e-4 && Math.abs(st.vel) < 2e-3){
+      st.pos = st.tgt; st.vel = 0;
+    } else busy = true;
+    if (Math.abs(pt - st.press) < 1e-3 && Math.abs(st.pv) < 1e-2){
+      st.press = pt; st.pv = 0;
+    } else busy = true;
+    knobPaint(el, st);
+  });
+  if (busy) knobKick(); else knobLast = 0;
+}
+function knobPaint(el, st){
+  const p = Math.max(0, Math.min(1, st.pos));
+  const fil = el.querySelector('.fil'), knb = el.querySelector('.knb');
+  if (!fil || !knb) return;
+  fil.style.width = (p * 100) + '%';
+  knb.style.left = (p * 100) + '%';
+  const vpx = st.vel * (st.w || 234);
+  const stretch = Math.min(KNOB_STRETCH_MAX, Math.abs(vpx) / KNOB_STRETCH_PX);
+  const sx = (1 + stretch) * st.press, sy = (1 - stretch * .35) * st.press;
+  /* the leading end reaches ahead; the trailing one stays nearly put */
+  const dx = Math.sign(vpx) * stretch * 4.5;
+  knb.style.transform = 'translate(calc(-50% + ' + dx.toFixed(2) +
+    'px),-50%) scale(' + sx.toFixed(3) + ',' + sy.toFixed(3) + ')';
+}
+
+function drawScale(pos, anim){
+  const el = document.getElementById('scale-sl');
+  if (!el) return;
+  const n = UI_STEPS.length - 1;
+  if (pos == null) pos = scaleIndex() / n;
+  knobTo(el, pos);
+  const v = document.getElementById('scale-val');
+  if (v) v.textContent = Math.round(UI_STEPS[Math.round(pos * n)] * 100) + '%';
+}
+function bindScale(){
+  const el = document.getElementById('scale-sl');
+  if (!el) return;
+  const n = UI_STEPS.length - 1;
+  const at = e => {
+    const b = el.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (e.clientX - b.left) / b.width));
+  };
+  /* inside a stop's reach the knob is drawn towards it, harder the closer
+     it gets; outside it follows the pointer, with no jump at the edge */
+  const lean = p => {
+    const a = Math.round(p * n) / n, d = p - a, reach = 0.42 / n;
+    return Math.abs(d) >= reach ? p
+         : a + d * Math.pow(Math.abs(d) / reach, 1.6);
+  };
+  el.addEventListener('pointerdown', e => {
+    el.setPointerCapture(e.pointerId);
+    scaleDrag = true;
+    knobHold(el, true);
+    drawScale(lean(at(e)), false);
+    el.onpointermove = ev => drawScale(lean(at(ev)), false);
+  });
+  const end = e => {
+    if (!scaleDrag) return;
+    scaleDrag = false;
+    knobHold(el, false);
+    el.onpointermove = null;
+    const i = Math.round(at(e) * n);
+    drawScale(i / n, true);
+    const key = String(UI_STEPS[i]);
+    if (+key !== +cfg.ui_scale) setTimeout(() => segPick('ui_scale', key), 320);
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
 }
 
 /* the first launch is shown in the dark theme whatever is configured */
@@ -6746,6 +7045,7 @@ function render(){
     b.classList.toggle('on', b.dataset.nav === screen));
   $$('[data-tr]').forEach(e => { e.textContent = t(e.dataset.tr); });
   const box = $('#screen');
+  carShown = null;
   box.innerHTML = screen === 'settings' ? screenSettings()
                 : screen === 'about' ? screenAbout()
                 : screen === 'faq' ? screenFaq()
@@ -6772,6 +7072,7 @@ function render(){
   refresh();
   playGrow();
   reportHeight();
+  soon(sbarDraw);
 }
 
 /* With Auto car adjust on, the strength belongs to the car: the slider
@@ -6809,8 +7110,7 @@ function drawSlider(el){
   const val = sliderValue(key);
   const [lo, hi] = sliderSpan(key);
   const p = Math.max(0, Math.min(1, (val - lo) / (hi - lo)));
-  el.querySelector('.fil').style.width = (p * 100) + '%';
-  el.querySelector('.knb').style.left = (p * 100) + '%';
+  knobTo(el, p);
   const v = document.querySelector('[data-val="' + key + '"]');
   if (v) v.textContent = (key === 'counter_gain' && strengthLocked() &&
                           strengthWindow())
@@ -6823,6 +7123,9 @@ function drawSlider(el){
   row.classList.toggle('auto', strengthLocked());
 }
 function stepStrength(){
+  /* held still while Auto car adjust is being switched: the live state
+     already has the new answer, and the fading slider must not act on it */
+  if (autoSwapping) return;
   if (!strengthLocked()){ gainShown = null; return; }
   const to = strengthTarget();
   const from = gainShown === null ? to : gainShown;
@@ -6838,6 +7141,8 @@ function refresh(){
     el.classList.toggle('on', !!cfg[el.dataset.toggle]));
   const pin = document.getElementById('tele-port');
   if (pin) pin.classList.toggle('custom', +cfg.port !== PORT_DEFAULT);
+  $$('.lbtn').forEach(b => b.classList.toggle('on', b.dataset.lang === cfg.lang));
+  if (!scaleDrag) drawScale(null, false);
   refreshSlots();
   placePills();
 }
@@ -6952,12 +7257,14 @@ const LANG_OUT_MS = 26, LANG_IN_MS = 34, LANG_GAP_MS = 240;
 let langHold = false, langRun = 0;
 
 function langRows(){
-  return [...$$('.tbar .reveal'), ...$$('#screen .reveal')]
+  return [...$$('.tbar .reveal'), ...$$('#screen .reveal'), ...$$('#foot')]
     .sort((a, b) => a.getBoundingClientRect().top -
                     b.getBoundingClientRect().top);
 }
 
-function relanguage(){
+/* The theme and the scale go the same way: whatever they change is done
+   in the gap, while nothing is on screen to be seen changing. */
+function relanguage(apply){
   const run = ++langRun;      // a second change part way through wins
   const out = langRows();
   out.forEach((el, i) => setTimeout(() => el.classList.add('going'),
@@ -6966,8 +7273,9 @@ function relanguage(){
     if (run !== langRun) return;
     /* the header and the footer live through the rebuild, so they are put
        back to nothing by hand before the words under them change */
-    [...$$('.tbar .reveal')]
+    [...$$('.tbar .reveal'), ...$$('#foot')]
       .forEach(el => el.classList.remove('going', 'shown'));
+    if (apply) apply();
     langHold = true;
     render();
     langHold = false;
@@ -6985,13 +7293,16 @@ function segPick(id, key){
   refresh();
   try{ pywebview.api.set(id, key); }catch(e){}
   if (id === 'lang') relanguage();
-  if (id === 'theme') document.body.className = 't-' + key;
-  if (id === 'ui_scale'){
+  /* the pill has already moved; the colours change behind the lines */
+  if (id === 'theme') relanguage(() => {
+    document.body.className = 't-' + key;
+  });
+  /* and the window takes its new size while the page is empty */
+  if (id === 'ui_scale') relanguage(() => {
     applyScale();
     try{ pywebview.api.set_scale(key); }catch(e){}
     lastH = 0;
-    setTimeout(reportHeight, 60);
-  }
+  });
 }
 
 /* The FAQ names settings by their label; this takes you to the row and
@@ -7020,9 +7331,8 @@ function bindRows(){
   $$('[data-toggle]').forEach(el => {
     el.addEventListener('click', () => {
       const f = el.dataset.toggle;
+      if (f === 'car_detect'){ swapAuto(el); return; }
       cfg[f] = !cfg[f];
-      // switched on, the slider travels from where the player had it
-      if (f === 'car_detect') gainShown = cfg[f] ? cfg.counter_gain : null;
       refresh();
       try{ pywebview.api.set(f, cfg[f]); }catch(e){}
       if (f === 'steer_in_general')
@@ -7065,16 +7375,65 @@ function bindRows(){
       try{ pywebview.api.set(key, v); }catch(e){}
     };
     el.addEventListener('pointerdown', e => {
-      el.setPointerCapture(e.pointerId); drag(e); el.onpointermove = drag;
+      el.setPointerCapture(e.pointerId);
+      knobHold(el, true);
+      drag(e);
+      el.onpointermove = drag;
     });
-    el.addEventListener('pointerup', () => { el.onpointermove = null; });
+    const letGo = () => { el.onpointermove = null; knobHold(el, false); };
+    el.addEventListener('pointerup', letGo);
+    el.addEventListener('pointercancel', letGo);
   });
+  $$('.lbtn').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.lang !== cfg.lang) segPick('lang', b.dataset.lang);
+  }));
+  bindScale();
   const up = $('#btn-update');
   if (up) up.addEventListener('click', checkUpdate);
   const dl = $('#btn-download');
   if (dl) dl.addEventListener('click', () => {
     try{ pywebview.api.open_url(dl.dataset.url); }catch(e){}
   });
+}
+
+/* The switch moves at once; the strength's slider and number fade out,
+   take up the other scale while nobody can see them, and fade back in -
+   already at the value, not sliding there across a track that has just
+   changed under them. */
+/* the fade out, then a moment fully gone before anything changes, and
+   a moment more after it so the new value is drawn before it shows */
+const AUTO_SWAP_MS = 280 + 110, AUTO_SHOW_MS = 60;
+let autoRun = 0, autoSwapping = false;
+async function swapAuto(el){
+  const on = !cfg.car_detect;
+  const run = ++autoRun;      // a second press part way through wins
+  autoSwapping = true;
+  el.classList.toggle('on', on);
+  const parts = () => $$('[data-slider=counter_gain],[data-val=counter_gain]');
+  parts().forEach(p => p.classList.add('swap'));
+  const gone = new Promise(r => setTimeout(r, AUTO_SWAP_MS));
+  /* The car's strength and its ten points are only reported while Auto is
+     on, so they are asked for straight away rather than on the next poll -
+     otherwise the slider comes back at the old value and slides. */
+  let fresh = null;
+  try{
+    await pywebview.api.set('car_detect', on);
+    fresh = await pywebview.api.state();
+  }catch(e){}
+  await gone;
+  if (run !== autoRun) return;
+  if (fresh) state = fresh;
+  autoSwapping = false;
+  cfg.car_detect = on;
+  gainShown = on ? strengthTarget() : null;
+  $$('[data-slider=counter_gain]').forEach(s => {
+    const st = KNOB.get(s);
+    if (st){ st.pos = null; st.vel = 0; }
+  });
+  refresh();
+  setTimeout(() => {
+    if (run === autoRun) parts().forEach(p => p.classList.remove('swap'));
+  }, AUTO_SHOW_MS);
 }
 
 /* ---------------- live state ---------------- */
@@ -7535,15 +7894,95 @@ function liveUpdate(){
 }
 
 let lastH = 0;
+/* The window is as tall as the main page at its fullest - telemetry
+   coming in, a car with its picture - on every screen; taller pages scroll
+   inside it. So the main page is measured, off screen, whichever screen is
+   showing. */
+/* The steering rows on the main page are switched on in Settings, but
+   the window only takes their height once the main page is showing them.
+   Until then it is measured as the page the driver last saw. */
+let steerShown = null;
+function mainNatural(){
+  if (steerShown === null || screen === 'main')
+    steerShown = !!cfg.steer_in_general;
+  let pr = document.getElementById('probe');
+  if (!pr){
+    pr = document.createElement('div');
+    pr.id = 'probe';
+    pr.className = 'screen on';
+    $('#zoom').appendChild(pr);
+  }
+  const now = cfg.steer_in_general;
+  cfg.steer_in_general = steerShown;
+  pr.innerHTML = screenMain(true);
+  cfg.steer_in_general = now;
+  const h = pr.offsetHeight;
+  pr.innerHTML = '';
+  return h;
+}
+
+/* the hand-drawn scrollbar: sized and placed from the page, dragged by
+   the ratio of the strip, so the zoom never enters into it */
+function sbarDraw(){
+  const sc = $('#scroll'), bar = $('#sbar');
+  if (!sc || !bar) return;
+  const room = sc.scrollHeight - sc.clientHeight;
+  bar.classList.toggle('on', room > 1);
+  if (room <= 1) return;
+  const track = bar.clientHeight;
+  const len = Math.max(24, track * sc.clientHeight / sc.scrollHeight);
+  const th = bar.querySelector('i');
+  th.style.height = len + 'px';
+  th.style.top = ((track - len) * sc.scrollTop / room) + 'px';
+}
+function sbarBind(){
+  const sc = $('#scroll'), bar = $('#sbar');
+  if (!sc || !bar) return;
+  sc.addEventListener('scroll', sbarDraw, {passive: true});
+  addEventListener('resize', sbarDraw);
+  try{ new ResizeObserver(sbarDraw).observe($('#screen')); }catch(e){}
+  /* the strip is outside the page, so the wheel is passed on to it */
+  bar.addEventListener('wheel', e => {
+    sc.scrollTop += e.deltaY;
+    e.preventDefault();
+  }, {passive: false});
+  let grab = null;
+  bar.addEventListener('pointerdown', e => {
+    const th = bar.querySelector('i'), b = bar.getBoundingClientRect();
+    const t = th.getBoundingClientRect();
+    const room = sc.scrollHeight - sc.clientHeight;
+    const free = b.height - t.height;
+    if (free <= 0) return;
+    /* pressed beside the thumb, the page goes there first */
+    let off = e.clientY - t.top;
+    if (off < 0 || off > t.height){
+      off = t.height / 2;
+      sc.scrollTop = Math.max(0, Math.min(1,
+        (e.clientY - b.top - off) / free)) * room;
+    }
+    grab = {off: off, top: b.top, free: free, room: room};
+    bar.setPointerCapture(e.pointerId);
+    bar.classList.add('drag');
+    e.preventDefault();
+  });
+  bar.addEventListener('pointermove', e => {
+    if (!grab) return;
+    sc.scrollTop = Math.max(0, Math.min(1,
+      (e.clientY - grab.top - grab.off) / grab.free)) * grab.room;
+  });
+  const let_go = () => { grab = null; bar.classList.remove('drag'); };
+  bar.addEventListener('pointerup', let_go);
+  bar.addEventListener('pointercancel', let_go);
+}
 function reportHeight(){
   if (bootPhase !== 'app') return;
   soon(() => {
-    /* #zoom is stretched to the window, so its own height says nothing
-       about what the content needs. The title bar, the screen, the padding
-       and the gap between them do. */
-    const bar = $('.tbar'), scr = $('#screen');
-    if (!bar || !scr) return;
-    const natural = bar.offsetHeight + scr.offsetHeight + 18 * 2 + 24;
+    /* the header and its band, the page, the gap and the footer, and the
+       padding at the foot */
+    const bar = $('.tbar'), foot = $('#foot');
+    if (!bar) return;
+    const natural = 18 + bar.offsetHeight + 24 + mainNatural() + 20 +
+                    (foot ? foot.offsetHeight : 8) + 18;
     const h = Math.round(natural * uiZoom());
     if (h && Math.abs(h - lastH) > 2){
       lastH = h;
@@ -7869,7 +8308,7 @@ function revealApp(){
   applyScale();
   $('#boot').classList.add('gone');
   const head = [...$$('.tbar .reveal')];
-  const body = [...$$('#screen .reveal')];
+  const body = [...$$('#screen .reveal'), $('#foot')];
   /* nothing of the boot screen is left on screen before the window grows:
      it fades out, then the window opens, and only then do the blocks rise */
   setTimeout(() => {
@@ -8138,6 +8577,8 @@ function goScreen(next){
   setTimeout(() => {
     box.classList.remove('leaving');
     screen = next;
+    const sc = $('#scroll');
+    if (sc) sc.scrollTop = 0;
     render();
   }, 200);
 }
@@ -8146,6 +8587,7 @@ $$('.rz').forEach(z => z.addEventListener('pointerdown', e => {
   try{ pywebview.api.win_grip(z.dataset.e); }catch(err){}
 }));
 
+sbarBind();
 window.addEventListener('pywebviewready', () => {
   document.documentElement.dataset.boot = '1';
   bootT0 = performance.now();
@@ -8185,7 +8627,8 @@ def win_min_h(cfg=None):
 
 WIN_W = int(DESIGN_W * UI_SCALE)
 WIN_MIN_H = int(DESIGN_BOOT_H * UI_SCALE)
-_WIN = {"hwnd": 0, "content_h": 770, "boot": True, "cfg": None}
+_WIN = {"hwnd": 0, "base_h": 0, "boot": True, "cfg": None,
+        "placed": False}
 
 class MONITORINFO(ctypes.Structure):
     _fields_ = [("cbSize", ctypes.c_ulong),
@@ -8194,11 +8637,16 @@ class MONITORINFO(ctypes.Structure):
                 ("dwFlags", ctypes.c_ulong)]
 
 
-def _work_area(hwnd):
-    """The desktop area of the monitor the window sits on, minus the
-    taskbar. Falls back to the primary screen when the call fails."""
+def _work_area(hwnd, rect=None):
+    """The desktop area of the monitor the window sits on - or, given a
+    rectangle, the one it would land on - minus the taskbar. Falls back to
+    the primary screen when the call fails."""
     try:
-        mon = ctypes.windll.user32.MonitorFromWindow(hwnd, 2)
+        if rect is not None:
+            rc = wintypes.RECT(*[int(v) for v in rect])
+            mon = ctypes.windll.user32.MonitorFromRect(ctypes.byref(rc), 2)
+        else:
+            mon = ctypes.windll.user32.MonitorFromWindow(hwnd, 2)
         info = MONITORINFO()
         info.cbSize = ctypes.sizeof(MONITORINFO)
         if ctypes.windll.user32.GetMonitorInfoW(mon, ctypes.byref(info)):
@@ -8212,8 +8660,11 @@ def _work_area(hwnd):
 
 
 def _place(hwnd, x, y, w, h):
-    """Move and size the window, keeping it inside the work area."""
-    l, t, r, b = _work_area(hwnd)
+    """Move and size the window, keeping it inside the work area of the
+    screen it is going to. Taller than that screen, it is shown at the
+    screen's height; the size asked for is not changed by it."""
+    l, t, r, b = _work_area(hwnd, (x, y, x + w, y + h))
+    h = min(h, b - t)
     x = max(l, min(x, r - w)) if r - l > w else l
     y = max(t, min(y, b - h)) if b - t > h else t
     ctypes.windll.user32.SetWindowPos(hwnd, 0, int(x), int(y),
@@ -8282,34 +8733,55 @@ def centre_window(hwnd, w, h):
 
 
 HEIGHT_MS = 320.0
-_HEIGHT = {"target": 0, "running": False}
+_HEIGHT = {"target": 0, "target_w": 0, "running": False, "anchor": "centre"}
 
 
 def _height_worker(hwnd):
-    """Ease the window towards whatever height the page last asked for,
-    keeping its centre, so the frame grows with the content rather than
-    jumping ahead of it."""
+    """Ease the window towards whatever size was last asked for - the
+    height from the page, the width from the interface scale - so the
+    frame grows with the content rather than jumping ahead of it. It keeps
+    its middle across, and its top, or its centre coming out of the boot
+    screen."""
     try:
         while True:
             r = wintypes.RECT()
             ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
-            start = r.bottom - r.top
+            start_h = r.bottom - r.top
+            start_w = r.right - r.left
             centre = (r.top + r.bottom) // 2
-            w = r.right - r.left
-            if abs(_HEIGHT["target"] - start) <= 2:
+            middle = (r.left + r.right) // 2
+            top = r.top
+            if (abs(_HEIGHT["target"] - start_h) <= 2 and
+                    abs((_HEIGHT["target_w"] or start_w) - start_w) <= 2):
                 return
             t0 = time.perf_counter()
             while True:
                 target = _HEIGHT["target"]
+                target_w = _HEIGHT["target_w"] or start_w
                 p = min(1.0, (time.perf_counter() - t0) * 1000.0 / HEIGHT_MS)
                 e = 1.0 - (1.0 - p) ** 3
-                h = int(round(start + (target - start) * e))
-                _place(hwnd, r.left, centre - h // 2, w, h)
+                h = int(round(start_h + (target - start_h) * e))
+                w = int(round(start_w + (target_w - start_w) * e))
+                # growing out of the boot screen it keeps its centre; after
+                # that its top stays where the driver put it
+                y = top if _HEIGHT["anchor"] == "top" else centre - h // 2
+                _place(hwnd, middle - w // 2, y, w, h)
                 if p >= 1.0:
                     break
                 time.sleep(0.008)
     finally:
         _HEIGHT["running"] = False
+
+
+def _ease_to(hwnd, w, h):
+    """Ask for a size; the worker takes the window there, and picks up a
+    newer size part way through without starting over from a jump."""
+    _HEIGHT["target_w"] = int(w)
+    _HEIGHT["target"] = int(h)
+    if not _HEIGHT["running"]:
+        _HEIGHT["running"] = True
+        threading.Thread(target=_height_worker, args=(hwnd,),
+                         daemon=True).start()
 
 
 def _resize_keeping_centre(h):
@@ -8319,30 +8791,108 @@ def _resize_keeping_centre(h):
     return _resize_free(h)
 
 
-def _resize_free(h):
-    """JS reports the natural height of the layout; the window follows it
-    and grows around its own centre, so a window opened in the middle of
-    the screen stays there as the boot screen gives way to the app."""
+def _user_size(cfg):
+    """The size the driver dragged the window to, or nothing on an axis
+    they have left alone."""
+    cfg = cfg or {}
     try:
-        h = max(win_min_h(_WIN.get("cfg")), int(float(h)))
-        _WIN["content_h"] = h
+        return int(cfg.get("win_w") or 0), int(cfg.get("win_h") or 0)
+    except (TypeError, ValueError):
+        return 0, 0
+
+
+def _on_screen(x, y, w):
+    """Whether the top of a window put there would be on some monitor - a
+    screen that has since been unplugged would put it nowhere."""
+    try:
+        pt = wintypes.POINT(int(x + w // 2), int(y + 10))
+        return bool(ctypes.windll.user32.MonitorFromPoint(pt, 0))
+    except Exception:
+        return False
+
+
+def _fade(hwnd, a0, a1, ms):
+    t0 = time.perf_counter()
+    while True:
+        f = min(1.0, (time.perf_counter() - t0) * 1000.0 / ms)
+        _alpha(hwnd, a0 + (a1 - a0) * _ease_out(f))
+        if f >= 1.0:
+            return
+        time.sleep(0.008)
+
+
+def _move_faded(hwnd, x, y, w, h):
+    """Take the window back to where it was last closed. It fades out,
+    moves and fades in again, rather than sailing over from the middle of
+    the screen where the boot screen was."""
+    try:
+        _layered(hwnd, True)
+        _fade(hwnd, 255, 0, 90)
+        _place(hwnd, x, y, w, h)
+        _fade(hwnd, 0, 255, 170)
+    finally:
+        _layered(hwnd, False)
+
+
+def _remember_place():
+    """Note where the window is, for the next launch. Not while the boot
+    screen is up - that one always opens in the middle - and not while
+    minimised, when Windows reports it far off every screen."""
+    hwnd, cfg = _WIN.get("hwnd"), _WIN.get("cfg")
+    if not hwnd or cfg is None or _WIN.get("boot") or _saving_off:
+        return
+    try:
+        u = ctypes.windll.user32
+        if u.IsIconic(hwnd):
+            return
+        r = wintypes.RECT()
+        u.GetWindowRect(hwnd, ctypes.byref(r))
+        if r.right - r.left <= 0:
+            return
+        cfg["win_x"], cfg["win_y"] = int(r.left), int(r.top)
+        save_config(cfg)
+    except Exception:
+        pass
+
+
+def _resize_free(h):
+    """JS reports the height of the main page at its fullest. The window
+    is that tall - or as tall as the driver dragged it, if they did - and
+    every page scrolls inside it. The first time, it goes back to where it
+    was last closed, or grows around its centre on a first launch."""
+    try:
+        cfg = _WIN.get("cfg")
+        base = max(win_min_h(cfg), int(float(h)))
+        _WIN["base_h"] = base
         hwnd = _WIN.get("hwnd")
         if not hwnd:
             return True
+        uw, uh = _user_size(cfg)
+        h = max(win_min_h(cfg), uh or base)
         r = wintypes.RECT()
         ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
-        w = max(win_w(_WIN.get("cfg")), r.right - r.left)
+        w = max(win_w(cfg), uw)
+        if not _WIN.get("placed"):
+            _WIN["placed"] = True
+            x, y = (cfg or {}).get("win_x"), (cfg or {}).get("win_y")
+            if x is not None and y is not None and _on_screen(x, y, w):
+                threading.Thread(target=_move_faded,
+                                 args=(hwnd, int(x), int(y), w, h),
+                                 daemon=True).start()
+                _HEIGHT["anchor"] = "top"
+                return True
+            _HEIGHT["anchor"] = "centre"
+        else:
+            _HEIGHT["anchor"] = "top"
+        # shown no taller than the screen it is on; asking for more would
+        # leave the easing chasing a height it can never reach
+        l, t, rr, b = _work_area(hwnd)
+        h = min(h, b - t)
         old_h = r.bottom - r.top
-        if abs(h - old_h) <= 2 and w == r.right - r.left:
+        if (abs(h - old_h) <= 2 and w == r.right - r.left
+                and not _HEIGHT["running"]):
             return True
-        if w != r.right - r.left:
-            _place(hwnd, r.left, r.top - (h - old_h) // 2, w, h)
-            return True
-        _HEIGHT["target"] = h
-        if not _HEIGHT["running"]:
-            _HEIGHT["running"] = True
-            threading.Thread(target=_height_worker, args=(hwnd,),
-                             daemon=True).start()
+        _ease_to(hwnd, w, h)
     except (TypeError, ValueError):
         pass
     return True
@@ -8358,6 +8908,7 @@ class Api:
         """ShowWindow lets Windows animate the window into its own taskbar
         button; pywebview's own minimise skips that flight."""
         hwnd = _WIN.get("hwnd")
+        _remember_place()
         try:
             if hwnd:
                 ctypes.windll.user32.ShowWindow(hwnd, SW_MINIMIZE)
@@ -8379,6 +8930,7 @@ class Api:
         return True
 
     def win_close(self):
+        _remember_place()
         try:
             self._window.destroy()
         except Exception:
@@ -8657,8 +9209,10 @@ class Api:
         return True
 
     def win_grip(self, edge="br"):
-        """Frameless resize. Disabled while the boot window is up. Free on both axes, clamped so the window can
-        never go below the layout width or the shortest state's height."""
+        """Frameless resize. Disabled while the boot window is up. Free on
+        both axes, down to the layout's width and the boot screen's height -
+        pages scroll, so nothing needs more. The size it is left at is kept
+        for every launch after."""
         hwnd = _WIN.get("hwnd")
         if _WIN.get("boot") or not hwnd or edge not in (
                 "l", "r", "t", "b", "tl", "tr", "bl", "br"):
@@ -8668,6 +9222,8 @@ class Api:
             u = ctypes.windll.user32
             pt = wintypes.POINT()
             r = wintypes.RECT()
+            u.GetWindowRect(hwnd, ctypes.byref(r))
+            start = (r.right - r.left, r.bottom - r.top)
             try:
                 while u.GetAsyncKeyState(0x01) & 0x8000:
                     u.GetCursorPos(ctypes.byref(pt))
@@ -8678,8 +9234,7 @@ class Api:
                         w = max(win_w(_WIN.get("cfg")), R - pt.x)
                     elif "r" in edge:
                         w = max(win_w(_WIN.get("cfg")), pt.x - L)
-                    floor = max(win_min_h(_WIN.get("cfg")),
-                    int(_WIN.get("content_h", WIN_MIN_H)))
+                    floor = win_min_h(_WIN.get("cfg"))
                     if "t" in edge:
                         h = max(floor, B - pt.y)
                     elif "b" in edge:
@@ -8689,6 +9244,15 @@ class Api:
                     if w != R - L or h != B - T:
                         u.SetWindowPos(hwnd, 0, x, y, w, h, 0x0014)
                     time.sleep(0.016)
+                u.GetWindowRect(hwnd, ctypes.byref(r))
+                size = (r.right - r.left, r.bottom - r.top)
+                cfg = _WIN.get("cfg")
+                if size != start and cfg is not None:
+                    # the layout's own width is no choice worth keeping
+                    cfg["win_w"] = size[0] if size[0] > win_w(cfg) else 0
+                    cfg["win_h"] = size[1]
+                    cfg["win_x"], cfg["win_y"] = int(r.left), int(r.top)
+                    save_config_soon(cfg)
             except Exception:
                 pass
         threading.Thread(target=loop, daemon=True).start()
@@ -8780,9 +9344,13 @@ class Api:
         if hwnd:
             r = wintypes.RECT()
             ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
-            w = win_w(self._b.cfg)
-            h = max(win_min_h(self._b.cfg), r.bottom - r.top)
-            _place(hwnd, r.left - (w - (r.right - r.left)) // 2, r.top, w, h)
+            w = max(win_w(self._b.cfg), _user_size(self._b.cfg)[0])
+            # the height the page is heading for, if it has asked already
+            h = max(win_min_h(self._b.cfg),
+                    _HEIGHT["target"] if _HEIGHT["running"]
+                    else r.bottom - r.top)
+            _HEIGHT["anchor"] = "top"
+            _ease_to(hwnd, w, h)
         return True
 
     def set(self, key, value):
@@ -9102,6 +9670,12 @@ def main():
                                    hidden=True,
                                    background_color="#111111")
     api._window = window
+    # closed from the taskbar or by Alt+F4 the window never asks the page,
+    # so its place is noted on the way out as well
+    try:
+        window.events.closing += _remember_place
+    except Exception:
+        pass
     # A second launch signals this; closing the window runs the ordinary
     # shutdown, which puts the pad back and releases the virtual one.
     _listen_for_quit(api.win_close, bridge)
@@ -9168,8 +9742,7 @@ def main():
                         rect.left = rect.right - win_w(_WIN.get("cfg"))
                     else:
                         rect.right = rect.left + win_w(_WIN.get("cfg"))
-                floor = max(win_min_h(_WIN.get("cfg")),
-                    int(_WIN.get("content_h", WIN_MIN_H)))
+                floor = win_min_h(_WIN.get("cfg"))
                 if rect.bottom - rect.top < floor:
                     if wp in (3, 4, 5):
                         rect.top = rect.bottom - floor
