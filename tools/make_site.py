@@ -405,8 +405,7 @@ header{padding:96px 0 64px;text-align:center;position:relative}
 h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
 .sub{color:var(--dim);font-size:clamp(15px,1.6vw,18px);max-width:640px;
      margin:0 auto 30px}
-/* One row at every width: on a phone the padding tightens first, and
-   only then does Discord drop its wordmark for the bare symbol. */
+/* One row at every width: on a phone the padding tightens. */
 .cta{display:inline-flex;gap:12px;flex-wrap:nowrap;justify-content:center;
      align-items:stretch;max-width:100%}
 .btn{display:inline-flex;align-items:center;justify-content:center;
@@ -444,22 +443,16 @@ h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
                                  var(--discord));
                 filter:brightness(1.08);
                 box-shadow:0 3px 12px rgba(88,101,242,.3)}
-/* The brands speak for themselves: Discord's logo on its own blurple,
-   GitHub's mark alone. Both follow the text colour. */
+/* The brands speak for themselves: each is its mark alone, Discord's on
+   its own blurple. Both follow the text colour. */
 .btn svg{display:block}
-.btn.disc .dlogo svg{height:19px;width:auto}
-.btn.disc .dsym{display:none}
-.btn.disc .dsym svg{height:21px;width:auto}
-.btn.gh{padding-left:15px;padding-right:15px}
+.btn.disc,.btn.gh{padding-left:15px;padding-right:15px}
+.btn.disc svg{height:21px;width:auto}
 .btn.gh svg{width:24px;height:24px}
 @media (max-width:560px){
   .cta{gap:8px}
   .btn{padding:11px 14px;font-size:15px}
-  .btn.gh{padding-left:12px;padding-right:12px}
-}
-@media (max-width:420px){
-  .btn.disc .dlogo{display:none}
-  .btn.disc .dsym{display:block}
+  .btn.disc,.btn.gh{padding-left:12px;padding-right:12px}
 }
 .ver{color:var(--dim);font-size:13px;margin-top:14px}
 section.wrap{padding:36px 24px}
@@ -696,7 +689,7 @@ footer a{color:var(--dim)}
        data-t="sup">Support</a>
     <a class="btn disc" href="__DISCORD__" target="_blank" rel="noopener"
        aria-label="Join our Discord" title="Join our Discord"
-       ><span class="dlogo">__DLOGO__</span><span class="dsym">__DSYM__</span></a>
+       >__DSYM__</a>
     <a class="btn sec gh" href="__REPO__" aria-label="Source on GitHub"
        title="Source on GitHub">__GHMARK__</a>
   </div>
@@ -770,7 +763,7 @@ __BAND3__
        data-t="sup">Support</a>
     <a class="btn disc" href="__DISCORD__" target="_blank" rel="noopener"
        aria-label="Join our Discord" title="Join our Discord"
-       ><span class="dlogo">__DLOGO__</span><span class="dsym">__DSYM__</span></a>
+       >__DSYM__</a>
     <a class="btn sec gh" href="__REPO__" aria-label="Source on GitHub"
        title="Source on GitHub">__GHMARK__</a>
   </div>
@@ -1020,7 +1013,6 @@ var RELAYOUT = [];
    .replace("__LANGS__", langs) \
    .replace("__BOOSTY__", boosty) \
    .replace("__DISCORD__", discord) \
-   .replace("__DLOGO__", site_icon("discord-logo")) \
    .replace("__DSYM__", site_icon("discord-symbol")) \
    .replace("__GHMARK__", site_icon("github-mark")) \
    .replace("__T__", words) \
