@@ -12,6 +12,7 @@ no reading or writing game files, no injection of any kind.**
 **[Site and setup guide](https://reeeeiin.github.io/fh6-steering-assist/)**
 · **[Download the latest release](https://github.com/reeeeiin/fh6-steering-assist/releases/latest)**
 · **[Support the project](https://boosty.to/reeeeiin)**
+· **[Join Discord Community](https://discord.gg/UvNVYbNp55)**
 
 The site carries a live preview of the app you can click through, the setup
 walked past in pictures, the questions people have already asked, and an
