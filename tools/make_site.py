@@ -275,6 +275,17 @@ def download_url():
     return REPO + "/releases/latest"
 
 
+def site_icon(name: str) -> str:
+    """Brand artwork that lives on the page only, never in the exe.
+
+    Kept as the owners publish it and recoloured by CSS through
+    currentColor, so the button decides the colour and not the file.
+    """
+    path = os.path.join(ROOT, "tools", "site_icons", name + ".svg")
+    with open(path, encoding="utf-8") as f:
+        return f.read().strip()
+
+
 def band(name, alt):
     """A full width picture between two sections."""
     w, h = shot_size(name)
@@ -338,6 +349,7 @@ def index_page(app_html: str) -> str:
         % (i, q, i, "".join("<p>%s</p>" % p for p in a))
         for i, (q, a) in enumerate(faq))
     boosty = "https://boosty.to/reeeeiin"
+    discord = "https://discord.gg/UvNVYbNp55"
     langs = json.dumps([[code, i18n.SHORT[code]] for code in i18n.LANGS],
                        ensure_ascii=False)
     # No unescaped </ inside a script element, whatever the words are.
@@ -358,7 +370,7 @@ virtual controller, touches no game files. Free and open source.">
 __FONTS__
 :root{--bg:#0b0b0b;--card:#141414;--line:rgba(255,255,255,.07);
       --fg:#ededed;--dim:#8a8a8a;--accent:#0492F8;--accent-lit:#52CBFF;
-      --warn:#FFCC00}
+      --warn:#FFCC00;--discord:#5865F2}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
      font-family:Chiron,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -393,8 +405,12 @@ header{padding:96px 0 64px;text-align:center;position:relative}
 h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
 .sub{color:var(--dim);font-size:clamp(15px,1.6vw,18px);max-width:640px;
      margin:0 auto 30px}
-.cta{display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.btn{display:inline-block;padding:12px 22px;border-radius:14px;
+/* One row at every width: on a phone the padding tightens first, and
+   only then does Discord drop its wordmark for the bare symbol. */
+.cta{display:inline-flex;gap:12px;flex-wrap:nowrap;justify-content:center;
+     align-items:stretch;max-width:100%}
+.btn{display:inline-flex;align-items:center;justify-content:center;
+     white-space:nowrap;padding:12px 22px;border-radius:14px;
      background-color:var(--accent);
      background-image:linear-gradient(180deg,var(--accent),var(--accent));
      color:#fff;text-decoration:none;font-weight:600;
@@ -416,6 +432,35 @@ h1{font-size:clamp(28px,4vw,44px);margin:0 0 14px;letter-spacing:-.01em}
                                 var(--warn));
                filter:brightness(1.08);
                box-shadow:0 3px 12px rgba(255,204,0,.25)}
+/* Discord's own blurple, so the button reads as Discord before the
+   label does. */
+.btn.disc{background-color:var(--discord);
+          background-image:linear-gradient(180deg,var(--discord),
+                           var(--discord));
+          transition:background-color .2s ease,background-image .2s ease,
+                     box-shadow .2s ease,filter .2s ease}
+.btn.disc:hover{background-color:var(--discord);
+                background-image:linear-gradient(180deg,var(--discord),
+                                 var(--discord));
+                filter:brightness(1.08);
+                box-shadow:0 3px 12px rgba(88,101,242,.3)}
+/* The brands speak for themselves: Discord's logo on its own blurple,
+   GitHub's mark alone. Both follow the text colour. */
+.btn svg{display:block}
+.btn.disc .dlogo svg{height:19px;width:auto}
+.btn.disc .dsym{display:none}
+.btn.disc .dsym svg{height:21px;width:auto}
+.btn.gh{padding-left:15px;padding-right:15px}
+.btn.gh svg{width:24px;height:24px}
+@media (max-width:560px){
+  .cta{gap:8px}
+  .btn{padding:11px 14px;font-size:15px}
+  .btn.gh{padding-left:12px;padding-right:12px}
+}
+@media (max-width:420px){
+  .btn.disc .dlogo{display:none}
+  .btn.disc .dsym{display:block}
+}
 .ver{color:var(--dim);font-size:13px;margin-top:14px}
 section.wrap{padding:36px 24px}
 h2{font-size:clamp(21px,2.4vw,28px);margin:0 0 10px;text-align:center}
@@ -647,9 +692,13 @@ footer a{color:var(--dim)}
        height="__BH__" alt="Steering Assist livery" loading="lazy"></div>
   <div class="cta">
     <a class="btn" href="__DL__" data-t="dl">Download</a>
-    <a class="btn sec" href="__REPO__" data-t="src">Source on GitHub</a>
     <a class="btn sup" href="__BOOSTY__" target="_blank" rel="noopener"
        data-t="sup">Support</a>
+    <a class="btn disc" href="__DISCORD__" target="_blank" rel="noopener"
+       aria-label="Join our Discord" title="Join our Discord"
+       ><span class="dlogo">__DLOGO__</span><span class="dsym">__DSYM__</span></a>
+    <a class="btn sec gh" href="__REPO__" aria-label="Source on GitHub"
+       title="Source on GitHub">__GHMARK__</a>
   </div>
   <div class="ver" data-t="ver">Free to use - source available - Windows -
   version __VER__</div>
@@ -717,9 +766,13 @@ __BAND3__
   of Horizon the way you imagined them.</p>
   <div class="cta">
     <a class="btn" href="__DL__" data-t="dl">Download</a>
-    <a class="btn sec" href="__REPO__" data-t="src">Source on GitHub</a>
     <a class="btn sup" href="__BOOSTY__" target="_blank" rel="noopener"
        data-t="sup">Support</a>
+    <a class="btn disc" href="__DISCORD__" target="_blank" rel="noopener"
+       aria-label="Join our Discord" title="Join our Discord"
+       ><span class="dlogo">__DLOGO__</span><span class="dsym">__DSYM__</span></a>
+    <a class="btn sec gh" href="__REPO__" aria-label="Source on GitHub"
+       title="Source on GitHub">__GHMARK__</a>
   </div>
 </section>
 
@@ -966,6 +1019,10 @@ var RELAYOUT = [];
    .replace("__FAQ__", faqs) \
    .replace("__LANGS__", langs) \
    .replace("__BOOSTY__", boosty) \
+   .replace("__DISCORD__", discord) \
+   .replace("__DLOGO__", site_icon("discord-logo")) \
+   .replace("__DSYM__", site_icon("discord-symbol")) \
+   .replace("__GHMARK__", site_icon("github-mark")) \
    .replace("__T__", words) \
    .replace("__KNOWN__", knowns) \
    .replace("__ROAD__", road) \
