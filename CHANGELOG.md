@@ -2,92 +2,69 @@
 
 ## v2.2.0
 
-A new look for the window and the settings, dials on the main page, the
-car you are in with its picture, Auto car adjust, and every fix from the
-2.1.6 builds that were never released on their own.
+The assist now holds steady through gear changes mid-drift and stays reliable
+however many times you restart it. On top of that: strength that follows the
+car you are in, live dials on the main page, and a redrawn window. Compared
+with 2.1.
 
-### Changed
+### Engine
 
-- **The window keeps one height** - the main page's, with a car and its
-  picture shown - instead of growing and shrinking with every tab. Taller
-  pages scroll inside it, with a thin scrollbar, soft edges, and the
-  content blurring as it passes under the header.
-- **The window opens where you left it**, at the size you dragged it to.
-  The loading screen still opens in the middle. On a smaller screen the
-  window fits the screen, and your size comes back on the larger one.
-- **The Current car card no longer shrinks** while there is nothing to say
-  about the car.
-- **Settings, redrawn:** a flag for each language instead of the row of
-  names, icons on Light and Dark, and a scale slider that snaps to its
-  steps. The version and the update check are back in Settings, on one
-  line.
-- **A short footer** is back at the foot of every page: the notice on the
-  left and the full version on the right.
-- **FAQ is one long page**, scrolled with the window, instead of a box
-  that scrolled inside itself. The scrollbar sits in the middle of the
-  right-hand margin and shows only when the pointer comes to it.
-- **Motion:** the theme and the interface scale change the way the
-  language does - the lines leave, the change is made, they come back -
-  with the colours fading and the window easing to its new size. Slider
-  knobs ride on springs: they swell while held and stretch the way they
-  move. Switching Auto car adjust fades the strength out and back in on
-  its new scale instead of jumping.
+#### Added
 
-### Fixed
+- **Auto car adjust.** The assist strength follows the car you are in - 40 to
+  50 on rear-wheel drive, 25 to 35 on Formula Drift cars - and the slider then
+  covers only that range, remembering your own tweak for each kind of car.
+  On by default, the last switch under Steering; your preset is never changed.
+- **All-wheel drive eases off at shallow angles**, so a grippy AWD car is not
+  overcorrected on the way into a drift.
+- **A frozen controller is brought back by itself.** Some wired pads can stop
+  sending at the start of a race with their buttons stuck. The app notices
+  within a second, lets go of the stuck input and restarts the pad - no more
+  pulling the cable.
+- **An event log** of what the controller and the game were doing, added to
+  Send feedback so a report says what actually happened.
 
-- **A wired pad that freezes is let go of and brought back.** Some wired
-  pads - seen on a Flydigi - stop sending at the start of a race, with
-  their buttons and triggers stuck until the cable is pulled. Windows' own
-  input service is now let through before the pad is hidden, which made it
-  rarer, and when it does happen the app notices within a second, lets go
-  of the stuck input and restarts the pad itself. Still under watch - if
-  you meet it, send feedback.
-- **Starting a new copy with the game running no longer doubles every
-  press.** The pad stays hidden while one copy of the app hands over to
-  the next, so the game never gets a chance to pick it up.
+#### Fixed
 
-- **The assist no longer drops out when you touch the pad.** It hid the
-  controller's HID node from the game - the one DirectInput reads - and
-  left its XInput node alone. So the game still saw your controller next
-  to the assist's, and followed whichever had moved last: touch the stick
-  or the throttle and it went back to yours, and the correction vanished
-  until both were let go. It showed after a few restarts of the game and
-  the app, and a reboot usually hid it again. The controller is now hidden
-  from XInput as well, and since the game then has no other pad to read
-  gears and camera from, every button goes through the assist's pad
-  without Release all buttons having to be found.
-- **In menus the assist's pad goes quiet** where the game can also see your
-  own controller, so a press or a stick flick no longer arrives twice.
-- **A controller that drops out and comes back on another slot is found
-  again**, instead of the assist sitting dead until restarted.
-- **Leftovers in HidHide no longer pile up.** Devices the app had hidden in
-  an earlier run and failed to release were treated as somebody else's and
-  never taken back; the app now keeps a note of what it hid.
-- **Long car names shorten** instead of running out of their box.
-- **R-class cars** are called R. FH6 has eight classes; the app knew seven
-  and called R cars X.
+- **No more micro-dropouts when you shift mid-drift.** Pressing a gear, the
+  camera or anything else used to hand the game your own controller for a
+  moment - steering included - and the correction blinked out right in the
+  middle of a slide. Your controller is now hidden from the game completely,
+  and every button goes through the assist's pad, so the correction stays with
+  you the whole way through.
+- **Stable however many times you restart it.** After a few launches of the
+  game or the app, the assist could start dropping out whenever you touched
+  the stick, and only a reboot fixed it. The controller is now hidden properly
+  and handed over cleanly from one launch to the next - no Windows restart
+  needed, and no doubled button presses.
+- **No doubled presses in menus.**
+- **A controller that drops out and comes back** on another slot is found
+  again, instead of the assist going dead until restarted.
 
-### Added
+### UI
 
-- **Dials on the main page**: the drift angle and how the drift began,
+#### Added
+
+- **Live dials on the main page:** the drift angle and how the drift began,
   speed against the revs with the gear, the game's callback, and a drift
   odometer that keeps counting across launches.
-- **The car you are in, with its picture**, taken from the game's own
-  cache - nothing is downloaded - together with its drive and class.
-- **Auto car adjust**, the last switch under Steering, on by default. It
-  sets the assist strength for the car you are in - 40 to 50 on rear-wheel
-  drive, 25 to 35 on Formula Drift cars - and the slider then covers only
-  those ten points, in whole steps, with an Auto chip beside it; it keeps
-  where you leave it for that kind of car. Switch it off to use the whole
-  range. Your preset's own value is never changed.
-- **All-wheel drive eases off at shallow angles**: three quarters of the
-  strength below 12 degrees, the whole of it above 35. These are starting
-  values, not yet measured.
-- **The car's drive and class** as chips next to its name.
-- **An event log** beside the settings: controller lost and back, devices
-  hidden, the game going in and out of a race. The last lines go into
-  Send feedback.
-- **Eleven new cars** in the table, and a tool to keep it current.
+- **The car you are in**, with its picture taken from the game's own cache -
+  nothing is downloaded - and its drive and class.
+- **The window remembers** where you left it and the size you dragged it to.
+
+#### Changed
+
+- **One window height for every page.** It no longer jumps with each tab;
+  longer pages, FAQ included, scroll inside it.
+- **Settings, redrawn:** flags for the languages, a scale slider that snaps to
+  its steps, and the update check back in Settings.
+- **Smoother all round:** springy sliders and soft transitions for the theme,
+  the scale and the language.
+
+#### Fixed
+
+- **R-class cars are shown as R**, and long car names no longer spill out of
+  their box.
 
 ## v2.1
 
