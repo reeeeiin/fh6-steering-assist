@@ -5771,10 +5771,8 @@ body.t-light{
         font-size:11px;font-weight:600;cursor:pointer;
         transition:filter .2s ease,opacity .2s ease,transform .12s ease}
 .warn-b:hover{filter:brightness(1.12)}
-.warn-b:active{transform:scale(.96)}
 /* nothing to do yet - an empty name, say */
 .warn-b.off,.warn-b.off:hover{opacity:.4;filter:none;cursor:default}
-.warn-b.off:active{transform:none}
 
 /* ---------- extended telemetry ---------- */
 /* Two columns of 232 with a 10 gap, laid out as in Figma. On the left the
@@ -6014,11 +6012,9 @@ body.t-light{
                  transform .12s ease}
 .padd svg{display:block;width:10px;height:10px}
 .padd:hover{background:var(--accent);color:var(--accent-fg)}
-.padd:active{transform:scale(.9)}
 /* the sliders are still Default: nothing to save yet */
 .padd.off,.padd.off:hover{color:var(--muted);background:transparent;
                           border-color:var(--btn-line);cursor:default}
-.padd.off:active{transform:none}
 .pchip{position:relative;height:24px;box-sizing:border-box;padding:0 14px;
        border-radius:6px;display:flex;align-items:center;flex:none;
        font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer;
@@ -6028,10 +6024,8 @@ body.t-light{
                   transform .12s ease}
 .pchip:hover{color:var(--accent);border-color:var(--accent);
              background:var(--btn-hov-bg)}
-.pchip:active{transform:scale(.95)}
 .pchip.on,.pchip.on:hover{color:var(--accent-fg);border-color:var(--accent);
                           background:var(--accent);cursor:default}
-.pchip.on:active,.pchip:has(.pdel:active){transform:none}
 /* a new one arrives instead of just being there */
 @keyframes pchipin{from{opacity:0;transform:scale(.6)}
                    to{opacity:1;transform:none}}
@@ -6046,7 +6040,6 @@ body.t-light{
 .pdel svg{display:block;width:8px;height:8px}
 .pchip.own:hover .pdel{opacity:1;transform:scale(1);pointer-events:auto}
 .pchip.own:hover .pdel:hover{transform:scale(1.15);filter:brightness(1.12)}
-.pchip.own:hover .pdel:active{transform:scale(.9)}
 
 /* the preset card: a name to type, or a delete to confirm */
 #pmodal .pm-card{transition:transform .22s cubic-bezier(.2,.8,.2,1)}
@@ -6904,6 +6897,86 @@ function uiZoom(){
 function applyScale(){
   document.documentElement.style.setProperty('--uiz', uiZoom());
 }
+
+/* ---------------- press spring ----------------
+   Every button gives a little under the pointer and springs back. The
+   longer it was held, the harder it comes back: a quick click barely
+   wobbles, a long press bounces visibly. Done with the scale property,
+   not transform, so it adds to whatever a button already does with its
+   transform. The pill menus slide instead, and are left alone. */
+const PRESS_SEL = '.hbtn,.updbtn,.upddl,.pbtn,.warn-b,.padd,.pchip,.pdel,' +
+                  '.lbtn,.bub[data-url],.bbtn,.bclose';
+const PRESS_DEPTH = 0.05;                   // how far it gives, of its size
+const PRESS_HELD = {resp: .3, zeta: 1};     // going in: soft, no wobble -
+                                            // a tap hardly gets there
+const PRESS_FREE = {resp: .32, zeta: .55};  // coming out: a spring
+const PRESS_KICK = 2.0;                     // outward speed a long hold adds
+const PRESS_FULL_MS = 500;                  // a hold this long gets it all
+const PRESS = new Map();                    // el -> {s, v, held, t0}
+let pressPending = false, pressLast = 0;
+
+function pressKick(){
+  if (pressPending) return;
+  pressPending = true;
+  const run = () => {
+    if (!pressPending) return;
+    pressPending = false;
+    pressTick();
+  };
+  requestAnimationFrame(run);
+  setTimeout(run, 34);
+}
+
+function pressTick(){
+  const now = performance.now();
+  const dt = Math.min(0.05, pressLast ? (now - pressLast) / 1000 : 1 / 60);
+  pressLast = now;
+  PRESS.forEach((st, el) => {
+    if (!el.isConnected){ PRESS.delete(el); return; }
+    const sp = st.held ? PRESS_HELD : PRESS_FREE;
+    const to = st.held ? 1 - PRESS_DEPTH : 1;
+    const k = Math.pow(2 * Math.PI / sp.resp, 2), c = 2 * sp.zeta * Math.sqrt(k);
+    const n = Math.max(1, Math.ceil(dt / .004)), h = dt / n;
+    for (let i = 0; i < n; i++){
+      st.v += (k * (to - st.s) - c * st.v) * h;
+      st.s += st.v * h;
+    }
+    if (!st.held && Math.abs(st.s - 1) < 2e-4 && Math.abs(st.v) < 2e-3){
+      el.style.scale = '';
+      PRESS.delete(el);
+      return;
+    }
+    el.style.scale = st.s.toFixed(4);
+  });
+  if (PRESS.size) pressKick(); else pressLast = 0;
+}
+
+document.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  const el = e.target.closest && e.target.closest(PRESS_SEL);
+  if (!el || el.classList.contains('off')) return;
+  const st = PRESS.get(el) || {s: 1, v: 0};
+  st.held = true;
+  st.t0 = performance.now();
+  PRESS.set(el, st);
+  pressKick();
+}, true);
+
+function pressRelease(){
+  const now = performance.now();
+  PRESS.forEach(st => {
+    if (!st.held) return;
+    st.held = false;
+    /* the hold decides the kick: nothing for a tap, all of it at
+       PRESS_FULL_MS and beyond */
+    const f = Math.max(0, Math.min(1, (now - st.t0 - 50) /
+                                      (PRESS_FULL_MS - 50)));
+    st.v += PRESS_KICK * f;
+  });
+  pressKick();
+}
+document.addEventListener('pointerup', pressRelease, true);
+document.addEventListener('pointercancel', pressRelease, true);
 
 /* ---------------- presets ----------------
    Default, and up to three of the driver's own. A + in front saves what is
