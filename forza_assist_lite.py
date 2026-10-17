@@ -4449,6 +4449,7 @@ TR = {
         "w_callback": 'Callback',
         "w_latency": 'Latency',
         "w_car": 'Current car',
+        "car_unknown": 'Unknown car',
         "auto_badge": "Auto",
         "setup_nav1": "Navigate to game settings:",
         "setup_nav2": "Hud & Gameplay / Telemetry",
@@ -4609,6 +4610,7 @@ TR = {
         "w_callback": 'Отклик',
         "w_latency": 'Частота',
         "w_car": 'Машина',
+        "car_unknown": 'Неизвестная машина',
         "auto_badge": "Авто",
         "setup_nav1": "Откройте настройки игры:",
         "setup_nav2": "Hud & Gameplay / Telemetry",
@@ -4769,6 +4771,7 @@ TR = {
         "w_callback": 'Antwort',
         "w_latency": 'Frequenz',
         "w_car": 'Fahrzeug',
+        "car_unknown": 'Unbekanntes Auto',
         "auto_badge": "Auto",
         "setup_nav1": "Oeffne die Spieleinstellungen:",
         "setup_nav2": "Hud & Gameplay / Telemetry",
@@ -4929,6 +4932,7 @@ TR = {
         "w_callback": 'Reponse',
         "w_latency": 'Frequence',
         "w_car": 'Voiture',
+        "car_unknown": 'Voiture inconnue',
         "auto_badge": "Auto",
         "setup_nav1": "Ouvrez les reglages du jeu :",
         "setup_nav2": "Hud & Gameplay / Telemetry",
@@ -5089,6 +5093,7 @@ TR = {
         "w_callback": 'Respuesta',
         "w_latency": 'Frecuencia',
         "w_car": 'Coche',
+        "car_unknown": 'Coche desconocido',
         "auto_badge": "Auto",
         "setup_nav1": "Abre los ajustes del juego:",
         "setup_nav2": "Hud & Gameplay / Telemetry",
@@ -5263,6 +5268,7 @@ TR = {
         "w_callback": '応答',
         "w_latency": '周波数',
         "w_car": '車両',
+        "car_unknown": '不明な車',
         "auto_badge": "オート",
         "setup_nav1": "ゲーム設定の",
         "setup_nav2": "Hud & Gameplay / Telemetry",
@@ -5831,19 +5837,26 @@ body.t-light{
        height:calc(2 * var(--th) + var(--hh) + 2 * var(--tgap))}
 .wgrid .wt{position:absolute;left:0;top:0;height:var(--th);margin:0;
            cursor:grab;touch-action:none;
-           outline:1.5px solid transparent;outline-offset:-1.5px;
-           transition:scale .2s ease,outline-color .15s ease,
-                      box-shadow .2s ease}
+           transition:scale .2s ease,box-shadow .2s ease}
+/* the blue edge of a tile in hand, drawn as a layer over everything in it
+   so no picture or fade inside can cover it */
+.wgrid .wt::after{content:"";position:absolute;inset:0;z-index:9;
+                  border-radius:inherit;pointer-events:none;opacity:0;
+                  box-shadow:inset 0 0 0 1.5px var(--accent);
+                  transition:opacity .15s ease}
+.wgrid .wt.drag::after{opacity:1}
 .wgrid .wt *{cursor:inherit}
 /* a hint that it can be picked up */
 .wgrid .wt:hover{scale:1.02}
 .wgrid.dragging .wt:not(.drag):hover{scale:1}
 /* picked up: on top, a touch larger, outlined in blue until let go */
 .wgrid .wt.drag{z-index:5;scale:1.04;cursor:grabbing;
-                outline-color:var(--accent);
                 box-shadow:0 10px 26px rgba(0,0,0,.32)}
 /* the statuses keep their own short card, half a tile's height */
 .wgrid .wt.tsc{height:var(--hh)}
+/* the steering card in a tile's height: the bars give up some of theirs */
+.wgrid .tsteer .bar{height:12px}
+.wgrid .tsteer .barlbl{margin-bottom:5px}
 /* Taller than some of them were drawn: the name stays at the top as in
    every tile, and what is under it takes the room - the callback's reading
    in the middle of it, the odometer's window between its name and its
@@ -5976,9 +5989,12 @@ body.t-light{
           opacity:.1}
 /* the odometer: a window wider than the card, faded at every edge, with
    a column per digit that jumps a row at a time */
-.odowin{position:relative;flex:none;width:161px;height:46px;
-        margin:0 -38px;overflow:hidden}
-.odorow{position:absolute;left:38px;top:0;width:85px;height:46px}
+/* edge to edge across the card, whatever its width, so the fade at its
+   sides is the card's own edge and never cuts into the digits */
+.odowin{position:relative;flex:none;align-self:stretch;height:46px;
+        margin:0 -14px;overflow:hidden}
+.odorow{position:absolute;left:calc(50% - 42.5px);top:0;width:85px;
+        height:46px}
 .odotri{position:absolute;left:0;top:20px;width:6px;height:6px;
         color:var(--accent)}
 .odotri svg{display:block}
@@ -8356,8 +8372,10 @@ function carFill(){
        the class twice. Unnamed but known, the chips speak for it. */
     const name = state.car_name != null ? state.car_name : (state.car || '');
     const known = !!(name || state.car_class);
-    chipText(car, name || t('btn_none'));
-    car.classList.toggle('gone', known && !name);
+    /* a car the table does not have yet is still a car: say so rather than
+       leave the card without its name */
+    chipText(car, name || (known ? t('car_unknown') : t('btn_none')));
+    car.classList.remove('gone');
     car.title = name;
   }
   const dv = $('#w-drive');
