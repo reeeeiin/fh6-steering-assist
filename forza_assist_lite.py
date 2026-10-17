@@ -449,17 +449,161 @@ def xinput_read_state(slot: int) -> tuple:
         return st.Gamepad, st.dwPacketNumber
     return None, 0
 
+# A cable pull, done in software. `pnputil /restart-device` asks the drivers
+# first, and a game that holds the pad open says no - "System reboot is
+# needed to complete configuration operations", found 17.10.2026 with
+# Forza running - so the game kept the pad it had opened before it was
+# hidden. Power-cycling the USB port the pad hangs off cannot be refused:
+# the pad is gone, as with the cable out, and comes back hidden. Needs
+# administrator rights, which this app runs with.
+GUID_DEVINTERFACE_USB_HUB = (0xF18A0E88, 0xC30C, 0x11D0,
+                             (0x88, 0x15, 0x00, 0xA0, 0xC9, 0x06, 0xBE, 0xD8))
+IOCTL_USB_HUB_CYCLE_PORT = 0x220444
+CM_DRP_ADDRESS = 0x0000001D
+# Never cycled through these: the port of a Bluetooth radio carries every
+# Bluetooth device on the machine, and our own pad lives on a bus that is
+# not a port at all.
+NOT_A_PAD_PORT = ("ROOT\\", "SWD\\", "HTREE\\", "BTH")
+
+
+class _GUID(ctypes.Structure):
+    _fields_ = [("Data1", ctypes.c_ulong), ("Data2", ctypes.c_ushort),
+                ("Data3", ctypes.c_ushort), ("Data4", ctypes.c_ubyte * 8)]
+
+
+def _hub_interface(device_id) -> str:
+    """The path to open a USB hub by, or "" when the device is not one."""
+    cm = ctypes.windll.cfgmgr32
+    d1, d2, d3, d4 = GUID_DEVINTERFACE_USB_HUB
+    g = _GUID(d1, d2, d3, (ctypes.c_ubyte * 8)(*d4))
+    size = ctypes.c_ulong()
+    if (cm.CM_Get_Device_Interface_List_SizeW(
+            ctypes.byref(size), ctypes.byref(g), ctypes.c_wchar_p(device_id),
+            0) != 0 or size.value < 2):
+        return ""
+    buf = ctypes.create_unicode_buffer(size.value)
+    if cm.CM_Get_Device_Interface_ListW(ctypes.byref(g),
+                                        ctypes.c_wchar_p(device_id), buf,
+                                        size.value, 0) != 0:
+        return ""
+    return buf.value
+
+
+def usb_port_of(instance_id, depth=8):
+    """(hub to open, port number, the USB device on that port) for the port
+    a device hangs off, or None: not on USB, or only through a Bluetooth
+    radio or a software bus."""
+    if not instance_id or instance_id.upper().startswith(NOT_A_PAD_PORT):
+        return None
+    try:
+        cm = ctypes.windll.cfgmgr32
+    except (AttributeError, OSError):
+        return None
+    node = ctypes.c_ulong()
+    if cm.CM_Locate_DevNodeW(ctypes.byref(node),
+                             ctypes.c_wchar_p(instance_id), 0) != 0:
+        return None
+    ident = instance_id
+    for _ in range(depth):
+        parent = ctypes.c_ulong()
+        if cm.CM_Get_Parent(ctypes.byref(parent), node, 0) != 0:
+            return None
+        buf = ctypes.create_unicode_buffer(512)
+        if cm.CM_Get_Device_IDW(parent, buf, 512, 0) != 0:
+            return None
+        up = buf.value
+        if up.upper().startswith(NOT_A_PAD_PORT):
+            return None
+        hub = _hub_interface(up)
+        if hub:
+            if not ident.upper().startswith("USB\\"):
+                return None
+            port = ctypes.c_ulong()
+            size = ctypes.c_ulong(ctypes.sizeof(port))
+            if (cm.CM_Get_DevNode_Registry_PropertyW(
+                    node, CM_DRP_ADDRESS, None, ctypes.byref(port),
+                    ctypes.byref(size), 0) != 0 or not port.value):
+                return None
+            return hub, port.value, ident
+        node, ident = parent, up
+    return None
+
+
+def cycle_usb_port(hub, port) -> tuple:
+    """Power-cycle one port of a hub: what is plugged into it drops off the
+    machine and comes back, as if unplugged and plugged in again."""
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.CreateFileW.restype = ctypes.c_void_p
+    k32.CreateFileW.argtypes = [ctypes.c_wchar_p, ctypes.c_ulong,
+                                ctypes.c_ulong, ctypes.c_void_p,
+                                ctypes.c_ulong, ctypes.c_ulong,
+                                ctypes.c_void_p]
+    k32.DeviceIoControl.argtypes = [ctypes.c_void_p, ctypes.c_ulong,
+                                    ctypes.c_void_p, ctypes.c_ulong,
+                                    ctypes.c_void_p, ctypes.c_ulong,
+                                    ctypes.POINTER(ctypes.c_ulong),
+                                    ctypes.c_void_p]
+    k32.CloseHandle.argtypes = [ctypes.c_void_p]
+    # GENERIC_WRITE, shared, OPEN_EXISTING
+    h = k32.CreateFileW(hub, 0x40000000, 0x3, None, 3, 0, None)
+    if not h or h == ctypes.c_void_p(-1).value:
+        return False, "the hub would not open (error %d)" % ctypes.get_last_error()
+    try:
+        params = (ctypes.c_ulong * 2)(port, 0)   # USB_CYCLE_PORT_PARAMS
+        got = ctypes.c_ulong()
+        if not k32.DeviceIoControl(h, IOCTL_USB_HUB_CYCLE_PORT, params, 8,
+                                   params, 8, ctypes.byref(got), None):
+            return False, ("port %d would not cycle (error %d)"
+                           % (port, ctypes.get_last_error()))
+        return True, "port %d power-cycled" % port
+    finally:
+        k32.CloseHandle(h)
+
+
 def restart_device(instance_id: str) -> tuple:
-    """Restart one device, as unplugging and plugging it in would. Needs
-    administrator rights, which this app runs with."""
+    """Restart one device, as unplugging and plugging it in would: its USB
+    port power-cycled, and pnputil only for a device not on a port of its
+    own or a port that would not cycle."""
+    tried = ""
+    try:
+        where = usb_port_of(instance_id)
+    except Exception:
+        where = None
+    if where:
+        ok, out = cycle_usb_port(where[0], where[1])
+        if ok:
+            return True, out
+        tried = out + "; "
     try:
         cp = subprocess.run(["pnputil", "/restart-device", instance_id],
                             capture_output=True, text=True, errors="replace",
                             creationflags=0x08000000, timeout=20)
     except Exception as e:
-        return False, "%s: %s" % (type(e).__name__, e)
+        return False, "%s%s: %s" % (tried, type(e).__name__, e)
     out = " ".join((cp.stdout or "").split())[-160:]
-    return cp.returncode == 0, out or ("exit %d" % cp.returncode)
+    return cp.returncode == 0, tried + (out or ("exit %d" % cp.returncode))
+
+
+def pad_restart_targets(ids, fallback=()) -> list:
+    """What to restart for these devices: each USB port once, named by the
+    device on it - a pad's HID and XInput nodes sit on the same port, and a
+    second cycle would only knock it off again. A device with no port of its
+    own is kept only if it is in `fallback`, for pnputil to try."""
+    out, seen = [], set()
+    for ident in ids:
+        try:
+            where = usb_port_of(ident)
+        except Exception:
+            where = None
+        if where:
+            key = (where[0].upper(), where[1])
+            if key not in seen:
+                seen.add(key)
+                out.append(where[2])
+        elif ident in fallback and ident.upper() not in seen:
+            seen.add(ident.upper())
+            out.append(ident)
+    return out
 
 
 def xinput_rumble(slot: int, left: float, right: float) -> None:
@@ -3739,30 +3883,51 @@ class Bridge:
                 time.sleep(1.0)
             if self.cfg.get("auto_hide"):
                 fixed = self.hidhide.sweep()
+                why = getattr(self, "_heal_due", None)
                 if fixed:
-                    self._heal("the hiding had to be put right")
+                    why = "the hiding had to be put right"
+                if why:
+                    self._heal(why)
+
+    def _pad_devices(self):
+        """The player's pad as devices to restart: its XInput nodes, and
+        the hidden HID paths that are plugged in - a pad that is HID only
+        has no XInput node, and its port wants cycling just the same."""
+        hh = self.hidhide
+        nodes = set(getattr(hh, "xinput_nodes", None) or ())
+        present = getattr(hh, "_present", None) or set()
+        hidden = (set(getattr(hh, "hidden", None) or ())
+                  | set(getattr(hh, "_prior_hidden", None) or ()))
+        allowed = set(getattr(hh, "allowed", None) or ())
+        pads = {p for p in present if p in hidden and p not in allowed}
+        return pad_restart_targets(sorted(nodes) + sorted(pads), nodes)
 
     def _heal(self, why):
         """Whatever the game opened while the pad was not hidden, it keeps
         open - hiding afterwards changes nothing for it, and pulling the
         cable is what cured it. So that is done here, in software: the pad's
-        devices are restarted and come back hidden. Only while the game is
-        running, and not again for HEAL_GAP."""
+        port is power-cycled and it comes back hidden. Only while the game
+        is running, and not again for HEAL_GAP - a heal asked for sooner
+        waits for it rather than being dropped."""
         if not game_running():
+            self._heal_due = None
             return False
         now = time.monotonic()
         if now - getattr(self, "_heal_t", float("-inf")) < HEAL_GAP:
+            self._heal_due = why
             return False
-        nodes = sorted(getattr(self.hidhide, "xinput_nodes", None) or ())
-        if not nodes:
+        self._heal_due = None
+        devices = self._pad_devices()
+        if not devices:
             return False
         self._heal_t = now
         self._note("restarting the pad so the game lets go of it (%s)" % why)
         ok_all = True
-        for node in nodes:
-            ok, out = restart_device(node)
+        for dev in devices:
+            ok, out = restart_device(dev)
             ok_all = ok_all and ok
-            self._note("restarted %s: %s" % (node, "ok" if ok else out))
+            self._note("restarted %s: %s" % (dev, out if out else
+                                             "ok" if ok else "failed"))
         return ok_all
 
     def stop(self):
@@ -3935,7 +4100,7 @@ class Bridge:
         if now - self._restart_t < PAD_RESTART_GAP:
             return
         self._restart_t = now
-        nodes = sorted(getattr(self.hidhide, "xinput_nodes", None) or ())
+        nodes = self._pad_devices()
         if not nodes:
             self._note("pad frozen, but its device is not known - "
                        "replug it to get it back")
@@ -3944,7 +4109,8 @@ class Bridge:
         def run():
             for node in nodes:
                 ok, why = restart_device(node)
-                self._note("restarted %s: %s" % (node, "ok" if ok else why))
+                self._note("restarted %s: %s" % (node, why if why else
+                                                 "ok" if ok else "failed"))
         threading.Thread(target=run, daemon=True).start()
 
     def _watch_slots(self):

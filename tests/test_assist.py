@@ -3438,6 +3438,86 @@ def test_restarts_are_spaced_out():
         fa.restart_device = real
 
 
+def test_a_pad_is_restarted_by_its_port_and_each_port_once():
+    """A pad's HID and XInput nodes sit on one port: cycling it twice would
+    only knock the pad off again. A Bluetooth pad has no port of its own -
+    its radio's port carries everything else on Bluetooth - so it is left
+    to pnputil, and only as an XInput node."""
+    ports = {
+        "HID\\VID_045E&PID_028E&IG_00\\9&1": ("\\\\?\\hub", 1, "USB\\FLY"),
+        "USB\\FLY": ("\\\\?\\hub", 1, "USB\\FLY"),
+        "HID\\G7\\1": ("\\\\?\\hub", 3, "USB\\G7"),
+    }
+    real = fa.usb_port_of
+    fa.usb_port_of = lambda ident, depth=8: ports.get(ident)
+    try:
+        got = fa.pad_restart_targets(
+            ["USB\\FLY", "HID\\VID_045E&PID_028E&IG_00\\9&1", "HID\\G7\\1",
+             "HID\\{00001124}_VID&0002045E\\BT", "USB\\BTPAD_XINPUT"],
+            fallback={"USB\\FLY", "USB\\BTPAD_XINPUT"})
+    finally:
+        fa.usb_port_of = real
+    assert got == ["USB\\FLY", "USB\\G7", "USB\\BTPAD_XINPUT"], got
+
+
+def test_no_port_is_looked_for_behind_a_radio_or_a_software_bus():
+    for ident in ("ROOT\\SYSTEM\\0001", "BTHENUM\\{1124}\\7&1",
+                  "BTHLEDEVICE\\{1812}\\8&2", "SWD\\MMDEVAPI\\X", ""):
+        assert fa.usb_port_of(ident) is None, ident
+
+
+def _heal_bridge(game=True):
+    b = _freeze_bridge()
+    b.notes = []
+    b._note = b.notes.append
+
+    class _HH:
+        xinput_nodes = {"USB\\FLY"}
+        hidden = {"HID\\FLY\\1"}
+        _prior_hidden = set()
+        allowed = {"HID\\VIGEM\\1"}
+        _present = {"HID\\FLY\\1", "HID\\VIGEM\\1"}
+    b.hidhide = _HH()
+    return b
+
+
+def test_a_heal_asked_for_too_soon_waits_instead_of_being_dropped():
+    """The hiding put right twice in a row - a pad that came back in another
+    mode right after its port was cycled. The second heal falls inside the
+    gap; it has to happen once the gap is over, not be forgotten."""
+    b = _heal_bridge()
+    done = []
+    real_r, real_g, real_p = fa.restart_device, fa.game_running, fa.usb_port_of
+    fa.restart_device = lambda dev: (done.append(dev), (True, "port 1"))[1]
+    fa.game_running = lambda: True
+    fa.usb_port_of = lambda ident, depth=8: ("\\\\?\\hub", 1, "USB\\FLY")
+    try:
+        assert b._heal("first")
+        assert done == ["USB\\FLY"], "both nodes, one port, one cycle"
+        assert not b._heal("second")
+        assert b._heal_due == "second" and len(done) == 1
+        b._heal_t -= fa.HEAL_GAP + 1
+        assert b._heal(b._heal_due)
+        assert b._heal_due is None and len(done) == 2
+    finally:
+        fa.restart_device, fa.game_running = real_r, real_g
+        fa.usb_port_of = real_p
+
+
+def test_no_heal_without_the_game():
+    b = _heal_bridge()
+    b._heal_due = "left over"
+    real_r, real_g = fa.restart_device, fa.game_running
+    fa.restart_device = lambda dev: (_ for _ in ()).throw(
+        AssertionError("restarted a pad with no game to let go of it"))
+    fa.game_running = lambda: False
+    try:
+        assert not b._heal("anything")
+        assert b._heal_due is None
+    finally:
+        fa.restart_device, fa.game_running = real_r, real_g
+
+
 # ---------------- the window's place and size are remembered ----------------
 
 def test_a_first_launch_has_no_place_or_size_to_go_back_to():
