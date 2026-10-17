@@ -3363,7 +3363,7 @@ def _freeze_bridge():
     b._pad_idle_t0 = 0.0
     b._pad_last = None
     b._pad_frozen = False
-    b._restart_t = float("-inf")
+    b._pad_sleeps = False
     b.notes = []
     b._note = b.notes.append
 
@@ -3382,14 +3382,20 @@ def _run_pad(b, frames, t0=0.0, dt=1 / 60.0):
     return out, t
 
 
-def test_a_chatty_pad_that_stops_counting_is_let_go_and_restarted():
+def _no_restarts():
+    real = fa.restart_device
+    fa.restart_device = lambda node: (_ for _ in ()).throw(AssertionError(
+        "a pad was restarted for going quiet"))
+    return real
+
+
+def test_a_chatty_pad_that_stops_counting_is_let_go_and_not_restarted():
     """The Flydigi counts about 49 packets a second at rest. When it stops,
     its slot keeps the last state - here the brake held down - so the
-    report goes neutral and the device is restarted, once."""
+    report goes neutral. It is not restarted: that was a loose cable, and
+    restarting knocked off pads that were fine."""
     b = _freeze_bridge()
-    restarted = []
-    real = fa.restart_device
-    fa.restart_device = lambda node: (restarted.append(node), (True, ""))[1]
+    real = _no_restarts()
     try:
         idle = _GP()
         braking = _GP(lt=255)
@@ -3400,8 +3406,6 @@ def test_a_chatty_pad_that_stops_counting_is_let_go_and_restarted():
         assert b._pad_chatty
         assert not any(said[:150]), "no freeze while it counts"
         assert any(said[150 + 70:]), "frozen after a second: let go"
-        time.sleep(0.2)                                     # the thread
-        assert restarted == ["USB\\VID_045E&PID_028E\\FLYDIGI"], restarted
         assert any("frozen" in n for n in b.notes), b.notes
     finally:
         fa.restart_device = real
@@ -3423,19 +3427,55 @@ def test_a_quiet_pad_held_still_is_not_mistaken_for_frozen():
         fa.restart_device = real
 
 
-def test_restarts_are_spaced_out():
+def test_a_chatty_pad_that_goes_quiet_at_rest_is_left_alone():
+    """The GameSir G7 Pro, left alone: it stops counting with nothing held.
+    Nothing is stuck, so nothing is let go - the pad stays connected."""
     b = _freeze_bridge()
-    calls = []
-    real = fa.restart_device
-    fa.restart_device = lambda node: (calls.append(node), (True, ""))[1]
+    real = _no_restarts()
     try:
-        b._restart_pad(100.0)
-        b._restart_pad(103.0)
-        b._restart_pad(111.0)
-        time.sleep(0.2)
-        assert len(calls) == 2, calls
+        frames = [(p, _GP()) for p in range(120)]           # chatty at rest
+        frames += [(119, _GP(lx=3000))] * 600               # asleep, 10 s
+        said, _ = _run_pad(b, frames)
+        assert b._pad_chatty and not any(said), "a sleeping pad is not lost"
     finally:
         fa.restart_device = real
+
+
+def test_a_pad_that_starts_counting_again_by_itself_is_not_watched_again():
+    b = _freeze_bridge()
+    real = _no_restarts()
+    try:
+        held = _GP(rt=255)
+        frames = [(p, _GP()) for p in range(120)]           # chatty at rest
+        frames += [(120 + p, held) for p in range(30)]      # full throttle
+        frames += [(149, held)] * 90                        # quiet 1.5 s
+        frames += [(150 + p, held) for p in range(30)]      # counting again
+        said, t = _run_pad(b, frames)
+        assert any(said), "let go while it was quiet with the throttle held"
+        assert b._pad_sleeps and not b._pad_chatty
+        assert not b._pad_frozen
+        frames = [(179, held)] * 300                        # quiet again, 5 s
+        frames += [(180 + p, _GP()) for p in range(120)]    # counting at rest
+        frames += [(299, held)] * 120
+        said, _ = _run_pad(b, frames, t0=t)
+        assert not any(said), "a pad that sleeps is never cut off again"
+        assert not b._pad_chatty
+    finally:
+        fa.restart_device = real
+
+
+def test_what_is_learned_about_a_pad_goes_with_it():
+    """The mark of a chatty pad carried over from a Flydigi to the GameSir
+    plugged in after it, and every quiet second of the GameSir was then
+    taken for a freeze."""
+    b = _freeze_bridge()
+    _run_pad(b, [(p, _GP()) for p in range(120)])
+    assert b._pad_chatty
+    b._forget_pad_habits()
+    assert not (b._pad_chatty or b._pad_sleeps or b._pad_frozen)
+    assert b._pad_last is None
+    said, _ = _run_pad(b, [(0, _GP(rt=255))] * 120)
+    assert not any(said)
 
 
 def test_a_pad_is_restarted_by_its_port_and_each_port_once():

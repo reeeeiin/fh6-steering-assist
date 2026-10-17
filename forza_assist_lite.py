@@ -149,16 +149,23 @@ HEAL_GAP = 30.0
 PAD_SILENT_SEC = 3.0
 PAD_SILENT_NOTE_SEC = 20.0
 # A pad that counts packets even while nothing on it changes - the Flydigi
-# does, about 49 a second at rest - and then stops counting has frozen: its
-# slot still reads, with the last state stuck in it, triggers and all. Seen
-# again and again within a second or two of a race starting, fixed each
-# time by pulling the cable. So after PAD_FREEZE_SEC of that the report
-# goes neutral, as for a lost pad, and the pad's device is restarted - the
-# cable pull, done in software. Pads that only count when something changes
-# never qualify: holding the throttle still would look the same.
+# does, about 49 a second at rest - and then stops counting with something
+# held may have frozen: its slot still reads, the last state stuck in it,
+# triggers and all. Seen within a second or two of a race starting; it was
+# a loose cable (17.10.2026). After PAD_FREEZE_SEC of that the report goes
+# neutral, as for a lost pad - and nothing more. The pad used to be
+# restarted as well, which does not mend a cable, and once restarting meant
+# power-cycling its port it switched off a GameSir G7 Pro every time it was
+# left alone for a second: the "chatty" mark had carried over to it from
+# the Flydigi plugged in before.
+#   So: what is learned about a pad is forgotten when the pad goes; only
+# what is held is let go - a pad at rest that stops counting has nothing
+# stuck, it is asleep; and a pad that starts counting again by itself is
+# one that sleeps between reports, and is not watched again. Pads that only
+# count when something changes never qualify: holding the throttle still
+# would look the same.
 PAD_CHATTY_TICKS = 20       # unchanged-state packets in a second: chatty
 PAD_FREEZE_SEC = 1.0
-PAD_RESTART_GAP = 10.0      # seconds between two restarts of the pad  # silence with nowhere to go, worth a line
 YIELD_FRAMES = 5
 BUTTON_NAMES = {
     0x1000: "A", 0x2000: "B", 0x4000: "X", 0x8000: "Y",
@@ -442,6 +449,15 @@ def xinput_read(slot: int) -> XINPUT_GAMEPAD | None:
     if _xinput.XInputGetState(slot, ctypes.byref(st)) == 0:
         return st.Gamepad
     return None
+
+def pad_at_rest(gp) -> bool:
+    """Nothing pressed, nothing pulled, both sticks inside the dead zones
+    XInput recommends - a pad nobody is touching."""
+    return (not gp.wButtons
+            and gp.bLeftTrigger <= 30 and gp.bRightTrigger <= 30
+            and max(abs(gp.sThumbLX), abs(gp.sThumbLY)) <= 7849
+            and max(abs(gp.sThumbRX), abs(gp.sThumbRY)) <= 8689)
+
 
 def xinput_read_state(slot: int) -> tuple:
     st = XINPUT_STATE()
@@ -3400,8 +3416,16 @@ class HidHide:
                 self.arg = self._pads_hidden()
                 self.info = f"pad hidden from the game ({self.arg} devices)"
         except Exception as e:
-            if hook:
-                hook("hiding check failed: %s" % e)
+            # once per kind of failure, not every SWEEP_SEC: another
+            # program holding HidHide open made the log one line every 5 s
+            said = "hiding check failed: %s" % e
+            if hook and said != getattr(self, "_sweep_failed", None):
+                hook(said)
+            self._sweep_failed = said
+            return fixed
+        if getattr(self, "_sweep_failed", None) and hook:
+            hook("hiding check works again")
+        self._sweep_failed = None
         return fixed
 
     # An id carrying an XInput interface number is a game controller and
@@ -3681,7 +3705,7 @@ class Bridge:
         self._pad_idle_t0 = 0.0
         self._pad_last = None       # (packet, state) last read
         self._pad_frozen = False
-        self._restart_t = float("-inf")
+        self._pad_sleeps = False    # pauses between reports by itself
         self._pad_silent = False
         self._slots_seen = None
         self._pad_packets = 0
@@ -4047,6 +4071,7 @@ class Bridge:
             if others and self.virtual_slots:
                 old, self.physical_slot = self.physical_slot, min(others)
                 self._pad_moved = now
+                self._forget_pad_habits()
                 self._note("pad silent on slot %s, found on slot %d"
                            % (old, self.physical_slot))
                 return
@@ -4062,14 +4087,15 @@ class Bridge:
                           sorted(self.virtual_slots)))
 
     def _check_frozen(self, packet, gp, now) -> bool:
-        """True while a chatty pad has stopped counting (see PAD_FREEZE_SEC).
-        The first time, the pad's device is restarted."""
+        """True while a chatty pad has stopped counting with something held
+        (see PAD_FREEZE_SEC)."""
         state = (gp.wButtons, gp.bLeftTrigger, gp.bRightTrigger,
                  gp.sThumbLX, gp.sThumbLY, gp.sThumbRX, gp.sThumbRY)
         last = getattr(self, "_pad_last", None)
         self._pad_last = (packet, state)
         if last is None or packet != last[0]:
-            if last is not None and state == last[1]:
+            if (last is not None and state == last[1]
+                    and not self._pad_sleeps):
                 # counted with nothing changed: what a chatty pad does
                 if now - self._pad_idle_t0 >= 1.0:
                     self._pad_idle_t0, self._pad_idle_ticks = now, 0
@@ -4077,6 +4103,15 @@ class Bridge:
                 if (not self._pad_chatty
                         and self._pad_idle_ticks >= PAD_CHATTY_TICKS):
                     self._pad_chatty = True
+            if (self._pad_chatty and last is not None
+                    and now - getattr(self, "_pad_count_t", now)
+                    >= PAD_FREEZE_SEC):
+                # stopped and started again by itself: it sleeps, it does
+                # not freeze
+                self._pad_chatty, self._pad_sleeps = False, True
+                self._note("pad on slot %s pauses between reports by "
+                           "itself - not watched for freezing"
+                           % self.physical_slot)
             self._pad_count_t = now
             if self._pad_frozen:
                 self._pad_frozen = False
@@ -4086,32 +4121,21 @@ class Bridge:
             return False
         if now - getattr(self, "_pad_count_t", now) < PAD_FREEZE_SEC:
             return False
+        if pad_at_rest(gp):
+            return False        # nothing held, nothing to let go of
         if not self._pad_frozen:
             self._pad_frozen = True
             self._note("pad frozen on slot %s: its state stuck, nothing "
-                       "counted for %.1f s" % (self.physical_slot,
-                                               now - self._pad_count_t))
-            self._restart_pad(now)
+                       "counted for %.1f s - let go of it"
+                       % (self.physical_slot, now - self._pad_count_t))
         return True
 
-    def _restart_pad(self, now):
-        """Pull the cable in software: restart the pad's XInput device.
-        In a thread - it takes a second or two - and not too often."""
-        if now - self._restart_t < PAD_RESTART_GAP:
-            return
-        self._restart_t = now
-        nodes = self._pad_devices()
-        if not nodes:
-            self._note("pad frozen, but its device is not known - "
-                       "replug it to get it back")
-            return
-
-        def run():
-            for node in nodes:
-                ok, why = restart_device(node)
-                self._note("restarted %s: %s" % (node, why if why else
-                                                 "ok" if ok else "failed"))
-        threading.Thread(target=run, daemon=True).start()
+    def _forget_pad_habits(self):
+        """What was learned about the pad goes with it: the next one in its
+        slot may be another pad altogether."""
+        self._pad_chatty = self._pad_sleeps = self._pad_frozen = False
+        self._pad_idle_ticks = 0
+        self._pad_last = None
 
     def _watch_slots(self):
         """Every change in the XInput slots, as this app sees them - it is
@@ -4400,7 +4424,9 @@ class Bridge:
                 else:
                     gp, packet = xinput_read_state(self.physical_slot)
                     self._count_pad_packet(packet, now)
-                    if gp is not None:
+                    if gp is None:
+                        self._forget_pad_habits()
+                    else:
                         self._watch_silence(packet, now)
                         if self._check_frozen(packet, gp, now):
                             gp = None       # let go of what it is stuck on
