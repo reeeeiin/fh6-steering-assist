@@ -6139,17 +6139,20 @@ body.t-light{
 .wgrid .wt{position:absolute;left:0;top:0;height:var(--th);margin:0;
            cursor:grab;touch-action:none;
            transition:scale .2s ease,box-shadow .2s ease}
-/* the blue edge of a tile in hand, drawn as a layer over everything in it
-   so no picture or fade inside can cover it */
+/* The edge of a tile: grey under the pointer, a hint that it can be picked
+   up, and blue once it is in hand - fading in, and from one to the other.
+   Drawn as a layer over everything in the tile so no picture or fade
+   inside can cover it. */
 .wgrid .wt::after{content:"";position:absolute;inset:0;z-index:9;
                   border-radius:inherit;pointer-events:none;opacity:0;
-                  box-shadow:inset 0 0 0 1.5px var(--accent);
-                  transition:opacity .15s ease}
-.wgrid .wt.drag::after{opacity:1}
+                  box-shadow:inset 0 0 0 1.5px
+                    color-mix(in srgb,var(--row-fg) 35%,transparent);
+                  transition:opacity .22s ease,box-shadow .22s ease}
+.wgrid .wt:hover::after{opacity:1}
+.wgrid.dragging .wt:not(.drag):hover::after{opacity:0}
+.wgrid .wt.drag::after{opacity:1;
+                       box-shadow:inset 0 0 0 1.5px var(--accent)}
 .wgrid .wt *{cursor:inherit}
-/* a hint that it can be picked up */
-.wgrid .wt:hover{scale:1.02}
-.wgrid.dragging .wt:not(.drag):hover{scale:1}
 /* picked up: on top, a touch larger, outlined in blue until let go */
 .wgrid .wt.drag{z-index:5;scale:1.04;cursor:grabbing;
                 box-shadow:0 10px 26px rgba(0,0,0,.32)}
@@ -6164,7 +6167,14 @@ body.t-light{
    unit, the car's chips at the foot under its picture. */
 .wgrid #wg-cb{justify-content:flex-start}
 .wgrid #wg-cb .cbwrap{margin:auto 0 3px}
+/* the reading a little clear of its bars */
+.wgrid #wg-cb .cbval{margin-bottom:4px}
+/* the angle dial and how the drift began, lifted off the tile's foot */
+.wgrid #wg-angle .ga-wrap{margin-bottom:5px}
+.wgrid #wg-angle .galbl{top:-2px}
 .wgrid .tcarcard > .trow + .tchips{margin-top:auto}
+/* the name as close to drive and class as they are to each other */
+.wgrid .tcarcard > .tchips + .tchips{margin-top:-6px}
 .trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .trow .rname{font-size:11px;color:var(--row-fg)}
 /* the car's name in a bubble of its own on the first line; min-width lets
@@ -6296,15 +6306,36 @@ body.t-light{
    a column per digit that jumps a row at a time */
 /* edge to edge across the card, whatever its width, so the fade at its
    sides is the card's own edge and never cuts into the digits */
-.odowin{position:relative;flex:none;align-self:stretch;height:46px;
+.odowin{position:relative;flex:none;align-self:stretch;height:64px;
         margin:0 -14px;overflow:hidden}
 .odorow{position:absolute;left:calc(50% - 42.5px);top:0;width:85px;
-        height:46px}
-.odotri{position:absolute;left:0;top:20px;width:6px;height:6px;
+        height:64px}
+.odotri{position:absolute;left:0;top:29px;width:6px;height:6px;
         color:var(--accent)}
 .odotri svg{display:block}
-.odoc{position:absolute;top:0;width:15px;height:46px}
-.odos{position:absolute;left:0;top:12px;width:15px;will-change:transform}
+.odoc{position:absolute;top:0;width:15px;height:64px}
+.odos{position:absolute;left:0;top:21px;width:15px;will-change:transform}
+/* The rows above and below go out of focus towards the window's edges, a
+   little more at each step: three layers, each blurring what is under it
+   over a narrower band at the top and the bottom. The middle row stays
+   sharp. */
+.odoblur{position:absolute;inset:0;z-index:2;pointer-events:none}
+.odoblur b{position:absolute;inset:0}
+.odoblur b:nth-child(1){backdrop-filter:blur(.8px);
+  -webkit-mask-image:linear-gradient(to bottom,#000 20%,transparent 32%,
+                     transparent 68%,#000 80%);
+  mask-image:linear-gradient(to bottom,#000 20%,transparent 32%,
+             transparent 68%,#000 80%)}
+.odoblur b:nth-child(2){backdrop-filter:blur(1.6px);
+  -webkit-mask-image:linear-gradient(to bottom,#000 13%,transparent 24%,
+                     transparent 76%,#000 87%);
+  mask-image:linear-gradient(to bottom,#000 13%,transparent 24%,
+             transparent 76%,#000 87%)}
+.odoblur b:nth-child(3){backdrop-filter:blur(3.2px);
+  -webkit-mask-image:linear-gradient(to bottom,#000 6%,transparent 15%,
+                     transparent 85%,#000 94%);
+  mask-image:linear-gradient(to bottom,#000 6%,transparent 15%,
+             transparent 85%,#000 94%)}
 .odos b{display:block;height:22px;line-height:22px;font-size:24px;
         font-weight:600;text-align:center;color:var(--row-fg)}
 .odos.go{transition:transform .46s cubic-bezier(.3,1.55,.55,1)}
@@ -6312,10 +6343,12 @@ body.t-light{
    A mask rather than a layer of the card's colour on top: the digits
    themselves turn transparent, so there is no edge for them to show past
    and nothing to lie over the tile's outline. */
-.odowin{-webkit-mask-image:linear-gradient(to bottom,transparent 6%,
-                           #000 30%,#000 70%,transparent 94%);
-        mask-image:linear-gradient(to bottom,transparent 6%,
-                   #000 30%,#000 70%,transparent 94%)}
+.odowin{-webkit-mask-image:linear-gradient(to bottom,transparent,
+                           rgba(0,0,0,.22) 14%,#000 34%,#000 66%,
+                           rgba(0,0,0,.22) 86%,transparent);
+        mask-image:linear-gradient(to bottom,transparent,
+                   rgba(0,0,0,.22) 14%,#000 34%,#000 66%,
+                   rgba(0,0,0,.22) 86%,transparent)}
 .odofoot{display:flex;justify-content:flex-end;flex:none;
          align-self:stretch;
          font-size:6px;line-height:6px;color:var(--row-fg);opacity:.25}
@@ -6493,6 +6526,7 @@ body.t-light{
        background:var(--bar-fill);
        transition:left .12s linear,width .12s linear}
 .bar{overflow:visible}
+#rawbar{transition:none}
 .bar u{position:absolute;left:50%;top:-3px;width:2px;height:calc(100% + 4px);
        background:var(--row-fg);opacity:.9;z-index:2;border-radius:1px}
 .barlbl{font-size:11px;color:var(--row-fg);margin-bottom:6px}
@@ -8364,6 +8398,23 @@ async function swapAuto(el){
 
 /* ---------------- live state ---------------- */
 let sRaw = 0, sOut = 0, wasLive = null;
+/* Raw input is the stick as it is. It used to be smoothed three times
+   over - by the poll, an average and a transition - and looked calmer
+   than the hand on it. Now it only follows over a frame or two between
+   the polls, which come twenty times a second, and ignores changes under
+   one and a half per cent, so a hand held still does not shimmer. */
+const RAW_TAU = 0.02, RAW_GATE = 0.015;
+let rawTo = 0, rawRaf = 0, rawLast = 0;
+function rawFrame(ts){
+  rawRaf = 0;
+  const dt = rawLast ? Math.min(0.1, (ts - rawLast) / 1000) : 0.016;
+  rawLast = ts;
+  sRaw += (rawTo - sRaw) * (1 - Math.exp(-dt / RAW_TAU));
+  if (Math.abs(rawTo - sRaw) < 0.001) sRaw = rawTo;
+  setBar('rawbar', sRaw);
+  if (sRaw !== rawTo) rawRaf = requestAnimationFrame(rawFrame);
+  else rawLast = 0;
+}
 
 /* The game stops sending while it loads between events or sits minimised,
    often for a few seconds at a time. Dropping the widgets for each of those
@@ -8464,7 +8515,7 @@ function widgets(){
     '<svg width="6" height="6" viewBox="0 0 6 6"><path fill="currentColor" ' +
     'd="M5.4 1.957C6.2 2.42 6.2 3.58 5.4 4.043L2.4 5.782C1.333 6.401 0 ' +
     '5.628 0 4.391L0 1.609C0 .372 1.333-.401 2.4.218Z"/></svg></i>' +
-    cols + '</div></div>' +
+    cols + '</div><i class="odoblur"><b></b><b></b><b></b></i></div>' +
     '<div class="odofoot"><span>' + t('odo_km') + '</span></div></div>';
   return {angle, speed, cb: callback, odo};
 }
@@ -8817,7 +8868,9 @@ function liveUpdate(){
     if (first) render(); else swapTelemetry();
     return;
   }
-  sRaw += (state.raw - sRaw) * 0.25;
+  const raw = +state.raw || 0;
+  if (Math.abs(raw - rawTo) >= RAW_GATE || raw === 0) rawTo = raw;
+  if (sRaw !== rawTo && !rawRaf) rawRaf = requestAnimationFrame(rawFrame);
   sOut += (state.out - sOut) * 0.35;
   setBar('rawbar', sRaw); setBar('outbar', sOut);
   drawWidgets();
