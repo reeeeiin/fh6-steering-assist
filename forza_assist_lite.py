@@ -1349,6 +1349,8 @@ DEFAULTS = {
     "car_last_kind": "rwd",
     # metres drifted, ever - the Drift Odo
     "drift_odo": 0.0,
+    # the telemetry widgets in reading order, as the driver arranged them
+    "tile_order": None,
     "profile": "default",
     "custom": {},
     "slots": {},
@@ -2269,6 +2271,11 @@ BOOT_DONE_MS = 800
 # Slots the driver saves into. Three is enough to keep a car, a road and a
 # wet setting apart without turning the row into a list to read.
 SLOT_KEYS = ("custom1", "custom2", "custom3")
+# The telemetry widgets, in the order a first launch lays them out: the two
+# statuses side by side, then the steering and the car each with two of the
+# readouts. The wide ones take two of the four columns.
+TILE_ORDER = ("tele", "pad", "steer", "angle", "speed", "car", "cb", "odo")
+TILE_WIDE = ("tele", "pad", "steer", "car")
 # A preset's name is a chip in a row beside two others and Default, so it
 # is kept to what fits there.
 PRESET_NAME_MAX = 10
@@ -2395,6 +2402,15 @@ def sanitize_config(cfg: dict) -> dict:
                 values["name"] = label
             kept[name] = values
     cfg["slots"] = kept
+    # every widget once, in the driver's order; anything new goes last and
+    # anything gone is dropped
+    order = cfg.get("tile_order")
+    seen = []
+    if isinstance(order, (list, tuple)):
+        for tid in order:
+            if tid in TILE_ORDER and tid not in seen:
+                seen.append(tid)
+    cfg["tile_order"] = seen + [tid for tid in TILE_ORDER if tid not in seen]
     if cfg.get("profile") in SLOT_KEYS and cfg["profile"] not in kept:
         cfg["profile"] = "custom"
     return cfg
@@ -5402,6 +5418,8 @@ def build_html() -> str:
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__SLOT_KEYS__", json.dumps(list(SLOT_KEYS)))
     html = html.replace("__PRESET_NAME_MAX__", str(PRESET_NAME_MAX))
+    html = html.replace("__TILE_ORDER__", json.dumps(list(TILE_ORDER)))
+    html = html.replace("__TILE_WIDE__", json.dumps(list(TILE_WIDE)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_DL__", json.dumps(_icon("downloadarrow")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
@@ -5786,7 +5804,7 @@ body.t-light{
    the right column needs, so the two always end level. No dividers. */
 .tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tcol{display:flex;flex-direction:column;gap:10px;min-width:0}
-.tgrid .card{padding:12px 14px;box-sizing:border-box}
+.tgrid .card,.wgrid .card{padding:12px 14px;box-sizing:border-box}
 .card.tsc{height:42px;padding:0 14px;display:flex;align-items:center;
           box-sizing:border-box}
 .tsc .trow{flex:1;min-width:0}
@@ -5795,11 +5813,39 @@ body.t-light{
 .tsc .rval.off{color:var(--row-fg)}
 .tsteer{flex:1;display:flex;flex-direction:column;
         justify-content:space-between;gap:8px}
-.tgrid .tsteer .barwrap,.tgrid .tsteer .barwrap:last-child{padding:0}
+.tgrid .tsteer .barwrap,.tgrid .tsteer .barwrap:last-child,
+.wgrid .tsteer .barwrap,.wgrid .tsteer .barwrap:last-child{padding:0}
 .tsteer.idle .barlbl{color:var(--off)}
 .tsteer.idle .bar{opacity:.5}
-.tside.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-             gap:10px;background:none;border-radius:0;padding:0}
+/* ---------- the widget tiles ----------
+   Four columns, three rows, every tile one row tall: the four readouts one
+   column wide, the statuses, the steering and the car two columns and the
+   gap between them. A row is always full - two wide, a wide and two
+   narrow either side or together, or four narrow - so the tiles can trade
+   places but never pile up. Positioned by the page, with translate, so the
+   cards' own reveal transforms still apply on top. */
+.wgrid{--th:123px;--tgap:10px;position:relative;
+       height:calc(3 * var(--th) + 2 * var(--tgap))}
+.wgrid .wt{position:absolute;left:0;top:0;height:var(--th);margin:0;
+           cursor:grab;touch-action:none;
+           outline:1.5px solid transparent;outline-offset:-1.5px;
+           transition:scale .2s ease,outline-color .15s ease,
+                      box-shadow .2s ease}
+.wgrid .wt *{cursor:inherit}
+/* a hint that it can be picked up */
+.wgrid .wt:hover{scale:1.02}
+.wgrid.dragging .wt:not(.drag):hover{scale:1}
+/* picked up: on top, a touch larger, outlined in blue until let go */
+.wgrid .wt.drag{z-index:5;scale:1.04;cursor:grabbing;
+                outline-color:var(--accent);
+                box-shadow:0 10px 26px rgba(0,0,0,.32)}
+/* the two statuses at a tile's height: the name on top, the state large
+   in the middle */
+.wgrid .wst{display:flex;flex-direction:column}
+.wst .wstv{flex:1;display:flex;align-items:center;justify-content:center}
+.wst .tstat,.wst .rval{font-size:18px;font-weight:600;min-width:0;
+                       text-align:center}
+.wst .rval.off{color:var(--row-fg)}
 .trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .trow .rname{font-size:11px;color:var(--row-fg)}
 /* the car's name in a bubble of its own on the first line; min-width lets
@@ -5868,11 +5914,11 @@ body.t-light{
 
 /* ---------- the four readouts ---------- */
 /* As drawn in Figma: 12 by 14 inside each card, the dials at full size */
-.tside.tiles .wg{padding:12px 14px;display:flex;flex-direction:column;
+.wgrid .wg{padding:12px 14px;display:flex;flex-direction:column;
                  justify-content:space-between;align-items:center;
                  overflow:hidden}
-.tside.tiles #wg-speed{justify-content:flex-start;gap:12px}
-.tside.tiles #wg-odo{justify-content:flex-start;gap:10px}
+.wgrid #wg-speed{justify-content:flex-start;gap:12px}
+.wgrid #wg-odo{justify-content:flex-start;gap:10px}
 .whead{display:flex;align-items:center;justify-content:space-between;
        align-self:stretch;font-size:10px;font-weight:600;line-height:10px;
        color:var(--row-fg);flex:none}
@@ -6475,6 +6521,7 @@ const PROFILES = __PROFILES__;
 const PROF_ORDER = __PROF_ORDER__;
 const SLOT_KEYS = __SLOT_KEYS__;
 const PRESET_NAME_MAX = __PRESET_NAME_MAX__;
+const TILE_ORDER = __TILE_ORDER__, TILE_WIDE = __TILE_WIDE__;
 const BOOT = __BOOT__;
 const VER = "__VER__";
 const THEMES = ['dark','light'];
@@ -6569,7 +6616,6 @@ function screenMain(force){
   h += '<div class="reveal" id="teleblock"><div class="sec">' +
        t('telemetry_sec') + '</div>';
 
-  const readouts = '<div class="tside tiles">' + widgets() + '</div>';
   const steer = '<div class="card tsteer' + (live ? '' : ' idle') + '">' +
     '<div class="trow"><span class="rname">' + t('w_steering') + '</span>' +
     '<span class="tstat" id="sstat">-</span></div>' + bars + '</div>';
@@ -6588,9 +6634,16 @@ function screenMain(force){
   if (!live) return h + '<div class="tgrid">' +
     '<div class="tcol">' + stat + '</div>' +
     '<div class="tcol">' + pad + '</div></div>' + setupWide + '</div>';
-  return h + '<div class="tgrid">' +
-    '<div class="tcol">' + stat + steer + car + '</div>' +
-    '<div class="tcol">' + pad + readouts + '</div>' +
+  /* reading, every widget is a tile the driver can move */
+  const tall = (key, val) => '<div class="card wst"><div class="whead">' +
+    '<span>' + t(key) + '</span></div><div class="wstv">' + val + '</div></div>';
+  const tiles = Object.assign({
+    tele: tall('tele_status', '<span class="tstat" id="tstat">-</span>'),
+    pad: tall('pad_status', '<span class="rval" id="padstat">-</span>'),
+    steer, car}, widgets());
+  return h + '<div class="wgrid" id="wgrid">' +
+    tileOrder().map(id => tiles[id].replace('class="card ',
+      'data-tile="' + id + '" class="card wt ')).join('') +
     '</div></div>';
 }
 
@@ -6908,6 +6961,233 @@ function uiZoom(){
 function applyScale(){
   document.documentElement.style.setProperty('--uiz', uiZoom());
 }
+
+/* ---------------- widget tiles ----------------
+   The telemetry widgets sit in rows of four columns. Picked up, a tile
+   follows the pointer, and the others make room: the arrangement that puts
+   its free slot nearest the tile is the one laid out, every tile easing to
+   its place on a spring. Rows fill first-fit, so a wide tile that would
+   not fit pulls the next narrow one up beside it - which is what lets a
+   wide one sit between two narrow ones, and why a row can never be left
+   with a hole. */
+const TILE_COLS = 4;
+const TILE_SPRING = {resp: .34, zeta: .74};   // the others making room
+const TILE_LAND = {resp: .26, zeta: .62};     // the dragged one settling
+const TILE_SLOP = 4;          // px of travel before a press becomes a drag
+const TILE_SWITCH = 6;        // px nearer a new slot must be, so it settles
+const TILE = new Map();       // id -> {el, x, y, vx, vy, tx, ty, land}
+let tileDrag = null, tilePending = false, tileLast = 0, tileRO = null;
+
+function tileOrder(){
+  const own = (cfg && cfg.tile_order) || [];
+  const out = own.filter((id, i) => TILE_ORDER.includes(id) &&
+                                    own.indexOf(id) === i);
+  TILE_ORDER.forEach(id => { if (!out.includes(id)) out.push(id); });
+  return out;
+}
+
+function tileSpan(id){ return TILE_WIDE.includes(id) ? 2 : 1; }
+
+/* rows of TILE_COLS, each filled in order; a tile too wide for what is left
+   of a row waits for the next while the first one that fits is pulled up */
+function packTiles(order){
+  const left = order.slice(), out = [];
+  for (let row = 0; left.length; row++){
+    let col = 0;
+    while (col < TILE_COLS && left.length){
+      const i = left.findIndex(id => tileSpan(id) <= TILE_COLS - col);
+      if (i < 0) break;
+      const id = left.splice(i, 1)[0];
+      out.push({id, row, col, span: tileSpan(id)});
+      col += tileSpan(id);
+    }
+  }
+  return out;
+}
+
+function tileMetrics(grid){
+  const w = grid.clientWidth;
+  const cs = getComputedStyle(grid);
+  const gap = parseFloat(cs.getPropertyValue('--tgap')) || 10;
+  const th = parseFloat(cs.getPropertyValue('--th')) || 123;
+  const cw = (w - gap * (TILE_COLS - 1)) / TILE_COLS;
+  return {gap, th, cw};
+}
+
+function slotOf(p, m){
+  return {x: p.col * (m.cw + m.gap), y: p.row * (m.th + m.gap),
+          w: p.span * m.cw + (p.span - 1) * m.gap};
+}
+
+/* lay the tiles out; animate says whether they travel or simply arrive */
+function placeTiles(order, animate){
+  const grid = document.getElementById('wgrid');
+  if (!grid) return;
+  const m = tileMetrics(grid);
+  packTiles(order).forEach(p => {
+    const el = grid.querySelector('[data-tile="' + p.id + '"]');
+    if (!el) return;
+    const s = slotOf(p, m);
+    el.style.width = s.w + 'px';
+    let st = TILE.get(p.id);
+    if (!st || st.el !== el){
+      st = {el, x: s.x, y: s.y, vx: 0, vy: 0};
+      TILE.set(p.id, st);
+    }
+    st.tx = s.x; st.ty = s.y;
+    if (!animate){ st.x = s.x; st.y = s.y; st.vx = st.vy = 0; }
+    tilePaint(st);
+  });
+  if (animate) tileKick();
+}
+
+function tilePaint(st){
+  st.el.style.translate = st.x.toFixed(2) + 'px ' + st.y.toFixed(2) + 'px';
+}
+
+function tileKick(){
+  if (tilePending) return;
+  tilePending = true;
+  const run = () => {
+    if (!tilePending) return;
+    tilePending = false;
+    tileTick();
+  };
+  requestAnimationFrame(run);
+  setTimeout(run, 34);
+}
+
+function tileTick(){
+  const now = performance.now();
+  const dt = Math.min(0.05, tileLast ? (now - tileLast) / 1000 : 1 / 60);
+  tileLast = now;
+  let busy = false;
+  TILE.forEach((st, id) => {
+    if (!st.el.isConnected){ TILE.delete(id); return; }
+    if (tileDrag && tileDrag.id === id && tileDrag.live) return;
+    const sp = st.land ? TILE_LAND : TILE_SPRING;
+    const k = Math.pow(2 * Math.PI / sp.resp, 2), c = 2 * sp.zeta * Math.sqrt(k);
+    const n = Math.max(1, Math.ceil(dt / .004)), h = dt / n;
+    for (let i = 0; i < n; i++){
+      st.vx += (k * (st.tx - st.x) - c * st.vx) * h;
+      st.vy += (k * (st.ty - st.y) - c * st.vy) * h;
+      st.x += st.vx * h;
+      st.y += st.vy * h;
+    }
+    if (Math.abs(st.tx - st.x) < .05 && Math.abs(st.ty - st.y) < .05 &&
+        Math.abs(st.vx) < .5 && Math.abs(st.vy) < .5){
+      st.x = st.tx; st.y = st.ty; st.vx = st.vy = 0;
+      if (st.land){ st.land = false; st.el.style.zIndex = ''; }
+    } else busy = true;
+    tilePaint(st);
+  });
+  if (busy) tileKick(); else tileLast = 0;
+}
+
+/* The page is zoomed, so a pointer's pixels are not the layout's */
+function tileScale(grid){
+  return grid.getBoundingClientRect().width / (grid.offsetWidth || 1);
+}
+
+/* where the tile under the pointer would rather be: of every place it
+   could be put back in, the one whose slot is nearest to it */
+function tileReorder(){
+  const d = tileDrag, grid = document.getElementById('wgrid');
+  if (!d || !grid) return;
+  const m = tileMetrics(grid), me = TILE.get(d.id);
+  const cx = me.x + d.w / 2, cy = me.y + m.th / 2;
+  const dist = order => {
+    const p = packTiles(order).find(q => q.id === d.id), s = slotOf(p, m);
+    return Math.hypot(s.x + s.w / 2 - cx, s.y + m.th / 2 - cy);
+  };
+  const rest = d.order.filter(id => id !== d.id);
+  let best = d.order, bestD = dist(d.order);
+  for (let i = 0; i <= rest.length; i++){
+    const cand = rest.slice(0, i).concat([d.id], rest.slice(i));
+    const dd = dist(cand);
+    if (dd < bestD - TILE_SWITCH){ best = cand; bestD = dd; }
+  }
+  const packed = packTiles(best).map(p => p.id);
+  if (packed.join() === d.order.join()) return;
+  d.order = packed;
+  placeTiles(d.order, true);
+}
+
+function tileDown(e){
+  if (e.button !== 0) return;
+  const el = e.target.closest && e.target.closest('#wgrid .wt');
+  if (!el) return;
+  const grid = document.getElementById('wgrid');
+  const st = TILE.get(el.dataset.tile);
+  if (!st) return;
+  tileDrag = {id: el.dataset.tile, el, grid, live: false,
+              px: e.clientX, py: e.clientY, k: tileScale(grid),
+              ox: st.x, oy: st.y, w: el.offsetWidth, order: tileOrder()};
+  document.addEventListener('pointermove', tileMove, true);
+  document.addEventListener('pointerup', tileUp, true);
+  document.addEventListener('pointercancel', tileUp, true);
+}
+
+function tileMove(e){
+  const d = tileDrag;
+  if (!d) return;
+  const dx = (e.clientX - d.px) / d.k, dy = (e.clientY - d.py) / d.k;
+  if (!d.live){
+    if (Math.hypot(dx, dy) < TILE_SLOP) return;
+    d.live = true;
+    d.el.classList.add('drag');
+    d.grid.classList.add('dragging');
+  }
+  e.preventDefault();
+  const st = TILE.get(d.id);
+  st.x = d.ox + dx; st.y = d.oy + dy; st.vx = st.vy = 0;
+  tilePaint(st);
+  tileReorder();
+}
+
+function tileUp(){
+  const d = tileDrag;
+  document.removeEventListener('pointermove', tileMove, true);
+  document.removeEventListener('pointerup', tileUp, true);
+  document.removeEventListener('pointercancel', tileUp, true);
+  tileDrag = null;
+  if (!d || !d.live) return;
+  /* the outline goes as it is let go; it settles into its slot on top of
+     the others, then goes back among them */
+  d.el.classList.remove('drag');
+  d.grid.classList.remove('dragging');
+  const st = TILE.get(d.id);
+  if (st){ st.land = true; d.el.style.zIndex = '4'; }
+  placeTiles(d.order, true);
+  if (d.order.join() !== tileOrder().join()){
+    cfg.tile_order = d.order.slice();
+    try{ pywebview.api.set('tile_order', cfg.tile_order); }catch(e){}
+  }
+}
+
+/* drawn afresh with the page; a drag in progress cannot survive that */
+function layoutTiles(){
+  if (tileDrag){
+    const d = tileDrag;
+    tileDrag = null;
+    document.removeEventListener('pointermove', tileMove, true);
+    document.removeEventListener('pointerup', tileUp, true);
+    document.removeEventListener('pointercancel', tileUp, true);
+    if (d.grid) d.grid.classList.remove('dragging');
+  }
+  const grid = document.getElementById('wgrid');
+  if (tileRO) tileRO.disconnect();
+  if (!grid) return;
+  placeTiles(tileOrder(), false);
+  /* the window can be made wider or narrower: the columns follow */
+  if (window.ResizeObserver){
+    tileRO = new ResizeObserver(() => {
+      if (!tileDrag) placeTiles(tileOrder(), false);
+    });
+    tileRO.observe(grid);
+  }
+}
+document.addEventListener('pointerdown', tileDown);
 
 /* ---------------- press spring ----------------
    Every button gives a little under the pointer and springs back, a touch
@@ -7320,6 +7600,7 @@ function render(){
                 : screen === 'about' ? screenAbout()
                 : screen === 'faq' ? screenFaq()
                 : screenMain();
+  layoutTiles();
   if (bootPhase === 'app'){
     const rows = [...$$('#screen .reveal')];
     const staged = screen !== lastScreen;
@@ -7754,7 +8035,7 @@ function widgets(){
     '5.628 0 4.391L0 1.609C0 .372 1.333-.401 2.4.218Z"/></svg></i>' +
     cols + '</div><div class="odofade"></div></div>' +
     '<div class="odofoot"><span>' + t('odo_km') + '</span></div></div>';
-  return angle + speed + callback + odo;
+  return {angle, speed, cb: callback, odo};
 }
 
 /* The dials chase what the game last said, frame by frame, so a poll ten

@@ -1085,6 +1085,45 @@ def test_the_preset_row_is_plus_own_presets_and_default():
         assert "{name}" in fa.TR[lang]["preset_del_text"], lang
 
 
+def test_tile_order_keeps_every_widget_once():
+    cfg = dict(fa.DEFAULTS)
+    fa.sanitize_config(cfg)
+    assert cfg["tile_order"] == list(fa.TILE_ORDER), "first launch layout"
+    cfg["tile_order"] = ["odo", "odo", "nonsense", "car", 5]
+    fa.sanitize_config(cfg)
+    assert cfg["tile_order"][:2] == ["odo", "car"], "the driver's order first"
+    assert sorted(cfg["tile_order"]) == sorted(fa.TILE_ORDER), "each once"
+
+
+def test_tile_rows_always_fill():
+    """Four wide and four narrow fill three rows of four columns whatever
+    the order, as long as rows are packed first-fit - the page relies on
+    it to keep a row from ever being left with a hole."""
+    import itertools
+    span = {t: 2 if t in fa.TILE_WIDE else 1 for t in fa.TILE_ORDER}
+    assert sum(span.values()) == 12
+    for order in itertools.permutations(fa.TILE_ORDER):
+        left, rows = list(order), []
+        while left:
+            col, row = 0, []
+            while col < 4 and left:
+                i = next((k for k, t in enumerate(left)
+                          if span[t] <= 4 - col), None)
+                if i is None:
+                    break
+                row.append(left.pop(i))
+                col += span[row[-1]]
+            rows.append(col)
+        assert rows == [4, 4, 4], (order, rows)
+
+
+def test_the_widgets_are_tiles_the_page_lays_out():
+    html = fa.build_html()
+    assert "function packTiles(order)" in html
+    assert 'id="wgrid"' in html and "data-tile=" in html
+    assert "'tile_order'" in html, "a moved tile is remembered"
+
+
 def test_first_run_starts_on_default_and_remembers_the_choice():
     assert fa.DEFAULTS["profile"] == "default"
     cfg = dict(fa.DEFAULTS)
