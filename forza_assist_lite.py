@@ -4586,6 +4586,7 @@ LANG_SHORT = {"en": "En", "ru": "Ру", "es": "Es",
 
 TR = {
     "en": {
+        "tested_on": 'Tested on',
         "third_party": 'Third-party Components',
         "how_it_works": 'How it works',
         "trademarks": 'Trademarks',
@@ -4748,6 +4749,7 @@ TR = {
         "st_menu": 'In menu',
     },
     "ru": {
+        "tested_on": 'Проверено на',
         "third_party": 'Компоненты сторонних разработчиков',
         "how_it_works": 'Как это работает',
         "trademarks": 'Товарные знаки',
@@ -4910,6 +4912,7 @@ TR = {
         "st_menu": 'В меню',
     },
     "de": {
+        "tested_on": 'Getestet mit',
         "third_party": 'Komponenten von Drittanbietern',
         "how_it_works": 'So funktioniert es',
         "trademarks": 'Markenzeichen',
@@ -5072,6 +5075,7 @@ TR = {
         "st_menu": 'Im Menu',
     },
     "fr": {
+        "tested_on": 'Testé avec',
         "third_party": 'Composants tiers',
         "how_it_works": 'Comment ca marche',
         "trademarks": 'Marques deposees',
@@ -5234,6 +5238,7 @@ TR = {
         "st_menu": 'Menu',
     },
     "es": {
+        "tested_on": 'Probado con',
         "third_party": 'Componentes de terceros',
         "how_it_works": 'Como funciona',
         "trademarks": 'Marcas registradas',
@@ -5396,6 +5401,7 @@ TR = {
         "st_menu": 'En menu',
     },
     "ja": {
+        "tested_on": '動作確認済み',
         "third_party": 'サードパーティ製コンポーネント',
         "how_it_works": '仕組み',
         "trademarks": '商標',
@@ -5660,6 +5666,28 @@ def _icon(name: str, sized: bool = False) -> str:
     return raw.strip()
 
 
+# Tested on: the pads the assist has been driven with, each a link to its
+# maker's site. The logos are drawn in white with the brand's colours on
+# the mark; the page draws them in the text colour of the theme and lets
+# the brand colours in under the pointer.
+TESTED_ON = (("flydigi", "Flydigi", "https://shops.flydigi.com/"),
+             ("gamesir", "GameSir", "https://gamesir.com/"),
+             ("microsoft", "Xbox", "https://www.xbox.com/"))
+
+
+def _brand_logo(name: str) -> str:
+    """A maker's logo inline: white becomes the text colour, and every
+    brand colour waits in --brand for the pointer."""
+    raw = _read_asset(os.path.join("icons", name + "-logo.svg"))
+    if not raw:
+        return ""
+    raw = re.sub(r'\s(width|height)="[^"]*"', "", raw, count=2)
+    raw = raw.replace('fill="white"', 'fill="currentColor"')
+    raw = re.sub(r'fill="(#[0-9A-Fa-f]{3,8})"',
+                 r'fill="currentColor" class="brand" style="--brand:\1"', raw)
+    return raw.strip()
+
+
 def _font_css() -> str:
     """Subset faces produced by tools/subset_font.py, inlined as data URIs."""
     css = ""
@@ -5721,6 +5749,9 @@ def build_html() -> str:
                                              'stroke="currentColor"')
          for k in ("light", "dark")}))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
+    html = html.replace("__TESTED__", json.dumps(
+        [{"name": n, "url": u, "svg": _brand_logo(k)}
+         for k, n, u in TESTED_ON]))
     html = html.replace("__LEGAL__", json.dumps(LEGAL))
     html = html.replace("__FAQ__", json.dumps(FAQ_ITEMS,
                                                 ensure_ascii=False))
@@ -5912,7 +5943,7 @@ body.t-light{
    global default above would put the arrow back over them. */
 [data-toggle] *,[data-slider] *,[data-scale] *,[data-seg] [data-key] *,
 :is(.hbtn,.updbtn,.upddl,.pbtn,.warn-b,.padd,.pchip,.pdel,.lbtn,.bub,
-    .bbtn,.bclose,.logo) *{cursor:inherit}
+    .bbtn,.bclose,.logo,.tlogo) *{cursor:inherit}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
 .hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
@@ -6046,6 +6077,16 @@ body.t-light{
 .bub:hover{background:var(--btn-hov-bg);border-color:var(--accent);
            color:var(--accent)}
 .bub[data-url]{cursor:pointer}
+/* Tested on: the makers' logos in the text colour, a little quiet; under
+   the pointer they come up and their marks take the brand's colours */
+.tested{display:flex;align-items:center;justify-content:space-around;
+        gap:12px;padding:16px 0}
+.tlogo{display:flex;color:var(--row-fg);opacity:.65;cursor:pointer;
+       transition:opacity .25s ease}
+.tlogo svg{display:block;height:18px;width:auto}
+.tlogo .brand{fill:currentColor;transition:fill .25s ease}
+.tlogo:hover{opacity:1}
+.tlogo:hover .brand{fill:var(--brand)}
 .row{display:flex;align-items:center;gap:12px;min-height:42px;
      border-bottom:1px solid var(--line)}
 .card .row:last-child{border-bottom:none}
@@ -7037,6 +7078,13 @@ function screenAbout(){
        LG().repo[1] + '">' + LG().repo[0] + '</span></div>' +
        '</div></div></div>';
   h += prose('how_it_works', LG().how);
+  /* the pads it has been driven with, each a link to its maker */
+  h += '<div class="reveal"><div class="sec">' + t('tested_on') + '</div>' +
+       '<div class="card"><div class="tested">' +
+       TESTED.filter(x => x.svg).map(x =>
+         '<span class="tlogo" data-url="' + x.url + '" title="' + x.name +
+         '">' + x.svg + '</span>').join('') +
+       '</div></div></div>';
   h += '<div class="reveal"><div class="sec">' + t('third_party') +
        '</div><div class="card">';
   Object.keys(THIRD).forEach(group => {
@@ -7631,7 +7679,7 @@ document.addEventListener('pointerdown', tileDown);
    it adds to whatever a button already does with its transform. The pill
    menus slide instead, and are left alone. */
 const PRESS_SEL = '.hbtn,.updbtn,.upddl,.pbtn,.warn-b,.padd,.pchip,.pdel,' +
-                  '.lbtn,.bub[data-url],.bbtn,.bclose';
+                  '.lbtn,.bub[data-url],.bbtn,.bclose,.tlogo';
 const PRESS_DEPTH = 0.04;                   // how far it gives, of its size
 const PRESS_HELD = {resp: .12, zeta: 1};    // going in: quick, no wobble
 const PRESS_FREE = {resp: .3, zeta: .5};    // coming out: a little overshoot
@@ -9017,6 +9065,7 @@ let bootLang = 'en';
 let bootPath = null, bootLen = 0, lastScreen = null;
 const LINE_GAP = 300;
 const THIRD = __THIRD__;
+const TESTED = __TESTED__;
 const ARROW_DL = __ICON_DL__;
 const LEGAL_TR = __LEGAL__;
 function LG(){ return LEGAL_TR[cfg && cfg.lang] || LEGAL_TR.en; }

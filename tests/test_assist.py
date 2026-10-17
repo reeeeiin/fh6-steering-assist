@@ -3558,6 +3558,22 @@ def test_no_heal_without_the_game():
         fa.restart_device, fa.game_running = real_r, real_g
 
 
+# ---------------- tested on ----------------
+
+def test_the_makers_logos_follow_the_theme_and_keep_their_colours():
+    """Drawn in white, which would vanish on the light theme: white becomes
+    the text colour, and the brand colours wait for the pointer."""
+    for key, name, url in fa.TESTED_ON:
+        svg = fa._brand_logo(key)
+        assert svg.startswith("<svg"), key
+        assert 'fill="white"' not in svg, key
+        assert 'class="brand" style="--brand:#' in svg, key
+        assert url.startswith("https://"), key
+    html = fa.build_html()
+    assert "__TESTED__" not in html
+    assert '"tested_on"' in html
+
+
 # ---------------- the window's place and size are remembered ----------------
 
 def test_a_first_launch_has_no_place_or_size_to_go_back_to():
