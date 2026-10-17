@@ -136,7 +136,12 @@ RUMBLE_HZ = 12.0
 RUMBLE_EPS = 0.06
 RUMBLE_STEPS = 16
 RUMBLE_FLOOR = 0.05
-SWEEP_SEC = 20.0
+# How often the hiding is checked and put right while the assist runs, and
+# how soon a pad restarted for it may be restarted again. A pad that comes
+# back - a loose cable, a reconnect in another mode - is looked at the moment
+# the XInput slots change, not on the next round.
+SWEEP_SEC = 5.0
+HEAL_GAP = 30.0
 # A pad whose packet number has not moved for this long is taken to have
 # gone silent. Most pads only count a packet when something changes, so an
 # idle one is silent too - which is why silence alone changes nothing, and
@@ -3188,11 +3193,28 @@ class HidHide:
         except Exception:
             pass
 
-    def sweep(self):
+    def sweep(self) -> list:
+        """Put the hiding right again: run every few seconds, and whenever
+        a pad comes or goes. Returns the XInput nodes and paths that had to
+        be hidden, so a game that may have opened them meanwhile can be made
+        to let go.
+
+        Found 17.10.2026: a Flydigi that loses its cable can come back in
+        another mode - an Xbox 360 pad instead of an Xbox One one - which is
+        a different device with different paths. Its HID path happened to be
+        on HidHide's list already, from some earlier session, so it was
+        taken for somebody else's entry and skipped; and with it skipped,
+        nothing ever hid its XInput node, the one the game reads. The game
+        saw the pad again: the assist dropped out under every press, and
+        every button we pass on arrived twice."""
+        fixed = []
         if not (self.cli and self.active):
-            return
+            return fixed
+        hook = getattr(self, "on_event", None)
         try:
-            new = (self._present_paths() - self.hidden - self.allowed
+            present = self._present_paths()
+            self._present = present
+            new = (present - self.hidden - self.allowed
                    - self._prior_hidden)
             if new:
                 self.whitelist_companions()
@@ -3203,20 +3225,40 @@ class HidHide:
                     # device picked up here is a ghost the moment an exit
                     # goes badly - the very thing the ledger is for
                     self._ledger_add(path)
-                    # getattr: this whole block sits under a bare except,
-                    # and a missing attribute would quietly skip the save
-                    hook = getattr(self, "on_event", None)
                     if hook:
                         hook("hid a new device: %s" % path)
-                    node = self._hide_xinput_of(path)
-                    if node and hook:
-                        hook("hid its XInput node: %s" % node)
+                    fixed.append(path)
                 self._save_state()
+            # Every pad that is plugged in, whoever hid its HID path: the
+            # XInput node above it is what the game reads.
+            for path in sorted(present - self.allowed):
+                node = self._hide_xinput_of(path)
+                if node:
+                    fixed.append(node)
+                    if hook:
+                        hook("hid the XInput node of %s: %s" % (path, node))
+            if fixed:
+                self._save_state()
+            # And what is hidden stays hidden: our entries still on the list,
+            # the cloak still on.
+            listed = self._already_hidden()
+            for path in sorted(self.hidden - listed):
+                self._run("--dev-hide", path)
+                fixed.append(path)
+                if hook:
+                    hook("hid again, gone from HidHide's list: %s" % path)
+            if not self._cloak_is_on():
+                self._run("--cloak-on")
+                fixed.append("cloak")
+                if hook:
+                    hook("HidHide's cloak was off - on again")
             if self._pads_hidden() != self.arg:
                 self.arg = self._pads_hidden()
                 self.info = f"pad hidden from the game ({self.arg} devices)"
-        except Exception:
-            pass
+        except Exception as e:
+            if hook:
+                hook("hiding check failed: %s" % e)
+        return fixed
 
     # An id carrying an XInput interface number is a game controller and
     # never a keyboard or a mouse, which is what makes it safe to hide
@@ -3691,10 +3733,37 @@ class Bridge:
                 if self.bad_order and not game_running():
                     self.bad_order = False
                 self._recheck_mirror()
-                self._watch_slots()
+                # a pad that came or went is looked at now, not next round
+                if self._watch_slots():
+                    break
                 time.sleep(1.0)
             if self.cfg.get("auto_hide"):
-                self.hidhide.sweep()
+                fixed = self.hidhide.sweep()
+                if fixed:
+                    self._heal("the hiding had to be put right")
+
+    def _heal(self, why):
+        """Whatever the game opened while the pad was not hidden, it keeps
+        open - hiding afterwards changes nothing for it, and pulling the
+        cable is what cured it. So that is done here, in software: the pad's
+        devices are restarted and come back hidden. Only while the game is
+        running, and not again for HEAL_GAP."""
+        if not game_running():
+            return False
+        now = time.monotonic()
+        if now - getattr(self, "_heal_t", float("-inf")) < HEAL_GAP:
+            return False
+        nodes = sorted(getattr(self.hidhide, "xinput_nodes", None) or ())
+        if not nodes:
+            return False
+        self._heal_t = now
+        self._note("restarting the pad so the game lets go of it (%s)" % why)
+        ok_all = True
+        for node in nodes:
+            ok, out = restart_device(node)
+            ok_all = ok_all and ok
+            self._note("restarted %s: %s" % (node, "ok" if ok else out))
+        return ok_all
 
     def stop(self):
         self._run.clear()
@@ -3886,11 +3955,14 @@ class Bridge:
         except Exception:
             return
         if slots != getattr(self, "_slots_seen", None):
-            if getattr(self, "_slots_seen", None) is not None:
+            changed = getattr(self, "_slots_seen", None) is not None
+            if changed:
                 self._note("xinput slots %s (ours %s, reading %s)"
                            % (slots, sorted(self.virtual_slots),
                               self.physical_slot))
             self._slots_seen = slots
+            return changed
+        return False
 
     def _find_physical_slot(self):
         """A pad that dropped out may come back on another XInput slot.
@@ -4105,6 +4177,14 @@ class Bridge:
             self.virtual_slots = set(virtual)
             self.mirror_all = self.hid_mode
             self._recheck_mirror()
+            # Started with the game already running: it may hold the pad
+            # open from before it was hidden, and it has not looked for
+            # controllers since our pad appeared. Restarting the pad does
+            # both, as unplugging it and plugging it in would.
+            if (self.bad_order and self.cfg.get("auto_hide")
+                    and self.hidhide.active):
+                if self._heal("started after the game"):
+                    self.bad_order = False
 
             waited = 0.0
             while self._run.is_set() and not before and not self.hid_mode:

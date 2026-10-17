@@ -1725,6 +1725,47 @@ def test_the_pad_is_hidden_from_xinput_as_well_as_hid():
         fa._device_ancestors = real
 
 
+def test_a_pad_back_in_another_mode_is_hidden_from_xinput_too():
+    """17.10.2026: a Flydigi lost its cable and came back as an Xbox 360
+    pad. Its HID path was on HidHide's list from an earlier session, so it
+    was taken for somebody else's entry - and its XInput node was never
+    hidden. The game saw it: dropouts under every press, presses doubled."""
+    real = fa._device_ancestors
+    fa._device_ancestors = lambda path: REAL_CHAIN if path == MINE else []
+    try:
+        h = _hidhide(already=[MINE], present=[])     # unplugged at start
+        h.engage()
+        h._present_paths = lambda: {MINE}             # back, another mode
+        h.calls.clear()
+        fixed = h.sweep()
+        assert ("--dev-hide", XNODE) in h.calls, h.calls
+        assert XNODE in fixed, "the game may have it open: report it"
+        # HidHide now lists it, as the real one would, cloak and all
+        h._already_hidden = lambda: {MINE, XNODE}
+        h._cloak_is_on = lambda: True
+        assert h.sweep() == [], "once done, the next round finds nothing"
+    finally:
+        fa._device_ancestors = real
+
+
+def test_hiding_that_came_undone_is_put_back():
+    """Our entries gone from HidHide's list, or the cloak switched off -
+    each round of checks puts them back and says so."""
+    real = fa._device_ancestors
+    fa._device_ancestors = lambda path: REAL_CHAIN if path == MINE else []
+    try:
+        h = _hidhide(present=[MINE])          # the CLI lists nothing hidden
+        h.engage()
+        h.calls.clear()
+        fixed = h.sweep()
+        assert ("--dev-hide", MINE) in h.calls, h.calls
+        assert ("--dev-hide", XNODE) in h.calls, h.calls
+        assert ("--cloak-on",) in h.calls, "the stub's cloak reads off"
+        assert "cloak" in fixed
+    finally:
+        fa._device_ancestors = real
+
+
 def test_with_the_pad_gone_from_xinput_every_button_goes_through_ours():
     """The game can no longer read gears and camera from the player's pad,
     so ours carries them - without anyone having to find the switch."""
