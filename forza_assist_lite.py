@@ -5862,7 +5862,7 @@ body.t-light{
    in the middle of it, the odometer's window between its name and its
    unit, the car's chips at the foot under its picture. */
 .wgrid #wg-cb{justify-content:flex-start}
-.wgrid #wg-cb .cbwrap{margin:auto 0}
+.wgrid #wg-cb .cbwrap{margin:auto 0 3px}
 .wgrid .tcarcard > .trow + .tchips{margin-top:auto}
 .trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .trow .rname{font-size:11px;color:var(--row-fg)}
@@ -6003,8 +6003,14 @@ body.t-light{
 .odos b{display:block;height:22px;line-height:22px;font-size:24px;
         font-weight:600;text-align:center;color:var(--row-fg)}
 .odos.go{transition:transform .46s cubic-bezier(.3,1.55,.55,1)}
-.odofade{position:absolute;inset:0;pointer-events:none;
-         box-shadow:inset 0 0 12px 11px var(--card)}
+/* The rows above and below fade out to nothing at the window's edges.
+   A mask rather than a layer of the card's colour on top: the digits
+   themselves turn transparent, so there is no edge for them to show past
+   and nothing to lie over the tile's outline. */
+.odowin{-webkit-mask-image:linear-gradient(to bottom,transparent 6%,
+                           #000 30%,#000 70%,transparent 94%);
+        mask-image:linear-gradient(to bottom,transparent 6%,
+                   #000 30%,#000 70%,transparent 94%)}
 .odofoot{display:flex;justify-content:flex-end;flex:none;
          align-self:stretch;
          font-size:6px;line-height:6px;color:var(--row-fg);opacity:.25}
@@ -8125,7 +8131,7 @@ function widgets(){
     '<svg width="6" height="6" viewBox="0 0 6 6"><path fill="currentColor" ' +
     'd="M5.4 1.957C6.2 2.42 6.2 3.58 5.4 4.043L2.4 5.782C1.333 6.401 0 ' +
     '5.628 0 4.391L0 1.609C0 .372 1.333-.401 2.4.218Z"/></svg></i>' +
-    cols + '</div><div class="odofade"></div></div>' +
+    cols + '</div></div>' +
     '<div class="odofoot"><span>' + t('odo_km') + '</span></div></div>';
   return {angle, speed, cb: callback, odo};
 }
@@ -8489,10 +8495,11 @@ function liveUpdate(){
     const hidden = state.hh_code === 'hidden';
     ps.className = 'rval ' + (hidden ? 'ok' : state.hh_code === 'error'
                               ? 'bad' : 'off');
-    /* the count matters: "hidden" after hiding nothing looks exactly like
-       "hidden" after hiding the pad, and only one of them works */
-    ps.textContent = t('hh_' + (state.hh_code || 'idle')) +
-                     (hidden && state.hh_arg ? ' (' + state.hh_arg + ')' : '');
+    /* Just the state. The count of devices hidden used to follow it, to
+       tell hiding the pad from hiding nothing - but hiding nothing has its
+       own words now, and a pad is often more than one device, so the
+       number only raised a question. */
+    ps.textContent = t('hh_' + (state.hh_code || 'idle'));
   }
 }
 

@@ -2527,7 +2527,11 @@ def test_hiding_nothing_does_not_report_success():
 
     for lang in fa.TR:
         assert "hh_none" in fa.TR[lang], lang
-    assert "state.hh_arg" in fa.build_html(), "the count never reaches the screen"
+    # hiding nothing is told apart by its own words, not by a count beside
+    # "Hidden" - a pad is often more than one device, so the number misled
+    html = fa.build_html()
+    assert "t('hh_' + (state.hh_code || 'idle'))" in html
+    assert "state.hh_arg" not in html, "the device count stays off the screen"
 
 
 def _no_windows_devices():
