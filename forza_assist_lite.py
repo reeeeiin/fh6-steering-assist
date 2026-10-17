@@ -6899,20 +6899,16 @@ function applyScale(){
 }
 
 /* ---------------- press spring ----------------
-   Every button gives a little under the pointer and springs back. The
-   longer it was held, the harder it comes back: a quick click barely
-   wobbles, a long press bounces visibly. Done with the scale property,
-   not transform, so it adds to whatever a button already does with its
-   transform. The pill menus slide instead, and are left alone. */
+   Every button gives a little under the pointer and springs back, a touch
+   past its size and home. Done with the scale property, not transform, so
+   it adds to whatever a button already does with its transform. The pill
+   menus slide instead, and are left alone. */
 const PRESS_SEL = '.hbtn,.updbtn,.upddl,.pbtn,.warn-b,.padd,.pchip,.pdel,' +
                   '.lbtn,.bub[data-url],.bbtn,.bclose';
-const PRESS_DEPTH = 0.05;                   // how far it gives, of its size
-const PRESS_HELD = {resp: .3, zeta: 1};     // going in: soft, no wobble -
-                                            // a tap hardly gets there
-const PRESS_FREE = {resp: .32, zeta: .55};  // coming out: a spring
-const PRESS_KICK = 2.0;                     // outward speed a long hold adds
-const PRESS_FULL_MS = 500;                  // a hold this long gets it all
-const PRESS = new Map();                    // el -> {s, v, held, t0}
+const PRESS_DEPTH = 0.04;                   // how far it gives, of its size
+const PRESS_HELD = {resp: .12, zeta: 1};    // going in: quick, no wobble
+const PRESS_FREE = {resp: .3, zeta: .5};    // coming out: a little overshoot
+const PRESS = new Map();                    // el -> {s, v, held}
 let pressPending = false, pressLast = 0;
 
 function pressKick(){
@@ -6957,21 +6953,25 @@ document.addEventListener('pointerdown', e => {
   if (!el || el.classList.contains('off')) return;
   const st = PRESS.get(el) || {s: 1, v: 0};
   st.held = true;
-  st.t0 = performance.now();
   PRESS.set(el, st);
   pressKick();
 }, true);
 
-function pressRelease(){
-  const now = performance.now();
-  PRESS.forEach(st => {
+/* A shrunk button no longer covers its own edges. Let go there and the
+   browser sends the click to whatever is behind - the tab bar, say - and
+   the press is lost. Anywhere inside the button's full size still counts,
+   so the button is clicked itself. */
+function pressRelease(e){
+  PRESS.forEach((st, el) => {
     if (!st.held) return;
     st.held = false;
-    /* the hold decides the kick: nothing for a tap, all of it at
-       PRESS_FULL_MS and beyond */
-    const f = Math.max(0, Math.min(1, (now - st.t0 - 50) /
-                                      (PRESS_FULL_MS - 50)));
-    st.v += PRESS_KICK * f;
+    if (!e || e.type !== 'pointerup' || el.contains(e.target)) return;
+    const r = el.getBoundingClientRect();
+    const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+    const s = st.s || 1;
+    if (Math.abs(e.clientX - cx) <= r.width / s / 2 &&
+        Math.abs(e.clientY - cy) <= r.height / s / 2)
+      setTimeout(() => { if (el.isConnected) el.click(); }, 0);
   });
   pressKick();
 }
