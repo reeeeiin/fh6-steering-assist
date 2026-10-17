@@ -6126,9 +6126,15 @@ body.t-light{
 .screen.on{display:flex}
 .reveal{opacity:0;transform:translateY(10px)}
 #screen.leaving .reveal.shown{opacity:0;transform:translateY(-6px);
-                              transition:opacity .2s ease,transform .2s ease}
+                              transition:opacity .16s ease,transform .16s ease}
+/* arriving starts fast and settles, so a page that has just left is not
+   followed by a beat of nothing while the first line is still faint */
 .reveal.shown{opacity:1;transform:none;
-              transition:opacity .42s ease,transform .42s ease}
+              transition:opacity .4s cubic-bezier(.2,.7,.3,1),
+                         transform .4s cubic-bezier(.2,.7,.3,1)}
+/* the footer leaves with the page and comes back after its last line,
+   rather than jumping when the height under it changes */
+#foot.fleave{opacity:0;transition:opacity .16s ease}
 .tbar .reveal{transform:none}
 .tbar .logo{position:relative;z-index:1;cursor:pointer;
             transition:opacity .2s ease}
@@ -7281,6 +7287,10 @@ function swapTelemetry(){
   }, 220);
 }
 
+/* A page leaves in LEAVE_MS; the next comes in a line every REVEAL_STEP,
+   the first a frame after it is drawn so it has something to fade from. */
+const LEAVE_MS = 160, REVEAL_FIRST = 16, REVEAL_STEP = 45;
+
 function staggerTele(start){
   const block = document.getElementById('teleblock');
   if (!block) return;
@@ -7294,7 +7304,7 @@ function staggerTele(start){
     setTimeout(() => {
       c.classList.remove('tw-wait');
       c.classList.add('tw-in');
-    }, start + i * 55);
+    }, start + i * REVEAL_STEP);
   });
 }
 
@@ -7316,14 +7326,21 @@ function render(){
     lastScreen = screen;
     /* a language change brings them back in its own order */
     if (!langHold) rows.forEach((el, i) => staged
-      ? setTimeout(() => el.classList.add('shown'), 40 + i * 55)
+      ? setTimeout(() => el.classList.add('shown'),
+                   REVEAL_FIRST + i * REVEAL_STEP)
       : el.classList.add('shown'));
     /* the telemetry cards come in one by one, after their title - on a
        tab change, and when telemetry arrives or leaves */
     const tb = document.getElementById('teleblock');
+    const cards = tb ? tb.querySelectorAll('.card').length : 0;
     if (!langHold && tb && (staged || teleSwap))
-      staggerTele(staged ? 40 + rows.indexOf(tb) * 55 + 55 : 40);
+      staggerTele(staged ? REVEAL_FIRST + (rows.indexOf(tb) + 1) * REVEAL_STEP
+                         : REVEAL_FIRST);
     teleSwap = false;
+    const foot = $('#foot');
+    if (foot && foot.classList.contains('fleave'))
+      setTimeout(() => foot.classList.remove('fleave'),
+                 REVEAL_FIRST + (rows.length + cards) * REVEAL_STEP);
   }
   bindRows();
   bindPresets();
@@ -8786,15 +8803,16 @@ $('#warn-ok').addEventListener('click', () => {
 /* the outgoing rows fade away before the incoming ones start arriving */
 function goScreen(next){
   if (next === screen) return;
-  const box = $('#screen');
+  const box = $('#screen'), foot = $('#foot');
   box.classList.add('leaving');
+  if (foot) foot.classList.add('fleave');
   setTimeout(() => {
     box.classList.remove('leaving');
     screen = next;
     const sc = $('#scroll');
     if (sc) sc.scrollTop = 0;
     render();
-  }, 200);
+  }, LEAVE_MS);
 }
 $$('.rz').forEach(z => z.addEventListener('pointerdown', e => {
   e.preventDefault();
