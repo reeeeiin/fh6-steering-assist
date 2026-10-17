@@ -2272,10 +2272,12 @@ BOOT_DONE_MS = 800
 # wet setting apart without turning the row into a list to read.
 SLOT_KEYS = ("custom1", "custom2", "custom3")
 # The telemetry widgets, in the order a first launch lays them out: the two
-# statuses side by side, then the steering and the car each with two of the
-# readouts. The wide ones take two of the four columns.
+# statuses side by side in their short row, then the steering and the car
+# each with two of the readouts. The wide ones take two of the four columns;
+# the statuses are as wide and half as tall, and keep to a row of their own.
 TILE_ORDER = ("tele", "pad", "steer", "angle", "speed", "car", "cb", "odo")
-TILE_WIDE = ("tele", "pad", "steer", "car")
+TILE_WIDE = ("steer", "car")
+TILE_HALF = ("tele", "pad")
 # A preset's name is a chip in a row beside two others and Default, so it
 # is kept to what fits there.
 PRESET_NAME_MAX = 10
@@ -5420,6 +5422,7 @@ def build_html() -> str:
     html = html.replace("__PRESET_NAME_MAX__", str(PRESET_NAME_MAX))
     html = html.replace("__TILE_ORDER__", json.dumps(list(TILE_ORDER)))
     html = html.replace("__TILE_WIDE__", json.dumps(list(TILE_WIDE)))
+    html = html.replace("__TILE_HALF__", json.dumps(list(TILE_HALF)))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_DL__", json.dumps(_icon("downloadarrow")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
@@ -5824,8 +5827,8 @@ body.t-light{
    narrow either side or together, or four narrow - so the tiles can trade
    places but never pile up. Positioned by the page, with translate, so the
    cards' own reveal transforms still apply on top. */
-.wgrid{--th:123px;--tgap:10px;position:relative;
-       height:calc(3 * var(--th) + 2 * var(--tgap))}
+.wgrid{--th:123px;--hh:42px;--tgap:10px;position:relative;
+       height:calc(2 * var(--th) + var(--hh) + 2 * var(--tgap))}
 .wgrid .wt{position:absolute;left:0;top:0;height:var(--th);margin:0;
            cursor:grab;touch-action:none;
            outline:1.5px solid transparent;outline-offset:-1.5px;
@@ -5839,13 +5842,15 @@ body.t-light{
 .wgrid .wt.drag{z-index:5;scale:1.04;cursor:grabbing;
                 outline-color:var(--accent);
                 box-shadow:0 10px 26px rgba(0,0,0,.32)}
-/* the two statuses at a tile's height: the name on top, the state large
-   in the middle */
-.wgrid .wst{display:flex;flex-direction:column}
-.wst .wstv{flex:1;display:flex;align-items:center;justify-content:center}
-.wst .tstat,.wst .rval{font-size:18px;font-weight:600;min-width:0;
-                       text-align:center}
-.wst .rval.off{color:var(--row-fg)}
+/* the statuses keep their own short card, half a tile's height */
+.wgrid .wt.tsc{height:var(--hh)}
+/* Taller than some of them were drawn: the name stays at the top as in
+   every tile, and what is under it takes the room - the callback's reading
+   in the middle of it, the odometer's window between its name and its
+   unit, the car's chips at the foot under its picture. */
+.wgrid #wg-cb{justify-content:flex-start}
+.wgrid #wg-cb .cbwrap{margin:auto 0}
+.wgrid .tcarcard > .trow + .tchips{margin-top:auto}
 .trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .trow .rname{font-size:11px;color:var(--row-fg)}
 /* the car's name in a bubble of its own on the first line; min-width lets
@@ -5918,7 +5923,7 @@ body.t-light{
                  justify-content:space-between;align-items:center;
                  overflow:hidden}
 .wgrid #wg-speed{justify-content:flex-start;gap:12px}
-.wgrid #wg-odo{justify-content:flex-start;gap:10px}
+.wgrid #wg-odo{justify-content:space-between;gap:10px}
 .whead{display:flex;align-items:center;justify-content:space-between;
        align-self:stretch;font-size:10px;font-weight:600;line-height:10px;
        color:var(--row-fg);flex:none}
@@ -6521,7 +6526,8 @@ const PROFILES = __PROFILES__;
 const PROF_ORDER = __PROF_ORDER__;
 const SLOT_KEYS = __SLOT_KEYS__;
 const PRESET_NAME_MAX = __PRESET_NAME_MAX__;
-const TILE_ORDER = __TILE_ORDER__, TILE_WIDE = __TILE_WIDE__;
+const TILE_ORDER = __TILE_ORDER__, TILE_WIDE = __TILE_WIDE__,
+      TILE_HALF = __TILE_HALF__;
 const BOOT = __BOOT__;
 const VER = "__VER__";
 const THEMES = ['dark','light'];
@@ -6635,12 +6641,7 @@ function screenMain(force){
     '<div class="tcol">' + stat + '</div>' +
     '<div class="tcol">' + pad + '</div></div>' + setupWide + '</div>';
   /* reading, every widget is a tile the driver can move */
-  const tall = (key, val) => '<div class="card wst"><div class="whead">' +
-    '<span>' + t(key) + '</span></div><div class="wstv">' + val + '</div></div>';
-  const tiles = Object.assign({
-    tele: tall('tele_status', '<span class="tstat" id="tstat">-</span>'),
-    pad: tall('pad_status', '<span class="rval" id="padstat">-</span>'),
-    steer, car}, widgets());
+  const tiles = Object.assign({tele: stat, pad, steer, car}, widgets());
   return h + '<div class="wgrid" id="wgrid">' +
     tileOrder().map(id => tiles[id].replace('class="card ',
       'data-tile="' + id + '" class="card wt ')).join('') +
@@ -6963,13 +6964,19 @@ function applyScale(){
 }
 
 /* ---------------- widget tiles ----------------
-   The telemetry widgets sit in rows of four columns. Picked up, a tile
-   follows the pointer, and the others make room: the arrangement that puts
-   its free slot nearest the tile is the one laid out, every tile easing to
-   its place on a spring. Rows fill first-fit, so a wide tile that would
-   not fit pulls the next narrow one up beside it - which is what lets a
-   wide one sit between two narrow ones, and why a row can never be left
-   with a hole. */
+   The telemetry widgets sit in rows of four columns. The readouts are one
+   column wide and the steering and the car two, all a full row tall; the
+   two statuses are two columns wide and half as tall, and share a short row
+   of their own. That row can go above, between or below the others and the
+   two in it can swap, but nothing else goes into it and the statuses go
+   nowhere else - so the tiles only ever trade places, and every row is full.
+
+   Picked up, a tile follows the pointer and the others make room: of every
+   arrangement it could be dropped into, the one that puts its slot nearest
+   to it is laid out, every tile easing to its place on a spring. The full
+   rows fill first-fit, so a wide tile that does not fit pulls the next
+   narrow one up beside it - which is how a wide one comes to sit between
+   two narrow ones. */
 const TILE_COLS = 4;
 const TILE_SPRING = {resp: .34, zeta: .74};   // the others making room
 const TILE_LAND = {resp: .26, zeta: .62};     // the dragged one settling
@@ -6977,6 +6984,10 @@ const TILE_SLOP = 4;          // px of travel before a press becomes a drag
 const TILE_SWITCH = 6;        // px nearer a new slot must be, so it settles
 const TILE = new Map();       // id -> {el, x, y, vx, vy, tx, ty, land}
 let tileDrag = null, tilePending = false, tileLast = 0, tileRO = null;
+
+function tileSpan(id){
+  return TILE_WIDE.includes(id) || TILE_HALF.includes(id) ? 2 : 1;
+}
 
 function tileOrder(){
   const own = (cfg && cfg.tile_order) || [];
@@ -6986,23 +6997,51 @@ function tileOrder(){
   return out;
 }
 
-function tileSpan(id){ return TILE_WIDE.includes(id) ? 2 : 1; }
+/* reading order -> the short row's tiles, how many full rows come before
+   it, and the full tiles in order */
+function tileSplit(order){
+  const half = order.filter(id => TILE_HALF.includes(id));
+  const full = order.filter(id => !TILE_HALF.includes(id));
+  const first = order.findIndex(id => TILE_HALF.includes(id));
+  let units = 0;
+  order.slice(0, Math.max(0, first)).forEach(id => {
+    if (!TILE_HALF.includes(id)) units += tileSpan(id);
+  });
+  return {half, at: Math.round(units / TILE_COLS), full};
+}
 
-/* rows of TILE_COLS, each filled in order; a tile too wide for what is left
-   of a row waits for the next while the first one that fits is pulled up */
-function packTiles(order){
-  const left = order.slice(), out = [];
-  for (let row = 0; left.length; row++){
+/* the full tiles into rows of TILE_COLS, each filled in order; one too
+   wide for what is left of a row waits for the next while the first that
+   fits is pulled up */
+function tileRows(full){
+  const left = full.slice(), rows = [];
+  while (left.length){
     let col = 0;
+    const row = [];
     while (col < TILE_COLS && left.length){
       const i = left.findIndex(id => tileSpan(id) <= TILE_COLS - col);
       if (i < 0) break;
       const id = left.splice(i, 1)[0];
-      out.push({id, row, col, span: tileSpan(id)});
+      row.push({id, col, span: tileSpan(id)});
       col += tileSpan(id);
     }
+    rows.push(row);
   }
-  return out;
+  return rows;
+}
+
+/* the arrangement as rows top to bottom, the short one put in at its
+   place; and the reading order that describes it, which is what is kept */
+function tileLayout(half, at, full){
+  const rows = tileRows(full).map(r => ({half: false, cells: r}));
+  if (half.length){
+    const cells = half.map((id, i) => ({id, col: i * 2, span: 2}));
+    rows.splice(Math.max(0, Math.min(at, rows.length)), 0,
+                {half: true, cells});
+  }
+  const order = [];
+  rows.forEach(r => r.cells.forEach(c => order.push(c.id)));
+  return {rows, order};
 }
 
 function tileMetrics(grid){
@@ -7010,13 +7049,24 @@ function tileMetrics(grid){
   const cs = getComputedStyle(grid);
   const gap = parseFloat(cs.getPropertyValue('--tgap')) || 10;
   const th = parseFloat(cs.getPropertyValue('--th')) || 123;
+  const hh = parseFloat(cs.getPropertyValue('--hh')) || 42;
   const cw = (w - gap * (TILE_COLS - 1)) / TILE_COLS;
-  return {gap, th, cw};
+  return {gap, th, hh, cw};
 }
 
-function slotOf(p, m){
-  return {x: p.col * (m.cw + m.gap), y: p.row * (m.th + m.gap),
-          w: p.span * m.cw + (p.span - 1) * m.gap};
+/* every tile's box: id -> {x, y, w, h} */
+function tileSlots(layout, m){
+  const out = {};
+  let y = 0;
+  layout.rows.forEach(r => {
+    const h = r.half ? m.hh : m.th;
+    r.cells.forEach(c => {
+      out[c.id] = {x: c.col * (m.cw + m.gap), y,
+                   w: c.span * m.cw + (c.span - 1) * m.gap, h};
+    });
+    y += h + m.gap;
+  });
+  return out;
 }
 
 /* lay the tiles out; animate says whether they travel or simply arrive */
@@ -7024,15 +7074,17 @@ function placeTiles(order, animate){
   const grid = document.getElementById('wgrid');
   if (!grid) return;
   const m = tileMetrics(grid);
-  packTiles(order).forEach(p => {
-    const el = grid.querySelector('[data-tile="' + p.id + '"]');
+  const sp = tileSplit(order);
+  const slots = tileSlots(tileLayout(sp.half, sp.at, sp.full), m);
+  Object.keys(slots).forEach(id => {
+    const el = grid.querySelector('[data-tile="' + id + '"]');
     if (!el) return;
-    const s = slotOf(p, m);
+    const s = slots[id];
     el.style.width = s.w + 'px';
-    let st = TILE.get(p.id);
+    let st = TILE.get(id);
     if (!st || st.el !== el){
       st = {el, x: s.x, y: s.y, vx: 0, vy: 0};
-      TILE.set(p.id, st);
+      TILE.set(id, st);
     }
     st.tx = s.x; st.ty = s.y;
     if (!animate){ st.x = s.x; st.y = s.y; st.vx = st.vy = 0; }
@@ -7089,27 +7141,49 @@ function tileScale(grid){
   return grid.getBoundingClientRect().width / (grid.offsetWidth || 1);
 }
 
-/* where the tile under the pointer would rather be: of every place it
-   could be put back in, the one whose slot is nearest to it */
+/* Every arrangement the tile in hand could be dropped into. A full tile
+   moves among the full ones, the short row staying where it is; a status
+   takes the short row above, between or below the others, on either side
+   of its partner. */
+function tileChoices(d){
+  const sp = tileSplit(d.order), out = [];
+  if (TILE_HALF.includes(d.id)){
+    const other = sp.half.filter(id => id !== d.id);
+    const rows = tileRows(sp.full).length;
+    for (let at = 0; at <= rows; at++){
+      out.push(tileLayout([d.id].concat(other), at, sp.full));
+      out.push(tileLayout(other.concat([d.id]), at, sp.full));
+    }
+    return out;
+  }
+  const rest = sp.full.filter(id => id !== d.id);
+  for (let i = 0; i <= rest.length; i++)
+    out.push(tileLayout(sp.half, sp.at,
+                        rest.slice(0, i).concat([d.id], rest.slice(i))));
+  return out;
+}
+
+/* where the tile under the pointer would rather be: the arrangement whose
+   slot for it is nearest to where it is now */
 function tileReorder(){
   const d = tileDrag, grid = document.getElementById('wgrid');
   if (!d || !grid) return;
   const m = tileMetrics(grid), me = TILE.get(d.id);
-  const cx = me.x + d.w / 2, cy = me.y + m.th / 2;
-  const dist = order => {
-    const p = packTiles(order).find(q => q.id === d.id), s = slotOf(p, m);
-    return Math.hypot(s.x + s.w / 2 - cx, s.y + m.th / 2 - cy);
+  const sp = tileSplit(d.order);
+  const now = tileLayout(sp.half, sp.at, sp.full);
+  const meSlot = tileSlots(now, m)[d.id];
+  const cx = me.x + meSlot.w / 2, cy = me.y + meSlot.h / 2;
+  const dist = layout => {
+    const s = tileSlots(layout, m)[d.id];
+    return Math.hypot(s.x + s.w / 2 - cx, s.y + s.h / 2 - cy);
   };
-  const rest = d.order.filter(id => id !== d.id);
-  let best = d.order, bestD = dist(d.order);
-  for (let i = 0; i <= rest.length; i++){
-    const cand = rest.slice(0, i).concat([d.id], rest.slice(i));
-    const dd = dist(cand);
-    if (dd < bestD - TILE_SWITCH){ best = cand; bestD = dd; }
-  }
-  const packed = packTiles(best).map(p => p.id);
-  if (packed.join() === d.order.join()) return;
-  d.order = packed;
+  let best = null, bestD = dist(now);
+  tileChoices(d).forEach(l => {
+    const dd = dist(l);
+    if (dd < bestD - TILE_SWITCH){ best = l; bestD = dd; }
+  });
+  if (!best || best.order.join() === d.order.join()) return;
+  d.order = best.order;
   placeTiles(d.order, true);
 }
 
@@ -7120,9 +7194,11 @@ function tileDown(e){
   const grid = document.getElementById('wgrid');
   const st = TILE.get(el.dataset.tile);
   if (!st) return;
+  const sp = tileSplit(tileOrder());
   tileDrag = {id: el.dataset.tile, el, grid, live: false,
               px: e.clientX, py: e.clientY, k: tileScale(grid),
-              ox: st.x, oy: st.y, w: el.offsetWidth, order: tileOrder()};
+              ox: st.x, oy: st.y,
+              order: tileLayout(sp.half, sp.at, sp.full).order};
   document.addEventListener('pointermove', tileMove, true);
   document.addEventListener('pointerup', tileUp, true);
   document.addEventListener('pointercancel', tileUp, true);

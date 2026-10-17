@@ -1096,13 +1096,15 @@ def test_tile_order_keeps_every_widget_once():
 
 
 def test_tile_rows_always_fill():
-    """Four wide and four narrow fill three rows of four columns whatever
-    the order, as long as rows are packed first-fit - the page relies on
-    it to keep a row from ever being left with a hole."""
+    """The full tiles fill two rows of four columns whatever their order,
+    packed first-fit, and the statuses are the short row's two halves - the
+    page relies on it to keep a row from ever being left with a hole."""
     import itertools
-    span = {t: 2 if t in fa.TILE_WIDE else 1 for t in fa.TILE_ORDER}
-    assert sum(span.values()) == 12
-    for order in itertools.permutations(fa.TILE_ORDER):
+    full = [t for t in fa.TILE_ORDER if t not in fa.TILE_HALF]
+    span = {t: 2 if t in fa.TILE_WIDE else 1 for t in full}
+    assert sum(span.values()) == 8
+    assert len(fa.TILE_HALF) == 2, "two halves make the short row"
+    for order in itertools.permutations(full):
         left, rows = list(order), []
         while left:
             col, row = 0, []
@@ -1114,12 +1116,12 @@ def test_tile_rows_always_fill():
                 row.append(left.pop(i))
                 col += span[row[-1]]
             rows.append(col)
-        assert rows == [4, 4, 4], (order, rows)
+        assert rows == [4, 4], (order, rows)
 
 
 def test_the_widgets_are_tiles_the_page_lays_out():
     html = fa.build_html()
-    assert "function packTiles(order)" in html
+    assert "function tileLayout(half, at, full)" in html
     assert 'id="wgrid"' in html and "data-tile=" in html
     assert "'tile_order'" in html, "a moved tile is remembered"
 
