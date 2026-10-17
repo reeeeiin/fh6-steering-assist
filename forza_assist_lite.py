@@ -4407,7 +4407,7 @@ TR = {
         "preset_new_text": 'Saves what is on the sliders right now.',
         "preset_name": 'Preset name',
         "preset_del": 'Delete preset?',
-        "preset_del_text": '“{name}” will be removed. The sliders stay where they are.',
+        "preset_del_text": '“{name}” will be removed.',
         "order_title": 'Started after the game',
         "order_text": 'Forza was already running. It looks for controllers when it starts, so it may not see the virtual pad yet.',
         "order_hint": 'If the assist does nothing, unplug your controller and plug it back in, or switch a wireless one off and on - the game finds it again without being restarted. Next time, start the assist first and the game after it.',
@@ -4567,7 +4567,7 @@ TR = {
         "preset_new_text": 'Сохранит то, что сейчас стоит на ползунках.',
         "preset_name": 'Название пресета',
         "preset_del": 'Удалить пресет?',
-        "preset_del_text": '«{name}» будет удалён. Ползунки останутся на месте.',
+        "preset_del_text": '«{name}» будет удалён.',
         "order_title": 'Запущен после игры',
         "order_text": 'Forza уже была запущена. Игра ищет контроллеры при старте, поэтому виртуальный геймпад она может пока не видеть.',
         "order_hint": 'Если ассист не работает, отключите геймпад и подключите снова, а беспроводной выключите и включите — игра найдёт его заново без перезапуска. В следующий раз запускайте сначала ассист, потом игру.',
@@ -4727,7 +4727,7 @@ TR = {
         "preset_new_text": 'Sichert, was gerade auf den Reglern steht.',
         "preset_name": 'Name der Vorgabe',
         "preset_del": 'Vorgabe löschen?',
-        "preset_del_text": '„{name}“ wird gelöscht. Die Regler bleiben, wo sie sind.',
+        "preset_del_text": '„{name}“ wird gelöscht.',
         "order_title": 'Nach dem Spiel gestartet',
         "order_text": 'Forza lief bereits. Das Spiel sucht Controller beim Start, daher sieht es das virtuelle Pad moglicherweise noch nicht.',
         "order_hint": 'Wenn die Assistenz nichts tut, den Controller ab- und wieder anstecken, einen kabellosen aus- und einschalten - das Spiel findet ihn ohne Neustart wieder. Beim nachsten Mal zuerst die Assistenz starten, dann das Spiel.',
@@ -4887,7 +4887,7 @@ TR = {
         "preset_new_text": 'Enregistre ce qui est sur les curseurs en ce moment.',
         "preset_name": 'Nom du préréglage',
         "preset_del": 'Supprimer le préréglage ?',
-        "preset_del_text": '« {name} » sera supprimé. Les curseurs restent où ils sont.',
+        "preset_del_text": '« {name} » sera supprimé.',
         "order_title": 'Lance apres le jeu',
         "order_text": 'Forza tournait deja. Le jeu cherche les manettes au demarrage, il ne voit donc peut-etre pas encore la manette virtuelle.',
         "order_hint": 'Si l’assistance ne fait rien, debranchez votre manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil : le jeu la retrouve sans etre relance. La prochaine fois, lancez l’assistance avant le jeu.',
@@ -5047,7 +5047,7 @@ TR = {
         "preset_new_text": 'Guarda lo que hay ahora en los deslizadores.',
         "preset_name": 'Nombre del ajuste',
         "preset_del": '¿Borrar el ajuste?',
-        "preset_del_text": '«{name}» se borrará. Los deslizadores se quedan donde están.',
+        "preset_del_text": '«{name}» se borrará.',
         "order_title": 'Iniciado despues del juego',
         "order_text": 'Forza ya estaba en marcha. El juego busca mandos al arrancar, asi que puede que aun no vea el mando virtual.',
         "order_hint": 'Si la asistencia no hace nada, desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico: el juego lo encuentra otra vez sin reiniciarse. La proxima vez, abre primero la asistencia y luego el juego.',
@@ -5214,7 +5214,7 @@ TR = {
         "preset_new_text": 'いまのスライダーの値を保存します。',
         "preset_name": 'プリセット名',
         "preset_del": 'プリセットを削除しますか？',
-        "preset_del_text": '「{name}」を削除します。スライダーはそのままです。',
+        "preset_del_text": '「{name}」を削除します。',
         "order_title": 'ゲームより後に起動しました',
         "order_text": 'Forza がすでに起動していました。ゲームは起動時にコントローラーを探すため、仮想パッドをまだ認識していない可能性があります。',
         "order_hint": 'アシストが動かない場合はコントローラーを接続し直すか、無線なら電源を入れ直してください。ゲームを再起動しなくても認識されます。次回はアシストを先に、ゲームを後に起動してください。',
@@ -6006,14 +6006,19 @@ body.t-light{
    of its own rather than a stop on a sliding pill: there may be nothing
    selected at all, once the sliders are moved off Default. */
 .prow{display:flex;align-items:center;gap:8px;flex:none}
-.padd{width:24px;height:24px;box-sizing:border-box;border-radius:6px;
+.padd{width:20px;height:20px;box-sizing:border-box;border-radius:5px;
       display:flex;align-items:center;justify-content:center;flex:none;
       color:var(--accent);background:var(--btn-hov-bg);
       border:1.5px solid var(--accent);cursor:pointer;
-      transition:background .2s ease,color .2s ease,transform .12s ease}
-.padd svg{display:block;width:11px;height:11px}
+      transition:background .2s ease,color .2s ease,border-color .2s ease,
+                 transform .12s ease}
+.padd svg{display:block;width:10px;height:10px}
 .padd:hover{background:var(--accent);color:var(--accent-fg)}
 .padd:active{transform:scale(.9)}
+/* the sliders are still Default: nothing to save yet */
+.padd.off,.padd.off:hover{color:var(--muted);background:transparent;
+                          border-color:var(--btn-line);cursor:default}
+.padd.off:active{transform:none}
 .pchip{position:relative;height:24px;box-sizing:border-box;padding:0 14px;
        border-radius:6px;display:flex;align-items:center;flex:none;
        font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer;
@@ -6024,10 +6029,8 @@ body.t-light{
 .pchip:hover{color:var(--accent);border-color:var(--accent);
              background:var(--btn-hov-bg)}
 .pchip:active{transform:scale(.95)}
-.pchip.on{color:var(--accent-fg);border-color:var(--accent);
-          background:var(--accent);cursor:default}
-.pchip.on:hover{background-image:linear-gradient(180deg,var(--accent),
-                                                var(--accent-lit))}
+.pchip.on,.pchip.on:hover{color:var(--accent-fg);border-color:var(--accent);
+                          background:var(--accent);cursor:default}
 .pchip.on:active,.pchip:has(.pdel:active){transform:none}
 /* a new one arrives instead of just being there */
 @keyframes pchipin{from{opacity:0;transform:scale(.6)}
@@ -6035,9 +6038,9 @@ body.t-light{
 .pchip.fresh{animation:pchipin .34s cubic-bezier(.2,.9,.3,1.25) both}
 /* the cross sits on the chip's corner, only while the chip is hovered */
 .pdel{position:absolute;top:-6px;right:-6px;width:14px;height:14px;
-      box-sizing:border-box;border-radius:50%;display:flex;
+      box-sizing:border-box;border-radius:3px;display:flex;
       align-items:center;justify-content:center;
-      background:var(--danger);color:#fff;box-shadow:0 0 0 2px var(--card);
+      background:var(--danger);color:#fff;
       opacity:0;transform:scale(.5);pointer-events:none;cursor:pointer;
       transition:opacity .15s ease,transform .15s ease,filter .15s ease}
 .pdel svg{display:block;width:8px;height:8px}
@@ -6950,9 +6953,23 @@ function presetRow(){
   return h;
 }
 
+function sameAs(src){
+  return SLIDERS.every(s => {
+    const v = src[s[0]];
+    return v !== undefined && Math.abs(v - cfg[s[0]]) < 1e-6;
+  });
+}
+
+/* Nothing to save while the sliders are exactly Default - that would only
+   be Default again under another name. The + waits, grey, until a value
+   moves. */
+function canAdd(){ return !sameAs(PROFILES['default'] || {}); }
+
 function markPresets(){
   $$('[data-pkey]').forEach(c =>
     c.classList.toggle('on', c.dataset.pkey === cfg.profile));
+  const idle = !canAdd();
+  $$('[data-padd]').forEach(b => b.classList.toggle('off', idle));
 }
 
 /* A preset saved or deleted changes one row. Only that row is drawn again,
@@ -6988,9 +7005,14 @@ function openPresetModal(kind, key){
     go.classList.remove('off');
     pmodalGo = () => {
       closePresetModal();
+      const wasOn = cfg.profile === key;
       try{ pywebview.api.delete_slot(key).then(r => {
         if (!r || !r.slots) return;
-        cfg.slots = r.slots; cfg.profile = r.profile; redrawPresets();
+        cfg.slots = r.slots;
+        redrawPresets();
+        /* the one in use is gone: back to Default, the sliders gliding
+           there the way they do for any preset picked */
+        if (wasOn) applyProfile('default');
       }); }catch(e){}
     };
   } else {
@@ -7038,8 +7060,9 @@ function bindPresetModal(){
 }
 
 function bindPresets(){
-  $$('[data-padd]').forEach(b =>
-    b.addEventListener('click', () => openPresetModal('new')));
+  $$('[data-padd]').forEach(b => b.addEventListener('click', () => {
+    if (!b.classList.contains('off')) openPresetModal('new');
+  }));
   $$('[data-pdel]').forEach(x => x.addEventListener('click', e => {
     e.stopPropagation();          /* not a press on the chip under it */
     openPresetModal('del', x.dataset.pdel);
@@ -9570,8 +9593,8 @@ class Api:
         return {"name": name, "slots": cfg["slots"]}
 
     def delete_slot(self, name):
-        """Drop a saved slot. The values stay on the sliders - deleting a
-        preset should not also change how the car drives."""
+        """Drop a saved slot. Deleting the one in use goes back to Default,
+        values and all - the preset the car was driving on is gone."""
         cfg = self._b.cfg
         slots = dict(cfg.get("slots") or {})
         if name not in slots:
@@ -9579,8 +9602,8 @@ class Api:
         del slots[name]
         cfg["slots"] = slots
         if cfg.get("profile") == name:
-            cfg["custom"] = {k: cfg[k] for k, *_ in SLIDERS}
-            cfg["profile"] = "custom"
+            cfg.update(PROFILES["default"])
+            cfg["profile"] = "default"
         sanitize_config(cfg)
         save_config_soon(cfg)
         return {"slots": cfg["slots"], "profile": cfg["profile"]}

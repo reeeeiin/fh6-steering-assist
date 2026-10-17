@@ -84,7 +84,8 @@ STUB = """<script>
     delete_slot: async (name) => {
       delete slots[name];
       const s = Object.assign({}, cfg.slots || {}); delete s[name];
-      cfg.slots = s; if (cfg.profile === name) cfg.profile = 'custom';
+      // the page glides the sliders back to Default itself
+      cfg.slots = s; if (cfg.profile === name) cfg.profile = 'default';
       return {slots: s, profile: cfg.profile};
     },
     set_scale: async () => true,

@@ -1034,15 +1034,30 @@ def test_a_preset_name_never_lands_among_the_settings():
         _done(api)
 
 
-def test_deleting_a_preset_leaves_the_sliders_where_they_are():
+def test_deleting_the_preset_in_use_goes_back_to_default():
     api = _api()
     try:
         api.set("counter_gain", 70.0)
         api.save_slot("mine")
         got = api.delete_slot("custom1")
-        assert got["slots"] == {} and got["profile"] == "custom"
-        assert api._b.cfg["counter_gain"] == 70.0, "deleting must not retune"
+        assert got["slots"] == {} and got["profile"] == "default"
+        for key, value in fa.PROFILES["default"].items():
+            assert api._b.cfg[key] == value, key
         assert api.delete_slot("custom1") == {}, "nothing left to delete"
+    finally:
+        _done(api)
+
+
+def test_deleting_another_preset_leaves_the_one_in_use_alone():
+    api = _api()
+    try:
+        api.set("counter_gain", 70.0)
+        api.save_slot("first")
+        api.set("counter_gain", 90.0)
+        api.save_slot("second")
+        got = api.delete_slot("custom1")
+        assert got["profile"] == "custom2"
+        assert api._b.cfg["counter_gain"] == 90.0
     finally:
         _done(api)
 
