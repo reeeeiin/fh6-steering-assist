@@ -89,7 +89,7 @@ STUB = """<script>
       return {slots: s, profile: cfg.profile};
     },
     set_scale: async () => true,
-    check_update: async () => ({state: 'ok', version: '__VER__'}),
+    check_update: async () => ({state: 'current', version: '__VER__'}),
     content_h: async () => true,
     report_height: async () => true,
     open_url: async (u) => { window.open(u, '_blank', 'noopener'); return true; },

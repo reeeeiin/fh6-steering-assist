@@ -4379,7 +4379,7 @@ TR = {
         "version_sec": "Version",
         "cur_version": "Current version",
         "check_updates": "Check for updates",
-        "check": "Check",
+        "check": "Check Update",
         "checking": "Checking...",
         "raw_input": "Raw input",
         "assisted": "Assisted",
@@ -4449,6 +4449,7 @@ TR = {
         "w_callback": 'Callback',
         "w_latency": 'Latency',
         "w_car": 'Current car',
+        "game_off": "Game is not launched",
         "car_unknown": 'Unknown car',
         "auto_badge": "Auto",
         "setup_nav1": "Navigate to game settings:",
@@ -4610,6 +4611,7 @@ TR = {
         "w_callback": 'Отклик',
         "w_latency": 'Частота',
         "w_car": 'Машина',
+        "game_off": "Игра не запущена",
         "car_unknown": 'Неизвестная машина',
         "auto_badge": "Авто",
         "setup_nav1": "Откройте настройки игры:",
@@ -4701,7 +4703,7 @@ TR = {
         "version_sec": "Version",
         "cur_version": "Current version",
         "check_updates": "Check for updates",
-        "check": "Check",
+        "check": "Prüfen",
         "checking": "Checking...",
         "raw_input": "Raw input",
         "assisted": "Assisted",
@@ -4771,6 +4773,7 @@ TR = {
         "w_callback": 'Antwort',
         "w_latency": 'Frequenz',
         "w_car": 'Fahrzeug',
+        "game_off": "Spiel nicht gestartet",
         "car_unknown": 'Unbekanntes Auto',
         "auto_badge": "Auto",
         "setup_nav1": "Oeffne die Spieleinstellungen:",
@@ -4862,7 +4865,7 @@ TR = {
         "version_sec": "Version",
         "cur_version": "Current version",
         "check_updates": "Check for updates",
-        "check": "Check",
+        "check": "Vérifier",
         "checking": "Checking...",
         "raw_input": "Raw input",
         "assisted": "Assisted",
@@ -4932,6 +4935,7 @@ TR = {
         "w_callback": 'Reponse',
         "w_latency": 'Frequence',
         "w_car": 'Voiture',
+        "game_off": "Le jeu n’est pas lancé",
         "car_unknown": 'Voiture inconnue',
         "auto_badge": "Auto",
         "setup_nav1": "Ouvrez les reglages du jeu :",
@@ -5023,7 +5027,7 @@ TR = {
         "version_sec": "Version",
         "cur_version": "Current version",
         "check_updates": "Check for updates",
-        "check": "Check",
+        "check": "Comprobar",
         "checking": "Checking...",
         "raw_input": "Raw input",
         "assisted": "Assisted",
@@ -5093,6 +5097,7 @@ TR = {
         "w_callback": 'Respuesta',
         "w_latency": 'Frecuencia',
         "w_car": 'Coche',
+        "game_off": "El juego no está iniciado",
         "car_unknown": 'Coche desconocido',
         "auto_badge": "Auto",
         "setup_nav1": "Abre los ajustes del juego:",
@@ -5268,6 +5273,7 @@ TR = {
         "w_callback": '応答',
         "w_latency": '周波数',
         "w_car": '車両',
+        "game_off": "ゲームが起動していません",
         "car_unknown": '不明な車',
         "auto_badge": "オート",
         "setup_nav1": "ゲーム設定の",
@@ -5665,17 +5671,43 @@ body.t-light{
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none;margin-right:3px}
 .logo svg{display:block;width:92px;height:17px}
 
-/* update check: one button that carries every state, with a spinner or a
-   download button appearing beside it */
-.updwrap{display:flex;align-items:center;gap:5px;flex:none;
-         transition:opacity .16s ease}
-.updwrap.swap{opacity:0}
-.updbtn{height:24px;box-sizing:border-box;padding:0 11px;border-radius:7px;
-        display:flex;align-items:center;font-size:11px;font-weight:600;
-        background:var(--accent);color:var(--accent-fg);white-space:nowrap;
-        cursor:pointer;transition:background .2s ease,color .2s ease,
-        filter .2s ease}
-.updbtn:hover{filter:brightness(1.12)}
+/* The update check is one button that is its own progress, as in Figma:
+   blue-tinted with a blue edge to start; while it looks a deeper blue fill
+   creeps across it from the left, slowing as it goes; when the answer comes
+   the fill runs to the end in the answer's colour - solid blue for up to
+   date, amber with a download arrow for a newer version, red for a failed
+   look. No spinner beside it. */
+.updwrap{display:flex;align-items:center;flex:none}
+.updbtn{position:relative;overflow:hidden;height:24px;box-sizing:border-box;
+        padding:0 11px;border-radius:7px;display:flex;align-items:center;
+        font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer;
+        background:var(--btn-hov-bg);border:1.5px solid var(--accent);
+        color:var(--row-fg);
+        transition:border-color .25s ease,color .25s ease,
+                   background-color .2s ease}
+.updbtn:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
+.updfill{position:absolute;left:0;top:0;bottom:0;width:0;
+         background:color-mix(in srgb,var(--accent) 55%,transparent);
+         pointer-events:none;
+         transition:width .25s ease,background-color .25s ease}
+.updlbl{position:relative;z-index:1;display:flex;align-items:center}
+.updico{position:relative;z-index:1;display:flex;align-items:center;
+        width:0;margin-left:0;opacity:0;overflow:hidden;
+        transition:width .25s ease,margin-left .25s ease,opacity .25s ease}
+.updico svg{display:block;width:10px;height:13px;flex:none}
+/* looking: most of the way, slower and slower, never quite there */
+.updbtn.checking,.updbtn.checking:hover{cursor:default;
+        background:var(--btn-hov-bg)}
+.updbtn.checking .updfill{width:88%;
+        transition:width 2.6s cubic-bezier(.15,.6,.25,1)}
+.updbtn.ok,.updbtn.ok:hover{color:var(--accent-fg)}
+.updbtn.ok .updfill{width:100%;background:var(--accent)}
+.updbtn.warn,.updbtn.warn:hover{border-color:var(--warn);color:#101010}
+.updbtn.warn .updfill{width:100%;background:var(--warn)}
+.updbtn.warn .updico{width:10px;margin-left:6px;opacity:1}
+.updbtn.warn:hover .updfill{filter:brightness(1.08)}
+.updbtn.bad,.updbtn.bad:hover{border-color:var(--danger);color:#fff}
+.updbtn.bad .updfill{width:100%;background:var(--danger)}
 .pbtns{display:flex;gap:8px;margin-left:auto}
 .pbtn{height:24px;box-sizing:border-box;padding:0 12px;border-radius:6px;
       display:flex;align-items:center;justify-content:center;
@@ -5698,9 +5730,6 @@ body.t-light{
 .pbtn.danger.off{background:var(--danger-bg);border-color:var(--danger);
                  color:var(--danger);opacity:.5}
 .pbtn.danger.off:hover{background:var(--danger-bg);color:var(--danger)}
-.updbtn.warn{background:var(--warn);color:#101010}
-.updbtn.bad{background:var(--danger);color:#fff}
-.updbtn.busy{cursor:default}
 .upddl{width:24px;height:24px;box-sizing:border-box;border-radius:7px;
        display:flex;align-items:center;justify-content:center;flex:none;
        background:var(--warn);color:#101010;cursor:pointer;
@@ -5900,7 +5929,11 @@ body.t-light{
 /* No telemetry yet: the two statuses, then one wide card - where to go in
    the game on the left behind a red rule, the three values on the right */
 .tsetw{display:flex;align-items:flex-start;gap:7.5px}
-.tgrid + .tsetw,.tsc + .tsetw{margin-top:10px}
+.tgrid + .tsetw,.tsc + .tsetw,.tgrid + .tgame{margin-top:10px}
+/* as tall as the statuses above it and as wide as both */
+.card.tgame{height:42px;display:flex;align-items:center;
+            justify-content:center;font-size:13px;font-weight:600;
+            color:var(--muted)}
 .card.tsetw{padding:14px}
 .tsnote{flex:1;min-width:0;display:flex;align-items:stretch;gap:9px}
 .tsnote i{flex:none;width:2px;border-radius:3px;background:var(--danger)}
@@ -6622,7 +6655,7 @@ function screenMain(force){
   h += '</div></div>';
 
   /* force: the page as it is at its fullest, for measuring the window */
-  const live = force || (state && (state.recv || state.alive));
+  const live = force || teleLive();
   const bars =
        '<div class="barwrap"><div class="barlbl">' + t('raw_input') + '</div>' +
        '<div class="bar"><i id="rawbar"></i><u></u></div></div>' +
@@ -6659,9 +6692,14 @@ function screenMain(force){
     '<span class="rval" id="padstat">-</span></div></div>';
   /* nothing to read yet: the readouts would say nothing, so the space
      tells the player how to turn telemetry on instead */
+  /* Telemetry has worked on this machine before, so it is set up: the
+     game simply is not running. One short line says so, instead of the
+     instructions for something already done. */
+  const gameOff = '<div class="card tgame">' + t('game_off') + '</div>';
   if (!live) return h + '<div class="tgrid">' +
     '<div class="tcol">' + stat + '</div>' +
-    '<div class="tcol">' + pad + '</div></div>' + setupWide + '</div>';
+    '<div class="tcol">' + pad + '</div></div>' +
+    (cfg.telemetry_seen || teleEver ? gameOff : setupWide) + '</div>';
   /* reading, every widget is a tile the driver can move */
   const tiles = Object.assign({tele: stat, pad, steer, car}, widgets());
   return h + '<div class="wgrid" id="wgrid">' +
@@ -6730,37 +6768,51 @@ function screenAbout(){
    and go beside it */
 let updBusy = false;
 
-function setUpdate(st, ver, url){
-  const wrap = $('#updwrap');
-  if (!wrap) return;
-  wrap.classList.add('swap');
-  setTimeout(() => paintUpdate(wrap, st, ver, url), 160);
+/* the answer is remembered, so coming back to Settings shows it again */
+let updLast = {st: '', url: ''};
+const UPD_CLASS = {checking: 'checking', current: 'ok', available: 'warn',
+                   error: 'bad'};
+const UPD_MIN_MS = 900;     // long enough for the fill to be seen moving
+
+function updLabel(st){
+  return st === 'checking' ? t('upd_looking')
+       : st === 'current' ? t('upd_current')
+       : st === 'available' ? t('upd_available')
+       : st === 'error' ? t('upd_failed')
+       : t('check');
 }
 
-function paintUpdate(wrap, st, ver, url){
-  const label = st === 'checking' ? t('upd_looking')
-              : st === 'current' ? t('upd_current')
-              : st === 'available' ? t('upd_available')
-              : st === 'error' ? t('upd_failed')
-              : t('check');
-  const cls = st === 'available' ? ' warn' : st === 'error' ? ' bad' : '';
-  wrap.innerHTML =
-    '<span class="updbtn' + cls + (st === 'checking' ? ' busy' : '') +
-    '" id="btn-update">' + label + '</span>' +
-    (st === 'checking' ? '<span class="updspin"></span>' : '') +
-    (st === 'available'
-      ? '<span class="upddl" id="btn-download" data-url="' +
-        (url || '') + '">' + ARROW_DL + '</span>' : '');
-  wrap.classList.remove('swap');
-  bindRows();
+function updButton(){
+  const st = updLast.st, cls = UPD_CLASS[st];
+  return '<span class="updbtn' + (cls ? ' ' + cls : '') + '" id="btn-update"' +
+    (st === 'available' ? ' data-url="' + esc(updLast.url || '') + '"' : '') +
+    '><i class="updfill"></i><span class="updlbl">' + updLabel(st) +
+    '</span><i class="updico">' + ARROW_DL + '</i></span>';
+}
+
+/* The same button changes in place, so the fill can travel. */
+function setUpdate(st, ver, url){
+  updLast = {st, url: url || ''};
+  const b = $('#btn-update');
+  if (!b) return;
+  Object.values(UPD_CLASS).forEach(c => b.classList.remove(c));
+  if (UPD_CLASS[st]) b.classList.add(UPD_CLASS[st]);
+  b.querySelector('.updlbl').textContent = updLabel(st);
+  /* a newer version: the button is the download; the page's own handler
+     for [data-url] opens it */
+  if (st === 'available') b.dataset.url = url || '';
+  else delete b.dataset.url;
 }
 
 async function checkUpdate(){
-  if (updBusy) return;
+  if (updBusy || updLast.st === 'available') return;
   updBusy = true;
   setUpdate('checking');
+  const t0 = performance.now();
   let r = {state: 'error'};
   try{ r = await pywebview.api.check_update(); }catch(e){}
+  const wait = UPD_MIN_MS - (performance.now() - t0);
+  if (wait > 0) await new Promise(res => setTimeout(res, wait));
   updBusy = false;
   setUpdate(r.state, r.version, r.url);
 }
@@ -6804,8 +6856,7 @@ function screenSettings(){
        '<div class="card"><div class="row">' +
        '<span class="rname hasver">' + t('cur_version') +
        '<span class="vbub">v' + VER + '</span></span>' +
-       '<span class="updwrap" id="updwrap">' +
-       '<span class="updbtn" id="btn-update">' + t('check') + '</span>' +
+       '<span class="updwrap" id="updwrap">' + updButton() +
        '</span></div></div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('wipe_sec') + '</div>' +
@@ -7997,10 +8048,6 @@ function bindRows(){
   bindScale();
   const up = $('#btn-update');
   if (up) up.addEventListener('click', checkUpdate);
-  const dl = $('#btn-download');
-  if (dl) dl.addEventListener('click', () => {
-    try{ pywebview.api.open_url(dl.dataset.url); }catch(e){}
-  });
 }
 
 /* The switch moves at once; the strength's slider and number fade out,
@@ -8045,6 +8092,20 @@ async function swapAuto(el){
 
 /* ---------------- live state ---------------- */
 let sRaw = 0, sOut = 0, wasLive = null;
+
+/* The game stops sending while it loads between events or sits minimised,
+   often for a few seconds at a time. Dropping the widgets for each of those
+   and building them again a moment later is noise, so once telemetry has
+   come they hold through a gap up to TELE_GRACE_MS long and only go when
+   it has really stopped. Their statuses still say what is happening. */
+const TELE_GRACE_MS = 45000;
+let teleLastAt = 0, teleEver = false;
+function teleLive(){
+  if (!state) return false;
+  const now = performance.now();
+  if (state.recv || state.alive){ teleLastAt = now; teleEver = true; return true; }
+  return teleLastAt > 0 && now - teleLastAt < TELE_GRACE_MS;
+}
 function setBar(id, v){
   const el = document.getElementById(id); if (!el) return;
   v = Math.max(-1, Math.min(1, v));
@@ -8477,7 +8538,7 @@ function liveUpdate(){
     ts.className = 'tstat ' + cls;
     ts.textContent = txt;
   }
-  const nowLive = !!(state.recv || state.alive);
+  const nowLive = teleLive();
   if (nowLive !== wasLive){
     const first = wasLive === null;
     wasLive = nowLive;
