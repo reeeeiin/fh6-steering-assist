@@ -6315,40 +6315,21 @@ body.t-light{
 .odotri svg{display:block}
 .odoc{position:absolute;top:0;width:15px;height:64px}
 .odos{position:absolute;left:0;top:21px;width:15px;will-change:transform}
-/* The rows above and below go out of focus towards the window's edges, a
-   little more at each step: three layers, each blurring what is under it
-   over a narrower band at the top and the bottom. The middle row stays
-   sharp. */
-.odoblur{position:absolute;inset:0;z-index:2;pointer-events:none}
-.odoblur b{position:absolute;inset:0}
-.odoblur b:nth-child(1){backdrop-filter:blur(.8px);
-  -webkit-mask-image:linear-gradient(to bottom,#000 20%,transparent 32%,
-                     transparent 68%,#000 80%);
-  mask-image:linear-gradient(to bottom,#000 20%,transparent 32%,
-             transparent 68%,#000 80%)}
-.odoblur b:nth-child(2){backdrop-filter:blur(1.6px);
-  -webkit-mask-image:linear-gradient(to bottom,#000 13%,transparent 24%,
-                     transparent 76%,#000 87%);
-  mask-image:linear-gradient(to bottom,#000 13%,transparent 24%,
-             transparent 76%,#000 87%)}
-.odoblur b:nth-child(3){backdrop-filter:blur(3.2px);
-  -webkit-mask-image:linear-gradient(to bottom,#000 6%,transparent 15%,
-                     transparent 85%,#000 94%);
-  mask-image:linear-gradient(to bottom,#000 6%,transparent 15%,
-             transparent 85%,#000 94%)}
 .odos b{display:block;height:22px;line-height:22px;font-size:24px;
         font-weight:600;text-align:center;color:var(--row-fg)}
 .odos.go{transition:transform .46s cubic-bezier(.3,1.55,.55,1)}
-/* The rows above and below fade out to nothing at the window's edges.
+/* The rows above and below fade out to nothing at the window's edges,
+   easing in: barely there at the edge, gathering towards the middle row.
    A mask rather than a layer of the card's colour on top: the digits
    themselves turn transparent, so there is no edge for them to show past
    and nothing to lie over the tile's outline. */
-.odowin{-webkit-mask-image:linear-gradient(to bottom,transparent,
-                           rgba(0,0,0,.22) 14%,#000 34%,#000 66%,
-                           rgba(0,0,0,.22) 86%,transparent);
-        mask-image:linear-gradient(to bottom,transparent,
-                   rgba(0,0,0,.22) 14%,#000 34%,#000 66%,
-                   rgba(0,0,0,.22) 86%,transparent)}
+.odowin{--odofade:linear-gradient(to bottom,transparent,
+          rgba(0,0,0,.02) 6%,rgba(0,0,0,.06) 12%,rgba(0,0,0,.14) 18%,
+          rgba(0,0,0,.28) 24%,rgba(0,0,0,.52) 29%,rgba(0,0,0,.8) 32%,
+          #000 35%,#000 65%,rgba(0,0,0,.8) 68%,rgba(0,0,0,.52) 71%,
+          rgba(0,0,0,.28) 76%,rgba(0,0,0,.14) 82%,rgba(0,0,0,.06) 88%,
+          rgba(0,0,0,.02) 94%,transparent);
+        -webkit-mask-image:var(--odofade);mask-image:var(--odofade)}
 .odofoot{display:flex;justify-content:flex-end;flex:none;
          align-self:stretch;
          font-size:6px;line-height:6px;color:var(--row-fg);opacity:.25}
@@ -8515,7 +8496,7 @@ function widgets(){
     '<svg width="6" height="6" viewBox="0 0 6 6"><path fill="currentColor" ' +
     'd="M5.4 1.957C6.2 2.42 6.2 3.58 5.4 4.043L2.4 5.782C1.333 6.401 0 ' +
     '5.628 0 4.391L0 1.609C0 .372 1.333-.401 2.4.218Z"/></svg></i>' +
-    cols + '</div><i class="odoblur"><b></b><b></b><b></b></i></div>' +
+    cols + '</div></div>' +
     '<div class="odofoot"><span>' + t('odo_km') + '</span></div></div>';
   return {angle, speed, cb: callback, odo};
 }
