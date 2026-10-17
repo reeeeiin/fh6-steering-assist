@@ -67,14 +67,16 @@ STUB = """<script>
     car_thumb: async (c) => ({car: c, uri: ""}),
     set_profile: async (name) => {
       const p = __PROFILES__[name] || slots[name] || {};
-      Object.assign(cfg, p); cfg.profile = name; return p;
+      const v = {}; __SLIDERS__.forEach(k => { if (k in p) v[k] = p[k]; });
+      Object.assign(cfg, v); cfg.profile = name; return v;
     },
-    save_slot: async (name) => {
+    save_slot: async (label) => {
       const keys = __SLIDERS__;
-      const free = __SLOTS__.find(k => !slots[k]);
-      const target = __SLOTS__.includes(name) ? name : free;
-      if (!target) return {};
-      const v = {}; keys.forEach(k => v[k] = cfg[k]);
+      label = String(label || '').replace(/\\s+/g, ' ').trim()
+                .slice(0, __NAME_MAX__).trim();
+      const target = __SLOTS__.find(k => !slots[k]);
+      if (!label || !target) return {};
+      const v = {name: label}; keys.forEach(k => v[k] = cfg[k]);
       slots[target] = v; cfg.slots = Object.assign({}, cfg.slots || {});
       cfg.slots[target] = v; cfg.profile = target;
       return {name: target, slots: cfg.slots};
@@ -124,6 +126,7 @@ def app_page() -> str:
                 .replace("__PROFILES__", json.dumps(fa.PROFILES))
                 .replace("__SLIDERS__", json.dumps([k for k, *_ in fa.SLIDERS]))
                 .replace("__SLOTS__", json.dumps(list(fa.SLOT_KEYS)))
+                .replace("__NAME_MAX__", str(fa.PRESET_NAME_MAX))
                 .replace("__VER__", fa.APP_VERSION))
     # In the app the window grows and shrinks to whatever screen is open.
     # On a page that reads as the layout jumping about, so the preview is

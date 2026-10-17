@@ -2269,6 +2269,17 @@ BOOT_DONE_MS = 800
 # Slots the driver saves into. Three is enough to keep a car, a road and a
 # wet setting apart without turning the row into a list to read.
 SLOT_KEYS = ("custom1", "custom2", "custom3")
+# A preset's name is a chip in a row beside two others and Default, so it
+# is kept to what fits there.
+PRESET_NAME_MAX = 10
+
+
+def preset_name(raw) -> str:
+    """The name a preset is saved under: one line, no runs of spaces, cut
+    to what the chip holds. An empty result means there is no name."""
+    if not isinstance(raw, str):
+        return ""
+    return " ".join(raw.split())[:PRESET_NAME_MAX].strip()
 PROFILE_ORDER = ("custom", "default") + SLOT_KEYS
 
 PROFILES = {
@@ -2377,6 +2388,11 @@ def sanitize_config(cfg: dict) -> dict:
                     values[key] = clamp(float(got[key]), lo, hi)
                 except (KeyError, TypeError, ValueError):
                     values[key] = float(DEFAULTS[key])
+            # slots saved before presets had names keep going without one;
+            # the page numbers those
+            label = preset_name(got.get("name"))
+            if label:
+                values["name"] = label
             kept[name] = values
     cfg["slots"] = kept
     if cfg.get("profile") in SLOT_KEYS and cfg["profile"] not in kept:
@@ -4367,7 +4383,7 @@ TR = {
         "st_error": "Error",
         "hh_idle": 'Waiting',
         "profile": "Preset",
-        "profile_hint": "Ready-made setups. Moving any slider switches to Custom and keeps your own values, so you can always come back to them.",
+        "profile_hint": 'Default, and up to three presets of your own. + saves the sliders under a name, and whatever you change while one of yours is picked is kept in it.',
         "prof_default": "Default",
         "prof_custom": "Custom",
         "wipe_sec": 'Uninstall',
@@ -4385,10 +4401,13 @@ TR = {
         "btn_restart_now": 'Restart now',
         "btn_later": 'Later',
         "btn_cancel": 'Cancel',
-        "slot_row": "Custom preset",
-        "slot_row_hint": "Save what is on the sliders as a preset of your own. Three of them fit, and deleting one leaves the sliders where they are",
         "btn_save": "Save",
         "btn_delete": "Delete",
+        "preset_new": 'New preset',
+        "preset_new_text": 'Saves what is on the sliders right now.',
+        "preset_name": 'Preset name',
+        "preset_del": 'Delete preset?',
+        "preset_del_text": '“{name}” will be removed. The sliders stay where they are.',
         "order_title": 'Started after the game',
         "order_text": 'Forza was already running. It looks for controllers when it starts, so it may not see the virtual pad yet.',
         "order_hint": 'If the assist does nothing, unplug your controller and plug it back in, or switch a wireless one off and on - the game finds it again without being restarted. Next time, start the assist first and the game after it.',
@@ -4524,7 +4543,7 @@ TR = {
         "st_error": "Ошибка",
         "hh_idle": 'Ожидание',
         "profile": "Пресет",
-        "profile_hint": "Готовые наборы. Любое движение ползунка переключает на «Свой» и сохраняет твои значения — к ним всегда можно вернуться.",
+        "profile_hint": '«Обычный» и до трёх своих пресетов. «+» сохраняет ползунки под именем, а всё, что ты меняешь на своём пресете, в нём и остаётся.',
         "prof_default": "Обычный",
         "prof_custom": "Свой",
         "wipe_sec": 'Удаление',
@@ -4542,10 +4561,13 @@ TR = {
         "btn_restart_now": 'Перезагрузить',
         "btn_later": 'Позже',
         "btn_cancel": 'Отмена',
-        "slot_row": "Свой пресет",
-        "slot_row_hint": "Сохранить текущие значения как свой пресет. Их помещается три, а удаление пресета не двигает ползунки",
         "btn_save": "Сохранить",
         "btn_delete": "Удалить",
+        "preset_new": 'Новый пресет',
+        "preset_new_text": 'Сохранит то, что сейчас стоит на ползунках.',
+        "preset_name": 'Название пресета',
+        "preset_del": 'Удалить пресет?',
+        "preset_del_text": '«{name}» будет удалён. Ползунки останутся на месте.',
         "order_title": 'Запущен после игры',
         "order_text": 'Forza уже была запущена. Игра ищет контроллеры при старте, поэтому виртуальный геймпад она может пока не видеть.',
         "order_hint": 'Если ассист не работает, отключите геймпад и подключите снова, а беспроводной выключите и включите — игра найдёт его заново без перезапуска. В следующий раз запускайте сначала ассист, потом игру.',
@@ -4681,7 +4703,7 @@ TR = {
         "st_error": "Error",
         "hh_idle": 'Wartet',
         "profile": "Profil",
-        "profile_hint": "Fertige Voreinstellungen. Jeder Reglerzug wechselt auf Eigenes und behält deine Werte, du kommst also immer zurück.",
+        "profile_hint": 'Standard und bis zu drei eigene Vorgaben. + sichert die Regler unter einem Namen, und was du an einer eigenen Vorgabe änderst, bleibt in ihr.',
         "prof_default": "Standard",
         "prof_custom": "Eigenes",
         "wipe_sec": 'Deinstallation',
@@ -4699,10 +4721,13 @@ TR = {
         "btn_restart_now": 'Jetzt neu starten',
         "btn_later": 'Spater',
         "btn_cancel": 'Abbrechen',
-        "slot_row": "Eigene Vorgabe",
-        "slot_row_hint": "Die aktuellen Werte als eigene Vorgabe sichern. Drei passen hinein, und Löschen verstellt die Regler nicht",
         "btn_save": "Sichern",
         "btn_delete": "Löschen",
+        "preset_new": 'Neue Vorgabe',
+        "preset_new_text": 'Sichert, was gerade auf den Reglern steht.',
+        "preset_name": 'Name der Vorgabe',
+        "preset_del": 'Vorgabe löschen?',
+        "preset_del_text": '„{name}“ wird gelöscht. Die Regler bleiben, wo sie sind.',
         "order_title": 'Nach dem Spiel gestartet',
         "order_text": 'Forza lief bereits. Das Spiel sucht Controller beim Start, daher sieht es das virtuelle Pad moglicherweise noch nicht.',
         "order_hint": 'Wenn die Assistenz nichts tut, den Controller ab- und wieder anstecken, einen kabellosen aus- und einschalten - das Spiel findet ihn ohne Neustart wieder. Beim nachsten Mal zuerst die Assistenz starten, dann das Spiel.',
@@ -4838,7 +4863,7 @@ TR = {
         "st_error": "Error",
         "hh_idle": 'Attente',
         "profile": "Profil",
-        "profile_hint": "Réglages prêts à l'emploi. Bouger un curseur passe sur Perso et conserve tes valeurs, tu peux toujours y revenir.",
+        "profile_hint": 'Défaut, et jusqu\'à trois préréglages à toi. + enregistre les curseurs sous un nom, et ce que tu changes sur l\'un des tiens y reste.',
         "prof_default": "Défaut",
         "prof_custom": "Perso",
         "wipe_sec": 'Desinstallation',
@@ -4856,10 +4881,13 @@ TR = {
         "btn_restart_now": 'Redemarrer',
         "btn_later": 'Plus tard',
         "btn_cancel": 'Annuler',
-        "slot_row": "Préréglage perso",
-        "slot_row_hint": "Enregistre les valeurs actuelles comme préréglage. Il y a trois places, et supprimer n'y touche pas aux curseurs",
         "btn_save": "Enregistrer",
         "btn_delete": "Supprimer",
+        "preset_new": 'Nouveau préréglage',
+        "preset_new_text": 'Enregistre ce qui est sur les curseurs en ce moment.',
+        "preset_name": 'Nom du préréglage',
+        "preset_del": 'Supprimer le préréglage ?',
+        "preset_del_text": '« {name} » sera supprimé. Les curseurs restent où ils sont.',
         "order_title": 'Lance apres le jeu',
         "order_text": 'Forza tournait deja. Le jeu cherche les manettes au demarrage, il ne voit donc peut-etre pas encore la manette virtuelle.',
         "order_hint": 'Si l’assistance ne fait rien, debranchez votre manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil : le jeu la retrouve sans etre relance. La prochaine fois, lancez l’assistance avant le jeu.',
@@ -4995,7 +5023,7 @@ TR = {
         "st_error": "Error",
         "hh_idle": 'Esperando',
         "profile": "Perfil",
-        "profile_hint": "Ajustes listos. Mover cualquier control cambia a Propio y guarda tus valores, siempre puedes volver a ellos.",
+        "profile_hint": 'Normal, y hasta tres ajustes propios. + guarda los deslizadores con un nombre, y lo que cambies en uno tuyo se queda en él.',
         "prof_default": "Normal",
         "prof_custom": "Propio",
         "wipe_sec": 'Desinstalar',
@@ -5013,10 +5041,13 @@ TR = {
         "btn_restart_now": 'Reiniciar',
         "btn_later": 'Mas tarde',
         "btn_cancel": 'Cancelar',
-        "slot_row": "Ajuste propio",
-        "slot_row_hint": "Guarda los valores actuales como ajuste propio. Caben tres, y borrar uno no mueve los deslizadores",
         "btn_save": "Guardar",
         "btn_delete": "Borrar",
+        "preset_new": 'Nuevo ajuste',
+        "preset_new_text": 'Guarda lo que hay ahora en los deslizadores.',
+        "preset_name": 'Nombre del ajuste',
+        "preset_del": '¿Borrar el ajuste?',
+        "preset_del_text": '«{name}» se borrará. Los deslizadores se quedan donde están.',
         "order_title": 'Iniciado despues del juego',
         "order_text": 'Forza ya estaba en marcha. El juego busca mandos al arrancar, asi que puede que aun no vea el mando virtual.',
         "order_hint": 'Si la asistencia no hace nada, desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico: el juego lo encuentra otra vez sin reiniciarse. La proxima vez, abre primero la asistencia y luego el juego.',
@@ -5159,7 +5190,7 @@ TR = {
         "st_error": 'エラー',
         "hh_idle": '待機中',
         "profile": 'プリセット',
-        "profile_hint": '既製の設定です。スライダーを動かすとカスタムに切り替わり、あなたの値はそのまま残るので、いつでも戻せます。',
+        "profile_hint": '標準と、最大3つの自分のプリセット。＋でスライダーの値に名前を付けて保存します。自分のプリセットを選んだまま変えた値は、そのプリセットに残ります。',
         "prof_default": '標準',
         "prof_custom": 'カスタム',
         "wipe_sec": 'アンインストール',
@@ -5177,10 +5208,13 @@ TR = {
         "btn_restart_now": '今すぐ再起動',
         "btn_later": 'あとで',
         "btn_cancel": 'キャンセル',
-        "slot_row": 'カスタムプリセット',
-        "slot_row_hint": '現在の値を自分のプリセットとして保存します。3つまで保存でき、削除してもスライダーは動きません',
         "btn_save": '保存',
         "btn_delete": '削除',
+        "preset_new": '新しいプリセット',
+        "preset_new_text": 'いまのスライダーの値を保存します。',
+        "preset_name": 'プリセット名',
+        "preset_del": 'プリセットを削除しますか？',
+        "preset_del_text": '「{name}」を削除します。スライダーはそのままです。',
         "order_title": 'ゲームより後に起動しました',
         "order_text": 'Forza がすでに起動していました。ゲームは起動時にコントローラーを探すため、仮想パッドをまだ認識していない可能性があります。',
         "order_hint": 'アシストが動かない場合はコントローラーを接続し直すか、無線なら電源を入れ直してください。ゲームを再起動しなくても認識されます。次回はアシストを先に、ゲームを後に起動してください。',
@@ -5367,6 +5401,7 @@ def build_html() -> str:
          "checkMs": BOOT_CHECK_MS, "doneMs": BOOT_DONE_MS}))
     html = html.replace("__PROF_ORDER__", json.dumps(list(PROFILE_ORDER)))
     html = html.replace("__SLOT_KEYS__", json.dumps(list(SLOT_KEYS)))
+    html = html.replace("__PRESET_NAME_MAX__", str(PRESET_NAME_MAX))
     html = html.replace("__ICON_OK__", json.dumps(_icon("donecheck")))
     html = html.replace("__ICON_DL__", json.dumps(_icon("downloadarrow")))
     html = html.replace("__ICON_X__", json.dumps(_icon("undonecross")))
@@ -5734,8 +5769,12 @@ body.t-light{
 .warn-b{margin-top:6px;height:24px;padding:0 14px;border:0;border-radius:7px;
         background:var(--accent);color:var(--accent-fg);font-family:inherit;
         font-size:11px;font-weight:600;cursor:pointer;
-        transition:filter .2s ease}
+        transition:filter .2s ease,opacity .2s ease,transform .12s ease}
 .warn-b:hover{filter:brightness(1.12)}
+.warn-b:active{transform:scale(.96)}
+/* nothing to do yet - an empty name, say */
+.warn-b.off,.warn-b.off:hover{opacity:.4;filter:none;cursor:default}
+.warn-b.off:active{transform:none}
 
 /* ---------- extended telemetry ---------- */
 /* Two columns of 232 with a 10 gap, laid out as in Figma. On the left the
@@ -5962,14 +6001,64 @@ body.t-light{
       font-weight:600;color:var(--row-fg);background:var(--btn-hov-bg);
       border:1px solid var(--accent)}
 .seg span.on{color:var(--accent-fg)}
-/* Opened on flex-basis rather than width: these are flex items, and a
-   min-width beats a max-width, so a collapsing max-width does nothing.
-   min-width is held at nothing for the whole of it for the same reason. */
-.seg span.grow{overflow:hidden;min-width:0;
-               transition:flex-basis .3s cubic-bezier(.4,0,.2,1),
-                          padding .3s cubic-bezier(.4,0,.2,1),
-                          color .2s ease}
-.seg span.grow.seed{flex-basis:0;padding:0}
+/* ---------- presets ---------- */
+/* + first, the driver's own in the middle, Default last. Each is a button
+   of its own rather than a stop on a sliding pill: there may be nothing
+   selected at all, once the sliders are moved off Default. */
+.prow{display:flex;align-items:center;gap:8px;flex:none}
+.padd{width:24px;height:24px;box-sizing:border-box;border-radius:6px;
+      display:flex;align-items:center;justify-content:center;flex:none;
+      color:var(--accent);background:var(--btn-hov-bg);
+      border:1.5px solid var(--accent);cursor:pointer;
+      transition:background .2s ease,color .2s ease,transform .12s ease}
+.padd svg{display:block;width:11px;height:11px}
+.padd:hover{background:var(--accent);color:var(--accent-fg)}
+.padd:active{transform:scale(.9)}
+.pchip{position:relative;height:24px;box-sizing:border-box;padding:0 14px;
+       border-radius:6px;display:flex;align-items:center;flex:none;
+       font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer;
+       color:var(--muted);background:transparent;
+       border:1px solid var(--btn-line);
+       transition:background .2s ease,color .2s ease,border-color .2s ease,
+                  transform .12s ease}
+.pchip:hover{color:var(--accent);border-color:var(--accent);
+             background:var(--btn-hov-bg)}
+.pchip:active{transform:scale(.95)}
+.pchip.on{color:var(--accent-fg);border-color:var(--accent);
+          background:var(--accent);cursor:default}
+.pchip.on:hover{background-image:linear-gradient(180deg,var(--accent),
+                                                var(--accent-lit))}
+.pchip.on:active,.pchip:has(.pdel:active){transform:none}
+/* a new one arrives instead of just being there */
+@keyframes pchipin{from{opacity:0;transform:scale(.6)}
+                   to{opacity:1;transform:none}}
+.pchip.fresh{animation:pchipin .34s cubic-bezier(.2,.9,.3,1.25) both}
+/* the cross sits on the chip's corner, only while the chip is hovered */
+.pdel{position:absolute;top:-6px;right:-6px;width:14px;height:14px;
+      box-sizing:border-box;border-radius:50%;display:flex;
+      align-items:center;justify-content:center;
+      background:var(--danger);color:#fff;box-shadow:0 0 0 2px var(--card);
+      opacity:0;transform:scale(.5);pointer-events:none;cursor:pointer;
+      transition:opacity .15s ease,transform .15s ease,filter .15s ease}
+.pdel svg{display:block;width:8px;height:8px}
+.pchip.own:hover .pdel{opacity:1;transform:scale(1);pointer-events:auto}
+.pchip.own:hover .pdel:hover{transform:scale(1.15);filter:brightness(1.12)}
+.pchip.own:hover .pdel:active{transform:scale(.9)}
+
+/* the preset card: a name to type, or a delete to confirm */
+#pmodal .pm-card{transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+#pmodal.off .pm-card{transform:translateY(6px) scale(.96)}
+.pm-t{color:var(--row-fg)}
+#pmodal.del .pm-t{color:var(--danger)}
+.pm-name{font:inherit;font-size:13px;font-weight:600;color:var(--row-fg);
+         background:var(--card-2);border:1px solid var(--line);
+         border-radius:7px;height:32px;width:100%;box-sizing:border-box;
+         padding:0 12px;text-align:center;outline:none;margin-top:4px;
+         transition:border-color .2s ease}
+.pm-name::placeholder{color:var(--muted);font-weight:400}
+.pm-name:hover,.pm-name:focus{border-color:var(--accent)}
+#pmodal.del .pm-name{display:none}
+#pmodal.del #pm-go{background:var(--danger);color:#fff}
 
 /* ---------- slider ---------- */
 .sl{flex:1;height:14px;position:relative;cursor:pointer;min-width:60px}
@@ -6278,6 +6367,18 @@ html[data-boot] .rz{display:none}
     </div>
   </div>
 
+  <div class="warn-wrap off" id="pmodal">
+    <div class="warn-card pm-card">
+      <div class="warn-t pm-t" id="pm-title"></div>
+      <div class="warn-x" id="pm-text"></div>
+      <input class="pm-name" id="pm-name" spellcheck="false" autocomplete="off">
+      <div class="wipe-btns">
+        <button class="warn-b ghost" id="pm-no"></button>
+        <button class="warn-b" id="pm-go"></button>
+      </div>
+    </div>
+  </div>
+
   <div class="warn-wrap off" id="warn">
     <div class="warn-card">
       <div class="warn-t" id="warn-title"></div>
@@ -6366,6 +6467,7 @@ const LANGS = __LANGS__;
 const PROFILES = __PROFILES__;
 const PROF_ORDER = __PROF_ORDER__;
 const SLOT_KEYS = __SLOT_KEYS__;
+const PRESET_NAME_MAX = __PRESET_NAME_MAX__;
 const BOOT = __BOOT__;
 const VER = "__VER__";
 const THEMES = ['dark','light'];
@@ -6433,7 +6535,7 @@ function screenMain(force){
           '<div class="card">' + toggleRow('helper', 'enabled') +
           '<div class="row" data-hint="profile_hint">' +
             '<span class="rname">' + t('profile') + '</span>' +
-            segEl('profile', profItems(), cfg.profile) + '</div>';
+            presetRow() + '</div>';
   sliders.forEach(k => { h += sliderRow(k); });
   h += '</div></div>';
 
@@ -6585,12 +6687,9 @@ function screenSettings(){
           '<div class="card">' +
           '<div class="row" data-hint="profile_hint">' +
           '<span class="rname">' + t('profile') + '</span>' +
-          segEl('profile', profItems(), cfg.profile) + '</div>';
+          presetRow() + '</div>';
   SLIDERS.forEach(s => { h += sliderRow(s[0]); });
   h += toggleRow('car_detect', 'car_detect');
-  /* Saving presets is out of the way for now - nobody was using it, and
-     the useful version of the idea is one preset per car. The machinery
-     stays; only the row is gone. */
   h += '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('interface_sec') + '</div>' +
@@ -6803,23 +6902,25 @@ function applyScale(){
   document.documentElement.style.setProperty('--uiz', uiZoom());
 }
 
-/* ---------------- presets ---------------- */
+/* ---------------- presets ----------------
+   Default, and up to three of the driver's own. A + in front saves what is
+   on the sliders under a name; a cross on a chip's corner, shown on hover,
+   deletes one after asking. Moving off Default selects nothing - Custom is
+   where those values live, but it has no chip of its own. */
+const PLUS_SVG = '<svg viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9" ' +
+  'stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const CROSS_SVG = '<svg viewBox="0 0 10 10"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5" ' +
+  'stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+/* the name the driver gave it; slots saved before names were a thing are
+   numbered instead */
 function slotLabel(key){
-  return t('prof_custom') + ' ' + (SLOT_KEYS.indexOf(key) + 1);
+  const s = (cfg.slots || {})[key] || {};
+  return s.name || (t('prof_custom') + ' ' + (SLOT_KEYS.indexOf(key) + 1));
 }
 
 function savedSlots(){
   return Object.keys(cfg.slots || {}).filter(k => SLOT_KEYS.indexOf(k) >= 0);
-}
-
-/* Newest first, so a preset you just saved opens on the left, and Default
-   last, so the one chip that is always there never moves. */
-function profItems(){
-  const items = savedSlots().reverse()
-    .map(k => ({key: k, label: slotLabel(k)}));
-  items.push({key: 'custom', label: t('prof_custom')});
-  items.push({key: 'default', label: t('prof_default')});
-  return items;
 }
 
 function storedFor(name){
@@ -6828,45 +6929,124 @@ function storedFor(name){
   return PROFILES[name] || {};
 }
 
-function sameAs(src){
-  return SLIDERS.every(s => {
-    const v = src[s[0]];
-    return v !== undefined && Math.abs(v - cfg[s[0]]) < 1e-6;
+let freshSlot = '';
+
+/* The newest sits next to the +, the one it came out of, and Default
+   stays last, so the chip that is always there never moves. */
+function presetRow(){
+  let h = '<span class="prow">';
+  if (savedSlots().length < SLOT_KEYS.length)
+    h += '<span class="padd" data-padd title="' + esc(t('preset_new')) +
+         '">' + PLUS_SVG + '</span>';
+  savedSlots().reverse().forEach(k => {
+    h += '<span class="pchip own' + (k === freshSlot ? ' fresh' : '') +
+         '" data-pkey="' + k + '">' + esc(slotLabel(k)) +
+         '<i class="pdel" data-pdel="' + k + '" title="' +
+         esc(t('btn_delete')) + '">' + CROSS_SVG + '</i></span>';
+  });
+  h += '<span class="pchip" data-pkey="default">' + esc(t('prof_default')) +
+       '</span></span>';
+  freshSlot = '';
+  return h;
+}
+
+function markPresets(){
+  $$('[data-pkey]').forEach(c =>
+    c.classList.toggle('on', c.dataset.pkey === cfg.profile));
+}
+
+/* A preset saved or deleted changes one row. Only that row is drawn again,
+   so the rest of the page does not blink or lose where it was. */
+function redrawPresets(){
+  const fresh = freshSlot;
+  $$('.prow').forEach(row => {
+    freshSlot = fresh;
+    row.outerHTML = presetRow();
+  });
+  freshSlot = '';
+  bindPresets();
+  refresh();
+}
+
+/* One card for both questions: the name of a new preset, and whether to
+   delete one. The page behind is blurred, as for the other warnings. */
+let pmodalGo = null, presetModalBound = false;
+function closePresetModal(){
+  $('#pmodal').classList.add('off');
+  pmodalGo = null;
+}
+
+function openPresetModal(kind, key){
+  const m = $('#pmodal'), inp = $('#pm-name'), go = $('#pm-go');
+  m.classList.toggle('del', kind === 'del');
+  $('#pm-no').textContent = t('btn_cancel');
+  if (kind === 'del'){
+    $('#pm-title').textContent = t('preset_del');
+    $('#pm-text').textContent =
+      t('preset_del_text').replace('{name}', slotLabel(key));
+    go.textContent = t('btn_delete');
+    go.classList.remove('off');
+    pmodalGo = () => {
+      closePresetModal();
+      try{ pywebview.api.delete_slot(key).then(r => {
+        if (!r || !r.slots) return;
+        cfg.slots = r.slots; cfg.profile = r.profile; redrawPresets();
+      }); }catch(e){}
+    };
+  } else {
+    $('#pm-title').textContent = t('preset_new');
+    $('#pm-text').textContent = t('preset_new_text');
+    inp.placeholder = t('preset_name');
+    inp.value = '';
+    go.textContent = t('btn_save');
+    go.classList.add('off');
+    pmodalGo = () => {
+      const label = inp.value.replace(/\s+/g, ' ').trim();
+      if (!label) return;
+      closePresetModal();
+      try{ pywebview.api.save_slot(label).then(r => {
+        if (!r || !r.name) return;
+        cfg.slots = r.slots; cfg.profile = r.name;
+        freshSlot = r.name; redrawPresets();
+      }); }catch(e){}
+    };
+  }
+  m.classList.remove('off');
+  if (kind !== 'del') setTimeout(() => inp.focus(), 60);
+}
+
+function bindPresetModal(){
+  const m = $('#pmodal'), inp = $('#pm-name'), go = $('#pm-go');
+  inp.maxLength = PRESET_NAME_MAX;
+  inp.addEventListener('input', () =>
+    go.classList.toggle('off', !inp.value.trim()));
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); if (pmodalGo) pmodalGo(); }
+  });
+  go.addEventListener('click', () => {
+    if (!go.classList.contains('off') && pmodalGo) pmodalGo();
+  });
+  $('#pm-no').addEventListener('click', closePresetModal);
+  /* a click on the blur, outside the card, is a no */
+  m.addEventListener('pointerdown', e => {
+    if (e.target === m) closePresetModal();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !m.classList.contains('off'))
+      closePresetModal();
   });
 }
 
-function freeSlot(){
-  return SLOT_KEYS.find(k => !(cfg.slots || {})[k]) || '';
-}
-
-/* Save either updates the preset you are sitting on, or fills the next
-   free slot - and says nothing doing when there is neither. */
-function canSave(){
-  if (SLOT_KEYS.indexOf(cfg.profile) >= 0)
-    return !sameAs(storedFor(cfg.profile));
-  if (!freeSlot()) return false;
-  // Nothing is worth saving if these exact numbers are already a preset,
-  // Default included - that would only make a copy under another name.
-  if (sameAs(PROFILES['default'] || {})) return false;
-  return !SLOT_KEYS.some(k => (cfg.slots || {})[k] && sameAs(cfg.slots[k]));
-}
-
-function canDelete(){ return SLOT_KEYS.indexOf(cfg.profile) >= 0; }
-
-function slotRow(){
-  return '<div class="row" data-hint="slot_row_hint">' +
-    '<span class="rname">' + t('slot_row') + '</span>' +
-    '<span class="pbtns">' +
-      '<span class="pbtn" id="btn-slot-save">' + t('btn_save') + '</span>' +
-      '<span class="pbtn danger" id="btn-slot-del">' + t('btn_delete') +
-      '</span></span></div>';
-}
-
-function refreshSlots(){
-  const sv = document.getElementById('btn-slot-save');
-  const dl = document.getElementById('btn-slot-del');
-  if (sv) sv.classList.toggle('off', !canSave());
-  if (dl) dl.classList.toggle('off', !canDelete());
+function bindPresets(){
+  $$('[data-padd]').forEach(b =>
+    b.addEventListener('click', () => openPresetModal('new')));
+  $$('[data-pdel]').forEach(x => x.addEventListener('click', e => {
+    e.stopPropagation();          /* not a press on the chip under it */
+    openPresetModal('del', x.dataset.pdel);
+  }));
+  $$('[data-pkey]').forEach(c => c.addEventListener('click', () => {
+    if (c.dataset.pkey !== cfg.profile) applyProfile(c.dataset.pkey);
+  }));
 }
 
 /* Three things in one panel, because they are one errand: asking, doing,
@@ -6983,27 +7163,6 @@ function bindPort(){
   el.addEventListener('blur', commit);
 }
 
-function bindSlots(){
-  const sv = document.getElementById('btn-slot-save');
-  const dl = document.getElementById('btn-slot-del');
-  if (sv) sv.addEventListener('click', () => {
-    if (!canSave()) return;
-    const target = SLOT_KEYS.indexOf(cfg.profile) >= 0 ? cfg.profile : '';
-    try{ pywebview.api.save_slot(target).then(r => {
-      if (!r || !r.name) return;
-      cfg.slots = r.slots; cfg.profile = r.name;
-      freshSlot = r.name; render();
-    }); }catch(e){}
-  });
-  if (dl) dl.addEventListener('click', () => {
-    if (!canDelete()) return;
-    try{ pywebview.api.delete_slot(cfg.profile).then(r => {
-      if (!r || !r.slots) return;
-      cfg.slots = r.slots; cfg.profile = r.profile; render();
-    }); }catch(e){}
-  });
-}
-
 /* Telemetry came or went: the telemetry cards fade out together, the page
    is drawn again, and the new cards come in one after another from the
    top down, the way a tab's rows do. Nothing else on the page moves. */
@@ -7066,11 +7225,11 @@ function render(){
     teleSwap = false;
   }
   bindRows();
-  bindSlots();
+  bindPresets();
+  if (!presetModalBound){ presetModalBound = true; bindPresetModal(); }
   bindPort();
   bindWipe();
   refresh();
-  playGrow();
   reportHeight();
   soon(sbarDraw);
 }
@@ -7143,15 +7302,14 @@ function refresh(){
   if (pin) pin.classList.toggle('custom', +cfg.port !== PORT_DEFAULT);
   $$('.lbtn').forEach(b => b.classList.toggle('on', b.dataset.lang === cfg.lang));
   if (!scaleDrag) drawScale(null, false);
-  refreshSlots();
+  markPresets();
   placePills();
 }
 
 function placePills(){
   $$('[data-seg]').forEach(seg => {
     const id = seg.dataset.seg;
-    const cur = id === 'profile' ? cfg.profile
-              : id === 'lang' ? cfg.lang
+    const cur = id === 'lang' ? cfg.lang
               : id === 'ui_scale' ? String(cfg.ui_scale)
               : cfg.theme;
     const items = [...seg.querySelectorAll('[data-key]')];
@@ -7163,57 +7321,6 @@ function placePills(){
       pill.style.width = act.offsetWidth + 'px';
     }
   });
-}
-
-/* A preset that has just been saved opens out of nothing instead of
-   appearing whole and shoving the row sideways. The pill is redrawn every
-   frame while it opens, with its own easing switched off, so the two move
-   as one thing rather than chasing each other. */
-let freshSlot = '';
-function playGrow(){
-  const key = freshSlot;
-  freshSlot = '';
-  if (!key) return;
-  const seg = document.querySelector('[data-seg=profile]');
-  const el = seg && seg.querySelector('[data-key="' + key + '"]');
-  if (!el) return;
-  const full = el.offsetWidth;
-  const pill = seg.querySelector('.pill');
-  const ease = pill ? pill.style.transition : '';
-  if (pill) pill.style.transition = 'none';
-  el.classList.add('grow', 'seed');
-  void el.offsetWidth;      // the collapsed state has to be laid out first,
-                            // or there is nothing to transition away from
-
-  /* Both halves are armed twice, by frame and by timer. A window that is
-     not being drawn gets no frames at all, and a chip left seeded is a
-     preset the driver can neither see nor press. */
-  let opened = false, done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    el.classList.remove('grow', 'seed');
-    el.style.flexBasis = '';
-    if (pill) pill.style.transition = ease;
-    placePills();
-  };
-  const open = () => {
-    if (opened || done) return;
-    opened = true;
-    el.classList.remove('seed');
-    el.style.flexBasis = full + 'px';
-    const t0 = performance.now();
-    const follow = now => {
-      if (done) return;
-      placePills();
-      if (now - t0 < 340){ requestAnimationFrame(follow); return; }
-      finish();
-    };
-    requestAnimationFrame(follow);
-  };
-  requestAnimationFrame(open);
-  setTimeout(open, 60);
-  setTimeout(finish, 500);
 }
 
 /* ---------------- interaction ---------------- */
@@ -7288,7 +7395,6 @@ function relanguage(apply){
 }
 
 function segPick(id, key){
-  if (id === 'profile'){ applyProfile(key); return; }
   cfg[id] = key;
   refresh();
   try{ pywebview.api.set(id, key); }catch(e){}
@@ -7370,7 +7476,11 @@ function bindRows(){
       }
       stopProfAnim();
       cfg[key] = v;
-      if (SLOT_KEYS.indexOf(cfg.profile) < 0) cfg.profile = 'custom';
+      /* one of the driver's own keeps the change, as the config does;
+         moving off Default selects nothing */
+      const own = (cfg.slots || {})[cfg.profile];
+      if (SLOT_KEYS.indexOf(cfg.profile) >= 0 && own) own[key] = v;
+      else cfg.profile = 'custom';
       refresh();
       try{ pywebview.api.set(key, v); }catch(e){}
     };
@@ -9358,9 +9468,16 @@ class Api:
             cfg = self._b.cfg
             cfg[key] = value
             if any(key == k for k, *_ in SLIDERS):
-                # A saved preset stays selected while it is edited - that
-                # difference is what lets Save mean "update this one".
-                if cfg.get("profile") not in SLOT_KEYS:
+                # One of the driver's own presets stays selected while it
+                # is edited, and keeps the edit: it is theirs to tune.
+                # Default is not, so moving off it is moving to Custom.
+                own = cfg.get("profile")
+                slots = cfg.get("slots") or {}
+                if own in SLOT_KEYS and own in slots:
+                    slot = dict(slots[own])
+                    slot[key] = value
+                    cfg["slots"] = {**slots, own: slot}
+                else:
                     cfg["profile"] = "custom"
                     cfg["custom"] = {k: cfg[k] for k, *_ in SLIDERS}
             sanitize_config(cfg)
@@ -9428,23 +9545,24 @@ class Api:
             values = dict(PROFILES.get(name, {}))
         if cfg.get("profile") == "custom" and name != "custom":
             cfg["custom"] = {k: cfg[k] for k, *_ in SLIDERS}
-        cfg.update(values)
+        # only the sliders - a slot also carries its name
+        cfg.update({k: values[k] for k, *_ in SLIDERS if k in values})
         cfg["profile"] = name
         sanitize_config(cfg)
         save_config_soon(cfg)
         return {k: cfg[k] for k, *_ in SLIDERS}
 
-    def save_slot(self, name=""):
-        """Write what is on the sliders into a slot. Without a name it
-        takes the first free one, which is what the Save button does when
-        nothing of the driver's own is selected."""
+    def save_slot(self, label=""):
+        """Save what is on the sliders as a new preset under the driver's
+        name for it, in the first free slot. Nothing is saved without a
+        name, or once all the slots are taken."""
         cfg = self._b.cfg
+        label = preset_name(label)
         slots = dict(cfg.get("slots") or {})
-        if name not in SLOT_KEYS:
-            name = next((k for k in SLOT_KEYS if k not in slots), "")
-            if not name:
-                return {}
-        slots[name] = {k: cfg[k] for k, *_ in SLIDERS}
+        name = next((k for k in SLOT_KEYS if k not in slots), "")
+        if not label or not name:
+            return {}
+        slots[name] = {**{k: cfg[k] for k, *_ in SLIDERS}, "name": label}
         cfg["slots"] = slots
         cfg["profile"] = name
         sanitize_config(cfg)

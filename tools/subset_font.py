@@ -19,6 +19,10 @@ DEST = os.path.join(ROOT, "assets", "fonts")
 DEFAULT_SRC = os.path.join(os.path.expanduser("~"), "Downloads",
                            "Chiron_GoRound_TC", "static")
 WEIGHTS = {"Regular": "regular", "Medium": "medium", "SemiBold": "semibold"}
+# The same family as one variable font, as Windows installs it. Each static
+# weight is cut out of it when the static folder is not there.
+VARIABLE = "ChironGoRoundTC-VariableFont_wght.ttf"
+WGHT = {"Regular": 400, "Medium": 500, "SemiBold": 600}
 EXTRA = ("0123456789.,:;%-+()[]/'\"!?&<> °"
          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
@@ -52,11 +56,46 @@ def ui_characters():
     return chars
 
 
+def installed_variable():
+    """The variable font where Windows keeps fonts, for this user or all."""
+    for base in (os.path.join(os.environ.get("LOCALAPPDATA", ""),
+                              "Microsoft", "Windows", "Fonts"),
+                 os.path.join(os.environ.get("WINDIR", r"C:\Windows"),
+                              "Fonts")):
+        path = os.path.join(base, VARIABLE)
+        if os.path.isfile(path):
+            return path
+    return ""
+
+
+def statics_from_variable(var, out_dir):
+    """Cut the static weights out of the variable font into out_dir."""
+    os.makedirs(out_dir, exist_ok=True)
+    for weight, wght in WGHT.items():
+        out = os.path.join(out_dir, f"ChironGoRoundTC-{weight}.ttf")
+        r = subprocess.run(
+            [sys.executable, "-m", "fontTools.varLib.instancer", var,
+             f"wght={wght}", "--static", "-o", out],
+            capture_output=True, text=True)
+        if r.returncode:
+            print(f"  {weight:9} could not be cut from the variable font: "
+                  f"{(r.stderr or '')[-160:]}")
+            return False
+    return True
+
+
 def main(src_dir=DEFAULT_SRC):
     if not os.path.isdir(src_dir):
-        print("font folder not found: " + src_dir)
-        print("Point this script at the folder holding the static weights.")
-        return 1
+        var = installed_variable()
+        if not var:
+            print("font folder not found: " + src_dir)
+            print("Point this script at the folder holding the static "
+                  "weights, or install " + VARIABLE + ".")
+            return 1
+        src_dir = os.path.join(ROOT, "build", "font_static")
+        print("static weights not found - cutting them from " + var)
+        if not statics_from_variable(var, src_dir):
+            return 1
     os.makedirs(DEST, exist_ok=True)
     chars = ui_characters()
     uni = os.path.join(DEST, "_charset.txt")

@@ -976,6 +976,100 @@ def test_unknown_profile_is_rejected():
         _done(api)
 
 
+def test_a_preset_is_saved_under_its_name():
+    api = _api()
+    try:
+        api.set("counter_gain", 80.0)
+        got = api.save_slot("  AWD   drift ")
+        assert got["name"] == "custom1", got
+        slot = api._b.cfg["slots"]["custom1"]
+        assert slot["name"] == "AWD drift", "spaces are tidied, not kept"
+        assert slot["counter_gain"] == 80.0
+        assert api._b.cfg["profile"] == "custom1"
+    finally:
+        _done(api)
+
+
+def test_three_presets_at_most_and_none_without_a_name():
+    api = _api()
+    try:
+        assert api.save_slot("   ") == {}, "an empty name saves nothing"
+        assert api.save_slot("twelve chars long")["name"] == "custom1"
+        assert len(api._b.cfg["slots"]["custom1"]["name"]) == \
+            fa.PRESET_NAME_MAX
+        api.save_slot("two")
+        api.save_slot("three")
+        assert api.save_slot("four") == {}, "the fourth has nowhere to go"
+        assert len(api._b.cfg["slots"]) == 3
+    finally:
+        _done(api)
+
+
+def test_editing_your_own_preset_keeps_the_change():
+    """Moving a slider on one of the driver's own presets keeps it selected
+    and writes the change into it; on Default it moves to Custom."""
+    api = _api()
+    try:
+        api.save_slot("mine")
+        api.set("gyro", 1.1)
+        assert api._b.cfg["profile"] == "custom1"
+        assert api._b.cfg["slots"]["custom1"]["gyro"] == 1.1
+        assert api._b.cfg["slots"]["custom1"]["name"] == "mine"
+        api.set_profile("default")
+        api.set("gyro", 0.2)
+        assert api._b.cfg["profile"] == "custom"
+        assert api._b.cfg["slots"]["custom1"]["gyro"] == 1.1
+    finally:
+        _done(api)
+
+
+def test_a_preset_name_never_lands_among_the_settings():
+    api = _api()
+    try:
+        api.save_slot("mine")
+        api.set_profile("default")
+        api.set_profile("custom1")
+        assert "name" not in api._b.cfg, "the name is the slot's, not a setting"
+    finally:
+        _done(api)
+
+
+def test_deleting_a_preset_leaves_the_sliders_where_they_are():
+    api = _api()
+    try:
+        api.set("counter_gain", 70.0)
+        api.save_slot("mine")
+        got = api.delete_slot("custom1")
+        assert got["slots"] == {} and got["profile"] == "custom"
+        assert api._b.cfg["counter_gain"] == 70.0, "deleting must not retune"
+        assert api.delete_slot("custom1") == {}, "nothing left to delete"
+    finally:
+        _done(api)
+
+
+def test_preset_names_survive_a_load_and_old_slots_keep_working():
+    cfg = dict(fa.DEFAULTS)
+    vals = dict(fa.PROFILES["default"])
+    cfg["slots"] = {"custom2": {**vals, "name": "<b>far too long a name"},
+                    "custom1": dict(vals)}
+    fa.sanitize_config(cfg)
+    assert cfg["slots"]["custom2"]["name"] == "<b>far too"
+    assert "name" not in cfg["slots"]["custom1"], "an old slot has no name"
+    assert list(cfg["slots"]) == ["custom2", "custom1"], "saved order is kept"
+
+
+def test_the_preset_row_is_plus_own_presets_and_default():
+    html = fa.build_html()
+    assert "function presetRow()" in html
+    assert 'id="pmodal"' in html and 'id="pm-name"' in html
+    assert "segEl('profile'" not in html, "the old Default / Custom pill"
+    for lang in fa.TR:
+        for key in ("preset_new", "preset_new_text", "preset_name",
+                    "preset_del", "preset_del_text"):
+            assert fa.TR[lang].get(key), (lang, key)
+        assert "{name}" in fa.TR[lang]["preset_del_text"], lang
+
+
 def test_first_run_starts_on_default_and_remembers_the_choice():
     assert fa.DEFAULTS["profile"] == "default"
     cfg = dict(fa.DEFAULTS)
@@ -1253,54 +1347,6 @@ def test_steering_against_the_correction_still_backs_it_off():
     assert fought[0] < free, fought
     assert fought[0] > fought[1] > fought[2], fought
     assert fought[2] < free * 0.2, fought
-
-
-def test_save_fills_the_next_free_slot_and_selects_it():
-    api = _api()
-    try:
-        api.set("counter_gain", 101.0)
-        r = api.save_slot("")
-        assert r["name"] == "custom1", r
-        assert api._b.cfg["profile"] == "custom1"
-        assert r["slots"]["custom1"]["counter_gain"] == 101.0
-
-        api.set("counter_gain", 102.0)
-        assert api.save_slot("")["name"] == "custom2"
-        api.set("counter_gain", 103.0)
-        assert api.save_slot("")["name"] == "custom3"
-        # nowhere left to put a fourth
-        assert api.save_slot("") == {}
-    finally:
-        _done(api)
-
-
-def test_editing_a_saved_preset_keeps_it_selected():
-    """Otherwise Save could never mean update this one, only make another."""
-    api = _api()
-    try:
-        api.set("counter_gain", 90.0)
-        api.save_slot("")
-        api.set("counter_gain", 95.0)
-        assert api._b.cfg["profile"] == "custom1"
-        assert api._b.cfg["slots"]["custom1"]["counter_gain"] == 90.0
-        api.save_slot("custom1")
-        assert api._b.cfg["slots"]["custom1"]["counter_gain"] == 95.0
-    finally:
-        _done(api)
-
-
-def test_deleting_a_preset_leaves_the_car_driving_the_same():
-    api = _api()
-    try:
-        api.set("counter_gain", 88.0)
-        api.save_slot("")
-        r = api.delete_slot("custom1")
-        assert "custom1" not in r["slots"]
-        assert r["profile"] == "custom"
-        assert api._b.cfg["counter_gain"] == 88.0, "deleting must not retune"
-        assert api.delete_slot("custom1") == {}
-    finally:
-        _done(api)
 
 
 def test_a_saved_preset_survives_being_written_out_and_read_back():
