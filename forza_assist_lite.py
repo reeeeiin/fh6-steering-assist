@@ -5600,13 +5600,14 @@ body.t-light{
             z-index:0}
 .tbar > *:not(.drag){position:relative;z-index:1}
 .hbtn,.vbadge{-webkit-app-region:no-drag}
-[data-toggle],[data-slider],[data-seg] [data-key],.bub,.hbtn{cursor:pointer}
-/* the controls are built of separate tracks, fills and knobs with gaps
-   between them that belong to the row, so the pointer flickered as it
-   crossed them: the whole row carries it instead */
-.row:has([data-toggle]),.row:has([data-slider]),.row:has([data-scale]),
-.row:has([data-seg]),.row:has(.langs){cursor:pointer}
-[data-toggle] *,[data-slider] *,[data-seg] [data-key] *{cursor:inherit}
+[data-toggle],[data-slider],[data-seg] [data-key],.hbtn{cursor:pointer}
+/* The hand shows over what can be pressed and nowhere else - not over a
+   row's empty space or the divider under it. The parts a control is built
+   of (a slider's track and knob, an icon's lines) take its cursor, or the
+   global default above would put the arrow back over them. */
+[data-toggle] *,[data-slider] *,[data-scale] *,[data-seg] [data-key] *,
+:is(.hbtn,.updbtn,.upddl,.pbtn,.warn-b,.padd,.pchip,.pdel,.lbtn,.bub,
+    .bbtn,.bclose,.logo) *{cursor:inherit}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
 .hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
@@ -5716,6 +5717,7 @@ body.t-light{
      transition:background .2s ease,color .2s ease,border-color .2s ease}
 .bub:hover{background:var(--btn-hov-bg);border-color:var(--accent);
            color:var(--accent)}
+.bub[data-url]{cursor:pointer}
 .row{display:flex;align-items:center;gap:12px;min-height:42px;
      border-bottom:1px solid var(--line)}
 .card .row:last-child{border-bottom:none}
@@ -5745,7 +5747,10 @@ body.t-light{
            background:rgba(0,0,0,.45);backdrop-filter:blur(7px);
            -webkit-backdrop-filter:blur(7px);
            transition:opacity .25s ease}
-.warn-wrap.off{opacity:0;pointer-events:none}
+/* Gone, not just transparent, once faded: a full-window blur left at
+   nothing opacity is still worked out whenever the page under it moves */
+.warn-wrap.off{opacity:0;pointer-events:none;visibility:hidden;
+               transition:opacity .25s ease,visibility 0s linear .25s}
 .warn-card{width:330px;box-sizing:border-box;padding:18px;border-radius:14px;
            background:var(--card);border:1px solid var(--line);
            display:flex;flex-direction:column;gap:9px;text-align:center;
@@ -6025,7 +6030,7 @@ body.t-light{
 .pchip:hover{color:var(--accent);border-color:var(--accent);
              background:var(--btn-hov-bg)}
 .pchip.on,.pchip.on:hover{color:var(--accent-fg);border-color:var(--accent);
-                          background:var(--accent);cursor:default}
+                          background:var(--accent)}
 /* a new one arrives instead of just being there */
 @keyframes pchipin{from{opacity:0;transform:scale(.6)}
                    to{opacity:1;transform:none}}
@@ -8762,7 +8767,10 @@ document.addEventListener('click', e => {
   }
 });
 $$('[data-nav]').forEach(b => b.addEventListener('click', () => {
-  goScreen((screen === b.dataset.nav) ? 'main' : b.dataset.nav);
+  const next = (screen === b.dataset.nav) ? 'main' : b.dataset.nav;
+  /* the tab answers at once; the page follows after it has left */
+  $$('[data-nav]').forEach(x => x.classList.toggle('on', x.dataset.nav === next));
+  goScreen(next);
 }));
 $('.logo').addEventListener('click', () => goScreen('main'));
 /* delegated: the FAQ is rebuilt on every render and on every language */
