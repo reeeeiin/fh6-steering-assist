@@ -62,6 +62,11 @@ def load_vgamepad():
 # this is and nothing more. The build number after it says which one of
 # them, and that is what belongs in a bug report.
 APP_SERIES = "2.2"   # builds are counted from the commit that sets this
+# A test build of the series to come: the chip in the header says which one
+# and that it is a beta, in orange, and the exe's name ends in "b". The
+# version everywhere else stays the build's own. Empty on a release. No
+# comment after the value: build.bat reads it between the quotes.
+APP_BETA = "2.3"
 
 
 def _build_id() -> str:
@@ -5755,7 +5760,9 @@ def build_html() -> str:
     html = html.replace("__LEGAL__", json.dumps(LEGAL))
     html = html.replace("__FAQ__", json.dumps(FAQ_ITEMS,
                                                 ensure_ascii=False))
-    html = html.replace("__VERSHORT__", APP_SERIES)
+    html = html.replace("__VERSHORT__", (APP_BETA + " beta") if APP_BETA
+                        else APP_SERIES)
+    html = html.replace("__VBETA__", " vbeta" if APP_BETA else "")
     html = html.replace("__VER__", APP_VERSION)
     html = html.replace("__DEFAULTS__", json.dumps(
         {k: DEFAULTS[k] for k, *_ in SLIDERS}))
@@ -6048,6 +6055,8 @@ body.t-light{
         align-items:center;font-size:8px;font-weight:600;flex:none;
         color:var(--accent);background:var(--btn-hov-bg);
         border:1.5px solid var(--accent)}
+/* a beta build: the same chip in orange */
+.vbadge.vbeta{color:#F84D04;background:rgba(248,77,4,.1);border-color:#F84D04}
 .wbtns{display:flex;align-items:center;gap:3px;flex:none}
 .tabs{display:flex;align-items:center;gap:5px;flex:none}
 
@@ -6776,7 +6785,7 @@ html[data-boot] .rz{display:none}
   <div class="tbar"><span class="drag pywebview-drag-region"></span>
     <div class="tdrag">
       <span class="logo reveal"><!--ICON:applogo--></span>
-      <span class="vbadge reveal">v__VERSHORT__</span>
+      <span class="vbadge__VBETA__ reveal">v__VERSHORT__</span>
     </div>
     <div class="tabs">
       <span class="hbtn tab sup reveal" data-url="https://boosty.to/reeeeiin" data-tr="nav_support">Support</span>

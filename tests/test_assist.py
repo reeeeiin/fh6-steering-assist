@@ -3558,6 +3558,19 @@ def test_no_heal_without_the_game():
         fa.restart_device, fa.game_running = real_r, real_g
 
 
+# ---------------- a beta build ----------------
+
+def test_a_beta_says_so_in_the_header_chip_and_nowhere_else():
+    html = fa.build_html()
+    if fa.APP_BETA:
+        assert ('class="vbadge vbeta reveal">v%s beta</span>' % fa.APP_BETA
+                in html)
+    else:
+        assert 'class="vbadge reveal">v%s</span>' % fa.APP_SERIES in html
+    assert "beta" not in fa.APP_VERSION
+    assert "<span>v%s</span>" % fa.APP_VERSION in html     # the footer
+
+
 # ---------------- tested on ----------------
 
 def test_the_makers_logos_follow_the_theme_and_keep_their_colours():

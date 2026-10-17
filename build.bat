@@ -34,6 +34,12 @@ if "%BUILDID%"=="" set BUILDID=dev
 if not exist assets mkdir assets
 > assets\build.txt echo %BUILDID%
 set VER=%SERIES%.%BUILDID%
+rem A beta build: the version inside stays as it is, the exe's name ends in
+rem "b" so a test build is never taken for a release one.
+set BETA=
+for /f tokens^=2^ delims^=^" %%v in ('findstr /b /c:"APP_BETA = " forza_assist_lite.py') do set BETA=%%v
+set EXENAME=%VER%
+if not "%BETA%"=="" set EXENAME=%VER%b
 echo Building version %VER%
 
 rem The UI font is a full CJK family, 26 MB per weight. Subset it to the
@@ -63,12 +69,12 @@ if exist steering.ico set EXTRA=%EXTRA% --icon steering.ico
 rem pygame drags numpy in whenever it is installed on the build machine -
 rem ten megabytes the app never imports. Named out, so what ships does
 rem not depend on what somebody happened to pip install.
-%PY% -m PyInstaller --onefile --noconsole --uac-admin --name SteeringAssist-%VER% --collect-all vgamepad --collect-all webview --collect-all pygame --exclude-module numpy %EXTRA% forza_assist_lite.py
+%PY% -m PyInstaller --onefile --noconsole --uac-admin --name SteeringAssist-%EXENAME% --collect-all vgamepad --collect-all webview --collect-all pygame --exclude-module numpy %EXTRA% forza_assist_lite.py
 if errorlevel 1 goto fail
 
 echo.
 echo === DONE ===
-echo Result: dist\SteeringAssist-%VER%.exe
+echo Result: dist\SteeringAssist-%EXENAME%.exe
 pause
 exit /b 0
 
