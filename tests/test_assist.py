@@ -2285,16 +2285,48 @@ def test_the_reason_reaches_the_screen():
         assert key in src, key
 
 
-def test_waiting_for_a_controller_does_not_wait_for_ever():
-    """It used to sit on step 4 with nothing said for as long as the pad
-    stayed away, and a pad that is off never arrives."""
+def test_no_controller_does_not_hold_the_window():
+    """Launched with no pad, the loading screen waited for one - for ever on
+    a normal launch, and the setup stopped on step 4. The app opens now and
+    the loop picks the pad up whenever it appears."""
     import inspect
     src = inspect.getsource(fa.Bridge._loop)
-    assert "NO_PAD_WAIT_S" in src
-    assert 'self.boot_error = "no_pad"' in src
-    assert fa.NO_PAD_WAIT_S > 0
-    # and it clears again if the pad turns up while the notice is on screen
-    assert 'self.boot_error = ""' in src
+    assert "not before and not self.hid_mode:" not in src, "the wait is back"
+    assert 'self.boot_error = "no_pad"' not in src
+    assert 'self.status_code = "no_pad" if missing else "ok"' in src
+    # with no slot of its own yet, nothing is read - slot 0 may be ours
+    assert "if self.physical_slot is None" in src
+    # waiting for the first pad is not losing one
+    assert 'not in ("pad_lost", "no_pad")' in src
+    assert '"pad connected on slot %s"' in src
+
+
+def test_the_missing_controller_is_said_in_the_app_in_every_language():
+    html = fa.build_html()
+    assert "NO_PAD_NOTICE_MS" in html and "noPadSeen" in html
+    for lang, words in fa.TR.items():
+        if lang not in fa.BOOT_TR:
+            continue
+        for key in ("nopad_title", "nopad_text", "nopad_hint"):
+            assert words.get(key), (lang, key)
+        # the same words as the setup used for it
+        assert (words["nopad_title"]
+                == fa.BOOT_TR[lang]["errors"]["no_pad"][0]), lang
+
+
+def test_a_restart_that_worked_settles_started_after_the_game():
+    b = _heal_bridge()
+    b.bad_order = True
+    real_r, real_g, real_p = fa.restart_device, fa.game_running, fa.usb_port_of
+    fa.restart_device = lambda dev: (True, "port 1 power-cycled")
+    fa.game_running = lambda: True
+    fa.usb_port_of = lambda ident, depth=8: ("\\\\?\\hub", 1, "USB\\FLY")
+    try:
+        assert b._heal("the hiding had to be put right")
+        assert not b.bad_order
+    finally:
+        fa.restart_device, fa.game_running = real_r, real_g
+        fa.usb_port_of = real_p
 
 
 def test_no_pad_is_worded_in_every_language():

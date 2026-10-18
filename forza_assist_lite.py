@@ -2425,11 +2425,11 @@ RESTART_DELAY_S = 20
 # The removal itself can be quick. It is still a stage worth seeing, so the
 # panel holds on it before offering the restart.
 WIPE_MIN_MS = 2000
-# How long to wait for a controller on XInput before saying so. A pad that
-# has not finished waking takes a few seconds; one that is off, asleep or
-# not in XInput mode never arrives at all, and used to leave the setup
-# screen waiting for it for ever with nothing said.
-NO_PAD_WAIT_S = 12.0
+# No controller at launch used to hold the loading screen until one came:
+# for ever, for a pad that is off, asleep or not in XInput mode - the setup
+# said so after twelve seconds, a normal launch never did. The app opens
+# now, the loop picks the pad up whenever it appears, and the page says
+# what is missing once a pad still waking has had NO_PAD_NOTICE_MS.
 # The virtual pad usually enumerates inside a second, but a fixed pause is
 # a guess. If it is wrong, the set below is empty and the wait mistakes our
 # own pad for the driver's.
@@ -3957,6 +3957,11 @@ class Bridge:
             ok_all = ok_all and ok
             self._note("restarted %s: %s" % (dev, out if out else
                                              "ok" if ok else "failed"))
+        # the restart is what "started after the game" asks the player to
+        # do by hand - a pad plugged in later, into a game already running,
+        # gets it too
+        if ok_all:
+            self.bad_order = False
         return ok_all
 
     def stop(self):
@@ -4381,30 +4386,20 @@ class Bridge:
                 if self._heal("started after the game"):
                     self.bad_order = False
 
-            waited = 0.0
-            while self._run.is_set() and not before and not self.hid_mode:
-                self.status_code = "no_pad"
-                # Say so rather than sit here silently. The wait carries on
-                # underneath, so a pad plugged in after the notice appears
-                # still gets picked up and the notice goes away.
-                if waited >= NO_PAD_WAIT_S and not self.boot_error:
-                    self.boot_error = "no_pad"
-                time.sleep(0.5)
-                waited += 0.5
-                before = xinput_connected_slots() - virtual
-            if not self._run.is_set():
-                return
-            if self.boot_error == "no_pad":
-                self.boot_error = ""
+            # No pad yet is no reason to hold the window. The loop below
+            # finds it the moment it appears, as it does one that dropped
+            # out and came back, and the sweep hides it from the game.
             self.physical_slot = min(before) if before else None
+            missing = not before and not self.hid_mode
             self._note("started %s - %s; our pad on %s, player's on %s; "
                        "hidden from XInput: %s" % (
                 APP_VERSION, self.mode_info or "wired",
                 sorted(self.virtual_slots) or "unknown",
-                "hid" if self.hid_mode else self.physical_slot,
+                "hid" if self.hid_mode
+                else "none yet" if missing else self.physical_slot,
                 "yes" if self.hidhide.xinput_hidden else "no"))
             self.boot_step = 5
-            self.status_code = "ok"
+            self.status_code = "no_pad" if missing else "ok"
 
             if RUMBLE_FORWARD:
                 def on_rumble(client, target, large_motor, small_motor,
@@ -4427,7 +4422,10 @@ class Bridge:
                     except Exception:
                         gp = None
                 else:
-                    gp, packet = xinput_read_state(self.physical_slot)
+                    # no slot of its own yet: never read one, or it would be
+                    # slot 0 - quite likely our own pad
+                    gp, packet = ((None, 0) if self.physical_slot is None
+                                  else xinput_read_state(self.physical_slot))
                     self._count_pad_packet(packet, now)
                     if gp is None:
                         self._forget_pad_habits()
@@ -4436,11 +4434,12 @@ class Bridge:
                         if self._check_frozen(packet, gp, now):
                             gp = None       # let go of what it is stuck on
                 if gp is None:
-                    if self.status_code != "pad_lost":
+                    # still waiting for the first one is not losing it
+                    if self.status_code not in ("pad_lost", "no_pad"):
                         self._note("pad lost (%s)" % (
                             "hid" if self.hid_mode
                             else "slot %s" % self.physical_slot))
-                    self.status_code = "pad_lost"
+                        self.status_code = "pad_lost"
                     self._neutral(pad)
                     pad.update()
                     if not self.hid_mode:
@@ -4449,6 +4448,8 @@ class Bridge:
                     continue
                 if self.status_code == "pad_lost":
                     self._note("pad back")
+                elif self.status_code == "no_pad":
+                    self._note("pad connected on slot %s" % self.physical_slot)
                 self.status_code = "ok"
 
                 self.buttons = gp.wButtons
@@ -4707,6 +4708,9 @@ TR = {
         "order_title": 'Started after the game',
         "order_text": 'Forza was already running. It looks for controllers when it starts, so it may not see the virtual pad yet.',
         "order_hint": 'If the assist does nothing, unplug your controller and plug it back in, or switch a wireless one off and on - the game finds it again without being restarted. Next time, start the assist first and the game after it.',
+        "nopad_title": 'Controller not found',
+        "nopad_text": "Steering Assist can't see a controller. Connect it with a cable or a receiver, or switch it on.",
+        "nopad_hint": 'The assist picks it up as soon as it appears - no restart needed.',
         "st_drivers": "installing drivers…",
         "buttons_sec": "Buttons",
         "btn_handbrake": "Handbrake",
@@ -4870,6 +4874,9 @@ TR = {
         "order_title": 'Запущен после игры',
         "order_text": 'Forza уже была запущена. Игра ищет контроллеры при старте, поэтому виртуальный геймпад она может пока не видеть.',
         "order_hint": 'Если ассист не работает, отключите геймпад и подключите снова, а беспроводной выключите и включите — игра найдёт его заново без перезапуска. В следующий раз запускайте сначала ассист, потом игру.',
+        "nopad_title": 'Геймпад не найден',
+        "nopad_text": 'Steering Assist не видит геймпад. Подключите его кабелем или через ресивер, либо включите.',
+        "nopad_hint": 'Ассист подхватит его, как только он появится, — перезапуск не нужен.',
         "st_drivers": "ставлю драйверы…",
         "buttons_sec": "Кнопки",
         "btn_handbrake": "Ручник",
@@ -5033,6 +5040,9 @@ TR = {
         "order_title": 'Nach dem Spiel gestartet',
         "order_text": 'Forza lief bereits. Das Spiel sucht Controller beim Start, daher sieht es das virtuelle Pad moglicherweise noch nicht.',
         "order_hint": 'Wenn die Assistenz nichts tut, den Controller ab- und wieder anstecken, einen kabellosen aus- und einschalten - das Spiel findet ihn ohne Neustart wieder. Beim nachsten Mal zuerst die Assistenz starten, dann das Spiel.',
+        "nopad_title": 'Controller nicht gefunden',
+        "nopad_text": 'Steering Assist findet keinen Controller. Schließe ihn per Kabel oder Empfänger an oder schalte ihn ein.',
+        "nopad_hint": 'Der Assist übernimmt ihn, sobald er da ist – ohne Neustart.',
         "st_drivers": "installiere Treiber…",
         "buttons_sec": "Tasten",
         "btn_handbrake": "Handbremse",
@@ -5196,6 +5206,9 @@ TR = {
         "order_title": 'Lance apres le jeu',
         "order_text": 'Forza tournait deja. Le jeu cherche les manettes au demarrage, il ne voit donc peut-etre pas encore la manette virtuelle.',
         "order_hint": 'Si l’assistance ne fait rien, debranchez votre manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil : le jeu la retrouve sans etre relance. La prochaine fois, lancez l’assistance avant le jeu.',
+        "nopad_title": 'Manette introuvable',
+        "nopad_text": 'Steering Assist ne voit aucune manette. Branchez-la avec un câble ou un récepteur, ou allumez-la.',
+        "nopad_hint": "L'assistant la prend en charge dès qu'elle apparaît, sans redémarrage.",
         "st_drivers": "installation des pilotes…",
         "buttons_sec": "Boutons",
         "btn_handbrake": "Frein à main",
@@ -5359,6 +5372,9 @@ TR = {
         "order_title": 'Iniciado despues del juego',
         "order_text": 'Forza ya estaba en marcha. El juego busca mandos al arrancar, asi que puede que aun no vea el mando virtual.',
         "order_hint": 'Si la asistencia no hace nada, desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico: el juego lo encuentra otra vez sin reiniciarse. La proxima vez, abre primero la asistencia y luego el juego.',
+        "nopad_title": 'Mando no encontrado',
+        "nopad_text": 'Steering Assist no detecta ningún mando. Conéctalo con cable o con un receptor, o enciéndelo.',
+        "nopad_hint": 'El asistente lo usará en cuanto aparezca, sin reiniciar.',
         "st_drivers": "instalando controladores…",
         "buttons_sec": "Botones",
         "btn_handbrake": "Freno de mano",
@@ -5529,6 +5545,9 @@ TR = {
         "order_title": 'ゲームより後に起動しました',
         "order_text": 'Forza がすでに起動していました。ゲームは起動時にコントローラーを探すため、仮想パッドをまだ認識していない可能性があります。',
         "order_hint": 'アシストが動かない場合はコントローラーを接続し直すか、無線なら電源を入れ直してください。ゲームを再起動しなくても認識されます。次回はアシストを先に、ゲームを後に起動してください。',
+        "nopad_title": 'コントローラーが見つかりません',
+        "nopad_text": 'Steering Assistがコントローラーを認識できません。ケーブルまたはレシーバーで接続するか、電源を入れてください。',
+        "nopad_hint": '接続されるとすぐに使えます。再起動は不要です。',
         "st_drivers": 'ドライバーを導入中…',
         "buttons_sec": 'ボタン',
         "btn_handbrake": 'サイドブレーキ',
@@ -8474,19 +8493,31 @@ function setBar(id, v){
   else { el.style.left = (50 + v*50) + '%'; el.style.width = (-v*50) + '%'; }
 }
 
-let warnSeen = false;
+let warnSeen = false, noPadSeen = false, noPadAt = 0;
+/* a pad still waking turns up within a second or two: no need to say so */
+const NO_PAD_NOTICE_MS = 2500;
 
+/* Two notices share the card: no controller yet, and started after the
+   game. The controller comes first - without one nothing else matters -
+   and its notice goes by itself the moment a pad turns up. */
 function updateWarning(){
   const el = $('#warn');
   if (!el) return;
-  const show = !!state.bad_order && !warnSeen;
-  if (show && el.classList.contains('off')){
-    $('#warn-title').textContent = t('order_title');
-    $('#warn-text').textContent = t('order_text');
-    $('#warn-hint').textContent = t('order_hint');
+  const now = performance.now();
+  if (state.code !== 'no_pad') noPadAt = 0;
+  else if (!noPadAt) noPadAt = now;
+  const kind = noPadAt && now - noPadAt >= NO_PAD_NOTICE_MS && !noPadSeen
+             ? 'pad' : state.bad_order && !warnSeen ? 'order' : '';
+  if (kind && el.dataset.kind !== kind){
+    el.dataset.kind = kind;
+    const k = kind === 'pad' ? 'nopad' : 'order';
+    $('#warn-title').textContent = t(k + '_title');
+    $('#warn-text').textContent = t(k + '_text');
+    $('#warn-hint').textContent = t(k + '_hint');
     $('#warn-ok').textContent = t('order_btn');
   }
-  el.classList.toggle('off', !show);
+  if (!kind) el.dataset.kind = '';
+  el.classList.toggle('off', !kind);
 }
 
 /* ---------------- telemetry readouts ---------------- */
@@ -9603,7 +9634,8 @@ document.addEventListener('click', e => {
   if (link) gotoSetting(link.dataset.goto);
 });
 $('#warn-ok').addEventListener('click', () => {
-  warnSeen = true;
+  if ($('#warn').dataset.kind === 'pad') noPadSeen = true;
+  else warnSeen = true;
   $('#warn').classList.add('off');
 });
 
