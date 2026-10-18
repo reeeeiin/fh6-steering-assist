@@ -2378,7 +2378,8 @@ def test_the_missing_controller_is_said_in_the_app_in_every_language():
     for lang, words in fa.TR.items():
         if lang not in fa.BOOT_TR:
             continue
-        for key in ("nopad_title", "nopad_text", "nopad_hint"):
+        for key in ("nopad_title", "nopad_text", "nopad_btn", "padok_title",
+                    "padok_text", "padok_btn"):
             assert words.get(key), (lang, key)
         # the same words as the setup used for it
         assert (words["nopad_title"]
@@ -3070,16 +3071,17 @@ def test_a_port_that_is_not_the_usual_one_says_so():
 
 
 def test_the_launch_notice_says_what_to_do_about_it():
-    """It named the problem and left the reader to work out the rest. The
-    cure comes first now, and the order for next time stays - knowing it is
-    what stops this happening again."""
+    """It named the problem and left the reader to work out the rest. Since
+    the Figma notice (frame 97) it is one paragraph, and that paragraph is
+    the cure: unplug the pad and plug it back in."""
     for lang, pack in fa.TR.items():
-        hint = pack["order_hint"]
-        assert len(hint) > 80, (lang, hint)
-        # both halves: reconnect now, and the order to use next time
-        assert any(w in hint.lower() for w in
-                   ("plug", "подключ", "anstecken", "branchez",
-                    "conectarlo", "接続")), (lang, hint)
+        if lang not in fa.BOOT_TR:
+            continue
+        text = pack["order_text"]
+        assert len(text) > 30, (lang, text)       # Japanese is short
+        assert any(w in text.lower() for w in
+                   ("plug", "подключ", "steck", "branchez",
+                    "conectarlo", "差し直")), (lang, text)
 
 
 # ---------------- drift watch, rev counter, odometer ----------------
@@ -3688,6 +3690,33 @@ def test_discord_is_one_click_away_in_the_header_and_in_about():
     assert 'url("data:image/svg+xml,%3Csvg' in html
     for lang, words in fa.LEGAL.items():
         assert words.get("discord"), lang
+
+
+# ---------------- the controller notices ----------------
+
+def test_the_notice_controller_comes_in_pieces_from_the_drawing():
+    """The cross and the plug are the drawing's last two shapes; the rest is
+    the pad. A drawing exported in another order would put the cross on the
+    cable, so the pieces are checked by where they sit."""
+    art = fa._pad_art()
+    assert len(art["body"]) >= 2
+    # the cross sits between the plug and the pad, round y 95
+    assert "89.8" in art["cross"] and "101.2" in art["cross"]
+    # the plug's shape starts at the top of the cable
+    assert art["plug"].startswith("M44.3257 10.9502")
+    html = fa.build_html()
+    assert "__PAD_ART__" not in html
+    for name in ("function padFound", "PAD_OK_CLOSE_MS = 5000",
+                 "function paPlugIn", "function paLoop", "@keyframes patwitch"):
+        assert name in html, name
+
+
+def test_every_popup_lets_the_page_through():
+    html = fa.build_html()
+    for sel in (".warn-card{", ".tpop{", ".bmbox{"):
+        rule = html[html.index(sel):]
+        rule = rule[:rule.index("}")]
+        assert "var(--card) 75%,transparent" in rule, sel
 
 
 # ---------------- tested on ----------------

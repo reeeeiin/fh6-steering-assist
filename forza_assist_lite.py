@@ -4745,11 +4745,13 @@ TR = {
         "preset_del": 'Delete preset?',
         "preset_del_text": '“{name}” will be removed.',
         "order_title": 'Started after the game',
-        "order_text": 'Forza was already running. It looks for controllers when it starts, so it may not see the virtual pad yet.',
-        "order_hint": 'If the assist does nothing, unplug your controller and plug it back in, or switch a wireless one off and on - the game finds it again without being restarted. Next time, start the assist first and the game after it.',
+        "order_text": 'If the assist wasn’t working properly,\ntry to unplug your controller\nand plug it back in, the game finds it\nagain without being restarted.',
         "nopad_title": 'Controller not found',
-        "nopad_text": "Steering Assist can't see a controller. Connect it with a cable or a receiver, or switch it on.",
-        "nopad_hint": 'The assist picks it up as soon as it appears - no restart needed.',
+        "nopad_text": 'Steering Assist can’t find a controller.\nConnect it to a PC or switch it On.',
+        "nopad_btn": 'Check connection',
+        "padok_title": 'Controller is connected',
+        "padok_text": 'Connection is established,\nthis window may be dismissed.',
+        "padok_btn": 'Dismiss',
         "st_drivers": "installing drivers…",
         "buttons_sec": "Buttons",
         "btn_handbrake": "Handbrake",
@@ -4911,11 +4913,13 @@ TR = {
         "preset_del": 'Удалить пресет?',
         "preset_del_text": '«{name}» будет удалён.',
         "order_title": 'Запущен после игры',
-        "order_text": 'Forza уже была запущена. Игра ищет контроллеры при старте, поэтому виртуальный геймпад она может пока не видеть.',
-        "order_hint": 'Если ассист не работает, отключите геймпад и подключите снова, а беспроводной выключите и включите — игра найдёт его заново без перезапуска. В следующий раз запускайте сначала ассист, потом игру.',
+        "order_text": 'Если ассист работал некорректно, отключите геймпад и подключите снова — игра найдёт его заново без перезапуска.',
         "nopad_title": 'Геймпад не найден',
-        "nopad_text": 'Steering Assist не видит геймпад. Подключите его кабелем или через ресивер, либо включите.',
-        "nopad_hint": 'Ассист подхватит его, как только он появится, — перезапуск не нужен.',
+        "nopad_text": 'Steering Assist не находит геймпад. Подключите его к ПК или включите.',
+        "nopad_btn": 'Проверить подключение',
+        "padok_title": 'Геймпад подключён',
+        "padok_text": 'Подключение установлено, это окно можно закрыть.',
+        "padok_btn": 'Закрыть',
         "st_drivers": "ставлю драйверы…",
         "buttons_sec": "Кнопки",
         "btn_handbrake": "Ручник",
@@ -5077,11 +5081,13 @@ TR = {
         "preset_del": 'Vorgabe löschen?',
         "preset_del_text": '„{name}“ wird gelöscht.',
         "order_title": 'Nach dem Spiel gestartet',
-        "order_text": 'Forza lief bereits. Das Spiel sucht Controller beim Start, daher sieht es das virtuelle Pad moglicherweise noch nicht.',
-        "order_hint": 'Wenn die Assistenz nichts tut, den Controller ab- und wieder anstecken, einen kabellosen aus- und einschalten - das Spiel findet ihn ohne Neustart wieder. Beim nachsten Mal zuerst die Assistenz starten, dann das Spiel.',
+        "order_text": 'Wenn die Assistenz nicht richtig funktioniert hat, zieh den Controller ab und steck ihn wieder ein – das Spiel findet ihn ohne Neustart wieder.',
         "nopad_title": 'Controller nicht gefunden',
-        "nopad_text": 'Steering Assist findet keinen Controller. Schließe ihn per Kabel oder Empfänger an oder schalte ihn ein.',
-        "nopad_hint": 'Der Assist übernimmt ihn, sobald er da ist – ohne Neustart.',
+        "nopad_text": 'Steering Assist findet keinen Controller. Schließe ihn an den PC an oder schalte ihn ein.',
+        "nopad_btn": 'Verbindung prüfen',
+        "padok_title": 'Controller verbunden',
+        "padok_text": 'Die Verbindung steht, dieses Fenster kann geschlossen werden.',
+        "padok_btn": 'Schließen',
         "st_drivers": "installiere Treiber…",
         "buttons_sec": "Tasten",
         "btn_handbrake": "Handbremse",
@@ -5243,11 +5249,13 @@ TR = {
         "preset_del": 'Supprimer le préréglage ?',
         "preset_del_text": '« {name} » sera supprimé.',
         "order_title": 'Lance apres le jeu',
-        "order_text": 'Forza tournait deja. Le jeu cherche les manettes au demarrage, il ne voit donc peut-etre pas encore la manette virtuelle.',
-        "order_hint": 'Si l’assistance ne fait rien, debranchez votre manette et rebranchez-la, ou eteignez puis rallumez une manette sans fil : le jeu la retrouve sans etre relance. La prochaine fois, lancez l’assistance avant le jeu.',
+        "order_text": 'Si l’assistance ne fonctionnait pas correctement, débranchez la manette et rebranchez-la : le jeu la retrouve sans redémarrer.',
         "nopad_title": 'Manette introuvable',
-        "nopad_text": 'Steering Assist ne voit aucune manette. Branchez-la avec un câble ou un récepteur, ou allumez-la.',
-        "nopad_hint": "L'assistant la prend en charge dès qu'elle apparaît, sans redémarrage.",
+        "nopad_text": 'Steering Assist ne trouve aucune manette. Branchez-la au PC ou allumez-la.',
+        "nopad_btn": 'Vérifier la connexion',
+        "padok_title": 'Manette connectée',
+        "padok_text": 'La connexion est établie, vous pouvez fermer cette fenêtre.',
+        "padok_btn": 'Fermer',
         "st_drivers": "installation des pilotes…",
         "buttons_sec": "Boutons",
         "btn_handbrake": "Frein à main",
@@ -5409,11 +5417,13 @@ TR = {
         "preset_del": '¿Borrar el ajuste?',
         "preset_del_text": '«{name}» se borrará.',
         "order_title": 'Iniciado despues del juego',
-        "order_text": 'Forza ya estaba en marcha. El juego busca mandos al arrancar, asi que puede que aun no vea el mando virtual.',
-        "order_hint": 'Si la asistencia no hace nada, desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalambrico: el juego lo encuentra otra vez sin reiniciarse. La proxima vez, abre primero la asistencia y luego el juego.',
+        "order_text": 'Si la asistencia no funcionaba bien, desconecta el mando y vuelve a conectarlo: el juego lo encuentra de nuevo sin reiniciar.',
         "nopad_title": 'Mando no encontrado',
-        "nopad_text": 'Steering Assist no detecta ningún mando. Conéctalo con cable o con un receptor, o enciéndelo.',
-        "nopad_hint": 'El asistente lo usará en cuanto aparezca, sin reiniciar.',
+        "nopad_text": 'Steering Assist no encuentra ningún mando. Conéctalo al PC o enciéndelo.',
+        "nopad_btn": 'Comprobar conexión',
+        "padok_title": 'Mando conectado',
+        "padok_text": 'La conexión está establecida, puedes cerrar esta ventana.',
+        "padok_btn": 'Cerrar',
         "st_drivers": "instalando controladores…",
         "buttons_sec": "Botones",
         "btn_handbrake": "Freno de mano",
@@ -5582,11 +5592,13 @@ TR = {
         "preset_del": 'プリセットを削除しますか？',
         "preset_del_text": '「{name}」を削除します。',
         "order_title": 'ゲームより後に起動しました',
-        "order_text": 'Forza がすでに起動していました。ゲームは起動時にコントローラーを探すため、仮想パッドをまだ認識していない可能性があります。',
-        "order_hint": 'アシストが動かない場合はコントローラーを接続し直すか、無線なら電源を入れ直してください。ゲームを再起動しなくても認識されます。次回はアシストを先に、ゲームを後に起動してください。',
+        "order_text": 'アシストが正しく動作しなかった場合は、コントローラーを抜いて差し直してください。ゲームを再起動しなくても再認識されます。',
         "nopad_title": 'コントローラーが見つかりません',
-        "nopad_text": 'Steering Assistがコントローラーを認識できません。ケーブルまたはレシーバーで接続するか、電源を入れてください。',
-        "nopad_hint": '接続されるとすぐに使えます。再起動は不要です。',
+        "nopad_text": 'Steering Assistがコントローラーを見つけられません。PCに接続するか、電源を入れてください。',
+        "nopad_btn": '接続を確認',
+        "padok_title": 'コントローラーが接続されました',
+        "padok_text": '接続が確立されました。このウィンドウは閉じてもかまいません。',
+        "padok_btn": '閉じる',
         "st_drivers": 'ドライバーを導入中…',
         "buttons_sec": 'ボタン',
         "btn_handbrake": 'サイドブレーキ',
@@ -5733,6 +5745,20 @@ def _icon(name: str, sized: bool = False) -> str:
 # maker's site. The logos are drawn in white with the brand's colours on
 # the mark; the page draws them in the text colour of the theme and lets
 # the brand colours in under the pointer.
+def _pad_art() -> dict:
+    """The controller drawn in the controller notices, in the pieces the
+    page moves: the pad, the cross standing between it and the cable, and
+    the plug. Read from the drawing in assets/icons, whose last two shapes
+    are the cross and the cable with its plug; the page draws the cable
+    itself, so that it can straighten as the plug goes in, and keeps only
+    the plug of that last shape."""
+    raw = _read_asset(os.path.join("icons", "controller-disconnected.svg"))
+    shapes = re.findall(r'<path\b[^>]*\sd="([^"]+)"', raw or "")
+    if len(shapes) < 3:
+        return {}
+    return {"body": shapes[:-2], "cross": shapes[-2], "plug": shapes[-1]}
+
+
 # The community's Discord server, behind the button in the header.
 DISCORD_URL = "https://discord.gg/UvNVYbNp55"
 
@@ -5816,6 +5842,7 @@ def build_html() -> str:
          for k in ("light", "dark")}))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
     html = html.replace("__DISCORD__", DISCORD_URL)
+    html = html.replace("__PAD_ART__", json.dumps(_pad_art()))
     # the mark is painted as the button's background, so it goes in whole
     html = html.replace("__DISCORD_MARK__", "data:image/svg+xml," +
                         urllib.parse.quote(
@@ -5924,7 +5951,8 @@ body.t-light{
                   height .32s cubic-bezier(.4,0,.2,1)}
 #tour.shown .tring{opacity:1}
 .tpop{position:fixed;width:250px;box-sizing:border-box;padding:15px 16px;
-      background:var(--card);border:1px solid var(--btn-line);
+      background:color-mix(in srgb,var(--card) 75%,transparent);
+      border:1px solid var(--btn-line);
       border-radius:12px;box-shadow:0 18px 46px rgba(0,0,0,.5);opacity:0;
       transform:translateY(-6px);
       transition:opacity .28s ease,transform .28s ease,
@@ -6211,8 +6239,11 @@ body.t-light{
    nothing opacity is still worked out whenever the page under it moves */
 .warn-wrap.off{opacity:0;pointer-events:none;visibility:hidden;
                transition:opacity .25s ease,visibility 0s linear .25s}
+/* Every popup lets a little of the blurred page through: its card is the
+   card colour at three quarters. */
 .warn-card{width:330px;box-sizing:border-box;padding:18px;border-radius:14px;
-           background:var(--card);border:1px solid var(--line);
+           background:color-mix(in srgb,var(--card) 75%,transparent);
+           border:1px solid var(--line);
            display:flex;flex-direction:column;gap:9px;text-align:center;
            align-items:center}
 .warn-t{font-size:14px;font-weight:600;color:var(--warn)}
@@ -6238,6 +6269,55 @@ body.t-light{
 .warn-b:hover{filter:brightness(1.12)}
 /* nothing to do yet - an empty name, say */
 .warn-b.off,.warn-b.off:hover{opacity:.4;filter:none;cursor:default}
+
+/* ---------- the controller notices ----------
+   No controller found, found after all, and started after the game: the
+   words on the left, a controller on the right whose cable comes down
+   from above the card and fades in from its edge. As drawn in Figma, 300
+   by 145 (frames 91, 96, 97). */
+#warn .warn-card.nc{width:300px;min-height:145px;padding:17.6px 26px 20px 26.6px;
+  position:relative;overflow:hidden;align-items:flex-start;
+  text-align:left;gap:0;border-color:var(--btn-line)}
+.nc-words{position:relative;z-index:1;width:178px;display:flex;
+  flex-direction:column;gap:3.6px;transition:opacity .16s ease}
+#warn.swap .nc-words,#warn.swap #warn-ok{opacity:0}
+#warn .warn-t{font-size:14px;line-height:17px;transition:color .25s ease}
+#warn .warn-x{font-size:10px;font-weight:600;line-height:12px;
+  white-space:pre-line}
+#warn #warn-ok{position:relative;z-index:1;margin-top:auto;
+  padding:0 12px;font-size:12px;
+  transition:filter .2s ease,opacity .16s ease,background .25s ease,
+             color .25s ease}
+#warn[data-kind=pad] #warn-ok{background:var(--warn);color:#101010}
+#warn[data-kind=padok] .warn-t{color:var(--accent)}
+#warn.nope .warn-card{animation:ncnope .34s ease}
+@keyframes ncnope{20%{translate:-5px 0}45%{translate:4px 0}
+  70%{translate:-2px 0}100%{translate:0 0}}
+.padart{position:absolute;left:193px;top:-35.2px;width:86px;height:164px;
+  pointer-events:none;color:color-mix(in srgb,var(--row-fg) 24%,transparent);
+  transition:color .25s ease;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 35.2px,#000 59px);
+  mask-image:linear-gradient(to bottom,transparent 35.2px,#000 59px)}
+.padart.on{color:var(--accent)}
+.padart svg{display:block;width:100%;height:100%;overflow:visible}
+.padart path{fill:currentColor;fill-rule:evenodd}
+.padart .pa-cable{fill:none;stroke:currentColor;stroke-width:1.5}
+.padart .pa-cross{fill:var(--warn);transform-box:fill-box;
+  transform-origin:center;transition:opacity .18s ease,transform .24s ease}
+.padart.nocross .pa-cross,.padart.on .pa-cross{opacity:0;transform:scale(.3)}
+/* no controller: the plug tries the socket again and again and comes up
+   short of the cross every time */
+.padart.lost .pa-twitch{animation:patwitch 2.6s infinite}
+@keyframes patwitch{
+  0%,30%{transform:translateY(0);animation-timing-function:cubic-bezier(.6,0,.9,.4)}
+  35%{transform:translateY(2.3px);animation-timing-function:cubic-bezier(.2,.6,.4,1)}
+  39%{transform:translateY(1.2px);animation-timing-function:cubic-bezier(.6,0,.9,.4)}
+  43%{transform:translateY(2.1px);animation-timing-function:cubic-bezier(.3,0,.2,1)}
+  58%,100%{transform:translateY(0)}}
+/* the plug going home knocks the pad down a touch */
+.padart .pa-body.hit{animation:pahit .3s ease-out}
+@keyframes pahit{30%{transform:translateY(1.4px)}
+  65%{transform:translateY(-.35px)}100%{transform:translateY(0)}}
 
 /* ---------- extended telemetry ---------- */
 /* Two columns of 232 with a 10 gap, laid out as in Figma. On the left the
@@ -6803,7 +6883,8 @@ body.t-light{
 #boot > .bmodal.on{display:flex}
 #boot > .bmodal.shown{opacity:1;pointer-events:auto}
 .bmbox{width:250px;padding:22px;border-radius:14px;text-align:center;
-       background:var(--card);border:1px solid var(--btn-line);
+       background:color-mix(in srgb,var(--card) 75%,transparent);
+       border:1px solid var(--btn-line);
        box-shadow:0 18px 46px rgba(0,0,0,.5);
        transform:translateY(6px) scale(.98);
        transition:transform .22s cubic-bezier(.4,0,.2,1)}
@@ -6913,11 +6994,13 @@ html[data-boot] .rz{display:none}
   </div>
 
   <div class="warn-wrap off" id="warn">
-    <div class="warn-card">
-      <div class="warn-t" id="warn-title"></div>
-      <div class="warn-x" id="warn-text"></div>
-      <div class="warn-h" id="warn-hint"></div>
+    <div class="warn-card nc">
+      <div class="nc-words">
+        <div class="warn-t" id="warn-title"></div>
+        <div class="warn-x" id="warn-text"></div>
+      </div>
       <button class="warn-b" id="warn-ok"></button>
+      <div class="padart" id="warn-art"></div>
     </div>
   </div>
 </div>
@@ -8562,28 +8645,191 @@ function setBar(id, v){
 let warnSeen = false, noPadSeen = false, noPadAt = 0;
 /* a pad still waking turns up within a second or two: no need to say so */
 const NO_PAD_NOTICE_MS = 2500;
+/* found after all: said, and gone again by itself */
+const PAD_OK_CLOSE_MS = 5000;
+let padOkTimer = 0;
 
-/* Two notices share the card: no controller yet, and started after the
-   game. The controller comes first - without one nothing else matters -
-   and its notice goes by itself the moment a pad turns up. */
+/* Three notices share the card: no controller yet, the controller found
+   after all, and started after the game. The controller comes first -
+   without one nothing else matters - and when it turns up while its notice
+   is open, the notice says so and closes by itself. */
 function updateWarning(){
   const el = $('#warn');
   if (!el) return;
   const now = performance.now();
   if (state.code !== 'no_pad') noPadAt = 0;
   else if (!noPadAt) noPadAt = now;
+  const open = el.classList.contains('off') ? '' : el.dataset.kind;
+  if (open === 'pad' && state.code !== 'no_pad'){ padFound(); return; }
+  if (open === 'padok') return;
   const kind = noPadAt && now - noPadAt >= NO_PAD_NOTICE_MS && !noPadSeen
              ? 'pad' : state.bad_order && !warnSeen ? 'order' : '';
-  if (kind && el.dataset.kind !== kind){
-    el.dataset.kind = kind;
-    const k = kind === 'pad' ? 'nopad' : 'order';
-    $('#warn-title').textContent = t(k + '_title');
-    $('#warn-text').textContent = t(k + '_text');
-    $('#warn-hint').textContent = t(k + '_hint');
-    $('#warn-ok').textContent = t('order_btn');
+  if (kind !== open){
+    if (kind) noticeOpen(kind); else noticeClose();
   }
-  if (!kind) el.dataset.kind = '';
-  el.classList.toggle('off', !kind);
+}
+
+const NOTICE_WORDS = {pad: ['nopad_title', 'nopad_text', 'nopad_btn'],
+                      padok: ['padok_title', 'padok_text', 'padok_btn'],
+                      order: ['order_title', 'order_text', 'order_btn']};
+function noticeWords(kind){
+  const w = NOTICE_WORDS[kind];
+  $('#warn-title').textContent = t(w[0]);
+  $('#warn-text').textContent = t(w[1]);
+  $('#warn-ok').textContent = t(w[2]);
+}
+
+function noticeOpen(kind){
+  const el = $('#warn');
+  el.dataset.kind = kind;
+  el.classList.remove('swap', 'nope');
+  noticeWords(kind);
+  padArt(kind === 'pad' ? 'lost' : 'order');
+  el.classList.remove('off');
+}
+
+function noticeClose(){
+  const el = $('#warn');
+  clearTimeout(padOkTimer);
+  el.classList.add('off');
+  el.dataset.kind = '';
+  paStop();
+}
+
+/* the controller turned up while it was being asked for */
+function padFound(){
+  const el = $('#warn');
+  el.dataset.kind = 'padok';
+  el.classList.add('swap');
+  setTimeout(() => {
+    noticeWords('padok');
+    el.classList.remove('swap');
+  }, 170);
+  paStop();
+  paPlugIn();
+  clearTimeout(padOkTimer);
+  padOkTimer = setTimeout(() => {
+    if (el.dataset.kind === 'padok') noticeClose();
+  }, PAD_OK_CLOSE_MS);
+}
+
+/* ---- the controller drawn in the notices ----
+   The pad, the cross and the plug come from the Figma drawing; the cable
+   is drawn here as its centre line, so that it can straighten out as the
+   plug goes home. 0 is the cable as drawn, 1 straight. */
+const PAD_ART = __PAD_ART__;
+const PLUG_HOME = 23.46;        // the plug's travel into the socket
+function cablePath(u){
+  const X = x => (43 + (x - 43) * (1 - u)).toFixed(3);
+  return 'M43 -60L43 .04L' + X(43.577) + ' 10.99C' + X(43.857) + ' 16.323 ' +
+    X(43.295) + ' 21.666 ' + X(41.912) + ' 26.824C' + X(39.674) +
+    ' 35.163 ' + X(39.599) + ' 43.935 ' + X(41.693) + ' 52.311L' +
+    X(42.058) + ' 53.771C' + X(42.684) + ' 56.273 ' + X(43) + ' 58.844 ' +
+    X(43) + ' 61.424L43 69.85';
+}
+
+let pa = {y: 0, u: 0, run: 0, loop: 0};
+
+function padArt(mode){
+  const box = $('#warn-art');
+  if (!box || !PAD_ART.plug) return;
+  paStop();
+  if (!box.firstChild){
+    box.innerHTML = '<svg viewBox="0 0 86 164">' +
+      '<defs><clipPath id="pa-socket"><rect x="-20" y="-80" width="126" ' +
+      'height="186"/></clipPath><clipPath id="pa-plugonly"><rect x="0" ' +
+      'y="69.75" width="86" height="60"/></clipPath></defs>' +
+      '<g class="pa-body">' + PAD_ART.body.map(d =>
+        '<path d="' + d + '"/>').join('') + '</g>' +
+      '<g clip-path="url(#pa-socket)"><g class="pa-twitch"><g class="pa-plug">' +
+      '<path class="pa-cable" d=""/>' +
+      '<path clip-path="url(#pa-plugonly)" d="' + PAD_ART.plug + '"/>' +
+      '</g></g></g><path class="pa-cross" d="' + PAD_ART.cross + '"/></svg>';
+  }
+  box.className = 'padart ' + (mode === 'lost' ? 'lost' : 'nocross');
+  paSet(0, 0);
+  if (mode === 'order') paLoop();
+}
+
+function paSet(y, u){
+  const plug = $('#warn-art .pa-plug'), cable = $('#warn-art .pa-cable');
+  if (!plug) return;
+  pa.y = y; pa.u = u;
+  plug.setAttribute('transform', 'translate(0 ' + y.toFixed(3) + ')');
+  cable.setAttribute('d', cablePath(u));
+}
+
+function paStop(){
+  pa.run += 1;
+  clearTimeout(pa.loop);
+}
+
+/* A cubic-bezier easing, as CSS writes one */
+function bezier(x1, y1, x2, y2){
+  const f = (a, b, t) => 3 * a * (1 - t) * (1 - t) * t +
+                         3 * b * (1 - t) * t * t + t * t * t;
+  return x => {
+    let lo = 0, hi = 1, t = x;
+    for (let i = 0; i < 24; i++){
+      t = (lo + hi) / 2;
+      if (f(x1, x2, t) < x) lo = t; else hi = t;
+    }
+    return f(y1, y2, t);
+  };
+}
+/* in: a slow reach, then a hard shove home; out: a tug, then eased away */
+const PLUG_IN = bezier(.72, 0, .12, 1), PLUG_OUT = bezier(.5, 0, .2, 1);
+
+function paTween(y, u, ms, ease, then){
+  const from = {y: pa.y, u: pa.u}, t0 = performance.now(), run = pa.run;
+  const step = () => {
+    if (run !== pa.run) return;
+    const p = Math.min(1, (performance.now() - t0) / ms), k = ease(p);
+    paSet(from.y + (y - from.y) * k, from.u + (u - from.u) * k);
+    if (p < 1) soon(step); else if (then) then();
+  };
+  soon(step);
+}
+
+/* Home: the cross goes, the cable straightens on its way down, and as it
+   lands the pad takes the knock and turns blue. Picked up from wherever
+   the twitch had the plug at that moment. */
+function paPlugIn(then){
+  const box = $('#warn-art');
+  if (!box || !box.firstChild) return;
+  const tw = box.querySelector('.pa-twitch');
+  let off = 0;
+  try{ off = new DOMMatrix(getComputedStyle(tw).transform).f; }catch(e){}
+  box.classList.remove('lost');
+  box.classList.add('nocross');
+  paSet(pa.y + off, pa.u);
+  paTween(PLUG_HOME, 1, 460, PLUG_IN, () => {
+    box.classList.add('on');
+    const body = box.querySelector('.pa-body');
+    body.classList.remove('hit');
+    void body.getBoundingClientRect();
+    body.classList.add('hit');
+    if (then) then();
+  });
+}
+
+function paPullOut(then){
+  const box = $('#warn-art');
+  if (!box) return;
+  box.classList.remove('on');
+  paTween(0, 0, 420, PLUG_OUT, then);
+}
+
+/* started after the game: the plug goes in and comes out again, a beat
+   apart, the pad blue while it is in */
+function paLoop(){
+  const run = pa.run;
+  const later = (ms, fn) => {
+    pa.loop = setTimeout(() => { if (run === pa.run) fn(); }, ms);
+  };
+  const cycle = () => later(700, () => paPlugIn(() =>
+    later(1100, () => paPullOut(() => cycle()))));
+  cycle();
 }
 
 /* ---------------- telemetry readouts ---------------- */
@@ -9701,9 +9947,37 @@ document.addEventListener('click', e => {
   if (link) gotoSetting(link.dataset.goto);
 });
 $('#warn-ok').addEventListener('click', () => {
+  const kind = $('#warn').dataset.kind;
+  /* Check connection: the loop looks every half second anyway; if the pad
+     is not there by the time the plug has tried once more, the card says
+     no and stays */
+  if (kind === 'pad'){
+    const box = $('#warn-art');
+    if (box){ box.classList.remove('lost'); void box.offsetWidth;
+              box.classList.add('lost'); }
+    setTimeout(() => {
+      const el = $('#warn');
+      if (el.dataset.kind !== 'pad') return;
+      el.classList.remove('nope'); void el.offsetWidth;
+      el.classList.add('nope');
+    }, 1100);
+    return;
+  }
+  if (kind === 'order') warnSeen = true;
+  noticeClose();
+});
+/* a notice can always be left: the empty space round it, or Escape */
+$('#warn').addEventListener('click', e => {
+  if (e.target !== $('#warn')) return;
   if ($('#warn').dataset.kind === 'pad') noPadSeen = true;
-  else warnSeen = true;
-  $('#warn').classList.add('off');
+  if ($('#warn').dataset.kind === 'order') warnSeen = true;
+  noticeClose();
+});
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || $('#warn').classList.contains('off')) return;
+  if ($('#warn').dataset.kind === 'pad') noPadSeen = true;
+  if ($('#warn').dataset.kind === 'order') warnSeen = true;
+  noticeClose();
 });
 
 /* the outgoing rows fade away before the incoming ones start arriving */
