@@ -2386,7 +2386,10 @@ def test_the_missing_controller_is_said_in_the_app_in_every_language():
                 == fa.BOOT_TR[lang]["errors"]["no_pad"][0]), lang
 
 
-def test_a_restart_that_worked_settles_started_after_the_game():
+def test_a_restart_that_worked_still_leaves_the_launch_notice():
+    """It used to settle the notice too, so the notice never showed at all:
+    the restart works nearly every time. It is quietly done, and the notice
+    still says what to do if the assist misbehaves all the same."""
     b = _heal_bridge()
     b.bad_order = True
     real_r, real_g, real_p = fa.restart_device, fa.game_running, fa.usb_port_of
@@ -2395,10 +2398,47 @@ def test_a_restart_that_worked_settles_started_after_the_game():
     fa.usb_port_of = lambda ident, depth=8: ("\\\\?\\hub", 1, "USB\\FLY")
     try:
         assert b._heal("the hiding had to be put right")
-        assert not b.bad_order
+        assert b.bad_order
     finally:
         fa.restart_device, fa.game_running = real_r, real_g
         fa.usb_port_of = real_p
+
+
+def test_entries_for_the_pad_left_by_an_earlier_copy_are_put_back_at_exit():
+    """Found 18.10.2026: the pad stayed hidden from everything after the
+    assist closed, replugged or not. Its entries were on HidHide's list
+    before the launch, so they were taken for somebody else's and left
+    there at every exit, with the cloak on."""
+    ghost = "HID\\VID_045E&PID_028E&IG_05\\9&3737c264&0&0000"  # other port
+    real = fa._device_ancestors
+    fa._device_ancestors = lambda path: REAL_CHAIN if path == MINE else []
+    try:
+        h = _hidhide(cloak_on=True, already=[MINE, ghost, THEIRS],
+                     present=[MINE])
+        h.engage()
+        assert MINE in h.hidden and ghost in h.hidden, h.hidden
+        assert THEIRS not in h.hidden, "another make is not ours"
+        h.calls.clear()
+        h.disengage()
+        assert ("--dev-unhide", MINE) in h.calls, h.calls
+        assert ("--dev-unhide", ghost) in h.calls, h.calls
+        assert ("--dev-unhide", THEIRS) not in h.calls, h.calls
+    finally:
+        fa._device_ancestors = real
+
+
+def test_a_pad_plugged_in_later_takes_its_old_entries_back_too():
+    real = fa._device_ancestors
+    fa._device_ancestors = lambda path: REAL_CHAIN if path == MINE else []
+    try:
+        h = _hidhide(already=[MINE], present=[])
+        h.engage()
+        assert MINE not in h.hidden
+        h._present_paths = lambda: {MINE}
+        h.sweep()
+        assert MINE in h.hidden
+    finally:
+        fa._device_ancestors = real
 
 
 def test_no_pad_is_worded_in_every_language():

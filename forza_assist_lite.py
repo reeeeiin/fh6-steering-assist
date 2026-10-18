@@ -3015,6 +3015,13 @@ def xinput_node_of(chain) -> str:
     return ""
 
 
+def hw_id(path) -> str:
+    """The make and model in a device path, "045E:028E", or "" - the same
+    pad whatever port it is in or which of its devices this is."""
+    m = re.search(r"VID_([0-9A-F]{4})&PID_([0-9A-F]{4})", path or "", re.I)
+    return (m.group(1) + ":" + m.group(2)).upper() if m else ""
+
+
 class HidHide:
     CLI_PATHS = [
         r"C:\Program Files\Nefarius Software Solutions\HidHide\x64\HidHideCLI.exe",
@@ -3141,6 +3148,11 @@ class HidHide:
             self._save_state()
             self._left = None           # taken over: ours to put back now
             self._present = self._present_paths()
+            hook = getattr(self, "on_event", None)
+            if hook:
+                hook("HidHide before us: %d hidden, cloak %s"
+                     % (len(self._prior_hidden),
+                        {True: "on", False: "off"}.get(self._prior_cloak, "?")))
             for path in self._present:
                 self._run("--dev-hide", path)
                 if path not in self._prior_hidden:
@@ -3148,6 +3160,7 @@ class HidHide:
                     self._ledger_add(path)
                 self._hide_xinput_of(path)
                 self._save_state()
+            self._adopt(self._present)
             self._run("--cloak-on")
             self.active = True
             # The loop's own shutdown does this too. This is for the exits
@@ -3433,6 +3446,7 @@ class HidHide:
                     fixed.append(node)
                     if hook:
                         hook("hid the XInput node of %s: %s" % (path, node))
+            self._adopt(present - self.allowed)
             if fixed:
                 self._save_state()
             # And what is hidden stays hidden: our entries still on the list,
@@ -3543,6 +3557,48 @@ class HidHide:
                 os.remove(self.ledger_file)
             except Exception:
                 pass
+
+    def _adopt(self, present):
+        """Entries already on HidHide's list for the pad we work through -
+        its XInput node, the devices under it, and the same make in another
+        port or mode - are ours to put back at the end.
+
+        Taken for somebody else's, they were left on the list at every exit;
+        with the cloak on - kept on by the same chain of copies - the pad
+        stayed hidden from everything after the assist had closed, and
+        replugging it did not help: the entry names the device, and a pad
+        of that make in another port or mode has an entry of its own (found
+        18.10.2026). Only pads we read through XInput: a pad another tool
+        hides because it stands in for it - a DualShock under DS4Windows -
+        has no XInput node of its own, and stays as that tool left it.
+        """
+        nodes = set(getattr(self, "xinput_nodes", None) or ())
+        if not nodes:
+            return set()
+        makes = {hw_id(n) for n in nodes} - {""}
+
+        def ours(path):
+            if path in nodes or (hw_id(path) and hw_id(path) in makes):
+                return True
+            if path not in present:
+                return False
+            try:
+                return xinput_node_of(_device_ancestors(path)) in nodes
+            except Exception:
+                return False
+        mine = {p for p in self._prior_hidden if ours(p)}
+        if not mine:
+            return set()
+        self._prior_hidden -= mine
+        self.hidden |= mine
+        for path in mine:
+            self._ledger_add(path)
+        self._save_state()
+        hook = getattr(self, "on_event", None)
+        if hook:
+            hook("taken back as ours, to put back at the end: %s"
+                 % ", ".join(sorted(mine)))
+        return mine
 
     def _hide_xinput_of(self, path):
         """Hide the XInput node above a HID path we have just hidden."""
@@ -3684,6 +3740,12 @@ class HidHide:
         self._drop_state()      # nothing left for a later launch to undo
         self.info = ("the pad is back, visible to everything again "
                      "(%d released)" % freed)
+        hook = getattr(self, "on_event", None)
+        if hook:
+            hook("handed the pad back: %d released, %d left as found, "
+                 "cloak %s" % (freed, len(self._prior_hidden),
+                               "off" if self._prior_cloak is False
+                               else "left on"))
         self.code = "released"
 
 class Bridge:
@@ -3996,11 +4058,6 @@ class Bridge:
             ok_all = ok_all and ok
             self._note("restarted %s: %s" % (dev, out if out else
                                              "ok" if ok else "failed"))
-        # the restart is what "started after the game" asks the player to
-        # do by hand - a pad plugged in later, into a game already running,
-        # gets it too
-        if ok_all:
-            self.bad_order = False
         return ok_all
 
     def stop(self):
@@ -4422,8 +4479,9 @@ class Bridge:
             # both, as unplugging it and plugging it in would.
             if (self.bad_order and self.cfg.get("auto_hide")
                     and self.hidhide.active):
-                if self._heal("started after the game"):
-                    self.bad_order = False
+                # The notice still shows: the restart is quietly done, and
+                # it says what to do if the assist misbehaves all the same.
+                self._heal("started after the game")
 
             # No pad yet is no reason to hold the window. The loop below
             # finds it the moment it appears, as it does one that dropped
