@@ -1766,6 +1766,77 @@ def test_hiding_that_came_undone_is_put_back():
         fa._device_ancestors = real
 
 
+VIGEM_HID = "HID" + chr(92) + "VID_045E&PID_028E&IG_02" + chr(92) + "3&31639e2f&0&0000"
+VIGEM_CHAIN = [
+    ("USB" + chr(92) + "VID_045E&PID_028E&IG_02" + chr(92) + "2&DEE0F28&0&02", "HIDClass"),
+    ("USB" + chr(92) + "VID_045E&PID_028E" + chr(92) + "01", "XnaComposite"),
+    ("ROOT" + chr(92) + "SYSTEM" + chr(92) + "0004", "System"),
+    ("HTREE" + chr(92) + "ROOT" + chr(92) + "0", ""),
+]
+
+
+def _own_pad_late(h, now_present):
+    """Our pad on XInput, the picture taken - and then its HID node."""
+    h.snapshot_allowed()
+    h._present_paths = lambda: set(now_present)
+    h.calls.clear()
+    return h.sweep()
+
+
+def test_our_own_pads_late_hid_node_is_not_taken_for_a_new_pad():
+    """Found 18.10.2026, started with no pad plugged in: ViGEm's HID node
+    for our pad came a moment after the picture of what is ours, and the
+    sweep hid it as a new device."""
+    real = fa._device_ancestors
+    fa._device_ancestors = lambda path: VIGEM_CHAIN if path == VIGEM_HID else []
+    try:
+        h = _hidhide(present=[])
+        h.engage()
+        _own_pad_late(h, [VIGEM_HID])
+        assert ("--dev-hide", VIGEM_HID) not in h.calls, h.calls
+        assert VIGEM_HID in h.allowed and VIGEM_HID not in h.hidden
+        # long after ours appeared, a new virtual pad is somebody else's
+        h2 = _hidhide(present=[])
+        h2.engage()
+        h2.snapshot_allowed()
+        h2._own_until = 0.0
+        h2._present_paths = lambda: {VIGEM_HID}
+        h2.sweep()
+        assert VIGEM_HID in h2.hidden
+    finally:
+        fa._device_ancestors = real
+
+
+def test_a_real_pad_plugged_in_early_is_still_hidden():
+    real = fa._device_ancestors
+    fa._device_ancestors = lambda path: REAL_CHAIN if path == MINE else []
+    try:
+        h = _hidhide(present=[])
+        h.engage()
+        _own_pad_late(h, [MINE])
+        assert ("--dev-hide", MINE) in h.calls, h.calls
+    finally:
+        fa._device_ancestors = real
+
+
+def test_the_hiding_status_follows_a_pad_plugged_in_later():
+    """Started with no pad it said "nothing hidden", and kept saying so after
+    one was plugged in and hidden."""
+    real = fa._device_ancestors
+    fa._device_ancestors = lambda path: REAL_CHAIN if path == MINE else []
+    try:
+        h = _hidhide(present=[])
+        h.engage()
+        assert h.code == "none"
+        _own_pad_late(h, [MINE])
+        assert h.code == "hidden" and h.arg == 1, (h.code, h.arg)
+        h._present_paths = lambda: set()        # and unplugged again
+        h.sweep()
+        assert h.code == "none" and h.arg == 0, (h.code, h.arg)
+    finally:
+        fa._device_ancestors = real
+
+
 def test_with_the_pad_gone_from_xinput_every_button_goes_through_ours():
     """The game can no longer read gears and camera from the player's pad,
     so ours carries them - without anyone having to find the switch."""

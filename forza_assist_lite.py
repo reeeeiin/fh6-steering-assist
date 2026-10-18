@@ -146,6 +146,12 @@ RUMBLE_FLOOR = 0.05
 # back - a loose cable, a reconnect in another mode - is looked at the moment
 # the XInput slots change, not on the next round.
 SWEEP_SEC = 5.0
+# Our own pad's devices are let through by taking a picture of what is
+# plugged in the moment it appears on XInput - but its HID node can follow
+# a second or two later. Started with no physical pad (18.10.2026) the
+# sweep found that node, took it for a new pad and hid it. A device on a
+# software bus that turns up this soon after ours is ours.
+OWN_SETTLE_S = 15.0
 HEAL_GAP = 30.0
 # A pad whose packet number has not moved for this long is taken to have
 # gone silent. Most pads only count a packet when something changes, so an
@@ -3307,10 +3313,23 @@ class HidHide:
     def snapshot_allowed(self):
         if not (self.cli and self.active):
             return
+        self._own_until = time.monotonic() + OWN_SETTLE_S
         try:
             self.allowed = self._present_paths() - self.hidden
         except Exception:
             pass
+
+    def _late_own_device(self, path) -> bool:
+        """A device of our own pad that appeared after the picture was
+        taken: on a software bus, as ViGEm is, and soon after our pad."""
+        if time.monotonic() >= getattr(self, "_own_until", 0.0):
+            return False
+        try:
+            chain = _device_ancestors(path)
+        except Exception:
+            return False
+        return any(ident.upper().startswith(("ROOT\\", "SWD\\"))
+                   for ident, _ in chain)
 
     COMPANION_PATTERNS = ("flydigi", "ds4windows", "8bitdo", "gamesir",
                           "rewasd", "dualsense", "xoutput", "x360ce",
@@ -3381,6 +3400,12 @@ class HidHide:
             self._present = present
             new = (present - self.hidden - self.allowed
                    - self._prior_hidden)
+            for path in sorted(new):
+                if self._late_own_device(path):
+                    self.allowed.add(path)
+                    new.discard(path)
+                    if hook:
+                        hook("our own pad's device, left visible: %s" % path)
             if new:
                 self.whitelist_companions()
                 for path in new:
@@ -3417,9 +3442,17 @@ class HidHide:
                 fixed.append("cloak")
                 if hook:
                     hook("HidHide's cloak was off - on again")
-            if self._pads_hidden() != self.arg:
-                self.arg = self._pads_hidden()
-                self.info = f"pad hidden from the game ({self.arg} devices)"
+            # The status follows the pads: started with none it said
+            # "nothing hidden", and went on saying so after one was plugged
+            # in and hidden.
+            total = self._pads_hidden()
+            if total != self.arg and self.code in ("hidden", "none"):
+                self.arg = total
+                self.code = "hidden" if total else "none"
+                self.info = (f"pad hidden from the game ({total} devices)"
+                             if total else "no controller plugged in to hide")
+            elif total != self.arg:
+                self.arg = total
         except Exception as e:
             # once per kind of failure, not every SWEEP_SEC: another
             # program holding HidHide open made the log one line every 5 s
