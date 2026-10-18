@@ -3833,6 +3833,29 @@ def test_every_language_has_a_flag_to_pick_it_by():
             assert lang in table, lang
 
 
+
+def test_no_language_is_left_with_english_words():
+    """German, French and Spanish had Dark, Light, Current version and a
+    dozen more left in English - a key added in English and never
+    translated. Only the game's own setting names stay as the game shows
+    them, and words that are spelt the same in that language."""
+    keep = {"auto_badge", "drift_drift", "drift_power", "nav_faq",
+            "setup_1", "setup_3", "setup_dataout", "setup_ip", "setup_nav2",
+            "setup_where", "sw_dataout"}
+    same = {"de": {"grp_sw", "pad_status", "version_sec"},
+            "fr": {"hh_disabled", "interface_sec", "version_sec", "w_angle"},
+            "es": {"general_sec", "grp_sw", "hh_disabled", "hh_error",
+                   "st_error"},
+            "pl": {"profile"}}
+    en = fa.TR["en"]
+    for lang, words in fa.TR.items():
+        if lang == "en":
+            continue
+        left = {k for k in en if words.get(k) == en[k]}
+        left -= keep | same.get(lang, set())
+        assert not left, (lang, sorted(left))
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
