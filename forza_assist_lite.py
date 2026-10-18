@@ -6034,8 +6034,13 @@ body.t-light{
 .hbtn.sup:hover{background:var(--warn);border-color:var(--warn);
                 color:#101010;box-shadow:0 3px 10px rgba(255,204,0,.25)}
 .hbtn.sup:hover{filter:brightness(1.08)}
-/* Discord: a square in the brand's own blurple, the mark in white */
-.hbtn.dsc{background:#5865F2;border-color:#5865F2;color:#FFFFFF}
+/* Discord: a square in the brand's own blurple, the mark in white. On a
+   layer of its own: drawn afresh at every step of the press spring, the
+   little mark snapped to a different pixel each time and jumped about a
+   pixel inside the square - measured, 1 px, against 0.05 px on a layer -
+   and sat a pixel high at rest at 125 %. */
+.hbtn.dsc{background:#5865F2;border-color:#5865F2;color:#FFFFFF;
+          will-change:scale}
 .tbar .hbtn.dsc{transition:background .2s ease,border-color .2s ease,
                 color .2s ease,box-shadow .2s ease !important}
 .hbtn.dsc:hover{background:#5865F2;border-color:#5865F2;color:#FFFFFF;
