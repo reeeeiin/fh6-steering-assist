@@ -3674,6 +3674,19 @@ def test_a_beta_says_so_in_the_header_chip_and_nowhere_else():
     assert "<span>v%s</span>" % fa.APP_VERSION in html     # the footer
 
 
+# ---------------- the Discord server ----------------
+
+def test_discord_is_one_click_away_in_the_header_and_in_about():
+    html = fa.build_html()
+    assert fa.DISCORD_URL.startswith("https://discord.gg/")
+    assert "__DISCORD__" not in html
+    assert ('class="hbtn sq dsc reveal" data-url="%s"' % fa.DISCORD_URL
+            in html)
+    assert 'const DISCORD = "%s";' % fa.DISCORD_URL in html
+    for lang, words in fa.LEGAL_TR.items():
+        assert words.get("discord"), lang
+
+
 # ---------------- tested on ----------------
 
 def test_the_makers_logos_follow_the_theme_and_keep_their_colours():

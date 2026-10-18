@@ -2328,6 +2328,7 @@ LEGAL = {
         ],
         "repo": ['Source on GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
+        "discord": 'Join our Discord',
     },
     "ru": {
         "how": [
@@ -2341,6 +2342,7 @@ LEGAL = {
         ],
         "repo": ['Исходный код на GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
+        "discord": 'Наш сервер в Discord',
     },
     "es": {
         "how": [
@@ -2354,6 +2356,7 @@ LEGAL = {
         ],
         "repo": ['Codigo en GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
+        "discord": 'Únete a nuestro Discord',
     },
     "fr": {
         "how": [
@@ -2367,6 +2370,7 @@ LEGAL = {
         ],
         "repo": ['Code source sur GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
+        "discord": 'Rejoignez notre Discord',
     },
     "de": {
         "how": [
@@ -2380,6 +2384,7 @@ LEGAL = {
         ],
         "repo": ['Quellcode auf GitHub',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
+        "discord": 'Tritt unserem Discord bei',
     },
     "ja": {
         "how": [
@@ -2393,6 +2398,7 @@ LEGAL = {
         ],
         "repo": ['GitHub のソースコード',
                  "https://github.com/reeeeiin/fh6-steering-assist"],
+        "discord": 'Discord に参加',
     },
 }
 
@@ -7149,7 +7155,9 @@ function screenAbout(){
        '<p class="ptitle">' + LG().about[0] + '</p>' +
        FOOT_LINES.map(x => '<p>' + x + '</p>').join('') +
        '<div class="bubs repo"><span class="bub" data-url="' +
-       LG().repo[1] + '">' + LG().repo[0] + '</span></div>' +
+       LG().repo[1] + '">' + LG().repo[0] + '</span>' +
+       '<span class="bub" data-url="' + DISCORD + '">' + LG().discord +
+       '</span></div>' +
        '</div></div></div>';
   h += prose('how_it_works', LG().how);
   /* the pads it has been driven with, each a link to its maker */
@@ -9152,6 +9160,7 @@ let bootPath = null, bootLen = 0, lastScreen = null;
 const LINE_GAP = 300;
 const THIRD = __THIRD__;
 const TESTED = __TESTED__;
+const DISCORD = "__DISCORD__";
 const ARROW_DL = __ICON_DL__;
 const LEGAL_TR = __LEGAL__;
 function LG(){ return LEGAL_TR[cfg && cfg.lang] || LEGAL_TR.en; }
