@@ -3765,14 +3765,14 @@ def test_every_steering_setting_is_explained_in_every_language():
     html = fa.build_html()
     assert "__INFO_ICON__" not in html
     assert "function infoOpen" in html and "infoIcon(key)" in html
-    # the glyph shows only after a second on the row
-    assert "visibility 0s linear 1s" in html
+    # the glyph shows only after half a second on the row
+    assert "visibility 0s linear .5s" in html
     for lang, words in fa.TR.items():
         if lang not in fa.BOOT_TR:
             continue
-        for s in fa.SLIDERS:
-            text = words.get(s[0] + "_info")
-            assert text and len(text) > 40, (lang, s[0])
+        for key in [s[0] for s in fa.SLIDERS] + ["car_detect"]:
+            text = words.get(key + "_info")
+            assert text and len(text) > 40, (lang, key)
 
 
 # ---------------- tested on ----------------

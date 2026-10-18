@@ -4809,6 +4809,7 @@ TR = {
         "order_text": 'If the assist wasn’t working properly,\ntry to unplug your controller\nand plug it back in, the game finds it\nagain without being restarted.',
         "nopad_title": 'Controller not found',
         "counter_gain_info": 'How hard the assist countersteers once the rear steps out. Higher catches a slide sooner and harder, up to full lock; lower leaves more of the slide to you. With Auto on, it is set for each car.',
+        "car_detect_info": 'Sets the assist strength for the car you are in and narrows the slider to the range that suits its kind – rear-wheel drive, all-wheel drive or Formula Drift. Where you leave it is kept for that kind of car. Switch it off to use the whole range.',
         "gyro_info": 'Calms the car’s rotation like a shock absorber: the faster the car starts to spin, the harder the assist leans against it. Higher keeps the car steadier and stops snap oversteer; lower leaves the slide livelier.',
         "steer_curve_info": 'Works only in a slide. Widens the middle of the stick, so small movements make finer corrections while you drift. Higher gives more precision around the centre; lower makes the stick more direct.',
         "reaction_info": 'How the assist treats your own corrections mid-slide. At 100 they pass through instantly; towards 0 the assist smooths twitchy micro-steering into a calmer line.',
@@ -4985,6 +4986,7 @@ TR = {
         "order_text": 'Если ассист работал некорректно, отключите геймпад и подключите снова — игра найдёт его заново без перезапуска.',
         "nopad_title": 'Геймпад не найден',
         "counter_gain_info": 'Насколько сильно ассист контрит, когда машину заносит. Выше — занос ловится раньше и жёстче, вплоть до полного выворота; ниже — больше заноса остаётся вам. С Auto значение подбирается под каждую машину.',
+        "car_detect_info": 'Подбирает силу ассиста под машину, в которой вы едете, и сужает ползунок до диапазона, подходящего её типу, — задний привод, полный привод или Formula Drift. Выбранное значение запоминается для этого типа машин. Выключите, чтобы пользоваться всей шкалой.',
         "gyro_info": 'Гасит вращение машины, как амортизатор: чем быстрее её начинает крутить, тем сильнее ассист ей противостоит. Выше — машина устойчивее и не срывается резко; ниже — занос живее.',
         "steer_curve_info": 'Работает только в заносе. Расширяет центр стика, чтобы мелкие движения давали более точные поправки в дрифте. Выше — точнее у центра, ниже — стик отзывчивее.',
         "reaction_info": 'Как ассист обращается с вашими поправками в заносе. На 100 они проходят мгновенно; ближе к 0 ассист сглаживает дёрганые микродвижения стиком.',
@@ -5161,6 +5163,7 @@ TR = {
         "order_text": 'Wenn die Assistenz nicht richtig funktioniert hat, zieh den Controller ab und steck ihn wieder ein – das Spiel findet ihn ohne Neustart wieder.',
         "nopad_title": 'Controller nicht gefunden',
         "counter_gain_info": 'Wie stark der Assist gegenlenkt, sobald das Heck ausbricht. Höher fängt einen Drift früher und kräftiger ab, bis zum vollen Einschlag; niedriger lässt dir mehr vom Drift. Mit Auto wird der Wert für jedes Auto gesetzt.',
+        "car_detect_info": 'Stellt die Assist-Stärke für das Auto ein, in dem du sitzt, und engt den Regler auf den passenden Bereich für seine Art ein – Heckantrieb, Allrad oder Formula Drift. Deine Einstellung wird für diese Art Auto gemerkt. Schalte es aus, um den ganzen Bereich zu nutzen.',
         "gyro_info": 'Dämpft die Drehung des Autos wie ein Stoßdämpfer: Je schneller es sich zu drehen beginnt, desto stärker hält der Assist dagegen. Höher hält das Auto ruhiger, niedriger lässt den Drift lebendiger.',
         "steer_curve_info": 'Wirkt nur im Drift. Verbreitert die Mitte des Sticks, damit kleine Bewegungen feinere Korrekturen ergeben. Höher ist präziser um die Mitte, niedriger direkter.',
         "reaction_info": 'Wie der Assist mit deinen eigenen Korrekturen im Drift umgeht. Bei 100 gehen sie sofort durch; Richtung 0 glättet der Assist hektisches Mikrolenken.',
@@ -5337,6 +5340,7 @@ TR = {
         "order_text": 'Si l’assistance ne fonctionnait pas correctement, débranchez la manette et rebranchez-la : le jeu la retrouve sans redémarrer.',
         "nopad_title": 'Manette introuvable',
         "counter_gain_info": 'La force du contre-braquage dès que l’arrière décroche. Plus haut, la glisse est rattrapée plus tôt et plus fort, jusqu’au braquage complet ; plus bas, elle vous est davantage laissée. Avec Auto, la valeur est réglée pour chaque voiture.',
+        "car_detect_info": 'Règle la force de l’assistance pour la voiture que vous conduisez et réduit le curseur à la plage adaptée à son type : propulsion, transmission intégrale ou Formula Drift. Votre réglage est gardé pour ce type de voiture. Désactivez-le pour utiliser toute la plage.',
         "gyro_info": 'Amortit la rotation de la voiture comme un amortisseur : plus elle commence à tourner vite, plus l’assistance s’y oppose. Plus haut, la voiture reste stable ; plus bas, la glisse est plus vive.',
         "steer_curve_info": 'Agit seulement en glisse. Élargit le centre du stick pour que les petits mouvements donnent des corrections plus fines. Plus haut, plus précis au centre ; plus bas, plus direct.',
         "reaction_info": 'Comment l’assistance traite vos propres corrections en glisse. À 100, elles passent aussitôt ; vers 0, l’assistance lisse les micro-corrections nerveuses.',
@@ -5513,6 +5517,7 @@ TR = {
         "order_text": 'Si la asistencia no funcionaba bien, desconecta el mando y vuelve a conectarlo: el juego lo encuentra de nuevo sin reiniciar.',
         "nopad_title": 'Mando no encontrado',
         "counter_gain_info": 'Cuánto contravolantea el asistente cuando la trasera se va. Más alto atrapa el derrape antes y con más fuerza, hasta el giro completo; más bajo te deja más del derrape a ti. Con Auto se ajusta para cada coche.',
+        "car_detect_info": 'Ajusta la fuerza del asistente al coche que llevas y limita el deslizador al rango adecuado para su tipo: tracción trasera, tracción total o Formula Drift. Tu ajuste se guarda para ese tipo de coche. Desactívalo para usar todo el rango.',
         "gyro_info": 'Amortigua el giro del coche como un amortiguador: cuanto más rápido empieza a girar, más se opone el asistente. Más alto mantiene el coche estable; más bajo deja el derrape más vivo.',
         "steer_curve_info": 'Solo actúa en derrape. Ensancha el centro del stick para que los movimientos pequeños den correcciones más finas. Más alto es más preciso en el centro; más bajo, más directo.',
         "reaction_info": 'Cómo trata el asistente tus propias correcciones en derrape. Con 100 pasan al instante; hacia 0 el asistente suaviza los micromovimientos bruscos.',
@@ -5696,6 +5701,7 @@ TR = {
         "order_text": 'アシストが正しく動作しなかった場合は、コントローラーを抜いて差し直してください。ゲームを再起動しなくても再認識されます。',
         "nopad_title": 'コントローラーが見つかりません',
         "counter_gain_info": 'リアが滑り出したときのカウンターの強さです。高いほど早く強く滑りを抑え（最大でフルロック）、低いほどドリフトをあなたに任せます。Auto では車ごとに自動設定されます。',
+        "car_detect_info": '乗っている車に合わせてアシストの強さを設定し、スライダーをその車種（後輪駆動、四輪駆動、Formula Drift）に合った範囲に絞ります。調整した値は車種ごとに保存されます。全範囲を使うにはオフにしてください。',
         "gyro_info": 'ショックアブソーバーのように車の回転を抑えます。回り始めが速いほど強く打ち消します。高いほど安定し、低いほどドリフトが活発になります。',
         "steer_curve_info": 'ドリフト中だけ働きます。スティックの中央付近を広げ、小さな操作でより細かく修正できるようにします。高いほど中央が精密に、低いほどダイレクトになります。',
         "reaction_info": 'ドリフト中のあなた自身の修正をどう扱うかを決めます。100 ではそのまま即座に反映し、0 に近いほど細かなブレをなめらかにします。',
@@ -6825,17 +6831,18 @@ body.t-light{
 /* The (i) beside a steering setting: there only once the pointer has
    stayed on the row for a second, blue under the pointer itself. */
 .rname.hasinfo{display:flex;align-items:center}
-.rinfo{position:relative;display:flex;flex:none;width:9px;height:9px;
+.rinfo{position:relative;display:flex;flex:none;width:11px;height:11px;
   margin-left:15px;color:color-mix(in srgb,#868686 55%,transparent);
   cursor:pointer;opacity:0;visibility:hidden;
   transition:opacity .2s ease,color .2s ease,visibility 0s linear .2s}
 .rinfo::after{content:"";position:absolute;inset:-6px}
-.rinfo svg{display:block;width:9px;height:9px}
+.rinfo svg{display:block;width:11px;height:11px}
 .hasauto .rinfo{margin-left:7px}
 .row:hover .rinfo{opacity:1;visibility:visible;
-  transition:opacity .3s ease 1s,color .2s ease,visibility 0s linear 1s}
+  transition:opacity .3s ease .5s,color .2s ease,visibility 0s linear .5s}
 .rinfo:hover{color:var(--accent)}
 #infomodal .warn-t{color:var(--accent)}
+#infomodal .warn-x{font-weight:400}
 .autob{display:inline-flex;flex:none;opacity:0;height:18px;
        transition:opacity .25s ease;pointer-events:none;
        box-sizing:border-box;padding:0 6px;border-radius:5px;
@@ -6844,6 +6851,8 @@ body.t-light{
        align-items:center;justify-content:center}
 .autob span{display:block;text-box:trim-both cap alphabetic}
 .row.auto .autob{opacity:1}
+/* off, it takes no room: the (i) after it would stand far from the name */
+.row:not(.auto) .autob{display:none}
 .row.locked .sl,.row.locked .rval{opacity:.4;transition:opacity .2s ease}
 /* Auto car adjust swaps the strength between two scales - the whole range
    and the car's ten points - so the slider and its number leave, change
@@ -7322,9 +7331,10 @@ function portRow(){
     'spellcheck="false" value="' + cfg.port + '"></div>';
 }
 
-function toggleRow(key, field){
+function toggleRow(key, field, info){
   return '<div class="row" data-hint="' + key + '_hint">' +
-    '<span class="rname">' + t(key) + '</span>' +
+    (info ? '<span class="rname hasinfo">' + t(key) + infoIcon(key)
+          : '<span class="rname">' + t(key)) + '</span>' +
     '<span class="tg" data-toggle="' + field + '"><i></i></span></div>';
 }
 
@@ -7518,7 +7528,7 @@ function screenSettings(){
           '<span class="rname">' + t('profile') + '</span>' +
           presetRow() + '</div>';
   SLIDERS.forEach(s => { h += sliderRow(s[0]); });
-  h += toggleRow('car_detect', 'car_detect');
+  h += toggleRow('car_detect', 'car_detect', true);
   h += '</div></div>';
 
   h += '<div class="reveal"><div class="sec">' + t('interface_sec') + '</div>' +
