@@ -3759,6 +3759,22 @@ def test_every_popup_lets_the_page_through():
         assert "var(--card) 75%,transparent" in rule, sel
 
 
+# ---------------- what each steering setting does ----------------
+
+def test_every_steering_setting_is_explained_in_every_language():
+    html = fa.build_html()
+    assert "__INFO_ICON__" not in html
+    assert "function infoOpen" in html and "infoIcon(key)" in html
+    # the glyph shows only after a second on the row
+    assert "visibility 0s linear 1s" in html
+    for lang, words in fa.TR.items():
+        if lang not in fa.BOOT_TR:
+            continue
+        for s in fa.SLIDERS:
+            text = words.get(s[0] + "_info")
+            assert text and len(text) > 40, (lang, s[0])
+
+
 # ---------------- tested on ----------------
 
 def test_the_makers_logos_follow_the_theme_and_keep_their_colours():

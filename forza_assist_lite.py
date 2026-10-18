@@ -4808,6 +4808,11 @@ TR = {
         "order_title": 'Started after the game',
         "order_text": 'If the assist wasn’t working properly,\ntry to unplug your controller\nand plug it back in, the game finds it\nagain without being restarted.',
         "nopad_title": 'Controller not found',
+        "counter_gain_info": 'How hard the assist countersteers once the rear steps out. Higher catches a slide sooner and harder, up to full lock; lower leaves more of the slide to you. With Auto on, it is set for each car.',
+        "gyro_info": 'Calms the car’s rotation like a shock absorber: the faster the car starts to spin, the harder the assist leans against it. Higher keeps the car steadier and stops snap oversteer; lower leaves the slide livelier.',
+        "steer_curve_info": 'Works only in a slide. Widens the middle of the stick, so small movements make finer corrections while you drift. Higher gives more precision around the centre; lower makes the stick more direct.',
+        "reaction_info": 'How the assist treats your own corrections mid-slide. At 100 they pass through instantly; towards 0 the assist smooths twitchy micro-steering into a calmer line.',
+        "min_speed_info": 'Below this speed the assist switches off completely, so donuts, parking and slow manoeuvres stay fully in your hands.',
         "nopad_text": 'Steering Assist can’t find a controller.\nConnect it to a PC or switch it On.',
         "nopad_btn": 'Check connection',
         "padok_title": 'Controller is connected',
@@ -4979,6 +4984,11 @@ TR = {
         "order_title": 'Запущен после игры',
         "order_text": 'Если ассист работал некорректно, отключите геймпад и подключите снова — игра найдёт его заново без перезапуска.',
         "nopad_title": 'Геймпад не найден',
+        "counter_gain_info": 'Насколько сильно ассист контрит, когда машину заносит. Выше — занос ловится раньше и жёстче, вплоть до полного выворота; ниже — больше заноса остаётся вам. С Auto значение подбирается под каждую машину.',
+        "gyro_info": 'Гасит вращение машины, как амортизатор: чем быстрее её начинает крутить, тем сильнее ассист ей противостоит. Выше — машина устойчивее и не срывается резко; ниже — занос живее.',
+        "steer_curve_info": 'Работает только в заносе. Расширяет центр стика, чтобы мелкие движения давали более точные поправки в дрифте. Выше — точнее у центра, ниже — стик отзывчивее.',
+        "reaction_info": 'Как ассист обращается с вашими поправками в заносе. На 100 они проходят мгновенно; ближе к 0 ассист сглаживает дёрганые микродвижения стиком.',
+        "min_speed_info": 'Ниже этой скорости ассист полностью отключается — пончики, парковка и медленные манёвры остаются целиком за вами.',
         "nopad_text": 'Steering Assist не находит геймпад. Подключите его к ПК или включите.',
         "nopad_btn": 'Проверить подключение',
         "padok_title": 'Геймпад подключён',
@@ -5150,6 +5160,11 @@ TR = {
         "order_title": 'Nach dem Spiel gestartet',
         "order_text": 'Wenn die Assistenz nicht richtig funktioniert hat, zieh den Controller ab und steck ihn wieder ein – das Spiel findet ihn ohne Neustart wieder.',
         "nopad_title": 'Controller nicht gefunden',
+        "counter_gain_info": 'Wie stark der Assist gegenlenkt, sobald das Heck ausbricht. Höher fängt einen Drift früher und kräftiger ab, bis zum vollen Einschlag; niedriger lässt dir mehr vom Drift. Mit Auto wird der Wert für jedes Auto gesetzt.',
+        "gyro_info": 'Dämpft die Drehung des Autos wie ein Stoßdämpfer: Je schneller es sich zu drehen beginnt, desto stärker hält der Assist dagegen. Höher hält das Auto ruhiger, niedriger lässt den Drift lebendiger.',
+        "steer_curve_info": 'Wirkt nur im Drift. Verbreitert die Mitte des Sticks, damit kleine Bewegungen feinere Korrekturen ergeben. Höher ist präziser um die Mitte, niedriger direkter.',
+        "reaction_info": 'Wie der Assist mit deinen eigenen Korrekturen im Drift umgeht. Bei 100 gehen sie sofort durch; Richtung 0 glättet der Assist hektisches Mikrolenken.',
+        "min_speed_info": 'Unter dieser Geschwindigkeit ist der Assist ganz aus – Donuts, Einparken und langsames Rangieren bleiben ganz bei dir.',
         "nopad_text": 'Steering Assist findet keinen Controller. Schließe ihn an den PC an oder schalte ihn ein.',
         "nopad_btn": 'Verbindung prüfen',
         "padok_title": 'Controller verbunden',
@@ -5321,6 +5336,11 @@ TR = {
         "order_title": 'Lance apres le jeu',
         "order_text": 'Si l’assistance ne fonctionnait pas correctement, débranchez la manette et rebranchez-la : le jeu la retrouve sans redémarrer.',
         "nopad_title": 'Manette introuvable',
+        "counter_gain_info": 'La force du contre-braquage dès que l’arrière décroche. Plus haut, la glisse est rattrapée plus tôt et plus fort, jusqu’au braquage complet ; plus bas, elle vous est davantage laissée. Avec Auto, la valeur est réglée pour chaque voiture.',
+        "gyro_info": 'Amortit la rotation de la voiture comme un amortisseur : plus elle commence à tourner vite, plus l’assistance s’y oppose. Plus haut, la voiture reste stable ; plus bas, la glisse est plus vive.',
+        "steer_curve_info": 'Agit seulement en glisse. Élargit le centre du stick pour que les petits mouvements donnent des corrections plus fines. Plus haut, plus précis au centre ; plus bas, plus direct.',
+        "reaction_info": 'Comment l’assistance traite vos propres corrections en glisse. À 100, elles passent aussitôt ; vers 0, l’assistance lisse les micro-corrections nerveuses.',
+        "min_speed_info": 'En dessous de cette vitesse, l’assistance se coupe complètement : donuts, créneaux et manœuvres lentes restent entièrement entre vos mains.',
         "nopad_text": 'Steering Assist ne trouve aucune manette. Branchez-la au PC ou allumez-la.',
         "nopad_btn": 'Vérifier la connexion',
         "padok_title": 'Manette connectée',
@@ -5492,6 +5512,11 @@ TR = {
         "order_title": 'Iniciado despues del juego',
         "order_text": 'Si la asistencia no funcionaba bien, desconecta el mando y vuelve a conectarlo: el juego lo encuentra de nuevo sin reiniciar.',
         "nopad_title": 'Mando no encontrado',
+        "counter_gain_info": 'Cuánto contravolantea el asistente cuando la trasera se va. Más alto atrapa el derrape antes y con más fuerza, hasta el giro completo; más bajo te deja más del derrape a ti. Con Auto se ajusta para cada coche.',
+        "gyro_info": 'Amortigua el giro del coche como un amortiguador: cuanto más rápido empieza a girar, más se opone el asistente. Más alto mantiene el coche estable; más bajo deja el derrape más vivo.',
+        "steer_curve_info": 'Solo actúa en derrape. Ensancha el centro del stick para que los movimientos pequeños den correcciones más finas. Más alto es más preciso en el centro; más bajo, más directo.',
+        "reaction_info": 'Cómo trata el asistente tus propias correcciones en derrape. Con 100 pasan al instante; hacia 0 el asistente suaviza los micromovimientos bruscos.',
+        "min_speed_info": 'Por debajo de esta velocidad el asistente se apaga del todo: donuts, aparcar y maniobras lentas quedan totalmente en tus manos.',
         "nopad_text": 'Steering Assist no encuentra ningún mando. Conéctalo al PC o enciéndelo.',
         "nopad_btn": 'Comprobar conexión',
         "padok_title": 'Mando conectado',
@@ -5670,6 +5695,11 @@ TR = {
         "order_title": 'ゲームより後に起動しました',
         "order_text": 'アシストが正しく動作しなかった場合は、コントローラーを抜いて差し直してください。ゲームを再起動しなくても再認識されます。',
         "nopad_title": 'コントローラーが見つかりません',
+        "counter_gain_info": 'リアが滑り出したときのカウンターの強さです。高いほど早く強く滑りを抑え（最大でフルロック）、低いほどドリフトをあなたに任せます。Auto では車ごとに自動設定されます。',
+        "gyro_info": 'ショックアブソーバーのように車の回転を抑えます。回り始めが速いほど強く打ち消します。高いほど安定し、低いほどドリフトが活発になります。',
+        "steer_curve_info": 'ドリフト中だけ働きます。スティックの中央付近を広げ、小さな操作でより細かく修正できるようにします。高いほど中央が精密に、低いほどダイレクトになります。',
+        "reaction_info": 'ドリフト中のあなた自身の修正をどう扱うかを決めます。100 ではそのまま即座に反映し、0 に近いほど細かなブレをなめらかにします。',
+        "min_speed_info": 'この速度より下ではアシストが完全にオフになります。ドーナツや駐車、低速での取り回しはすべてあなたの操作になります。',
         "nopad_text": 'Steering Assistがコントローラーを見つけられません。PCに接続するか、電源を入れてください。',
         "nopad_btn": '接続を確認',
         "padok_title": 'コントローラーが接続されました',
@@ -5918,6 +5948,10 @@ def build_html() -> str:
          for k in ("light", "dark")}))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
     html = html.replace("__DISCORD__", DISCORD_URL)
+    html = html.replace("__INFO_ICON__", json.dumps(
+        re.sub(r'\sfill-opacity="[^"]*"', "",
+               re.sub(r'fill="#[0-9A-Fa-f]{3,8}"', 'fill="currentColor"',
+                      _icon("info-icon")))))
     html = html.replace("__PAD_ART__", json.dumps(_pad_art()))
     # the mark is painted as the button's background, so it goes in whole
     html = html.replace("__DISCORD_MARK__", "data:image/svg+xml," +
@@ -6121,7 +6155,7 @@ body.t-light{
    global default above would put the arrow back over them. */
 [data-toggle] *,[data-slider] *,[data-scale] *,[data-seg] [data-key] *,
 :is(.hbtn,.updbtn,.upddl,.pbtn,.warn-b,.padd,.pchip,.pdel,.lbtn,.bub,
-    .bbtn,.bclose,.logo,.tlogo,.mk-x) *{cursor:inherit}
+    .bbtn,.bclose,.logo,.tlogo,.mk-x,.rinfo) *{cursor:inherit}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
 .hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
@@ -6788,6 +6822,20 @@ body.t-light{
 /* a row of its own inside the name, so the chip's height never moves
    the words off their line */
 .rname.hasauto{display:flex;align-items:center;gap:8px}
+/* The (i) beside a steering setting: there only once the pointer has
+   stayed on the row for a second, blue under the pointer itself. */
+.rname.hasinfo{display:flex;align-items:center}
+.rinfo{position:relative;display:flex;flex:none;width:9px;height:9px;
+  margin-left:15px;color:color-mix(in srgb,#868686 55%,transparent);
+  cursor:pointer;opacity:0;visibility:hidden;
+  transition:opacity .2s ease,color .2s ease,visibility 0s linear .2s}
+.rinfo::after{content:"";position:absolute;inset:-6px}
+.rinfo svg{display:block;width:9px;height:9px}
+.hasauto .rinfo{margin-left:7px}
+.row:hover .rinfo{opacity:1;visibility:visible;
+  transition:opacity .3s ease 1s,color .2s ease,visibility 0s linear 1s}
+.rinfo:hover{color:var(--accent)}
+#infomodal .warn-t{color:var(--accent)}
 .autob{display:inline-flex;flex:none;opacity:0;height:18px;
        transition:opacity .25s ease;pointer-events:none;
        box-sizing:border-box;padding:0 6px;border-radius:5px;
@@ -7106,6 +7154,16 @@ html[data-boot] .rz{display:none}
     </div>
   </div>
 
+  <div class="warn-wrap off" id="infomodal">
+    <div class="warn-card mk">
+      <div class="nc-words">
+        <div class="warn-t" id="info-title"></div>
+        <div class="warn-x" id="info-text"></div>
+      </div>
+      <div class="mk-row"><button class="warn-b" id="info-ok"></button></div>
+    </div>
+  </div>
+
   <div class="warn-wrap off" id="warn">
     <div class="warn-card mk nc">
       <div class="nc-words">
@@ -7236,12 +7294,21 @@ function segEl(id, items, active){
   return h + '</span>';
 }
 
+/* what a steering setting does, a click away: the glyph waits for the
+   pointer to settle on the row */
+const INFO_ICON = __INFO_ICON__;
+function infoIcon(key){
+  return '<i class="rinfo" data-info="' + key + '" title="' + esc(t(key)) +
+    '">' + INFO_ICON + '</i>';
+}
+
 function sliderRow(key){
   return '<div class="row" data-hint="' + key + '_hint">' +
     (key === 'counter_gain'
       ? '<span class="rname hasauto">' + t(key) +
-        '<span class="autob"><span>' + t('auto_badge') + '</span></span>'
-      : '<span class="rname">' + t(key)) + '</span>' +
+        '<span class="autob"><span>' + t('auto_badge') + '</span></span>' +
+        infoIcon(key)
+      : '<span class="rname hasinfo">' + t(key) + infoIcon(key)) + '</span>' +
     '<span class="sl" data-slider="' + key + '">' +
       '<i class="trk"></i>' +
       '<i class="fil"></i><i class="knb"></i></span>' +
@@ -10084,6 +10151,28 @@ $('#warn-ok').addEventListener('click', () => {
   if (kind === 'order') warnSeen = true;
   noticeClose();
 });
+/* the setting explained */
+function infoOpen(key){
+  $('#info-title').textContent = t(key);
+  $('#info-text').textContent = t(key + '_info');
+  $('#info-ok').textContent = t('order_btn');
+  $('#infomodal').classList.remove('off');
+}
+function infoClose(){ $('#infomodal').classList.add('off'); }
+document.addEventListener('click', e => {
+  const i = e.target.closest && e.target.closest('.rinfo');
+  if (!i) return;
+  e.stopPropagation();
+  infoOpen(i.dataset.info);
+}, true);
+$('#info-ok').addEventListener('click', infoClose);
+$('#infomodal').addEventListener('click', e => {
+  if (e.target === $('#infomodal')) infoClose();
+});
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') infoClose();
+});
+
 /* a notice can always be left: the empty space round it, or Escape */
 $('#warn').addEventListener('click', e => {
   if (e.target !== $('#warn')) return;
