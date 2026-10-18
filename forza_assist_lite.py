@@ -5816,6 +5816,11 @@ def build_html() -> str:
          for k in ("light", "dark")}))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
     html = html.replace("__DISCORD__", DISCORD_URL)
+    # the mark is painted as the button's background, so it goes in whole
+    html = html.replace("__DISCORD_MARK__", "data:image/svg+xml," +
+                        urllib.parse.quote(
+                            (_read_asset(os.path.join("icons", "discord.svg"))
+                             or "").strip(), safe=""))
     html = html.replace("__TESTED__", json.dumps(
         [{"name": n, "url": u, "svg": _brand_logo(k)}
          for k, n, u in TESTED_ON]))
@@ -6034,17 +6039,20 @@ body.t-light{
 .hbtn.sup:hover{background:var(--warn);border-color:var(--warn);
                 color:#101010;box-shadow:0 3px 10px rgba(255,204,0,.25)}
 .hbtn.sup:hover{filter:brightness(1.08)}
-/* Discord: a square in the brand's own blurple, the mark in white. On a
-   layer of its own: drawn afresh at every step of the press spring, the
-   little mark snapped to a different pixel each time and jumped about a
-   pixel inside the square - measured, 1 px, against 0.05 px on a layer -
-   and sat a pixel high at rest at 125 %. */
-.hbtn.dsc{background:#5865F2;border-color:#5865F2;color:#FFFFFF;
-          will-change:scale}
+/* Discord: a square in the brand's own blurple, the mark in white - drawn
+   as the button's own background, over the whole square, the mark centred
+   inside the picture. As an icon element in the middle it was put on a
+   pixel of its own, apart from the square around it: off centre by about
+   a pixel at most display scales, and jumping as the press spring scaled
+   it. A layer of its own stopped the jump but moved the whole button down
+   out of line in the window. Painted with the square, it stays within a
+   tenth of a pixel of centre at 100-200 % and keeps still. */
+.hbtn.dsc,.hbtn.dsc:hover{border-color:#5865F2;color:#FFFFFF;
+  background:url("__DISCORD_MARK__") center / 100% 100% no-repeat
+             border-box, #5865F2}
 .tbar .hbtn.dsc{transition:background .2s ease,border-color .2s ease,
                 color .2s ease,box-shadow .2s ease !important}
-.hbtn.dsc:hover{background:#5865F2;border-color:#5865F2;color:#FFFFFF;
-                box-shadow:0 3px 10px rgba(88,101,242,.3);
+.hbtn.dsc:hover{box-shadow:0 3px 10px rgba(88,101,242,.3);
                 filter:brightness(1.08)}
 .hbtn.close:hover{background:var(--danger-bg);border-color:var(--danger);
                   color:var(--danger)}
@@ -6052,7 +6060,6 @@ body.t-light{
 .hbtn.tab svg{width:10px;height:8px}
 .hbtn.sq svg{width:10px;height:10px}
 .hbtn.sq[data-win=min] svg{width:10px;height:2px}
-.hbtn.dsc svg{width:11px;height:8.55px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none;margin-right:3px}
 .logo svg{display:block;width:92px;height:17px}
 
@@ -6863,7 +6870,7 @@ html[data-boot] .rz{display:none}
       <span class="vbadge__VBETA__ reveal">v__VERSHORT__</span>
     </div>
     <div class="tabs">
-      <span class="hbtn sq dsc reveal" data-url="__DISCORD__" title="Discord"><!--ICON:discord--></span>
+      <span class="hbtn sq dsc reveal" data-url="__DISCORD__" title="Discord"></span>
       <span class="hbtn tab sup reveal" data-url="https://boosty.to/reeeeiin" data-tr="nav_support">Support</span>
       <span class="hbtn tab reveal" data-nav="settings"><!--ICON:settings--><i data-tr="nav_settings">Settings</i></span>
       <span class="hbtn tab reveal" data-nav="faq" data-tr="nav_faq">FAQ</span>

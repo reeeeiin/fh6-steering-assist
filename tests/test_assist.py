@@ -3683,6 +3683,9 @@ def test_discord_is_one_click_away_in_the_header_and_in_about():
     assert ('class="hbtn sq dsc reveal" data-url="%s"' % fa.DISCORD_URL
             in html)
     assert 'const DISCORD = "%s";' % fa.DISCORD_URL in html
+    # the mark is the button's own background, so it stays in its square
+    assert "__DISCORD_MARK__" not in html
+    assert 'url("data:image/svg+xml,%3Csvg' in html
     for lang, words in fa.LEGAL.items():
         assert words.get("discord"), lang
 
