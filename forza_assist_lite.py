@@ -5727,6 +5727,9 @@ def _icon(name: str, sized: bool = False) -> str:
 # maker's site. The logos are drawn in white with the brand's colours on
 # the mark; the page draws them in the text colour of the theme and lets
 # the brand colours in under the pointer.
+# The community's Discord server, behind the button in the header.
+DISCORD_URL = "https://discord.gg/UvNVYbNp55"
+
 TESTED_ON = (("flydigi", "Flydigi", "https://shops.flydigi.com/"),
              ("gamesir", "GameSir", "https://gamesir.com/"),
              ("microsoft", "Xbox", "https://www.xbox.com/"))
@@ -5806,6 +5809,7 @@ def build_html() -> str:
                                              'stroke="currentColor"')
          for k in ("light", "dark")}))
     html = html.replace("__THIRD__", json.dumps(THIRD_PARTY))
+    html = html.replace("__DISCORD__", DISCORD_URL)
     html = html.replace("__TESTED__", json.dumps(
         [{"name": n, "url": u, "svg": _brand_logo(k)}
          for k, n, u in TESTED_ON]))
@@ -6024,12 +6028,20 @@ body.t-light{
 .hbtn.sup:hover{background:var(--warn);border-color:var(--warn);
                 color:#101010;box-shadow:0 3px 10px rgba(255,204,0,.25)}
 .hbtn.sup:hover{filter:brightness(1.08)}
+/* Discord: a square in the brand's own blurple, the mark in white */
+.hbtn.dsc{background:#5865F2;border-color:#5865F2;color:#FFFFFF}
+.tbar .hbtn.dsc{transition:background .2s ease,border-color .2s ease,
+                color .2s ease,box-shadow .2s ease !important}
+.hbtn.dsc:hover{background:#5865F2;border-color:#5865F2;color:#FFFFFF;
+                box-shadow:0 3px 10px rgba(88,101,242,.3);
+                filter:brightness(1.08)}
 .hbtn.close:hover{background:var(--danger-bg);border-color:var(--danger);
                   color:var(--danger)}
 .hbtn svg{display:block;flex:none}
 .hbtn.tab svg{width:10px;height:8px}
 .hbtn.sq svg{width:10px;height:10px}
 .hbtn.sq[data-win=min] svg{width:10px;height:2px}
+.hbtn.dsc svg{width:11px;height:8.55px}
 .logo{display:flex;align-items:center;color:var(--logo-fg);flex:none;margin-right:3px}
 .logo svg{display:block;width:92px;height:17px}
 
@@ -6840,6 +6852,7 @@ html[data-boot] .rz{display:none}
       <span class="vbadge__VBETA__ reveal">v__VERSHORT__</span>
     </div>
     <div class="tabs">
+      <span class="hbtn sq dsc reveal" data-url="__DISCORD__" title="Discord"><!--ICON:discord--></span>
       <span class="hbtn tab sup reveal" data-url="https://boosty.to/reeeeiin" data-tr="nav_support">Support</span>
       <span class="hbtn tab reveal" data-nav="settings"><!--ICON:settings--><i data-tr="nav_settings">Settings</i></span>
       <span class="hbtn tab reveal" data-nav="faq" data-tr="nav_faq">FAQ</span>
