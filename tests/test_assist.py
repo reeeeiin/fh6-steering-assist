@@ -2444,7 +2444,7 @@ def test_a_pad_plugged_in_later_takes_its_old_entries_back_too():
 def test_no_pad_is_worded_in_every_language():
     with open(fa.__file__, encoding="utf-8") as f:
         src = f.read()
-    assert src.count("'no_pad': [") == 6, src.count("'no_pad': [")
+    assert src.count("'no_pad': [") == len(fa.BOOT_TR), src.count("'no_pad': [")
 
 
 def test_our_own_slot_is_found_by_looking_not_by_waiting():
@@ -3121,7 +3121,7 @@ def test_the_launch_notice_says_what_to_do_about_it():
         assert len(text) > 30, (lang, text)       # Japanese is short
         assert any(w in text.lower() for w in
                    ("plug", "подключ", "steck", "branchez",
-                    "conectarlo", "差し直")), (lang, text)
+                    "conectarlo", "差し直", "插", "podłącz")), (lang, text)
 
 
 # ---------------- drift watch, rev counter, odometer ----------------
@@ -3772,7 +3772,7 @@ def test_every_steering_setting_is_explained_in_every_language():
             continue
         for key in [s[0] for s in fa.SLIDERS] + ["car_detect"]:
             text = words.get(key + "_info")
-            assert text and len(text) > 40, (lang, key)
+            assert text and len(text) > 30, (lang, key)   # Chinese is short
 
 
 # ---------------- tested on ----------------
@@ -3817,6 +3817,20 @@ def test_the_page_carries_a_flag_for_every_language():
         assert lang in fa.LANG_FLAGS, lang
     assert html.count("data:image/png;base64,") >= len(fa.LANG_FLAGS)
     assert "__FLAGS__" not in html and "__THICON__" not in html
+
+
+
+def test_every_language_has_a_flag_to_pick_it_by():
+    """Chinese and Polish came with every word translated and no button to
+    choose them: the flags have a list of their own."""
+    import re
+    html = fa.build_html()
+    order = re.search(r"const FLAG_ORDER = \[([^\]]*)\]", html).group(1)
+    for lang in fa.LANG_ORDER:
+        assert "'%s'" % lang in order, lang
+        assert lang in fa.LANG_FLAGS and fa._png_uri(fa.LANG_FLAGS[lang]), lang
+        for table in (fa.TR, fa.BOOT_TR, fa.FAQ_ITEMS, fa.LEGAL):
+            assert lang in table, lang
 
 
 def main():
