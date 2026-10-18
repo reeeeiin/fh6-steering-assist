@@ -3753,7 +3753,7 @@ def test_the_notice_controller_comes_in_pieces_from_the_drawing():
 
 def test_every_popup_lets_the_page_through():
     html = fa.build_html()
-    for sel in (".warn-card{", ".tpop{", ".bmbox{"):
+    for sel in (".warn-card{", ".tpop{", ".warn-card.mk,.bmbox.mk{"):
         rule = html[html.index(sel):]
         rule = rule[:rule.index("}")]
         assert "var(--card) 75%,transparent" in rule, sel

@@ -1584,7 +1584,7 @@ BOOT_TR = {
                  "hint": "Don't forget to support if you enjoyed the app"},
         "pendTitle": 'One more step', "btnRestart": 'Restart now',
         "rsTitle": 'Restarting',
-        "rsText": 'Windows is restarting to finish the driver setup. Steering Assist opens again by itself once you are back.',
+        "rsText": 'Windows needs a restart to finish\nthe driver setup. Steering Assist™ opens\nagain by itself after the reboot.',
         "rsCancel": 'Cancel',
         "rsLater": 'Later',
         "rsNow": 'Restart now',
@@ -1645,7 +1645,7 @@ BOOT_TR = {
                  "hint": 'Если приложение понравилось, поддержите проект'},
         "pendTitle": 'Остался один шаг', "btnRestart": 'Перезагрузить',
         "rsTitle": 'Перезагрузка',
-        "rsText": 'Windows перезагружается, чтобы завершить установку драйверов. Steering Assist откроется сам, когда вы вернётесь.',
+        "rsText": 'Windows нужно перезагрузить, чтобы завершить установку драйверов. Steering Assist™ откроется сам после перезагрузки.',
         "rsCancel": 'Отменить',
         "rsLater": 'Позже',
         "rsNow": 'Перезагрузить',
@@ -1706,7 +1706,7 @@ BOOT_TR = {
                  "hint": 'Si te gusta la app, no olvides apoyarla'},
         "pendTitle": 'Queda un paso', "btnRestart": 'Reiniciar ahora',
         "rsTitle": 'Reiniciando',
-        "rsText": 'Windows se reinicia para terminar la instalacion de los controladores. Steering Assist se abre solo al volver.',
+        "rsText": 'Windows necesita reiniciarse para terminar la instalación de los controladores. Steering Assist™ se abrirá solo tras el reinicio.',
         "rsCancel": 'Cancelar',
         "rsLater": 'Mas tarde',
         "rsNow": 'Reiniciar',
@@ -1767,7 +1767,7 @@ BOOT_TR = {
                  "hint": "Si l'app vous plait, pensez a la soutenir"},
         "pendTitle": 'Encore une etape', "btnRestart": 'Redemarrer',
         "rsTitle": 'Redemarrage',
-        "rsText": 'Windows redemarre pour terminer l’installation des pilotes. Steering Assist se rouvre tout seul a votre retour.',
+        "rsText": 'Windows doit redémarrer pour terminer l’installation des pilotes. Steering Assist™ se rouvrira tout seul après le redémarrage.',
         "rsCancel": 'Annuler',
         "rsLater": 'Plus tard',
         "rsNow": 'Redemarrer',
@@ -1828,7 +1828,7 @@ BOOT_TR = {
                  "hint": 'Wenn dir die App gefaellt, unterstuetze sie gern'},
         "pendTitle": 'Noch ein Schritt', "btnRestart": 'Jetzt neu starten',
         "rsTitle": 'Neustart',
-        "rsText": 'Windows startet neu, um die Treiberinstallation abzuschliessen. Steering Assist offnet sich danach von selbst.',
+        "rsText": 'Windows muss neu starten, um die Treiberinstallation abzuschließen. Steering Assist™ öffnet sich danach von selbst.',
         "rsCancel": 'Abbrechen',
         "rsLater": 'Spater',
         "rsNow": 'Jetzt neu starten',
@@ -1889,7 +1889,7 @@ BOOT_TR = {
                  "hint": 'アプリが気に入ったら応援をお願いします'},
         "pendTitle": 'あと一歩です', "btnRestart": '今すぐ再起動',
         "rsTitle": '再起動します',
-        "rsText": 'ドライバーのインストールを完了するために Windows を再起動します。戻ってくると Steering Assist は自動で開きます。',
+        "rsText": 'ドライバーのセットアップを完了するには Windows の再起動が必要です。再起動後、Steering Assist™ は自動で開きます。',
         "rsCancel": 'キャンセル',
         "rsLater": 'あとで',
         "rsNow": '今すぐ再起動',
@@ -4784,24 +4784,27 @@ TR = {
         "wipe_row": 'Remove all components and app data',
         "wipe_btn": 'Remove',
         "wipe_hint": 'Uninstalls both drivers, clears what was added to HidHide and deletes your settings. Nothing of this app is left on the machine. Windows wants a restart afterwards',
-        "wipe_ask": 'Remove everything?',
-        "wipe_ask_text": 'The two drivers, everything added to HidHide, and your settings and presets. This cannot be undone.',
-        "wipe_busy": 'Removing...',
-        "wipe_busy_text": 'This can take a moment. Do not close the window.',
+        "wipe_ask": 'Uninstall app',
+        "wipe_ask_text": 'This action will remove all files and drivers\nassigned to Steering Assist™.\nThis action cannot be undone.',
+        "wipe_busy": 'Uninstalling',
+        "wipe_busy_text": 'This can take a moment. Do not close this window.',
+        "wipe_bar": 'Removing elements',
         "wipe_fail": 'Could not remove everything',
         "btn_close": 'Close',
-        "wipe_done": 'Settings and HidHide entries are gone. The drivers come out as the app closes, and Windows needs a restart to finish.',
-        "wipe_ok": 'Removed',
+        "wipe_done": 'All settings and other entries are gone.\nThe drivers come out as the app closes.\nYour system needs to be restarted.',
+        "wipe_ok": 'App components have been removed',
+        "restarting": 'Restarting',
         "btn_restart_now": 'Restart now',
         "btn_later": 'Later',
         "btn_cancel": 'Cancel',
         "btn_save": "Save",
         "btn_delete": "Delete",
         "preset_new": 'New preset',
-        "preset_new_text": 'Saves what is on the sliders right now.',
+        "preset_new_text": 'Choose a name for the new preset.\nCurrent settings will be saved into it.',
         "preset_name": 'Preset name',
-        "preset_del": 'Delete preset?',
-        "preset_del_text": '“{name}” will be removed.',
+        "preset_del": 'Delete preset',
+        "preset_del_text": 'Preset “{name}” will be permanently\nremoved. This action cannot be undone.',
+        "preset_del_btn": 'Delete Preset',
         "order_title": 'Started after the game',
         "order_text": 'If the assist wasn’t working properly,\ntry to unplug your controller\nand plug it back in, the game finds it\nagain without being restarted.',
         "nopad_title": 'Controller not found',
@@ -4952,24 +4955,27 @@ TR = {
         "wipe_row": 'Удалить все компоненты и данные приложения',
         "wipe_btn": 'Удалить',
         "wipe_hint": 'Удаляет оба драйвера, чистит записи в HidHide и стирает настройки. От приложения на машине не остаётся ничего. После этого Windows потребует перезагрузку',
-        "wipe_ask": 'Удалить всё?',
-        "wipe_ask_text": 'Два драйвера, все записи в HidHide, настройки и пресеты. Отменить это будет нельзя.',
-        "wipe_busy": 'Удаляем...',
+        "wipe_ask": 'Удалить приложение',
+        "wipe_ask_text": 'Будут удалены все файлы и драйверы Steering Assist™. Это действие нельзя отменить.',
+        "wipe_busy": 'Удаление',
         "wipe_busy_text": 'Это займёт немного времени. Не закрывайте окно.',
+        "wipe_bar": 'Удаляем компоненты',
         "wipe_fail": 'Удалить всё не получилось',
         "btn_close": 'Закрыть',
-        "wipe_done": 'Настройки и записи в HidHide удалены. Драйверы снимутся при закрытии приложения, после чего Windows нужно перезагрузить.',
-        "wipe_ok": 'Удалено',
+        "wipe_done": 'Все настройки и записи удалены. Драйверы снимутся при закрытии приложения. Систему нужно перезагрузить.',
+        "wipe_ok": 'Компоненты приложения удалены',
+        "restarting": 'Перезагрузка',
         "btn_restart_now": 'Перезагрузить',
         "btn_later": 'Позже',
         "btn_cancel": 'Отмена',
         "btn_save": "Сохранить",
         "btn_delete": "Удалить",
         "preset_new": 'Новый пресет',
-        "preset_new_text": 'Сохранит то, что сейчас стоит на ползунках.',
+        "preset_new_text": 'Выберите название для нового пресета. Текущие настройки сохранятся в нём.',
         "preset_name": 'Название пресета',
-        "preset_del": 'Удалить пресет?',
-        "preset_del_text": '«{name}» будет удалён.',
+        "preset_del": 'Удалить пресет',
+        "preset_del_text": 'Пресет «{name}» будет удалён навсегда. Это действие нельзя отменить.',
+        "preset_del_btn": 'Удалить пресет',
         "order_title": 'Запущен после игры',
         "order_text": 'Если ассист работал некорректно, отключите геймпад и подключите снова — игра найдёт его заново без перезапуска.',
         "nopad_title": 'Геймпад не найден',
@@ -5120,24 +5126,27 @@ TR = {
         "wipe_row": 'Alle Komponenten und App-Daten entfernen',
         "wipe_btn": 'Entfernen',
         "wipe_hint": 'Entfernt beide Treiber, raumt die Eintrage in HidHide auf und loscht die Einstellungen. Es bleibt nichts zuruck. Windows will danach einen Neustart',
-        "wipe_ask": 'Alles entfernen?',
-        "wipe_ask_text": 'Beide Treiber, alles in HidHide Eingetragene, die Einstellungen und Vorgaben. Das lasst sich nicht ruckgangig machen.',
-        "wipe_busy": 'Wird entfernt...',
-        "wipe_busy_text": 'Das dauert einen Moment. Fenster offen lassen.',
+        "wipe_ask": 'App deinstallieren',
+        "wipe_ask_text": 'Alle Dateien und Treiber von Steering Assist™ werden entfernt. Das lässt sich nicht rückgängig machen.',
+        "wipe_busy": 'Deinstallation',
+        "wipe_busy_text": 'Das dauert einen Moment. Fenster nicht schließen.',
+        "wipe_bar": 'Komponenten werden entfernt',
         "wipe_fail": 'Es konnte nicht alles entfernt werden',
         "btn_close": 'Schliessen',
-        "wipe_done": 'Einstellungen und HidHide-Eintrage sind weg. Die Treiber gehen beim Schliessen, danach braucht Windows einen Neustart.',
-        "wipe_ok": 'Entfernt',
+        "wipe_done": 'Alle Einstellungen und Einträge sind entfernt. Die Treiber gehen beim Schließen der App. Das System muss neu gestartet werden.',
+        "wipe_ok": 'App-Komponenten wurden entfernt',
+        "restarting": 'Neustart',
         "btn_restart_now": 'Jetzt neu starten',
         "btn_later": 'Spater',
         "btn_cancel": 'Abbrechen',
         "btn_save": "Sichern",
         "btn_delete": "Löschen",
         "preset_new": 'Neue Vorgabe',
-        "preset_new_text": 'Sichert, was gerade auf den Reglern steht.',
+        "preset_new_text": 'Wähle einen Namen für die neue Vorgabe. Die aktuellen Einstellungen werden darin gespeichert.',
         "preset_name": 'Name der Vorgabe',
-        "preset_del": 'Vorgabe löschen?',
-        "preset_del_text": '„{name}“ wird gelöscht.',
+        "preset_del": 'Vorgabe löschen',
+        "preset_del_text": 'Die Vorgabe „{name}“ wird endgültig gelöscht. Das lässt sich nicht rückgängig machen.',
+        "preset_del_btn": 'Vorgabe löschen',
         "order_title": 'Nach dem Spiel gestartet',
         "order_text": 'Wenn die Assistenz nicht richtig funktioniert hat, zieh den Controller ab und steck ihn wieder ein – das Spiel findet ihn ohne Neustart wieder.',
         "nopad_title": 'Controller nicht gefunden',
@@ -5288,24 +5297,27 @@ TR = {
         "wipe_row": 'Supprimer tous les composants et les donnees',
         "wipe_btn": 'Supprimer',
         "wipe_hint": 'Desinstalle les deux pilotes, nettoie ce qui a ete ajoute a HidHide et efface les reglages. Rien ne reste sur la machine. Windows demande ensuite un redemarrage',
-        "wipe_ask": 'Tout supprimer ?',
-        "wipe_ask_text": 'Les deux pilotes, tout ce qui a ete ajoute a HidHide, les reglages et les prereglages. C’est definitif.',
-        "wipe_busy": 'Suppression...',
-        "wipe_busy_text": 'Cela prend un moment. Ne fermez pas la fenetre.',
+        "wipe_ask": 'Désinstaller l’application',
+        "wipe_ask_text": 'Tous les fichiers et pilotes de Steering Assist™ seront supprimés. Cette action est irréversible.',
+        "wipe_busy": 'Désinstallation',
+        "wipe_busy_text": 'Cela peut prendre un moment. Ne fermez pas cette fenêtre.',
+        "wipe_bar": 'Suppression des éléments',
         "wipe_fail": 'Tout n a pas pu etre supprime',
         "btn_close": 'Fermer',
-        "wipe_done": 'Reglages et entrees HidHide effaces. Les pilotes partent a la fermeture, puis Windows doit redemarrer.',
-        "wipe_ok": 'Supprime',
+        "wipe_done": 'Tous les réglages et autres entrées sont effacés. Les pilotes partent à la fermeture de l’application. Le système doit redémarrer.',
+        "wipe_ok": 'Les composants ont été supprimés',
+        "restarting": 'Redémarrage',
         "btn_restart_now": 'Redemarrer',
         "btn_later": 'Plus tard',
         "btn_cancel": 'Annuler',
         "btn_save": "Enregistrer",
         "btn_delete": "Supprimer",
         "preset_new": 'Nouveau préréglage',
-        "preset_new_text": 'Enregistre ce qui est sur les curseurs en ce moment.',
+        "preset_new_text": 'Choisissez un nom pour le nouveau préréglage. Les réglages actuels y seront enregistrés.',
         "preset_name": 'Nom du préréglage',
-        "preset_del": 'Supprimer le préréglage ?',
-        "preset_del_text": '« {name} » sera supprimé.',
+        "preset_del": 'Supprimer le préréglage',
+        "preset_del_text": 'Le préréglage « {name} » sera définitivement supprimé. Cette action est irréversible.',
+        "preset_del_btn": 'Supprimer',
         "order_title": 'Lance apres le jeu',
         "order_text": 'Si l’assistance ne fonctionnait pas correctement, débranchez la manette et rebranchez-la : le jeu la retrouve sans redémarrer.',
         "nopad_title": 'Manette introuvable',
@@ -5456,24 +5468,27 @@ TR = {
         "wipe_row": 'Eliminar todos los componentes y los datos',
         "wipe_btn": 'Eliminar',
         "wipe_hint": 'Desinstala los dos controladores, limpia lo anadido a HidHide y borra los ajustes. No queda nada en el equipo. Windows pedira reiniciar despues',
-        "wipe_ask": 'Eliminar todo?',
-        "wipe_ask_text": 'Los dos controladores, todo lo anadido a HidHide, los ajustes y los preajustes. No se puede deshacer.',
-        "wipe_busy": 'Eliminando...',
-        "wipe_busy_text": 'Tardara un momento. No cierres la ventana.',
+        "wipe_ask": 'Desinstalar la app',
+        "wipe_ask_text": 'Se eliminarán todos los archivos y controladores de Steering Assist™. Esta acción no se puede deshacer.',
+        "wipe_busy": 'Desinstalando',
+        "wipe_busy_text": 'Puede tardar un momento. No cierres esta ventana.',
+        "wipe_bar": 'Eliminando componentes',
         "wipe_fail": 'No se pudo eliminar todo',
         "btn_close": 'Cerrar',
-        "wipe_done": 'Ajustes y entradas de HidHide borrados. Los controladores salen al cerrar la app y luego Windows debe reiniciar.',
-        "wipe_ok": 'Eliminado',
+        "wipe_done": 'Todos los ajustes y demás entradas se han borrado. Los controladores se quitan al cerrar la app. Hay que reiniciar el sistema.',
+        "wipe_ok": 'Se eliminaron los componentes',
+        "restarting": 'Reiniciando',
         "btn_restart_now": 'Reiniciar',
         "btn_later": 'Mas tarde',
         "btn_cancel": 'Cancelar',
         "btn_save": "Guardar",
         "btn_delete": "Borrar",
         "preset_new": 'Nuevo ajuste',
-        "preset_new_text": 'Guarda lo que hay ahora en los deslizadores.',
+        "preset_new_text": 'Elige un nombre para el nuevo ajuste. Los ajustes actuales se guardarán en él.',
         "preset_name": 'Nombre del ajuste',
-        "preset_del": '¿Borrar el ajuste?',
-        "preset_del_text": '«{name}» se borrará.',
+        "preset_del": 'Borrar el ajuste',
+        "preset_del_text": 'El ajuste «{name}» se borrará para siempre. Esta acción no se puede deshacer.',
+        "preset_del_btn": 'Borrar ajuste',
         "order_title": 'Iniciado despues del juego',
         "order_text": 'Si la asistencia no funcionaba bien, desconecta el mando y vuelve a conectarlo: el juego lo encuentra de nuevo sin reiniciar.',
         "nopad_title": 'Mando no encontrado',
@@ -5631,24 +5646,27 @@ TR = {
         "wipe_row": 'すべてのコンポーネントとアプリデータを削除',
         "wipe_btn": '削除',
         "wipe_hint": 'ドライバー2つをアンインストールし、HidHide に追加した設定を消し、設定ファイルを削除します。この PC には何も残りません。そのあと Windows の再起動が必要です',
-        "wipe_ask": 'すべて削除しますか',
-        "wipe_ask_text": 'ドライバー2つ、HidHide に追加したもの、設定とプリセット。元に戻すことはできません。',
-        "wipe_busy": '削除しています...',
-        "wipe_busy_text": '少し時間がかかります。ウィンドウを閉じないでください。',
+        "wipe_ask": 'アプリをアンインストール',
+        "wipe_ask_text": 'Steering Assist™ のファイルとドライバーをすべて削除します。この操作は元に戻せません。',
+        "wipe_busy": 'アンインストール中',
+        "wipe_busy_text": '少し時間がかかります。このウィンドウを閉じないでください。',
+        "wipe_bar": 'コンポーネントを削除中',
         "wipe_fail": 'すべては削除できませんでした',
         "btn_close": '閉じる',
-        "wipe_done": '設定と HidHide の登録は削除しました。ドライバーはアプリ終了時に外れ、そのあと Windows の再起動が必要です。',
-        "wipe_ok": '削除しました',
+        "wipe_done": '設定とその他の登録はすべて削除しました。ドライバーはアプリ終了時に外れます。システムの再起動が必要です。',
+        "wipe_ok": 'アプリのコンポーネントを削除しました',
+        "restarting": '再起動します',
         "btn_restart_now": '今すぐ再起動',
         "btn_later": 'あとで',
         "btn_cancel": 'キャンセル',
         "btn_save": '保存',
         "btn_delete": '削除',
         "preset_new": '新しいプリセット',
-        "preset_new_text": 'いまのスライダーの値を保存します。',
+        "preset_new_text": '新しいプリセットの名前を入力してください。現在の設定が保存されます。',
         "preset_name": 'プリセット名',
-        "preset_del": 'プリセットを削除しますか？',
-        "preset_del_text": '「{name}」を削除します。',
+        "preset_del": 'プリセットを削除',
+        "preset_del_text": 'プリセット「{name}」は完全に削除されます。この操作は元に戻せません。',
+        "preset_del_btn": '削除する',
         "order_title": 'ゲームより後に起動しました',
         "order_text": 'アシストが正しく動作しなかった場合は、コントローラーを抜いて差し直してください。ゲームを再起動しなくても再認識されます。',
         "nopad_title": 'コントローラーが見つかりません',
@@ -6103,7 +6121,7 @@ body.t-light{
    global default above would put the arrow back over them. */
 [data-toggle] *,[data-slider] *,[data-scale] *,[data-seg] [data-key] *,
 :is(.hbtn,.updbtn,.upddl,.pbtn,.warn-b,.padd,.pchip,.pdel,.lbtn,.bub,
-    .bbtn,.bclose,.logo,.tlogo) *{cursor:inherit}
+    .bbtn,.bclose,.logo,.tlogo,.mk-x) *{cursor:inherit}
 .tdrag{flex:1;height:18px;display:flex;align-items:center;gap:8px;min-width:0}
 .hbtn{height:18px;border-radius:5px;display:flex;align-items:center;
       justify-content:center;gap:5px;cursor:pointer;flex:none;
@@ -6306,16 +6324,17 @@ body.t-light{
            align-items:center}
 .warn-t{font-size:14px;font-weight:600;color:var(--warn)}
 #wipe .warn-t{color:var(--danger)}
-#wipe.busy .warn-t,#wipe.done .warn-t{color:var(--row-fg)}
+#wipe.done .warn-t{color:var(--warn)}
+#wipe.done #wipe-go{background:var(--warn);color:#101010}
+#wipe.counting .warn-t{color:var(--accent)}
+#wipe.fail .warn-t{color:var(--danger)}
 .wipe-btns{margin-top:6px;display:flex;gap:8px}
 .warn-b.danger{background:var(--danger)}
 .warn-b.ghost{background:transparent;color:var(--muted);
               border:1px solid var(--btn-line)}
 .warn-b.ghost:hover{color:var(--row-fg);border-color:var(--muted);
                     filter:none}
-.wipe-count{font-size:24px;font-weight:600;color:var(--accent);
-            font-variant-numeric:tabular-nums;display:none}
-#wipe.counting .wipe-count{display:block}
+#wipe.counting .mk-count{display:block}
 /* nothing to press while it is working */
 #wipe.busy .wipe-btns{display:none}
 .warn-x{font-size:10px;line-height:1.55;color:var(--row-fg)}
@@ -6333,17 +6352,52 @@ body.t-light{
    words on the left, a controller on the right whose cable comes down
    from above the card and fades in from its edge. As drawn in Figma, 300
    by 145 (frames 91, 96, 97). */
-#warn .warn-card.nc{width:300px;min-height:145px;padding:17.6px 26px 20px 26.6px;
-  position:relative;overflow:hidden;align-items:flex-start;
-  text-align:left;gap:0;border-color:var(--btn-line)}
-.nc-words{position:relative;z-index:1;width:178px;display:flex;
+/* Every popup is the same card since the Figma frames 91-104: 300 by 145
+   or taller, the title and the words on the left, the buttons along the
+   foot - side by side, sharing the width. */
+.warn-card.mk,.bmbox.mk{width:300px;min-height:145px;box-sizing:border-box;
+  padding:17.6px 26px 20px 26.6px;border-radius:14px;
+  background:color-mix(in srgb,var(--card) 75%,transparent);
+  border:1px solid var(--btn-line);position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:flex-start;
+  text-align:left;gap:0}
+.nc-words{position:relative;z-index:1;max-width:100%;display:flex;
   flex-direction:column;gap:3.6px;transition:opacity .16s ease}
+#warn .nc-words{width:178px}
 #warn.swap .nc-words,#warn.swap #warn-ok{opacity:0}
-#warn .warn-t{font-size:14px;line-height:17px;transition:color .25s ease}
-#warn .warn-x{font-size:10px;font-weight:600;line-height:12px;
+.mk .warn-t{font-size:14px;line-height:17px;transition:color .25s ease}
+.mk .warn-x{font-size:10px;font-weight:600;line-height:12px;color:var(--row-fg);
   white-space:pre-line}
+.mk .warn-b{margin-top:0;padding:0 12px;font-size:12px;position:relative;
+  z-index:1}
+.mk-row{margin-top:auto;padding-top:14px;width:100%;display:flex;gap:6.6px;
+  position:relative;z-index:1}
+.mk-row > .warn-b{flex:1}
+.mk .warn-b.ghost{border:1.5px solid var(--btn-line);color:var(--muted)}
+/* the small square cross, top right, where there is no Cancel */
+.mk-x{position:absolute;top:17.6px;right:26px;width:18px;height:18px;
+  box-sizing:border-box;border:1.5px solid var(--btn-line);border-radius:5px;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);
+  cursor:pointer;z-index:2;transition:color .2s ease,border-color .2s ease}
+.mk-x:hover{color:var(--row-fg);border-color:var(--muted)}
+.mk-x svg{width:8px;height:8px;display:block}
+/* the countdown to a restart: a big number in the top right corner, the
+   words over it */
+.mk-count{position:absolute;right:26px;top:7px;z-index:0;display:none;
+  font-size:74px;line-height:1;font-weight:600;color:var(--accent);
+  font-variant-numeric:tabular-nums}
+/* the work going on: a bar filling in the button's place */
+.mk-bar{display:none;margin-top:auto;width:100%;height:24px;
+  box-sizing:border-box;border:1.5px solid var(--danger);border-radius:7px;
+  background:color-mix(in srgb,var(--danger) 16%,transparent);
+  position:relative;overflow:hidden;align-items:center;justify-content:center}
+.mk-bar i{position:absolute;left:0;top:0;bottom:0;width:0;
+  background:var(--danger)}
+.mk-bar span{position:relative;font-size:12px;font-weight:600;color:#FFFFFF}
+#wipe.busy .mk-bar{display:flex}
+#wipe.busy .mk-bar i{animation:mkfill 3.2s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes mkfill{from{width:4%}to{width:88%}}
 #warn #warn-ok{position:relative;z-index:1;margin-top:auto;
-  padding:0 12px;font-size:12px;
   transition:filter .2s ease,opacity .16s ease,background .25s ease,
              color .25s ease}
 #warn[data-kind=pad] #warn-ok{background:var(--warn);color:#101010}
@@ -6711,14 +6765,16 @@ body.t-light{
 /* the preset card: a name to type, or a delete to confirm */
 #pmodal .pm-card{transition:transform .22s cubic-bezier(.2,.8,.2,1)}
 #pmodal.off .pm-card{transform:translateY(6px) scale(.96)}
-.pm-t{color:var(--row-fg)}
+.pm-t{color:var(--accent)}
 #pmodal.del .pm-t{color:var(--danger)}
-.pm-name{font:inherit;font-size:13px;font-weight:600;color:var(--row-fg);
-         background:var(--card-2);border:1px solid var(--line);
-         border-radius:7px;height:32px;width:100%;box-sizing:border-box;
-         padding:0 12px;text-align:center;outline:none;margin-top:4px;
+.pm-name{font:inherit;font-size:12px;font-weight:600;color:var(--row-fg);
+         background:transparent;border:1.5px solid var(--btn-line);
+         border-radius:7px;height:24px;flex:1;min-width:0;
+         box-sizing:border-box;padding:0 11px;text-align:left;outline:none;
          transition:border-color .2s ease}
-.pm-name::placeholder{color:var(--muted);font-weight:400}
+#pmodal:not(.del) #pm-go{flex:none}
+#pmodal:not(.del) #pm-no,#pmodal.del .mk-x{display:none}
+.pm-name::placeholder{color:var(--muted);font-weight:600}
 .pm-name:hover,.pm-name:focus{border-color:var(--accent)}
 #pmodal.del .pm-name{display:none}
 #pmodal.del #pm-go{background:var(--danger);color:#fff}
@@ -6940,19 +6996,12 @@ body.t-light{
    blurred under a sheet nobody could see. */
 #boot > .bmodal.on{display:flex}
 #boot > .bmodal.shown{opacity:1;pointer-events:auto}
-.bmbox{width:250px;padding:22px;border-radius:14px;text-align:center;
-       background:color-mix(in srgb,var(--card) 75%,transparent);
-       border:1px solid var(--btn-line);
-       box-shadow:0 18px 46px rgba(0,0,0,.5);
+.bmbox{box-shadow:0 18px 46px rgba(0,0,0,.5);
        transform:translateY(6px) scale(.98);
        transition:transform .22s cubic-bezier(.4,0,.2,1)}
 .bmodal.shown .bmbox{transform:none}
-.bmtitle{font-size:14px;font-weight:600;color:var(--row-fg)}
-.bmtext{margin-top:8px;font-size:11px;line-height:1.5;color:var(--muted)}
-.bmcount{margin:14px 0 16px;font-size:26px;font-weight:600;
-         color:var(--accent);font-variant-numeric:tabular-nums;display:none}
+#boot-modal .warn-t{color:var(--accent)}
 .bmodal.counting .bmcount{display:block}
-.bmbtns{margin-top:16px;display:flex;gap:8px;justify-content:center}
 .bmodal.counting #bm-go{display:none}
 .bmodal .bbtn{cursor:pointer}
 
@@ -7028,31 +7077,37 @@ html[data-boot] .rz{display:none}
   <div class="sbar" id="sbar"><i></i></div>
   <div class="sfade"></div>
   <div class="warn-wrap off" id="wipe">
-    <div class="warn-card">
-      <div class="warn-t" id="wipe-title"></div>
-      <div class="warn-x" id="wipe-text"></div>
-      <div class="wipe-count" id="wipe-count"></div>
-      <div class="wipe-btns">
+    <div class="warn-card mk">
+      <div class="mk-count" id="wipe-count"></div>
+      <div class="nc-words">
+        <div class="warn-t" id="wipe-title"></div>
+        <div class="warn-x" id="wipe-text"></div>
+      </div>
+      <div class="mk-row wipe-btns">
         <button class="warn-b danger" id="wipe-go"></button>
         <button class="warn-b ghost" id="wipe-no"></button>
       </div>
+      <div class="mk-bar"><i></i><span id="wipe-bar"></span></div>
     </div>
   </div>
 
   <div class="warn-wrap off" id="pmodal">
-    <div class="warn-card pm-card">
-      <div class="warn-t pm-t" id="pm-title"></div>
-      <div class="warn-x" id="pm-text"></div>
-      <input class="pm-name" id="pm-name" spellcheck="false" autocomplete="off">
-      <div class="wipe-btns">
-        <button class="warn-b ghost" id="pm-no"></button>
+    <div class="warn-card mk pm-card">
+      <span class="mk-x" id="pm-x"><!--ICON:close--></span>
+      <div class="nc-words">
+        <div class="warn-t pm-t" id="pm-title"></div>
+        <div class="warn-x" id="pm-text"></div>
+      </div>
+      <div class="mk-row">
+        <input class="pm-name" id="pm-name" spellcheck="false" autocomplete="off">
         <button class="warn-b" id="pm-go"></button>
+        <button class="warn-b ghost" id="pm-no"></button>
       </div>
     </div>
   </div>
 
   <div class="warn-wrap off" id="warn">
-    <div class="warn-card nc">
+    <div class="warn-card mk nc">
       <div class="nc-words">
         <div class="warn-t" id="warn-title"></div>
         <div class="warn-x" id="warn-text"></div>
@@ -7111,13 +7166,15 @@ html[data-boot] .rz{display:none}
 
   <div class="bhint" id="boot-hint"></div>
   <div class="bmodal" id="boot-modal">
-    <div class="bmbox">
-      <div class="bmtitle" id="bm-title"></div>
-      <div class="bmtext" id="bm-text"></div>
-      <div class="bmcount" id="bm-count"></div>
-      <div class="bmbtns">
-        <button class="bbtn" id="bm-go"></button>
-        <button class="bbtn sec" id="bm-cancel"></button>
+    <div class="bmbox mk">
+      <div class="mk-count bmcount" id="bm-count"></div>
+      <div class="nc-words">
+        <div class="warn-t" id="bm-title"></div>
+        <div class="warn-x" id="bm-text"></div>
+      </div>
+      <div class="mk-row bmbtns">
+        <button class="warn-b" id="bm-go"></button>
+        <button class="warn-b ghost" id="bm-cancel"></button>
       </div>
     </div>
   </div>
@@ -7913,7 +7970,7 @@ document.addEventListener('pointerdown', tileDown);
    past its size and home. Done with the scale property, not transform, so
    it adds to whatever a button already does with its transform. The pill
    menus slide instead, and are left alone. */
-const PRESS_SEL = '.hbtn,.updbtn,.upddl,.pbtn,.warn-b,.padd,.pchip,.pdel,' +
+const PRESS_SEL = '.hbtn,.updbtn,.upddl,.pbtn,.warn-b,.padd,.pchip,.pdel,.mk-x,' +
                   '.lbtn,.bub[data-url],.bbtn,.bclose,.tlogo';
 const PRESS_DEPTH = 0.04;                   // how far it gives, of its size
 const PRESS_HELD = {resp: .12, zeta: 1};    // going in: quick, no wobble
@@ -8084,7 +8141,7 @@ function openPresetModal(kind, key){
     $('#pm-title').textContent = t('preset_del');
     $('#pm-text').textContent =
       t('preset_del_text').replace('{name}', slotLabel(key));
-    go.textContent = t('btn_delete');
+    go.textContent = t('preset_del_btn');
     go.classList.remove('off');
     pmodalGo = () => {
       closePresetModal();
@@ -8132,6 +8189,7 @@ function bindPresetModal(){
     if (!go.classList.contains('off') && pmodalGo) pmodalGo();
   });
   $('#pm-no').addEventListener('click', closePresetModal);
+  $('#pm-x').addEventListener('click', closePresetModal);
   /* a click on the blur, outside the card, is a no */
   m.addEventListener('pointerdown', e => {
     if (e.target === m) closePresetModal();
@@ -8160,7 +8218,7 @@ function bindPresets(){
 let wipeTimer = null;
 function wipePanel(state){
   const el = $('#wipe');
-  el.classList.remove('busy', 'done', 'counting');
+  el.classList.remove('busy', 'done', 'counting', 'fail');
   if (state) el.classList.add(state);
   el.classList.remove('off');
 }
@@ -8176,6 +8234,7 @@ function askWipe(){
   $('#wipe-go').onclick = () => {
     $('#wipe-title').textContent = t('wipe_busy');
     $('#wipe-text').textContent = t('wipe_busy_text');
+    $('#wipe-bar').textContent = t('wipe_bar');
     wipePanel('busy');
     /* held for a moment even when the work is quick: the driver asked for
        this and should see it happen, not a flicker between two questions */
@@ -8186,6 +8245,7 @@ function askWipe(){
     const failed = e => { $('#wipe-title').textContent = t('wipe_fail');
                           $('#wipe-text').textContent = String(e);
                           wipePanel('done');
+                          el.classList.add('fail');
                           $('#wipe-go').style.display = 'none';
                           $('#wipe-no').textContent = t('btn_close');
                           $('#wipe-no').onclick =
@@ -8212,7 +8272,7 @@ function wipeDone(r){
     try{ pywebview.api.finish_wipe(false); }catch(e){}
   };
   $('#wipe-go').onclick = () => {
-    $('#wipe-title').textContent = t('btn_restart_now');
+    $('#wipe-title').textContent = t('restarting');
     $('#wipe-go').style.display = 'none';
     $('#wipe-no').textContent = t('btn_cancel');
     $('#wipe-no').onclick = () => {
