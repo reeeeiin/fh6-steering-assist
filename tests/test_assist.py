@@ -3856,6 +3856,31 @@ def test_no_language_is_left_with_english_words():
         assert not left, (lang, sorted(left))
 
 
+def test_the_pad_coming_back_from_our_restart_needs_no_second_one():
+    """Every launch after the game restarted the pad twice: the first
+    restart brought it back under new HID names, the sweep hid them, and
+    that called for another restart half a minute later, mid-drive."""
+    b = _heal_bridge()
+    echo = "HID\\VID_045E&PID_028E&IG_07\\9&2c26153&0&0000"
+    b._heal_t = time.monotonic() - 2.0          # we restarted it just now
+    assert b._heal_echo([echo])
+    # anything the game reads coming undone still counts
+    assert not b._heal_echo(["USB\\VID_045E&PID_028E\\FLYDIGI"])
+    assert not b._heal_echo(["cloak"])
+    # and long after our restart, new names are a new pad
+    b._heal_t = time.monotonic() - fa.HEAL_ECHO_S - 1
+    assert not b._heal_echo([echo])
+
+
+def test_the_assisted_bar_follows_as_quickly_as_raw_input():
+    """With only raw input left unsmoothed, the assisted bar trailed it by
+    a fifth of a second and the assist looked late."""
+    html = fa.build_html()
+    assert "#rawbar,#outbar{transition:none}" in html
+    assert "sOut += (state.out - sOut) * 0.35" not in html
+    assert "sOut += (outTo - sOut) * k" in html
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

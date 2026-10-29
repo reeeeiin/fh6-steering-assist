@@ -153,6 +153,12 @@ SWEEP_SEC = 5.0
 # software bus that turns up this soon after ours is ours.
 OWN_SETTLE_S = 15.0
 HEAL_GAP = 30.0
+# The pad comes back from a restart of ours under new HID names, which the
+# sweep then hides - and that used to call for a second restart half a
+# minute later, a dropout mid-drive at every launch after the game. Its
+# XInput node, the one the game reads, stayed hidden all along; new HID
+# names this soon after our own restart are the restart's echo.
+HEAL_ECHO_S = 10.0
 # A pad whose packet number has not moved for this long is taken to have
 # gone silent. Most pads only count a packet when something changes, so an
 # idle one is silent too - which is why silence alone changes nothing, and
@@ -4407,10 +4413,20 @@ class Bridge:
             if self.cfg.get("auto_hide"):
                 fixed = self.hidhide.sweep()
                 why = getattr(self, "_heal_due", None)
-                if fixed:
+                if fixed and self._heal_echo(fixed):
+                    self._note("the pad came back from our restart under "
+                               "new names: hidden, no second restart")
+                elif fixed:
                     why = "the hiding had to be put right"
                 if why:
                     self._heal(why)
+
+    def _heal_echo(self, fixed) -> bool:
+        """Only new HID names, just after a restart of our own (see
+        HEAL_ECHO_S) - nothing the game reads came undone."""
+        since = time.monotonic() - getattr(self, "_heal_t", float("-inf"))
+        return (since < HEAL_ECHO_S and bool(fixed)
+                and all(str(f).upper().startswith("HID\\") for f in fixed))
 
     def _pad_devices(self):
         """The player's pad as devices to restart: its XInput nodes, and
@@ -7667,7 +7683,7 @@ body.t-light{
        background:var(--bar-fill);
        transition:left .12s linear,width .12s linear}
 .bar{overflow:visible}
-#rawbar{transition:none}
+#rawbar,#outbar{transition:none}
 .bar u{position:absolute;left:50%;top:-3px;width:2px;height:calc(100% + 4px);
        background:var(--row-fg);opacity:.9;z-index:2;border-radius:1px}
 .barlbl{font-size:11px;color:var(--row-fg);margin-bottom:6px}
@@ -9576,21 +9592,30 @@ async function swapAuto(el){
 
 /* ---------------- live state ---------------- */
 let sRaw = 0, sOut = 0, wasLive = null;
-/* Raw input is the stick as it is. It used to be smoothed three times
-   over - by the poll, an average and a transition - and looked calmer
-   than the hand on it. Now it only follows over a frame or two between
-   the polls, which come twenty times a second, and ignores changes under
-   one and a half per cent, so a hand held still does not shimmer. */
+/* Both bars show the stick as it is: raw input, and what the assist sends
+   with it. They used to be smoothed three times over - by the poll, an
+   average and a transition - and looked calmer than the hand on them. Now
+   each only follows over a frame or two between the polls, which come
+   twenty times a second, and ignores changes under one and a half per
+   cent, so a hand held still does not shimmer.
+   Both, the same way: with only raw input unsmoothed (2.2.15), the
+   assisted bar trailed it by a fifth of a second and the assist looked
+   late, when the two go out to the pad in the same frame. */
 const RAW_TAU = 0.02, RAW_GATE = 0.015;
-let rawTo = 0, rawRaf = 0, rawLast = 0;
+let rawTo = 0, outTo = 0, rawRaf = 0, rawLast = 0;
 function rawFrame(ts){
   rawRaf = 0;
   const dt = rawLast ? Math.min(0.1, (ts - rawLast) / 1000) : 0.016;
   rawLast = ts;
-  sRaw += (rawTo - sRaw) * (1 - Math.exp(-dt / RAW_TAU));
+  const k = 1 - Math.exp(-dt / RAW_TAU);
+  sRaw += (rawTo - sRaw) * k;
+  sOut += (outTo - sOut) * k;
   if (Math.abs(rawTo - sRaw) < 0.001) sRaw = rawTo;
+  if (Math.abs(outTo - sOut) < 0.001) sOut = outTo;
   setBar('rawbar', sRaw);
-  if (sRaw !== rawTo) rawRaf = requestAnimationFrame(rawFrame);
+  setBar('outbar', sOut);
+  if (sRaw !== rawTo || sOut !== outTo)
+    rawRaf = requestAnimationFrame(rawFrame);
   else rawLast = 0;
 }
 
@@ -10223,8 +10248,10 @@ function liveUpdate(){
   }
   const raw = +state.raw || 0;
   if (Math.abs(raw - rawTo) >= RAW_GATE || raw === 0) rawTo = raw;
-  if (sRaw !== rawTo && !rawRaf) rawRaf = requestAnimationFrame(rawFrame);
-  sOut += (state.out - sOut) * 0.35;
+  const out = +state.out || 0;
+  if (Math.abs(out - outTo) >= RAW_GATE || out === 0) outTo = out;
+  if ((sRaw !== rawTo || sOut !== outTo) && !rawRaf)
+    rawRaf = requestAnimationFrame(rawFrame);
   setBar('rawbar', sRaw); setBar('outbar', sOut);
   drawWidgets();
   steerStatus();
