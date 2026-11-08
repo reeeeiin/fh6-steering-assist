@@ -3878,7 +3878,8 @@ def test_the_assisted_bar_follows_as_quickly_as_raw_input():
     """With only raw input left unsmoothed, the assisted bar trailed it by
     a fifth of a second and the assist looked late."""
     html = fa.build_html()
-    assert "#rawbar,#outbar{transition:none}" in html
+    # nothing smooths where the bars are; only their fading out is eased
+    assert "#rawbar,#outbar{transition:opacity .3s ease}" in html
     assert "sOut += (state.out - sOut) * 0.35" not in html
     assert "sOut += (outTo - sOut) * k" in html
 
@@ -3892,7 +3893,8 @@ def test_with_no_game_the_tiles_rest_and_the_status_says_why():
     assert "'<div class=\"wgrid' + (live ? '' : ' idle') + '\"" in html
     assert "if (!live && !teleSetUp())" in html, "setup card only if never set up"
     assert "tgame" not in html, "the line under the statuses is gone"
-    assert ".wgrid.idle .wt:not(.tsc):not([data-tile=odo]) > *{opacity:.4}" in html
+    assert ".wgrid.idle .wt:not(.tsc):not([data-tile=odo])::before{opacity:.6}" in html
+    assert "visibility:hidden}" not in html.split(".wgrid.idle")[1][:400]
     assert "grid.classList.toggle('idle', !nowLive)" in html
     i = html.index("else if (!state.game){ cls = 'wait'; txt = t('game_off'); }")
     j = html.index("else { cls = 'err'; txt = t('st_notele'); }")
@@ -3900,6 +3902,35 @@ def test_with_no_game_the_tiles_rest_and_the_status_says_why():
     src = open(fa.__file__, encoding="utf-8").read()
     assert '"game": b.game_up,' in src
     assert "self.game_up = game_running()" in src
+
+
+def test_with_no_game_the_status_stands_alone():
+    """"Telemetry status: Game is not launched" said the same thing twice;
+    with no game the status takes the label's place."""
+    html = fa.build_html()
+    assert ".tsc .trow.solo .rname{display:none}" in html
+    assert "row.classList.toggle('solo', solo)" in html
+    assert fa.TR["en"]["game_off"] == "Game is not launched"
+    assert fa.TR["ru"]["game_off"] == "Игра не запущена"
+
+
+def test_words_never_change_in_a_single_frame():
+    """Every status, the update button, the tour and the wipe panel fade
+    their words over; nothing on screen swaps from one frame to the next."""
+    html = fa.build_html()
+    assert "function fadeTo(box, key, apply)" in html
+    for direct in ("ts.textContent = txt;\n  }",
+                   "ss.className = 'tstat ' + cls;\n  ss.textContent",
+                   "ps.textContent = t('hh_'",
+                   ".querySelector('.updlbl').textContent ="):
+        assert direct not in html, direct
+    assert "fadeTo(ss, txt," in html and "fadeTo(ps, pt," in html
+    assert "fadeTo(lbl, words," in html
+    assert "fadeAll([...pop0.children]" in html
+    assert "function wipeStep(change, then)" in html
+    assert "fadeTo(el, String(n)," in html
+    assert ".gauge,.gauge *,.cbwrap{transition:color .25s ease}" in html
+    assert "left .32s" in html.split(".tmask{")[1][:300], "the tour's shade glides"
 
 
 def test_8bitdo_is_among_the_pads_it_was_tested_on():

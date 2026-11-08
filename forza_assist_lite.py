@@ -5084,7 +5084,7 @@ TR = {
         "w_callback": 'Callback',
         "w_latency": 'Latency',
         "w_car": 'Current car',
-        "game_off": "Game not running",
+        "game_off": "Game is not launched",
         "car_unknown": 'Unknown car',
         "auto_badge": "Auto",
         "setup_nav1": "Navigate to game settings:",
@@ -5261,7 +5261,7 @@ TR = {
         "w_callback": 'Отклик',
         "w_latency": 'Частота',
         "w_car": 'Машина',
-        "game_off": "Игра закрыта",
+        "game_off": "Игра не запущена",
         "car_unknown": 'Неизвестная машина',
         "auto_badge": "Авто",
         "setup_nav1": "Откройте настройки игры:",
@@ -5438,7 +5438,7 @@ TR = {
         "w_callback": 'Antwort',
         "w_latency": 'Frequenz',
         "w_car": 'Fahrzeug',
-        "game_off": "Spiel läuft nicht",
+        "game_off": "Spiel nicht gestartet",
         "car_unknown": 'Unbekanntes Auto',
         "auto_badge": "Auto",
         "setup_nav1": "Öffne die Spieleinstellungen:",
@@ -5615,7 +5615,7 @@ TR = {
         "w_callback": 'Réponse',
         "w_latency": 'Fréquence',
         "w_car": 'Voiture',
-        "game_off": "Jeu non lancé",
+        "game_off": "Le jeu n’est pas lancé",
         "car_unknown": 'Voiture inconnue',
         "auto_badge": "Auto",
         "setup_nav1": "Ouvrez les réglages du jeu :",
@@ -5792,7 +5792,7 @@ TR = {
         "w_callback": 'Respuesta',
         "w_latency": 'Frecuencia',
         "w_car": 'Coche',
-        "game_off": "Juego cerrado",
+        "game_off": "El juego no está iniciado",
         "car_unknown": 'Coche desconocido',
         "auto_badge": "Auto",
         "setup_nav1": "Abre los ajustes del juego:",
@@ -5983,7 +5983,7 @@ TR = {
         "w_callback": '応答',
         "w_latency": '周波数',
         "w_car": '車両',
-        "game_off": "ゲーム未起動",
+        "game_off": "ゲームが起動していません",
         "car_unknown": '不明な車',
         "auto_badge": "オート",
         "setup_nav1": "ゲーム設定の",
@@ -6365,7 +6365,7 @@ TR = {
         'w_callback': 'Odpowiedź',
         'w_latency': 'Opóźnienie',
         'w_car': 'Aktualne auto',
-        'game_off': 'Gra wyłączona',
+        'game_off': 'Gra nie jest uruchomiona',
         'car_unknown': 'Nieznane auto',
         'auto_badge': 'Auto',
         'setup_nav1': 'Przejdź do ustawień gry:',
@@ -6686,7 +6686,10 @@ body.t-light{
 #tour{position:fixed;inset:0;z-index:70;display:none}
 #tour.on{display:block}
 .tmask{position:fixed;background:rgba(0,0,0,.62);opacity:0;
-       transition:opacity .28s ease}
+       transition:opacity .28s ease,left .32s cubic-bezier(.4,0,.2,1),
+                  top .32s cubic-bezier(.4,0,.2,1),
+                  width .32s cubic-bezier(.4,0,.2,1),
+                  height .32s cubic-bezier(.4,0,.2,1)}
 #tour.shown .tmask{opacity:1}
 .tring{position:fixed;border-radius:9px;pointer-events:none;opacity:0;
        box-shadow:0 0 0 2px var(--accent),0 0 0 7px rgba(4,146,248,.22);
@@ -7113,6 +7116,9 @@ body.t-light{
 .tsc .trow{flex:1;min-width:0}
 .tsc .rname{flex:none}
 .tsc .rval{font-size:13px;font-weight:600;transition:color .3s ease}
+/* no game: the status stands alone in its card, where the label was */
+.tsc .trow.solo{justify-content:flex-start}
+.tsc .trow.solo .rname{display:none}
 .tsc .rval.off{color:var(--row-fg)}
 .tsteer{flex:1;display:flex;flex-direction:column;
         justify-content:space-between;gap:8px}
@@ -7148,11 +7154,15 @@ body.t-light{
 .wgrid .wt.drag{z-index:5;scale:1.04;cursor:grabbing;
                 box-shadow:0 10px 26px rgba(0,0,0,.32)}
 /* No game: the tiles rest, dimmed and empty - the statuses and the
-   odometer's total as they are - and still move. What is dimmed is a
-   tile's insides, so the card and its reveal keep their own opacity. */
-.wgrid.idle .wt:not(.tsc):not([data-tile=odo]) > *{opacity:.4}
-.wgrid.idle .tcarcard .tchips,.wgrid.idle .tcimg,
-.wgrid.idle .tsteer .bar i,.wgrid.idle #sstat{visibility:hidden}
+   odometer's total as they are - and still move. The dimming is a veil of
+   the card's own colour over its insides, fading in and out, so the card,
+   its reveal and everything inside keep their own transitions. */
+.wgrid .wt::before{content:"";position:absolute;inset:0;z-index:8;
+                   border-radius:inherit;background:var(--card);opacity:0;
+                   pointer-events:none;transition:opacity .3s ease}
+.wgrid.idle .wt:not(.tsc):not([data-tile=odo])::before{opacity:.6}
+.wgrid.idle .tcarcard > .tchips,.wgrid.idle .tcimg,
+.wgrid.idle .tsteer .bar i,.wgrid.idle #sstat{opacity:0}
 /* the statuses keep their own short card, half a tile's height */
 .wgrid .wt.tsc{height:var(--hh)}
 /* the steering card in a tile's height: the bars give up some of theirs */
@@ -7281,6 +7291,8 @@ body.t-light{
 .c-idle{color:var(--accent)} .c-ok{color:var(--ok)}
 .c-hot{color:var(--hot)} .c-bad{color:var(--danger)}
 .c-plain{color:var(--row-fg)}
+/* a gauge changing colour does it over a moment, not in a frame */
+.gauge,.gauge *,.cbwrap{transition:color .25s ease}
 .cbwrap{display:flex;flex-direction:column;gap:6px;width:80px}
 .cbval{display:flex;align-items:baseline;gap:4px;font-weight:600;
        color:var(--row-fg);line-height:18px;height:18px}
@@ -7506,7 +7518,8 @@ body.t-light{
 
 
 /* ---------- telemetry ---------- */
-.tstat{font-size:13px;font-weight:600;flex:none;transition:color .3s ease}
+.tstat{font-size:13px;font-weight:600;flex:none;
+       transition:color .3s ease,opacity .3s ease}
 .tstat.ok{color:var(--ok)} .tstat.wait{color:var(--muted)}
 .tstat.err{color:var(--danger)}
 .tstat.idle{color:var(--row-fg)}
@@ -7519,7 +7532,7 @@ body.t-light{
        background:var(--bar-fill);
        transition:left .12s linear,width .12s linear}
 .bar{overflow:visible}
-#rawbar,#outbar{transition:none}
+#rawbar,#outbar{transition:opacity .3s ease}
 .bar u{position:absolute;left:50%;top:-3px;width:2px;height:calc(100% + 4px);
        background:var(--row-fg);opacity:.9;z-index:2;border-radius:1px}
 .barlbl{font-size:11px;color:var(--row-fg);margin-bottom:6px}
@@ -8127,7 +8140,8 @@ function setUpdate(st, ver, url){
   if (!b) return;
   Object.values(UPD_CLASS).forEach(c => b.classList.remove(c));
   if (UPD_CLASS[st]) b.classList.add(UPD_CLASS[st]);
-  b.querySelector('.updlbl').textContent = updLabel(st);
+  const lbl = b.querySelector('.updlbl'), words = updLabel(st);
+  fadeTo(lbl, words, () => { lbl.textContent = words; });
   /* a newer version: the button is the download; the page's own handler
      for [data-url] opens it */
   if (st === 'available') b.dataset.url = url || '';
@@ -8934,31 +8948,41 @@ function askWipe(){
   $('#wipe-no').textContent = t('btn_cancel');
   wipePanel('');
   $('#wipe-no').onclick = () => el.classList.add('off');
-  $('#wipe-go').onclick = () => {
+  $('#wipe-go').onclick = () => wipeStep(() => {
     $('#wipe-title').textContent = t('wipe_busy');
     $('#wipe-text').textContent = t('wipe_busy_text');
     $('#wipe-bar').textContent = t('wipe_bar');
     wipePanel('busy');
+  }, () => {
     /* held for a moment even when the work is quick: the driver asked for
        this and should see it happen, not a flicker between two questions */
     const started = Date.now();
     const show = r => setTimeout(() => wipeDone(r),
                                  Math.max(0, BOOT.wipeMinMs -
                                           (Date.now() - started)));
-    const failed = e => { $('#wipe-title').textContent = t('wipe_fail');
+    const failed = e => wipeStep(() => {
+                          $('#wipe-title').textContent = t('wipe_fail');
                           $('#wipe-text').textContent = String(e);
                           wipePanel('done');
                           el.classList.add('fail');
                           $('#wipe-go').style.display = 'none';
                           $('#wipe-no').textContent = t('btn_close');
                           $('#wipe-no').onclick =
-                            () => el.classList.add('off'); };
+                            () => el.classList.add('off'); });
     try{ pywebview.api.wipe().then(show).catch(failed); }
     catch(e){ failed(e); }
-  };
+  });
 }
 
-function wipeDone(r){
+/* one step of the panel to the next: its insides fade out, change and
+   fade back in, the card staying where it is; then is run once they have */
+function wipeStep(change, then){
+  fadeAll([...$('#wipe .warn-card').children], change);
+  if (then) setTimeout(then, FADE_MS);
+}
+
+function wipeDone(r){ wipeStep(() => wipeDoneNow(r)); }
+function wipeDoneNow(r){
   const el = $('#wipe');
   $('#wipe-title').textContent = t('wipe_ok');
   $('#wipe-text').textContent = t('wipe_done') +
@@ -8974,7 +8998,7 @@ function wipeDone(r){
   $('#wipe-no').onclick = () => {
     try{ pywebview.api.finish_wipe(false); }catch(e){}
   };
-  $('#wipe-go').onclick = () => {
+  $('#wipe-go').onclick = () => wipeStep(() => {
     $('#wipe-title').textContent = t('restarting');
     $('#wipe-go').style.display = 'none';
     $('#wipe-no').textContent = t('btn_cancel');
@@ -8986,7 +9010,7 @@ function wipeDone(r){
     el.classList.add('done');
     countdown('#wipe-count',
               () => { try{ pywebview.api.finish_wipe(true); }catch(e){} });
-  };
+  });
 }
 
 /* one countdown, wherever it is shown */
@@ -8994,7 +9018,8 @@ function countdown(sel, atZero){
   let left = BOOT.restartS;
   const tick = () => {
     const el = $(sel);
-    if (el) el.textContent = left;
+    const n = left;
+    if (el) fadeTo(el, String(n), () => { el.textContent = n; });
     if (left <= 0){ if (atZero) atZero(); return; }
     left -= 1;
     wipeTimer = setTimeout(tick, 1000);
@@ -9868,6 +9893,48 @@ function odoSet(metres){
   odoShown = next;
 }
 
+/* Words never change from one frame to the next: the old ones fade out,
+   the new ones in. key is what is shown, apply shows it. A change that
+   leaves the words alone - a colour - is applied at once, and its own
+   transition carries it. Asked again mid-fade, the last ask wins. */
+const FADE_MS = 160, fading = new WeakMap();
+function fadeTo(box, key, apply){
+  if (!box) return;
+  const job = fading.get(box);
+  if (job){ job.key = key; job.apply = apply; return; }
+  if (box.dataset.fk === undefined || box.dataset.fk === key){
+    box.dataset.fk = key;
+    apply();
+    return;
+  }
+  fadeAll([box], apply, key);
+}
+/* several things fade out together, change, and come back together */
+function fadeAll(boxes, apply, key){
+  boxes = boxes.filter(Boolean);
+  const job = {key, apply};
+  boxes.forEach(b => {
+    fading.set(b, job);
+    b.style.transition = 'opacity ' + FADE_MS + 'ms ease';
+    b.style.opacity = '0';
+  });
+  setTimeout(() => {
+    /* let go first: a change may start a fade of its own in here - the
+       countdown in the wipe panel does - and that one must not be taken
+       for this */
+    boxes.forEach(b => fading.delete(b));
+    job.apply();
+    boxes.forEach(b => {
+      if (fading.has(b)) return;
+      if (job.key !== undefined) b.dataset.fk = job.key;
+      b.style.opacity = '';
+    });
+    setTimeout(() => boxes.forEach(b => {
+      if (!fading.has(b)) b.style.transition = '';
+    }), FADE_MS);
+  }, FADE_MS);
+}
+
 /* the new word rises from below as the old one leaves upwards */
 function swapLabel(el, text){
   if (!el || el.dataset.v === text) return;
@@ -9947,8 +10014,7 @@ function steerStatus(){
     if (now < steerUntil){ cls = 'ok'; txt = t('st_assisting'); }
     else { cls = 'idle'; txt = t('st_ready'); }
   }
-  ss.className = 'tstat ' + cls;
-  ss.textContent = txt;
+  fadeTo(ss, txt, () => { ss.className = 'tstat ' + cls; ss.textContent = txt; });
 }
 
 /* ---------------- the current car ---------------- */
@@ -10074,8 +10140,20 @@ function liveUpdate(){
     /* nothing comes in: the game is not there, or it is and sends nothing */
     else if (!state.game){ cls = 'wait'; txt = t('game_off'); }
     else { cls = 'err'; txt = t('st_notele'); }
-    ts.className = 'tstat ' + cls;
-    ts.textContent = txt;
+    /* with no game the status says it all, and stands in for the label */
+    const solo = !state.tele_err && !state.alive && !state.recv &&
+                 !state.game;
+    const row = ts.parentNode;
+    const show = () => {
+      ts.className = 'tstat ' + cls;
+      ts.textContent = txt;
+      ts.dataset.fk = txt;
+      row.classList.toggle('solo', solo);
+    };
+    /* the label goes or comes back: the whole row fades */
+    if (fading.has(row) || row.classList.contains('solo') !== solo)
+      fadeTo(row, txt + '|' + solo, show);
+    else { row.dataset.fk = txt + '|' + solo; fadeTo(ts, txt, show); }
   }
   const nowLive = teleLive();
   if (nowLive !== wasLive){
@@ -10099,13 +10177,14 @@ function liveUpdate(){
   const ps = $('#padstat');
   if (ps){
     const hidden = state.hh_code === 'hidden';
-    ps.className = 'rval ' + (hidden ? 'ok' : state.hh_code === 'error'
-                              ? 'bad' : 'off');
+    const pc = 'rval ' + (hidden ? 'ok' : state.hh_code === 'error'
+                          ? 'bad' : 'off');
     /* Just the state. The count of devices hidden used to follow it, to
        tell hiding the pad from hiding nothing - but hiding nothing has its
        own words now, and a pad is often more than one device, so the
        number only raised a question. */
-    ps.textContent = t('hh_' + (state.hh_code || 'idle'));
+    const pt = t('hh_' + (state.hh_code || 'idle'));
+    fadeTo(ps, pt, () => { ps.className = pc; ps.textContent = pt; });
   }
 }
 
@@ -10472,13 +10551,22 @@ function tourPlace(){
   put('#tm-r', {left: px(L + W), top: px(T), right: 0, width: 'auto', height: px(H)});
   put('#t-ring', {left: px(L), top: px(T), width: px(W), height: px(H)});
 
-  $('#t-title').textContent = t(step.name);
-  $('#t-text').textContent = t(step.text);
-  $('#t-skip').textContent = t('tour_skip');
-  $('#t-next').textContent = t(tourAt === TOUR.length - 1 ? 'tour_done'
-                                                         : 'tour_next');
-  $('#t-dots').innerHTML = TOUR.map((_, i) =>
-    '<span class="tdot' + (i === tourAt ? ' on' : '') + '"></span>').join('');
+  const at = tourAt;
+  const words = () => {
+    $('#t-title').textContent = t(step.name);
+    $('#t-text').textContent = t(step.text);
+    $('#t-skip').textContent = t('tour_skip');
+    $('#t-next').textContent = t(at === TOUR.length - 1 ? 'tour_done'
+                                                        : 'tour_next');
+    $('#t-dots').innerHTML = TOUR.map((_, i) =>
+      '<span class="tdot' + (i === at ? ' on' : '') + '"></span>').join('');
+  };
+  /* the first step is drawn as the card fades in; the next ones fade
+     their words over while the ring moves */
+  const pop0 = $('#t-pop');
+  if (pop0.dataset.fk === undefined){ pop0.dataset.fk = at; words(); }
+  else if (String(at) !== pop0.dataset.fk)
+    fadeAll([...pop0.children], () => { pop0.dataset.fk = at; words(); });
 
   /* below the button, and never past either edge of the window */
   const pop = $('#t-pop');
