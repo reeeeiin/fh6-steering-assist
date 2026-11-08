@@ -2099,21 +2099,6 @@ FAQ_ITEMS = {
         'If the game is already open you do not have to restart it: unplug your controller and plug it back in, or switch a wireless one off and on. The game rescans its inputs and picks the assist up.',
         'Also check that Steering is set to Simulation in the game, under Settings → Difficulty → Steering. On the other settings the game steers on top of the assist and fights it.',
     ]),
-    ('It worked, then started behaving erratically', [
-        'Usually a second controller appeared. Plugging in a wheel or waking a wireless pad gives the game another device to read, and it may not be the one the assist is driving.',
-        'Restarting the assist rebuilds the virtual pad and hides the physical one again, which puts everything back in order.',
-        'If the readings froze rather than the steering, the game stopped sending telemetry. Check Data Out is still enabled.',
-    ]),
-    ('My controller’s buttons do nothing in game', [
-        'Only the handbrake and the clutch are sent to the game through the assist. Everything else the game is meant to read from your controller directly, and on most machines it can.',
-        'On some it cannot: once the assist hides your pad, the game has only the virtual one to read, and every button that is not a hold goes nowhere. The steering still works, which is what makes it puzzling.',
-        'Open <a class="flink" data-goto="mirror_all_buttons">Release all buttons</a> in Settings and switch it on. If instead a single press starts arriving twice, your game can see both pads, so turn it back off.',
-    ]),
-    ('Gear shifts do not register while I hold the handbrake', [
-        'The game reads buttons from one device at a time. While the assist holds the handbrake on its virtual pad, presses on your own pad can be ignored.',
-        'The assist yields the mirror for the whole press, so shifts get through. Measured on a real session it lands about eight times out of ten.',
-        'A wired pad is noticeably more reliable here than Bluetooth, which loses more of these presses.',
-    ]),
     ('Button presses feel laggy or get dropped', [
         'Bluetooth is the usual cause. The same pad on a cable responds quicker and drops far fewer presses.',
         'Force feedback shares the channel with your input. The assist sends rumble about twice a second instead of sixty, which is thirty times less traffic, but a busy channel still costs something.',
@@ -2132,10 +2117,6 @@ FAQ_ITEMS = {
         'Open the game settings under HUD & Gameplay and set Data out to On, IP address to 127.0.0.1 and IP port to 20777.',
         'Another racing app may already hold that port. Close it, or point it somewhere else.',
         'A firewall can block the local packet. Allow Steering Assist on private networks if the panel stays empty with the settings right.',
-    ]),
-    ('The wheel twitches when I shift mid-drift', [
-        'Shifting hands the buttons back to your pad for a moment, and the steering picks up again right after. The seam is what you feel.',
-        'It is small and does not throw the car off.',
     ]),
     ('Clicking the app again does nothing', [
         'Only one copy runs at a time. A second launch asks the first to close, waits for it to hand your controller back, and takes over - so the two never fight over the virtual pad.',
@@ -2163,21 +2144,6 @@ FAQ_ITEMS = {
             'Если игра уже запущена, перезапускать её не нужно: отключите геймпад и подключите снова, а беспроводной выключите и включите. Игра пересканирует устройства и подхватит ассист.',
             'Проверьте, что в игре выбрано управление Simulation: Settings → Difficulty → Steering. На других настройках игра подруливает поверх ассиста и борется с ним.',
         ]),
-        ('Работал, потом начал вести себя странно', [
-            'Обычно в системе появился второй контроллер. Подключённый руль или проснувшийся беспроводной геймпад дают игре ещё одно устройство, и она может читать не то, которым управляет ассист.',
-            'Перезапуск ассиста пересоздаёт виртуальный геймпад и заново прячет физический, это возвращает всё на место.',
-            'Если замерли показания, а не руль, игра перестала слать телеметрию. Проверьте, что Data Out всё ещё включён.',
-        ]),
-        ('Кнопки геймпада не работают в игре', [
-        'Через ассист в игру уходят только ручник и сцепление. Всё остальное игра должна читать с вашего геймпада напрямую, и на большинстве машин читает.',
-        'На некоторых нет: как только ассист прячет пад, игре остаётся только виртуальный, и любая кнопка кроме удержания проваливается в никуда. Руль при этом работает, поэтому и выглядит странно.',
-        'Откройте <a class="flink" data-goto="mirror_all_buttons">Освободить все кнопки</a> в настройках и включите. Если вместо этого одно нажатие начнёт срабатывать дважды, значит ваша игра видит оба пада: выключите обратно.',
-    ]),
-    ('Передачи не переключаются, пока зажат ручник', [
-            'Игра читает кнопки с одного устройства за раз. Пока ассист держит ручник на своём виртуальном геймпаде, нажатия на вашем могут игнорироваться.',
-            'Ассист уступает зеркалирование на всё время нажатия, поэтому передачи проходят. На реальном заезде это срабатывает примерно восемь раз из десяти.',
-            'Проводной геймпад здесь заметно надёжнее Bluetooth, который теряет больше таких нажатий.',
-        ]),
         ('Нажатия кнопок запаздывают или теряются', [
             'Обычно виноват Bluetooth. Тот же геймпад на проводе отвечает быстрее и теряет куда меньше нажатий.',
             'Вибрация делит канал с вашим вводом. Ассист шлёт отдачу примерно два раза в секунду вместо шестидесяти, это в тридцать раз меньше трафика, но загруженный канал всё равно чего-то стоит.',
@@ -2196,10 +2162,6 @@ FAQ_ITEMS = {
             'Откройте настройки игры в разделе HUD & Gameplay и выставьте Data out в On, IP address 127.0.0.1 и IP port 20777.',
             'Порт может быть уже занят другим гоночным приложением. Закройте его или переведите на другой порт.',
             'Пакет может резать брандмауэр. Разрешите Steering Assist в частных сетях, если настройки верные, а панель пуста.',
-        ]),
-        ('Руль дёргается при переключении передачи в заносе', [
-            'Переключение на мгновение возвращает кнопки вашему геймпаду, и сразу после этого руление подхватывается снова. Этот стык вы и чувствуете.',
-            'Эффект небольшой и машину не сбивает. Увеличенное сглаживание делает его ещё мягче.',
         ]),
         ('Повторный клик по приложению ничего не делает', [
             'Одновременно работает только одна копия. Второй запуск просит первую закрыться, дожидается, пока та вернёт геймпад, и занимает её место — так две копии никогда не делят виртуальный пад.',
@@ -2227,21 +2189,6 @@ FAQ_ITEMS = {
             'Si el juego ya está abierto no hace falta reiniciarlo: desconecta el mando y vuelve a conectarlo, o apaga y enciende uno inalámbrico. El juego vuelve a buscar dispositivos y detecta el asistente.',
             'Comprueba también que la dirección esté en Simulation, en Settings → Difficulty → Steering. En los demás ajustes el juego dirige por encima del asistente y lo contrarresta.',
         ]),
-        ('Funcionaba y luego empezó a comportarse de forma errática', [
-            'Normalmente ha aparecido un segundo mando. Conectar un volante o despertar un mando inalámbrico le da al juego otro dispositivo, y puede no ser el que el asistente controla.',
-            'Reiniciar el asistente recrea el mando virtual y vuelve a ocultar el físico, lo que deja todo en su sitio.',
-            'Si lo que se congeló fueron las lecturas y no la dirección, el juego dejó de enviar telemetría. Revisa que Data Out siga activado.',
-        ]),
-        ('Los botones del mando no hacen nada en el juego', [
-        'Por la asistencia solo llegan al juego el freno de mano y el embrague. Todo lo demás el juego debe leerlo de tu mando directamente, y en la mayoría de equipos puede.',
-        'En algunos no: cuando la asistencia oculta tu mando, al juego solo le queda el virtual, y cualquier botón que no sea de mantener se pierde. La dirección sigue funcionando, y por eso desconcierta.',
-        'Abre <a class="flink" data-goto="mirror_all_buttons">Liberar todos los botones</a> en Ajustes y actívalo. Si en cambio una pulsación empieza a llegar dos veces, tu juego ve los dos mandos: vuelve a desactivarlo.',
-    ]),
-    ('Los cambios de marcha no responden con el freno de mano pulsado', [
-            'El juego lee los botones de un dispositivo cada vez. Mientras el asistente mantiene el freno de mano en su mando virtual, las pulsaciones del tuyo pueden ignorarse.',
-            'El asistente cede el espejo durante toda la pulsación para que los cambios pasen. En una sesión real acierta unas ocho de cada diez veces.',
-            'Un mando por cable es bastante más fiable aquí que Bluetooth, que pierde más de estas pulsaciones.',
-        ]),
         ('Las pulsaciones van con retraso o se pierden', [
             'La causa habitual es Bluetooth. El mismo mando por cable responde antes y pierde muchas menos pulsaciones.',
             'La vibración comparte canal con tus mandos. El asistente envía la respuesta unas dos veces por segundo en lugar de sesenta, treinta veces menos tráfico, pero un canal ocupado sigue costando algo.',
@@ -2260,10 +2207,6 @@ FAQ_ITEMS = {
             'Abre los ajustes del juego en HUD & Gameplay y pon Data out en On, la IP en 127.0.0.1 y el puerto en 20777.',
             'Puede que otra aplicación de carreras ya ocupe ese puerto. Ciérrala o cámbiala de puerto.',
             'Un cortafuegos puede bloquear el paquete local. Permite Steering Assist en redes privadas si el panel sigue vacío con los ajustes correctos.',
-        ]),
-        ('El volante da un tirón al cambiar de marcha en pleno derrape', [
-            'Cambiar devuelve los botones a tu mando por un instante, y la dirección se retoma justo después. Esa costura es lo que notas.',
-            'Es pequeño y no desestabiliza el coche. Subir el suavizado lo atenúa aún más.',
         ]),
         ('Hacer clic en la aplicación otra vez no hace nada', [
             'Solo se ejecuta una copia a la vez. El segundo arranque pide a la primera que se cierre, espera a que devuelva tu mando y ocupa su lugar, así que nunca se disputan el mando virtual.',
@@ -2291,21 +2234,6 @@ FAQ_ITEMS = {
             'Si le jeu est déjà ouvert, inutile de le relancer : débranchez la manette et rebranchez-la, ou éteignez puis rallumez une manette sans fil. Le jeu rescanne ses entrées et prend l\'assistance en compte.',
             "Vérifiez aussi que la direction est réglée sur Simulation, dans Settings → Difficulty → Steering. Sur les autres réglages, le jeu dirige par-dessus l'assistance et la contrarie.",
         ]),
-        ("Cela marchait, puis c'est devenu erratique", [
-            "En général, une seconde manette est apparue. Brancher un volant ou réveiller une manette sans fil donne au jeu un autre périphérique, qui n'est pas forcément celui que l'assistance pilote.",
-            "Redémarrer l'assistance recrée la manette virtuelle et masque de nouveau la physique, ce qui remet tout en ordre.",
-            "Si ce sont les valeurs qui se sont figées et non la direction, le jeu a cessé d'envoyer la télémétrie. Vérifiez que Data Out est toujours activé.",
-        ]),
-        ('Les boutons de ma manette ne font rien dans le jeu', [
-        'Seuls le frein à main et l’embrayage passent au jeu par l’assistance. Le reste, le jeu doit le lire directement sur votre manette, et sur la plupart des machines il y arrive.',
-        'Sur certaines non : dès que l’assistance masque votre manette, le jeu n’a plus que la virtuelle, et tout bouton qui n’est pas maintenu se perd. La direction fonctionne toujours, ce qui rend la chose déroutante.',
-        'Ouvrez <a class="flink" data-goto="mirror_all_buttons">Libérer tous les boutons</a> dans les Réglages et activez-le. Si au contraire un appui arrive deux fois, votre jeu voit les deux manettes : désactivez-le.',
-    ]),
-    ('Les rapports ne passent pas quand je tiens le frein à main', [
-            "Le jeu lit les boutons d'un seul périphérique à la fois. Tant que l'assistance tient le frein à main sur sa manette virtuelle, vos appuis peuvent être ignorés.",
-            "L'assistance cède le miroir pendant toute la durée de l'appui pour que les rapports passent. Sur une session réelle, cela fonctionne environ huit fois sur dix.",
-            'Une manette filaire est nettement plus fiable ici que le Bluetooth, qui perd davantage de ces appuis.',
-        ]),
         ('Les appuis sont en retard ou se perdent', [
             "Le Bluetooth est la cause habituelle. La même manette au câble répond plus vite et perd bien moins d'appuis.",
             "Le retour de force partage le canal avec vos commandes. L'assistance envoie les vibrations environ deux fois par seconde au lieu de soixante, soit trente fois moins de trafic, mais un canal charge coûte toujours quelque chose.",
@@ -2324,10 +2252,6 @@ FAQ_ITEMS = {
             "Ouvrez les réglages du jeu dans HUD & Gameplay et mettez Data out sur On, l'adresse IP sur 127.0.0.1 et le port sur 20777.",
             'Une autre application de course occupe peut-être déjà ce port. Fermez-la, ou changez son port.',
             'Un pare-feu peut bloquer le paquet local. Autorisez Steering Assist sur les réseaux privés si le panneau reste vide avec les bons réglages.',
-        ]),
-        ('Le volant tressaute quand je change de rapport en plein drift', [
-            "Le changement rend les boutons à votre manette un instant, et la direction reprend juste après. C'est cette jointure que vous sentez.",
-            "L'effet est faible et ne déséquilibre pas la voiture. Augmenter le lissage l'adoucit encore.",
         ]),
         ("Recliquer sur l'application ne fait rien", [
             'Une seule copie tourne à la fois. Le second lancement demande à la première de se fermer, attend qu’elle rende votre manette, puis prend le relais : les deux ne se disputent jamais la manette virtuelle.',
@@ -2355,21 +2279,6 @@ FAQ_ITEMS = {
             'Läuft das Spiel schon, musst du es nicht neu starten: ziehe den Controller ab und stecke ihn wieder an, oder schalte einen kabellosen aus und ein. Das Spiel sucht erneut und findet die Hilfe.',
             'Prüfe außerdem, ob die Lenkung im Spiel auf Simulation steht, unter Settings → Difficulty → Steering. Bei den anderen Einstellungen lenkt das Spiel über die Hilfe hinweg und arbeitet gegen sie.',
         ]),
-        ('Es lief, dann wurde es unberechenbar', [
-            'Meist ist ein zweiter Controller dazugekommen. Ein angestecktes Lenkrad oder ein aufgewachtes Funkpad gibt dem Spiel ein weiteres Gerät, und das muss nicht das sein, das die Hilfe steuert.',
-            'Ein Neustart der Lenkhilfe baut das virtuelle Pad neu auf und versteckt das physische wieder, damit ist alles zurück an seinem Platz.',
-            'Sind die Anzeigen eingefroren und nicht die Lenkung, sendet das Spiel keine Telemetrie mehr. Prüfe, ob Data Out noch aktiv ist.',
-        ]),
-        ('Die Tasten meines Controllers tun im Spiel nichts', [
-        'Über die Assistenz gehen nur Handbremse und Kupplung an das Spiel. Alles andere soll das Spiel direkt von Ihrem Controller lesen, und auf den meisten Rechnern kann es das.',
-        'Auf manchen nicht: sobald die Assistenz Ihren Controller versteckt, bleibt dem Spiel nur der virtuelle, und jede Taste außer einer gehaltenen geht ins Leere. Die Lenkung arbeitet weiter, was es so rätselhaft macht.',
-        'Öffnen Sie <a class="flink" data-goto="mirror_all_buttons">Alle Tasten freigeben</a> in den Einstellungen und schalten Sie es ein. Kommt stattdessen ein Druck doppelt an, sieht Ihr Spiel beide Controller: dann wieder aus.',
-    ]),
-    ('Gänge schalten nicht, solange ich die Handbremse halte', [
-            'Das Spiel liest Tasten immer nur von einem Gerät. Solange die Hilfe die Handbremse auf ihrem virtuellen Pad halt, können Eingaben auf deinem ignoriert werden.',
-            'Die Hilfe gibt die Spiegelung für die gesamte Dauer des Drucks frei, damit Schaltvorgänge durchkommen. In einer echten Session klappt das etwa acht von zehn Mal.',
-            'Ein Pad am Kabel ist hier deutlich zuverlässiger als Bluetooth, das mehr dieser Eingaben verliert.',
-        ]),
         ('Tastendrücke kommen verzögert oder gar nicht an', [
             'Meist ist Bluetooth die Ursache. Dasselbe Pad am Kabel reagiert schneller und verliert weit weniger Eingaben.',
             'Die Vibration teilt sich den Kanal mit deinen Eingaben. Die Hilfe sendet Rückmeldung etwa zweimal pro Sekunde statt sechzigmal, also dreißigmal weniger Datenverkehr, doch ein belegter Kanal kostet trotzdem etwas.',
@@ -2388,10 +2297,6 @@ FAQ_ITEMS = {
             'Öffne die Spieleinstellungen unter HUD & Gameplay und setze Data out auf On, die IP-Adresse auf 127.0.0.1 und den Port auf 20777.',
             'Möglicherweise belegt eine andere Rennsport-App den Port bereits. Schließe sie oder weise ihr einen anderen zu.',
             'Eine Firewall kann das lokale Paket blockieren. Erlaube Steering Assist in privaten Netzwerken, wenn das Feld trotz richtiger Einstellungen leer bleibt.',
-        ]),
-        ('Das Lenkrad zuckt, wenn ich mitten im Drift schalte', [
-            'Beim Schalten gehen die Tasten kurz an dein Pad zurück, und direkt danach übernimmt die Lenkung wieder. Diese Nahtstelle spürst du.',
-            'Der Effekt ist klein und bringt das Auto nicht aus der Bahn. Mehr Glättung mildert ihn weiter.',
         ]),
         ('Ein erneuter Klick auf die App bewirkt nichts', [
             'Es läuft immer nur eine Kopie. Der zweite Start bittet die erste zu schließen, wartet bis sie den Controller zurückgibt, und übernimmt - so streiten sich nie zwei um das virtuelle Gamepad.',
@@ -2419,21 +2324,6 @@ FAQ_ITEMS = {
             'ゲームがすでに開いている場合、再起動は不要です。コントローラーを抜き差しするか、無線なら電源を入れ直してください。ゲームが入力を再検出してアシストを認識します。',
             'ゲーム側のステアリングが Simulation になっているかも確認してください（Settings → Difficulty → Steering）。他の設定ではゲームがアシストの上から操舵して打ち消してしまいます。',
         ]),
-        ('動いていたのに挙動がおかしくなった', [
-            'たいていは二台目のコントローラーが増えています。ハンドルを接続したり、ワイヤレスパッドが復帰したりすると、ゲームが別の機器を読むことがあります。',
-            'アシストを再起動すると仮想パッドが作り直され、実機のパッドも隠し直されます。',
-            '操舵ではなく数値が止まった場合は、ゲームがテレメトリーの送信をやめています。Data Out が有効なままか確認してください。',
-        ]),
-        ('コントローラーのボタンがゲームで効かない', [
-        'アシスト経由でゲームに送られるのはサイドブレーキとクラッチだけです。他はゲームがコントローラーから直接読む前提で、多くの環境ではそれで動きます。',
-        '一部の環境では違います。アシストがパッドを隠すとゲームには仮想パッドしか残らず、押し続け以外のボタンはどこにも届きません。ステアリングは動いているため分かりにくい不具合です。',
-        '設定の<a class="flink" data-goto="mirror_all_buttons">すべてのボタンを解放</a>をオンにしてください。1回の操作が2回入る場合は両方のパッドが見えているので、オフに戻してください。',
-    ]),
-    ('サイドブレーキを握るとギアが入らない', [
-            'ゲームは一度に一台の機器からしかボタンを読みません。アシストが仮想パッドでサイドブレーキを保持している間、手元のパッドの入力は無視されることがあります。',
-            'アシストは押している間ずっとミラーを譲るため、シフトは通ります。実走行では十回中およそ八回成功します。',
-            'ここでは有線パッドのほうが Bluetooth より明らかに確実で、Bluetooth は取りこぼしが増えます。',
-        ]),
         ('ボタン入力が遅れる、または抜ける', [
             '原因はたいてい Bluetooth です。同じパッドでも有線なら反応が速く、取りこぼしも大幅に減ります。',
             '振動はあなたの入力と同じ帯域を使います。アシストは毎秒六十回ではなく二回ほどに抑えており、通信量は三十分の一ですが、混んだ帯域には代償があります。',
@@ -2452,10 +2342,6 @@ FAQ_ITEMS = {
             'ゲーム設定の HUD & Gameplay を開き、Data out を On、IP アドレスを 127.0.0.1、ポートを 20777 にしてください。',
             '他のレース系アプリがそのポートを使っていることがあります。終了するか、別のポートに変更してください。',
             'ファイアウォールがローカル通信を遮断している場合もあります。設定が正しいのに空のままなら、プライベートネットワークで Steering Assist を許可してください。',
-        ]),
-        ('ドリフト中にシフトすると挙動が乱れる', [
-            'シフトの瞬間だけボタンが手元のパッドに戻り、直後に操舵が再開します。その継ぎ目を感じています。',
-            '影響は小さく、車の姿勢は崩れません。スムージングを上げるとさらに和らぎます。',
         ]),
         ('アプリをもう一度クリックしても何も起きない', [
             '同時に動くのは一つだけです。二つ目の起動は一つ目に終了を依頼し、コントローラーが戻るのを待ってから引き継ぎます。仮想パッドを取り合うことはありません。',
@@ -2487,30 +2373,6 @@ FAQ_ITEMS = {
             ],
         ),
         (
-            '一开始正常，后来行为变得异常',
-            [
-                '通常是出现了第二个手柄。接上方向盘或唤醒无线手柄，会给游戏多一个可读取的设备，而它未必是辅助正在控制的那个。',
-                '重启辅助会重建虚拟手柄并再次隐藏实体手柄，一切就会恢复正常。',
-                '如果冻住的是读数而不是转向，说明游戏停止发送遥测数据。请检查数据输出是否仍然开启。',
-            ],
-        ),
-        (
-            '手柄的按键在游戏里没反应',
-            [
-                '通过辅助发送给游戏的只有手刹和离合。其余按键本应由游戏直接从你的手柄读取，大多数电脑上都没问题。',
-                '但有些电脑不行：辅助隐藏你的手柄后，游戏只能读取虚拟手柄，所有非长按类的按键都会失效。转向仍然正常，所以让人摸不着头脑。',
-                '在设置中打开 <a class="flink" data-goto="mirror_all_buttons">释放所有按键</a>。如果反而出现按一次触发两次，说明游戏能看到两个手柄，请再把它关掉。',
-            ],
-        ),
-        (
-            '按住手刹时换挡不生效',
-            [
-                '游戏一次只从一个设备读取按键。辅助在虚拟手柄上按住手刹时，你自己手柄上的按键可能会被忽略。',
-                '辅助会在整个按下期间让出镜像，让换挡得以通过。在实际游玩中测得大约十次有八次成功。',
-                '这种情况下有线手柄比蓝牙明显更可靠，蓝牙会丢失更多此类按键。',
-            ],
-        ),
-        (
             '按键有延迟或被丢失',
             [
                 '通常是蓝牙导致的。同一个手柄用线连接响应更快，丢键也少得多。',
@@ -2537,10 +2399,6 @@ FAQ_ITEMS = {
                 '其他赛车应用可能已经占用了这个端口。关闭它，或把它改到别的端口。',
                 '防火墙可能会拦截本地数据包。如果设置正确但面板仍为空，请在专用网络中允许 Steering Assist。',
             ],
-        ),
-        (
-            '漂移中换挡时方向会抖一下',
-            ['换挡时按键会暂时交还给你的手柄，随后转向立刻恢复。你感觉到的就是这个衔接。', '幅度很小，不会让车失控。'],
         ),
         (
             '再次点击应用没有反应',
@@ -2584,30 +2442,6 @@ FAQ_ITEMS = {
             ],
         ),
         (
-            'Działało, a potem zaczęło zachowywać się dziwnie',
-            [
-                'Zwykle pojawił się drugi kontroler. Podłączenie kierownicy lub wybudzenie pada bezprzewodowego daje grze kolejne urządzenie do odczytu, a może to nie być to, którym steruje asystent.',
-                'Ponowne uruchomienie asystenta odtwarza wirtualny pad i znowu ukrywa fizyczny, co przywraca porządek.',
-                'Jeśli zamarły odczyty, a nie kierowanie, gra przestała wysyłać telemetrię. Sprawdź, czy wysyłanie danych jest nadal włączone.',
-            ],
-        ),
-        (
-            'Przyciski kontrolera nic nie robią w grze',
-            [
-                'Przez asystenta do gry trafiają tylko hamulec ręczny i sprzęgło. Wszystko inne gra powinna czytać bezpośrednio z twojego kontrolera i na większości komputerów to działa.',
-                'Na niektórych nie: gdy asystent ukryje pad, gra ma do odczytu tylko wirtualny, a każdy przycisk, który nie jest przytrzymywany, trafia w próżnię. Kierowanie nadal działa, co jest najbardziej mylące.',
-                'Otwórz <a class="flink" data-goto="mirror_all_buttons">Zwolnij wszystkie przyciski</a> w Ustawieniach i włącz tę opcję. Jeśli zamiast tego jedno naciśnięcie zaczyna przychodzić podwójnie, gra widzi oba pady, więc wyłącz ją z powrotem.',
-            ],
-        ),
-        (
-            'Zmiana biegów nie działa, gdy trzymam hamulec ręczny',
-            [
-                'Gra czyta przyciski z jednego urządzenia naraz. Gdy asystent trzyma hamulec ręczny na wirtualnym padzie, naciśnięcia na twoim padzie mogą zostać pominięte.',
-                'Asystent oddaje lustro na cały czas naciśnięcia, więc zmiany biegów przechodzą. W prawdziwej sesji udaje się to mniej więcej osiem razy na dziesięć.',
-                'Pad na kablu jest tu wyraźnie pewniejszy niż Bluetooth, który gubi więcej takich naciśnięć.',
-            ],
-        ),
-        (
             'Naciśnięcia przycisków są opóźnione lub giną',
             [
                 'Zwykle winny jest Bluetooth. Ten sam pad na kablu reaguje szybciej i gubi znacznie mniej naciśnięć.',
@@ -2636,13 +2470,6 @@ FAQ_ITEMS = {
                 'Otwórz ustawienia gry w sekcji HUD i rozgrywka i ustaw wysyłanie danych na Wł., adres IP na 127.0.0.1 i port IP na 20777.',
                 'Inna aplikacja wyścigowa może już zajmować ten port. Zamknij ją lub przestaw na inny.',
                 'Zapora może blokować lokalny pakiet. Zezwól Steering Assist w sieciach prywatnych, jeśli panel jest pusty mimo poprawnych ustawień.',
-            ],
-        ),
-        (
-            'Kierownica drga, gdy zmieniam bieg w drifcie',
-            [
-                'Zmiana biegu na chwilę oddaje przyciski twojemu padowi, a sterowanie wraca zaraz potem. To przejście czujesz.',
-                'Jest niewielkie i nie wybija auta z toru.',
             ],
         ),
         (
@@ -4162,6 +3989,11 @@ class Bridge:
         # as the first one.
         self.ran_before = bool(self.cfg.get("ran_before", False))
         self.bad_order = False
+        # whether the game is running at all, looked at every couple of
+        # seconds: the telemetry status tells "no telemetry" from "the game
+        # is not launched" by it
+        self.game_up = False
+        self._game_t = float("-inf")
         self.boot_step = 0
         self.boot_error = ""
         self.boot_installed = []
@@ -4403,7 +4235,10 @@ class Bridge:
             for _ in range(int(SWEEP_SEC)):
                 if not self._run.is_set():
                     return
-                if self.bad_order and not game_running():
+                if time.monotonic() - self._game_t >= 2.0:
+                    self._game_t = time.monotonic()
+                    self.game_up = game_running()
+                if self.bad_order and not self.game_up:
                     self.bad_order = False
                 self._recheck_mirror()
                 # a pad that came or went is looked at now, not next round
@@ -5249,7 +5084,7 @@ TR = {
         "w_callback": 'Callback',
         "w_latency": 'Latency',
         "w_car": 'Current car',
-        "game_off": "Game is not launched",
+        "game_off": "Game not running",
         "car_unknown": 'Unknown car',
         "auto_badge": "Auto",
         "setup_nav1": "Navigate to game settings:",
@@ -5426,7 +5261,7 @@ TR = {
         "w_callback": 'Отклик',
         "w_latency": 'Частота',
         "w_car": 'Машина',
-        "game_off": "Игра не запущена",
+        "game_off": "Игра закрыта",
         "car_unknown": 'Неизвестная машина',
         "auto_badge": "Авто",
         "setup_nav1": "Откройте настройки игры:",
@@ -5603,7 +5438,7 @@ TR = {
         "w_callback": 'Antwort',
         "w_latency": 'Frequenz',
         "w_car": 'Fahrzeug',
-        "game_off": "Spiel nicht gestartet",
+        "game_off": "Spiel läuft nicht",
         "car_unknown": 'Unbekanntes Auto',
         "auto_badge": "Auto",
         "setup_nav1": "Öffne die Spieleinstellungen:",
@@ -5780,7 +5615,7 @@ TR = {
         "w_callback": 'Réponse',
         "w_latency": 'Fréquence',
         "w_car": 'Voiture',
-        "game_off": "Le jeu n’est pas lancé",
+        "game_off": "Jeu non lancé",
         "car_unknown": 'Voiture inconnue',
         "auto_badge": "Auto",
         "setup_nav1": "Ouvrez les réglages du jeu :",
@@ -5957,7 +5792,7 @@ TR = {
         "w_callback": 'Respuesta',
         "w_latency": 'Frecuencia',
         "w_car": 'Coche',
-        "game_off": "El juego no está iniciado",
+        "game_off": "Juego cerrado",
         "car_unknown": 'Coche desconocido',
         "auto_badge": "Auto",
         "setup_nav1": "Abre los ajustes del juego:",
@@ -6148,7 +5983,7 @@ TR = {
         "w_callback": '応答',
         "w_latency": '周波数',
         "w_car": '車両',
-        "game_off": "ゲームが起動していません",
+        "game_off": "ゲーム未起動",
         "car_unknown": '不明な車',
         "auto_badge": "オート",
         "setup_nav1": "ゲーム設定の",
@@ -6530,7 +6365,7 @@ TR = {
         'w_callback': 'Odpowiedź',
         'w_latency': 'Opóźnienie',
         'w_car': 'Aktualne auto',
-        'game_off': 'Gra nie jest uruchomiona',
+        'game_off': 'Gra wyłączona',
         'car_unknown': 'Nieznane auto',
         'auto_badge': 'Auto',
         'setup_nav1': 'Przejdź do ustawień gry:',
@@ -6667,7 +6502,8 @@ def _pad_art() -> dict:
 # The community's Discord server, behind the button in the header.
 DISCORD_URL = "https://discord.gg/UvNVYbNp55"
 
-TESTED_ON = (("flydigi", "Flydigi", "https://shops.flydigi.com/"),
+TESTED_ON = (("8bitdo", "8BitDo", "https://www.8bitdo.com/"),
+             ("flydigi", "Flydigi", "https://shops.flydigi.com/"),
              ("gamesir", "GameSir", "https://gamesir.com/"),
              ("microsoft", "Xbox", "https://www.xbox.com/"))
 
@@ -7282,8 +7118,6 @@ body.t-light{
         justify-content:space-between;gap:8px}
 .tgrid .tsteer .barwrap,.tgrid .tsteer .barwrap:last-child,
 .wgrid .tsteer .barwrap,.wgrid .tsteer .barwrap:last-child{padding:0}
-.tsteer.idle .barlbl{color:var(--off)}
-.tsteer.idle .bar{opacity:.5}
 /* ---------- the widget tiles ----------
    Four columns, three rows, every tile one row tall: the four readouts one
    column wide, the statuses, the steering and the car two columns and the
@@ -7313,6 +7147,12 @@ body.t-light{
 /* picked up: on top, a touch larger, outlined in blue until let go */
 .wgrid .wt.drag{z-index:5;scale:1.04;cursor:grabbing;
                 box-shadow:0 10px 26px rgba(0,0,0,.32)}
+/* No game: the tiles rest, dimmed and empty - the statuses and the
+   odometer's total as they are - and still move. What is dimmed is a
+   tile's insides, so the card and its reveal keep their own opacity. */
+.wgrid.idle .wt:not(.tsc):not([data-tile=odo]) > *{opacity:.4}
+.wgrid.idle .tcarcard .tchips,.wgrid.idle .tcimg,
+.wgrid.idle .tsteer .bar i,.wgrid.idle #sstat{visibility:hidden}
 /* the statuses keep their own short card, half a tile's height */
 .wgrid .wt.tsc{height:var(--hh)}
 /* the steering card in a tile's height: the bars give up some of theirs */
@@ -7368,11 +7208,7 @@ body.t-light{
 /* No telemetry yet: the two statuses, then one wide card - where to go in
    the game on the left behind a red rule, the three values on the right */
 .tsetw{display:flex;align-items:flex-start;gap:7.5px}
-.tgrid + .tsetw,.tsc + .tsetw,.tgrid + .tgame{margin-top:10px}
-/* as tall as the statuses above it and as wide as both */
-.card.tgame{height:42px;display:flex;align-items:center;
-            justify-content:center;font-size:13px;font-weight:600;
-            color:var(--muted)}
+.tgrid + .tsetw,.tsc + .tsetw{margin-top:10px}
 .card.tsetw{padding:14px}
 .tsnote{flex:1;min-width:0;display:flex;align-items:stretch;gap:9px}
 .tsnote i{flex:none;width:2px;border-radius:3px;background:var(--danger)}
@@ -8165,7 +8001,7 @@ function screenMain(force){
   h += '<div class="reveal" id="teleblock"><div class="sec">' +
        t('telemetry_sec') + '</div>';
 
-  const steer = '<div class="card tsteer' + (live ? '' : ' idle') + '">' +
+  const steer = '<div class="card tsteer">' +
     '<div class="trow"><span class="rname">' + t('w_steering') + '</span>' +
     '<span class="tstat" id="sstat">-</span></div>' + bars + '</div>';
   const car = '<div class="card tcarcard"><img class="tcimg" alt="">' +
@@ -8178,19 +8014,16 @@ function screenMain(force){
   const pad = '<div class="card tsc"><div class="trow">' +
     '<span class="rname">' + t('pad_status') + '</span>' +
     '<span class="rval" id="padstat">-</span></div></div>';
-  /* nothing to read yet: the readouts would say nothing, so the space
-     tells the player how to turn telemetry on instead */
-  /* Telemetry has worked on this machine before, so it is set up: the
-     game simply is not running. One short line says so, instead of the
-     instructions for something already done. */
-  const gameOff = '<div class="card tgame">' + t('game_off') + '</div>';
-  if (!live) return h + '<div class="tgrid">' +
+  /* Telemetry never set up: the readouts would say nothing, so the space
+     tells the player how to turn it on instead. */
+  if (!live && !teleSetUp()) return h + '<div class="tgrid">' +
     '<div class="tcol">' + stat + '</div>' +
-    '<div class="tcol">' + pad + '</div></div>' +
-    (cfg.telemetry_seen || teleEver ? gameOff : setupWide) + '</div>';
-  /* reading, every widget is a tile the driver can move */
+    '<div class="tcol">' + pad + '</div></div>' + setupWide + '</div>';
+  /* Set up once, the widgets stay: a tile the driver can move, reading or
+     not. With no game they rest, dimmed and empty - all but the odometer,
+     which keeps its total - and the telemetry status says why. */
   const tiles = Object.assign({tele: stat, pad, steer, car}, widgets());
-  return h + '<div class="wgrid" id="wgrid">' +
+  return h + '<div class="wgrid' + (live ? '' : ' idle') + '" id="wgrid">' +
     tileOrder().map(id => tiles[id].replace('class="card ',
       'data-tile="' + id + '" class="card wt ')).join('') +
     '</div></div>';
@@ -10225,6 +10058,9 @@ function carUpdate(){
   }, 240);
 }
 
+/* telemetry has worked on this machine: it is set up, whatever is running */
+function teleSetUp(){ return !!(cfg && (cfg.telemetry_seen || teleEver)); }
+
 function liveUpdate(){
   if (!state || !cfg) return;
   updateWarning();
@@ -10235,6 +10071,8 @@ function liveUpdate(){
     if (state.tele_err){ cls = 'err'; txt = t('st_port'); }
     else if (state.alive){ cls = 'ok'; txt = t('st_ingame'); }
     else if (state.recv){ cls = 'ok'; txt = t('st_recv'); }
+    /* nothing comes in: the game is not there, or it is and sends nothing */
+    else if (!state.game){ cls = 'wait'; txt = t('game_off'); }
     else { cls = 'err'; txt = t('st_notele'); }
     ts.className = 'tstat ' + cls;
     ts.textContent = txt;
@@ -10243,8 +10081,10 @@ function liveUpdate(){
   if (nowLive !== wasLive){
     const first = wasLive === null;
     wasLive = nowLive;
-    if (first) render(); else swapTelemetry();
-    return;
+    /* the tiles are there either way: they only wake or go to rest */
+    const grid = $('#wgrid');
+    if (!first && grid && teleSetUp()) grid.classList.toggle('idle', !nowLive);
+    else { if (first) render(); else swapTelemetry(); return; }
   }
   const raw = +state.raw || 0;
   if (Math.abs(raw - rawTo) >= RAW_GATE || raw === 0) rawTo = raw;
@@ -11731,6 +11571,7 @@ class Api:
             "gear": b.telemetry.engine.gear,
             "buttons": b.buttons,
             "bad_order": b.bad_order,
+            "game": b.game_up,
             "boot_step": b.boot_step,
             "boot_error": b.boot_error,
             "boot_installed": b.boot_installed,

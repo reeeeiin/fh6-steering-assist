@@ -3043,16 +3043,18 @@ def test_the_round_darkens_around_the_button_never_over_it():
     assert html.index('id="tour"') < html.index('id="boot"')
 
 
-def test_the_all_buttons_switch_is_explained_in_the_faq():
-    """It cures a fault whose symptoms make no sense on their own - the
-    steering works, no button does - so it has to be findable, and the
-    answer has to carry the reader to the switch rather than describe
-    where to look for it."""
+def test_the_faq_no_longer_answers_troubles_the_app_now_puts_right():
+    """With the pad's XInput node hidden every button goes through our pad,
+    and a pad that turns up later is hidden and healed by itself. Dead
+    buttons, shifts lost under the handbrake, the twitch on a shift and
+    "it worked, then went odd" were answers for faults that cannot happen
+    any more, so they went - in every language alike."""
+    gone = ("It worked, then", "buttons do nothing", "Gear shifts",
+            "twitches when I shift")
     for lang, items in fa.FAQ_ITEMS.items():
-        assert len(items) == 13, (lang, len(items))
-        linked = [q for q, a in items
-                  if any('data-goto="mirror_all_buttons"' in p for p in a)]
-        assert linked, (lang, "no answer links to the switch")
+        assert len(items) == 9, (lang, len(items))
+    for q, _ in fa.FAQ_ITEMS["en"]:
+        assert not any(g in q for g in gone), q
 
 
 def test_the_faq_does_not_send_people_to_settings_that_are_gone():
@@ -3879,6 +3881,31 @@ def test_the_assisted_bar_follows_as_quickly_as_raw_input():
     assert "#rawbar,#outbar{transition:none}" in html
     assert "sOut += (state.out - sOut) * 0.35" not in html
     assert "sOut += (outTo - sOut) * k" in html
+
+
+def test_with_no_game_the_tiles_rest_and_the_status_says_why():
+    """Telemetry set up once, the tiles stay without the game - dimmed,
+    empty but for the odometer, still movable - and "Game is not launched"
+    moved into the telemetry status. "No telemetry" is kept for a game that
+    is running and sends nothing."""
+    html = fa.build_html()
+    assert "'<div class=\"wgrid' + (live ? '' : ' idle') + '\"" in html
+    assert "if (!live && !teleSetUp())" in html, "setup card only if never set up"
+    assert "tgame" not in html, "the line under the statuses is gone"
+    assert ".wgrid.idle .wt:not(.tsc):not([data-tile=odo]) > *{opacity:.4}" in html
+    assert "grid.classList.toggle('idle', !nowLive)" in html
+    i = html.index("else if (!state.game){ cls = 'wait'; txt = t('game_off'); }")
+    j = html.index("else { cls = 'err'; txt = t('st_notele'); }")
+    assert i < j
+    src = open(fa.__file__, encoding="utf-8").read()
+    assert '"game": b.game_up,' in src
+    assert "self.game_up = game_running()" in src
+
+
+def test_8bitdo_is_among_the_pads_it_was_tested_on():
+    keys = [k for k, _, _ in fa.TESTED_ON]
+    assert keys[0] == "8bitdo"
+    assert "--brand:#F0278C" in fa._brand_logo("8bitdo")
 
 
 def main():
