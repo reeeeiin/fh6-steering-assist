@@ -3920,7 +3920,7 @@ def test_with_no_game_the_tiles_rest_and_the_status_says_why():
     assert i < j
     src = open(fa.__file__, encoding="utf-8").read()
     assert '"game": b.game_up,' in src
-    assert "self.game_up = game_running()" in src
+    assert "self.game_up = bool(self.game_id)" in src
 
 
 def test_with_no_game_the_status_stands_alone():
@@ -3950,6 +3950,36 @@ def test_words_never_change_in_a_single_frame():
     assert "fadeTo(el, String(n)," in html
     assert ".gauge,.gauge *,.cbwrap{transition:color .25s ease}" in html
     assert "left .32s" in html.split(".tmask{")[1][:300], "the tour's shade glides"
+
+
+def test_the_running_game_is_told_by_its_file_name():
+    """The telemetry packet is the same from every game; the process is
+    not. Xbox app and Steam alike: forzahorizon6.exe, ForzaHorizon5.exe."""
+    real = fa.running_process_names
+    try:
+        for names, want in ((["forzahorizon6.exe", "explorer.exe"], "fh6"),
+                            (["forzahorizon5.exe"], "fh5"),
+                            (["forzahorizon4.exe"], "fh4"),
+                            (["forzamotorsport.exe"], "forza"),
+                            (["explorer.exe"], "")):
+            fa.running_process_names = lambda n=names: set(n)
+            assert fa.running_game() == want, names
+            assert fa.game_running() == bool(want), names
+    finally:
+        fa.running_process_names = real
+    src = open(fa.__file__, encoding="utf-8").read()
+    assert '"game_id": b.game_id,' in src
+
+
+def test_the_running_game_has_its_badge_in_its_colours():
+    html = fa.build_html()
+    assert '<span class="gbadge" id="gbadge"><b>FH</b><i></i></span>' in html
+    for g in ("fh6", "fh5", "fh4"):
+        assert ".gbadge[data-g=%s]{" % g in html, g
+    # in and out by a transition, from one game to another by a fade
+    assert "visibility 0s linear .36s" in html
+    assert "fadeTo(el, g, show)" in html
+    assert "gameBadge();" in html
 
 
 def test_8bitdo_is_among_the_pads_it_was_tested_on():

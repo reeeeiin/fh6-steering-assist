@@ -296,6 +296,11 @@ class HidPadState:
 
 TH32CS_SNAPPROCESS = 0x00000002
 GAME_PROCESSES = ("forzahorizon", "forzamotorsport")
+# Which one it is, by the game's own file name - the same for the Xbox app
+# and Steam: forzahorizon6.exe, ForzaHorizon5.exe, ForzaHorizon4.exe. The
+# telemetry cannot say: every game sends the same packet.
+GAME_IDS = (("forzahorizon6", "fh6"), ("forzahorizon5", "fh5"),
+            ("forzahorizon4", "fh4"))
 
 class PROCESSENTRY32W(ctypes.Structure):
     _fields_ = [("dwSize", wintypes.DWORD),
@@ -326,12 +331,23 @@ def running_process_names() -> set[str]:
         k32.CloseHandle(snap)
     return names
 
-def game_running() -> bool:
+def running_game() -> str:
+    """fh6, fh5 or fh4 for the game that is running; "forza" for another
+    Forza game; empty for none."""
     try:
         names = running_process_names()
     except Exception:
-        return False
-    return any(p in n for n in names for p in GAME_PROCESSES)
+        return ""
+    for prefix, game in GAME_IDS:
+        if any(n.startswith(prefix) for n in names):
+            return game
+    if any(p in n for n in names for p in GAME_PROCESSES):
+        return "forza"
+    return ""
+
+
+def game_running() -> bool:
+    return bool(running_game())
 
 def is_admin() -> bool:
     try:
@@ -3993,6 +4009,7 @@ class Bridge:
         # seconds: the telemetry status tells "no telemetry" from "the game
         # is not launched" by it
         self.game_up = False
+        self.game_id = ""             # which: fh6, fh5, fh4 - or "forza"
         self._game_t = float("-inf")
         self.boot_step = 0
         self.boot_error = ""
@@ -4237,7 +4254,8 @@ class Bridge:
                     return
                 if time.monotonic() - self._game_t >= 2.0:
                     self._game_t = time.monotonic()
-                    self.game_up = game_running()
+                    self.game_id = running_game()
+                    self.game_up = bool(self.game_id)
                 if self.bad_order and not self.game_up:
                     self.bad_order = False
                 self._recheck_mirror()
@@ -6915,6 +6933,28 @@ body.t-light{
         border:1.5px solid var(--accent)}
 /* a beta build: the same chip in orange */
 .vbadge.vbeta{color:#F84D04;background:rgba(248,77,4,.1);border-color:#F84D04}
+/* The game that is running, in its own colours - the chip's shape, filled
+   with the game's warm colour, edged and numbered in its bright one. It is
+   there only while the game is, and comes and goes without a jump. */
+.gbadge{height:18px;padding:0 6px;border-radius:5px;margin-left:-3px;
+        display:flex;align-items:center;gap:2px;flex:none;box-sizing:border-box;
+        font-size:8px;font-weight:600;font-style:italic;letter-spacing:.03em;
+        color:#fff;background:linear-gradient(100deg,var(--g1),var(--g2));
+        box-shadow:inset 0 0 0 1.5px var(--g3);-webkit-app-region:no-drag;
+        opacity:0;transform:scale(.8);visibility:hidden;
+        transition:opacity .3s ease,transform .36s cubic-bezier(.3,1.45,.55,1),
+                   visibility 0s linear .36s}
+.gbadge.on{opacity:1;transform:none;visibility:visible;
+           transition:opacity .3s ease,transform .36s cubic-bezier(.3,1.45,.55,1),
+                      visibility 0s}
+.gbadge b{font-weight:inherit}
+.gbadge i{font-style:inherit;color:var(--g4,var(--g3))}
+/* FH6 pink with acid green, FH5 orange into pink with yellow, FH4
+   turquoise edged in orange-red - its number white, as orange-red on
+   turquoise would not read */
+.gbadge[data-g=fh6]{--g1:#FF2D95;--g2:#F7208A;--g3:#C8FF1A}
+.gbadge[data-g=fh5]{--g1:#FF7A1A;--g2:#F0287F;--g3:#FFD21F}
+.gbadge[data-g=fh4]{--g1:#17B79B;--g2:#0E9E8E;--g3:#FF4F2B;--g4:#fff}
 .wbtns{display:flex;align-items:center;gap:3px;flex:none}
 .tabs{display:flex;align-items:center;gap:5px;flex:none}
 
@@ -7755,6 +7795,7 @@ html[data-boot] .rz{display:none}
     <div class="tdrag">
       <span class="logo reveal"><!--ICON:applogo--></span>
       <span class="vbadge__VBETA__ reveal">v__VERSHORT__</span>
+      <span class="gbadge" id="gbadge"><b>FH</b><i></i></span>
     </div>
     <div class="tabs">
       <span class="hbtn sq dsc reveal" data-url="__DISCORD__" title="Discord"></span>
@@ -10124,12 +10165,33 @@ function carUpdate(){
   }, 240);
 }
 
+/* The badge of the game that is running, beside the version: in when the
+   game starts, out when it closes, and from one to the other with a fade
+   if the driver goes from one game to the next. */
+const GAME_BADGES = ['fh6', 'fh5', 'fh4'];
+function gameBadge(){
+  const el = $('#gbadge');
+  if (!el || !state) return;
+  const g = GAME_BADGES.includes(state.game_id) ? state.game_id : '';
+  if (!g){ el.classList.remove('on'); return; }
+  const show = () => {
+    el.dataset.g = g;
+    el.querySelector('i').textContent = g.slice(2);
+    el.title = 'Forza Horizon ' + g.slice(2);
+  };
+  if (el.classList.contains('on')){ fadeTo(el, g, show); return; }
+  show();                         /* hidden still: no one sees the change */
+  el.dataset.fk = g;
+  el.classList.add('on');
+}
+
 /* telemetry has worked on this machine: it is set up, whatever is running */
 function teleSetUp(){ return !!(cfg && (cfg.telemetry_seen || teleEver)); }
 
 function liveUpdate(){
   if (!state || !cfg) return;
   updateWarning();
+  gameBadge();
   stepStrength();
   const ts = $('#tstat');
   if (ts){
@@ -11660,6 +11722,7 @@ class Api:
             "buttons": b.buttons,
             "bad_order": b.bad_order,
             "game": b.game_up,
+            "game_id": b.game_id,
             "boot_step": b.boot_step,
             "boot_error": b.boot_error,
             "boot_installed": b.boot_installed,
