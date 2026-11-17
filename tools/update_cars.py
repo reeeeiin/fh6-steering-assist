@@ -10,6 +10,8 @@ game adds. Run this, look at what it says changed, then commit.
 
 A car already in our table is never dropped, even if the list loses it:
 somebody may still be driving it, and a name is better than a number.
+The FH5 and FH4 cars tools/add_older_cars.py added stay too; where FH6
+gets one of them, its name here takes over.
 """
 import io
 import json
@@ -24,6 +26,9 @@ TABLE = os.path.join(ROOT, "assets", "cars.json")
 
 # Spelling in the source that should not reach the screen.
 FIXES = {"Bently ": "Bentley "}
+# An empty slot in the game's files, not a car: NUL_CAR_00. Left out, and
+# taken out of the table if it got in.
+PLACEHOLDER = "NUL_"
 
 
 def fetch() -> dict:
@@ -32,6 +37,8 @@ def fetch() -> dict:
     # the list is name -> ordinal; the table is ordinal -> name
     out = {}
     for name, ordinal in raw.items():
+        if name.startswith(PLACEHOLDER):
+            continue
         for bad, good in FIXES.items():
             name = name.replace(bad, good)
         out[str(int(ordinal))] = name
@@ -50,7 +57,7 @@ def main() -> int:
                       if ours[k] != theirs[k]), key=int)
     kept = sorted(set(ours) - set(theirs), key=int)
 
-    merged = dict(ours)
+    merged = {k: v for k, v in ours.items() if not v.startswith(PLACEHOLDER)}
     merged.update(theirs)
     table = {k: merged[k] for k in sorted(merged, key=int)}
     with io.open(TABLE, "w", encoding="utf-8", newline="\n") as f:

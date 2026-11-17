@@ -702,7 +702,26 @@ def test_the_car_table_has_the_latest_cars_spelled_right():
     for ordinal in ("278", "335", "1534", "2235", "3429", "3624", "3958",
                     "3980", "4067", "4118", "4354"):
         assert fa._CARS.get(ordinal), ordinal
-    assert fa._CARS["4067"] == "2025 Bentley Continental GT"
+    assert fa._CARS["4067"] == "2025 Bentley Continental GT Speed"
+    # the list's own mistakes, put right in it since: 2616 was an Urus
+    assert fa._CARS["2616"] == "2016 Lamborghini Centenario LP 770-4"
+
+
+def test_the_car_table_knows_the_fh5_and_fh4_cars_too():
+    """A car's number is the same in every Forza game, so one table serves
+    FH6, FH5 and FH4. Their cars are only added: where FH6 has the car, its
+    own full name stands."""
+    fa._car_name(0)
+    cars = fa._CARS
+    assert len(cars) > 1200
+    assert cars["247"] == "1969 Toyota 2000 GT"              # FH6's name
+    assert cars["257"] == "2002 Ferrari 575M Maranello"      # FH5 only
+    assert cars["2268"] == "1965 Ferrari 250LM"              # FH4 only
+    assert cars["2941"] == "2011 Lamborghini Sesto Elemento (Forza Edition)"
+    assert cars["2906"] == "1998 Volkswagen GTI (Traffic)"
+    for name in cars.values():
+        assert "_" not in name and "  " not in name, name
+        assert name.count("(") <= 1, name
 
 
 def test_car_type_detect_is_named_in_every_language():
