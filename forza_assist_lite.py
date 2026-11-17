@@ -61,12 +61,12 @@ def load_vgamepad():
 # The series is what the window shows: it says which generation of the app
 # this is and nothing more. The build number after it says which one of
 # them, and that is what belongs in a bug report.
-APP_SERIES = "2.2"   # builds are counted from the commit that sets this
+APP_SERIES = "2.3"   # builds are counted from the commit that sets this
 # A test build of the series to come: the chip in the header says which one
 # and that it is a beta, in orange, and the exe's name ends in "b". The
 # version everywhere else stays the build's own. Empty on a release. No
 # comment after the value: build.bat reads it between the quotes.
-APP_BETA = "2.3"
+APP_BETA = ""
 
 
 def _build_id() -> str:
