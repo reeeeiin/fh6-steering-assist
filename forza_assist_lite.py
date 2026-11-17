@@ -6934,13 +6934,13 @@ body.t-light{
 /* a beta build: the same chip in orange */
 .vbadge.vbeta{color:#F84D04;background:rgba(248,77,4,.1);border-color:#F84D04}
 /* The game that is running, in its own colours - the chip's shape, filled
-   with the game's warm colour, edged and numbered in its bright one. It is
-   there only while the game is, and comes and goes without a jump. */
+   with the game's main colour, its number in the other. It is there only
+   while the game is, and comes and goes without a jump. */
 .gbadge{height:18px;padding:0 6px;border-radius:5px;margin-left:-3px;
-        display:flex;align-items:center;gap:2px;flex:none;box-sizing:border-box;
-        font-size:8px;font-weight:600;font-style:italic;letter-spacing:.03em;
+        display:flex;align-items:center;flex:none;box-sizing:border-box;
+        font-size:8px;font-weight:600;
         color:#fff;background:linear-gradient(100deg,var(--g1),var(--g2));
-        box-shadow:inset 0 0 0 1.5px var(--g3);-webkit-app-region:no-drag;
+        -webkit-app-region:no-drag;
         opacity:0;transform:scale(.8);visibility:hidden;
         transition:opacity .3s ease,transform .36s cubic-bezier(.3,1.45,.55,1),
                    visibility 0s linear .36s}
@@ -6948,13 +6948,12 @@ body.t-light{
            transition:opacity .3s ease,transform .36s cubic-bezier(.3,1.45,.55,1),
                       visibility 0s}
 .gbadge b{font-weight:inherit}
-.gbadge i{font-style:inherit;color:var(--g4,var(--g3))}
+.gbadge i{font-style:normal;color:var(--g3)}
 /* FH6 pink with acid green, FH5 orange into pink with yellow, FH4
-   turquoise edged in orange-red - its number white, as orange-red on
-   turquoise would not read */
-.gbadge[data-g=fh6]{--g1:#FF2D95;--g2:#F7208A;--g3:#C8FF1A}
-.gbadge[data-g=fh5]{--g1:#FF7A1A;--g2:#F0287F;--g3:#FFD21F}
-.gbadge[data-g=fh4]{--g1:#17B79B;--g2:#0E9E8E;--g3:#FF4F2B;--g4:#fff}
+   turquoise with orange-red */
+.gbadge[data-g=fh6]{--g1:#FF2D95;--g2:#F7208A;--g3:#B8FF1A}
+.gbadge[data-g=fh5]{--g1:#FF6A2B;--g2:#F7277A;--g3:#FFC814}
+.gbadge[data-g=fh4]{--g1:#17B79B;--g2:#0E9E8E;--g3:#FF5A2B}
 .wbtns{display:flex;align-items:center;gap:3px;flex:none}
 .tabs{display:flex;align-items:center;gap:5px;flex:none}
 
