@@ -30,7 +30,8 @@ PREVIEW_H = 590
 # The car the preview drives - 461, the 1998 Toyota Supra RZ - and its
 # picture. In the app the picture comes from the game's own cache on the
 # player's machine; the page has none of that, so the one FH6 made of this
-# car is kept in assets/ and copied beside the page.
+# car is kept in tools/site/ - not assets/, which goes into the exe - and
+# copied beside the page.
 PREVIEW_CAR = 461
 PREVIEW_CAR_IMG = "car.webp"
 
@@ -1108,7 +1109,7 @@ def main():
             newline="\n").write(index_page(app))
     write_icons()
     write_steps()
-    car = os.path.join(ROOT, "assets", "preview-car.webp")
+    car = os.path.join(ROOT, "tools", "site", "preview-car.webp")
     if os.path.isfile(car):
         shutil.copyfile(car, os.path.join(DOCS, PREVIEW_CAR_IMG))
     else:

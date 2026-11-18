@@ -16,10 +16,13 @@ CREATE_NO_WINDOW = 0x08000000
 # README, the roadmap - changes nothing anyone runs, and counting it made
 # the first fix build of 2.1 come out as 2.1.28, twenty-six of those being
 # pages of the website. The screenshots in assets/ are the site's too: the
-# app never opens them, and the build leaves them out.
+# app never opens them, and the build leaves them out. So was the picture
+# of the preview's car, for the one commit it sat in assets/ - it lives
+# in tools/site/ now, out of the exe's way.
 BUILD_INPUTS = ("forza_assist_lite.py", "build.bat", "steering.ico",
                 "assets", "licenses", "LICENSE", "NOTICE.md",
-                ":(exclude)assets/inst*", ":(exclude)assets/build.txt")
+                ":(exclude)assets/inst*", ":(exclude)assets/build.txt",
+                ":(exclude)assets/preview-car.webp")
 
 
 def _git(cwd, *args) -> str:
