@@ -16,8 +16,8 @@ no reading or writing game files, no injection of any kind.**
 
 The site carries a live preview of the app you can click through, the setup
 walked past in pictures, the questions people have already asked, and an
-honest list of what still isn't right. It reads in the same six languages the
-app speaks.
+honest list of what still isn't right. It reads in six of the eight languages
+the app speaks.
 
 ## What it does
 
@@ -35,7 +35,9 @@ app speaks.
 - **It shows you what it is doing.** Your own input and the assisted one side
   by side, and live dials: the drift angle and how it began, speed against the
   revs, the game's callback, a drift odometer - and the car you are in, with
-  its picture.
+  its picture. The dials are tiles you can drag into your own order.
+- **Knows which Forza it is.** FH6, FH5 or FH4, shown beside the version,
+  with the car names of all three.
 - **Works when your buttons do not.** On some machines a hidden controller
   costs you gears and camera. One switch hands every button back, and the FAQ
   in the app takes you straight to it.
@@ -45,8 +47,8 @@ app speaks.
 - **It leaves when you ask it to.** One button removes the drivers, clears what
   was added to HidHide and deletes its own settings. Nothing of it is left
   behind.
-- **Six languages, and it fits your screen.** English, Russian, Spanish,
-  French, German and Japanese throughout. Light and dark, and a scale from 90
+- **Eight languages, and it fits your screen.** English, Russian, Spanish,
+  French, German, Polish, Japanese and Simplified Chinese throughout. Light and dark, and a scale from 90
   to 150 percent.
 
 ## Requirements
@@ -74,9 +76,10 @@ needed for that, and the app asks for them at launch.
 4. **Put Steering on Simulation.** It lives somewhere else entirely:
    **Settings → Difficulty → Steering**. On anything else the game steers on
    top of the assist and cancels most of what it does.
-5. **Drive.** Start the assist **before** the game — it only looks for
-   controllers when it starts, and a virtual pad made afterwards is invisible
-   to it. If Forza is already running, the app says so.
+5. **Drive.** Starting the assist **before** the game is still the smoothest
+   way. If Forza is already running, the app restarts your controller's USB
+   port once, so the game lets go of it and finds the assist's pad, and says
+   so.
 
 Hover any setting for a tooltip. Settings live in `%APPDATA%\Steering Assist\`.
 
@@ -103,6 +106,9 @@ Everything here is real, and none of it is a surprise to us.
 - ✅ **Solved: several launches in one sitting could leave it unreliable.**
   The controller is now hidden from XInput as well, and handed over cleanly
   from one launch to the next. No restart of Windows needed.
+- ✅ **Solved in 2.3: a controller that came back could be seen twice.** A pad
+  that reconnects - as another device, even - is hidden again within
+  seconds, and handed back when the app closes.
 
 ## Troubleshooting
 
@@ -112,8 +118,9 @@ Everything here is real, and none of it is a surprise to us.
 - **Controller not found** — make sure the pad is in XInput mode and plugged in
   or paired before starting the app. Unplugging it and plugging it back in is
   usually enough; the setup carries on by itself once it appears.
-- **The game doesn't react** — start the assist *before* the game. If it was
-  started after, reconnecting the controller often sorts it out.
+- **The game doesn't react** — start the assist *before* the game. Started
+  after, it restarts the controller by itself; if that did not help (a pad
+  on Bluetooth has no USB port to restart), reconnect the controller.
 - **The assist works but your buttons do nothing** — gears, camera and menus
   are read from your own pad, and on some machines hiding it takes them away.
   Turn on **Release all buttons** in Settings. Turn it back off if a single

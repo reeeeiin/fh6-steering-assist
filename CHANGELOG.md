@@ -1,5 +1,87 @@
 # Changelog
 
+## v2.3.0
+
+Your controller now stays hidden whatever happens to it, and the app puts
+itself right when it is started after the game. On top of that: presets of
+your own, widgets you can rearrange, a tip for every steering setting, and
+Forza Horizon 5 and 4 recognised as well. Compared with 2.2.
+
+### Engine
+
+#### Added
+
+- **Started after the game? It sorts itself out.** The game holds on to the
+  controller it found first, so the assist used to be invisible to it until
+  the cable was pulled. The app now does that pull in software: it switches
+  the controller's USB port off and on once, the game lets go and picks up
+  the assist's pad, and a notice says what happened. Just once - no second
+  restart half a minute later, mid-drive.
+- **Opens without a controller.** With no pad plugged in, the app no longer
+  sits on the loading screen waiting for one. It opens, says "Controller not
+  found", and picks the pad up the moment it appears.
+
+#### Changed
+
+- **A frozen controller is let go of, never restarted.** The stuck input is
+  still released within a second, but the pad is left alone: the freezes
+  turned out to be a loose cable.
+
+#### Fixed
+
+- **Your controller stays hidden when it comes back.** A pad whose cable
+  worked loose could return as a different device that nothing hid, and the
+  game then saw two controllers: the assist dropped out under every press and
+  buttons arrived twice. Hiding is now checked every 5 seconds and the moment
+  a pad appears, and anything that slipped is put back at once.
+- **The controller is handed back when you close the app,** even when
+  earlier copies had left it hidden. Before, it could stay invisible to every
+  game until Windows was restarted.
+- **Pads that only went quiet are no longer cut off.** A controller left
+  alone on the desk could be switched off as if it had frozen.
+- **The hiding status follows a pad plugged in later**, and the assist's own
+  pad is never hidden by mistake.
+
+### UI
+
+#### Added
+
+- **Presets of your own:** up to three, named, beside Default. Moving a
+  slider keeps the change in the one selected.
+- **Drag & drop widgets.** The dials are tiles you can pick up and rearrange;
+  the others make room, and the order is kept.
+- **Setting tips.** An (i) beside every steering setting, Auto car adjust
+  included, opens a card saying what it does and which way to move it.
+- **The game you are playing**, shown as a badge beside the version: FH6,
+  FH5 or FH4, each in its own colours.
+- **The cars of Forza Horizon 5 and 4.** The car table knows 1265 cars now,
+  FH6's latest included, so names come up right in every game. Pictures stay
+  FH6-only - the older games keep none the app can read.
+- **Simplified Chinese and Polish**, eight languages in all; the missing
+  words in German, French and Spanish filled in.
+- **A Discord button** in the header and in About, and the controllers it was
+  tested on - 8BitDo, Flydigi, GameSir and Xbox - in About.
+
+#### Changed
+
+- **The widgets stay when the game is closed**, dimmed and still movable,
+  with the odometer's total. The status says "Game is not launched", and
+  "No telemetry" only when the game runs and sends nothing. They also ride
+  out the pauses while the game loads between events.
+- **The update check shows its own progress**, and becomes the download
+  button when a newer version is out.
+- **Smoother all round:** buttons that give under the pointer and spring
+  back, tabs that change without a gap, and every word on screen fading over
+  instead of jumping.
+- **A shorter FAQ.** Four answers are gone: the problems they described
+  cannot happen any more.
+
+#### Fixed
+
+- **The assisted bar keeps up with raw input.** It trailed by a fifth of a
+  second and made the assist look late; the two always went out in the same
+  frame. The steering itself is unchanged since 2.2.0.
+
 ## v2.2.0
 
 The assist now holds steady through gear changes mid-drift and stays reliable
