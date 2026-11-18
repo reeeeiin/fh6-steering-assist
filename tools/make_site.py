@@ -26,7 +26,7 @@ DOCS = os.path.join(ROOT, "docs")
 REPO = "https://github.com/reeeeiin/fh6-steering-assist"
 # Design units: the main page at its fullest, which is how tall the app's
 # own window is. Longer pages scroll inside it, as they do in the app.
-PREVIEW_H = 570
+PREVIEW_H = 590
 
 # The stand-in for the Python side. It answers the same calls the app makes,
 # with a car that is permanently mid-drift so the readouts have something to
