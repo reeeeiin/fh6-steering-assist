@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Every word of the public page, in the six languages the app speaks.
+"""Every word of the public page, in six of the eight languages the app
+speaks.
 
 The page is built in English and carries the rest with it, the way the
 app does: one file, and the words are swapped in place. The questions
@@ -223,23 +224,20 @@ FEATURES = {
     ("Smooth, not twitchy",
      "Steady through the transitions, and it will not start a pendulum of "
      "its own when a slide swings back through straight."),
-    ("Five sliders, each doing one thing",
-     "Strength, damping, the shape of the stick, how fast it answers, and "
-     "the speed below which it leaves you alone entirely."),
-    ("It shows you what it is doing",
-     "Your input and the assisted one side by side, and live dials: the drift angle and how it began, speed against the revs, the game's callback, a drift odometer - and the car you are in, with its picture."),
-    ("Works when your buttons do not",
-     "On some machines a hidden controller costs you gears and camera. One "
-     "switch hands every button back, and the FAQ takes you to it."),
+    ('Five sliders, each doing one thing',
+     'Strength, damping, the shape of the stick, how fast it answers, and the speed below which it leaves you alone entirely. An (i) by each says which way to move it, and up to three presets of your own keep what you found.'),
+    ('It shows you what it is doing',
+     "Your input and the assisted one side by side, and live dials: the drift angle and how it began, speed against the revs, the game's callback, a drift odometer - and the car you are in, with its picture. The dials are tiles you can drag into your own order, and a badge says which game is running: FH6, FH5 or FH4."),
+    ('Puts itself right',
+     "Started after the game, it restarts your controller's USB port once, so the game lets go of the pad and finds the assist. A controller that reconnects is hidden again within seconds, and handed back when you close the app."),
     ("Nothing to install by hand",
      "One exe. Everything it needs is inside it and sets itself up on first "
      "run, and it hands your controller back exactly as it found it."),
     ("It leaves when you ask it to",
      "One button removes the drivers, clears what was added to HidHide and "
      "deletes its own settings. Nothing of it is left behind."),
-    ("Six languages, and it fits your screen",
-     "English, Russian, Spanish, French, German and Japanese throughout. "
-     "Light and dark, and a scale from 90 to 150 percent."),
+    ('Eight languages, and it fits your screen',
+     'English, Russian, Spanish, French, German, Polish, Japanese and Simplified Chinese throughout. Light and dark, and a scale from 90 to 150 percent.'),
 ],
 "ru": [
     ("Ловит занос, дрифт остаётся вам",
@@ -248,18 +246,18 @@ FEATURES = {
      "Поверните против — руль ваш. Он не борется с вами и вообще молчит, пока машина не пошла в скольжение."),
     ("Плавно, без дёрганья",
      "Спокоен в перекладках и не раскачивает машину сам, когда занос проходит через прямую."),
-    ("Пять ползунков, каждый об одном",
-     "Сила, демпфирование, форма стика, скорость отклика и порог, ниже которого ассист вообще не вмешивается."),
-    ("Показывает, что именно делает",
-     'Ваш ввод и итоговый — рядом, и живые приборы: угол заноса и способ входа, скорость на фоне оборотов, отклик игры, одометр дрифта — и машина, в которой вы едете, с её картинкой.'),
-    ("Работает, даже когда кнопки — нет",
-     "На части машин скрытый геймпад отбирает передачи и камеру. Один переключатель возвращает все кнопки, а FAQ ведёт прямо к нему."),
+    ('Пять ползунков, каждый об одном',
+     'Сила, демпфирование, форма стика, скорость отклика и порог, ниже которого ассист вообще не вмешивается. У каждого есть (i) с подсказкой, куда его двигать, а до трёх своих пресетов сохранят найденное.'),
+    ('Показывает, что именно делает',
+     'Ваш ввод и итоговый — рядом, и живые приборы: угол заноса и способ входа, скорость на фоне оборотов, отклик игры, одометр дрифта — и машина, в которой вы едете, с её картинкой. Приборы — плитки, которые можно расставить в своём порядке, а бейдж показывает, какая игра запущена: FH6, FH5 или FH4.'),
+    ('Сам приводит себя в порядок',
+     'Запустили после игры — он один раз перезапускает USB-порт геймпада, игра отпускает пад и находит ассист. Переподключённый геймпад снова скрывается за секунды и возвращается вам, когда вы закрываете приложение.'),
     ("Ничего не нужно ставить руками",
      "Один exe. Всё нужное внутри и настраивается при первом запуске, а геймпад возвращается ровно в том виде, в каком был."),
     ("Уходит, когда попросите",
      "Одна кнопка удаляет драйверы, убирает записи в HidHide и стирает собственные настройки. После неё не остаётся ничего."),
-    ("Шесть языков и подгонка под экран",
-     "Английский, русский, испанский, французский, немецкий и японский — везде. Светлая и тёмная темы, масштаб от 90 до 150 процентов."),
+    ('Восемь языков и подгонка под экран',
+     'Английский, русский, испанский, французский, немецкий, польский, японский и упрощённый китайский — везде. Светлая и тёмная темы, масштаб от 90 до 150 процентов.'),
 ],
 "es": [
     ("Atrapa el derrape, tú lo mantienes",
@@ -272,26 +270,20 @@ FEATURES = {
     ("Suave, no nervioso",
      "Estable en las transiciones, y no se pone a mecer el coche por su "
      "cuenta cuando el derrape pasa por el centro."),
-    ("Cinco deslizadores, cada uno con una tarea",
-     "Fuerza, amortiguación, la curva del stick, la rapidez con que "
-     "responde y la velocidad por debajo de la cual te deja del todo en "
-     "paz."),
-    ("Te enseña lo que está haciendo",
-     'Tu entrada y la asistida, una al lado de la otra, y relojes en directo: el ángulo del derrape y cómo empezó, la velocidad frente a las revoluciones, la respuesta del juego, un cuentakilómetros de derrape, y el coche que llevas, con su imagen.'),
-    ("Funciona aunque tus botones no",
-     "En algunos equipos, ocultar el mando te cuesta las marchas y la "
-     "cámara. Un interruptor devuelve todos los botones, y las "
-     "preguntas te llevan hasta él."),
+    ('Cinco deslizadores, cada uno con una tarea',
+     'Fuerza, amortiguación, la curva del stick, la rapidez con que responde y la velocidad por debajo de la cual te deja del todo en paz. Cada uno tiene una (i) que dice hacia dónde moverlo, y hasta tres ajustes propios guardan lo que encuentres.'),
+    ('Te enseña lo que está haciendo',
+     'Tu entrada y la asistida, una al lado de la otra, y relojes en directo: el ángulo del derrape y cómo empezó, la velocidad frente a las revoluciones, la respuesta del juego, un cuentakilómetros de derrape, y el coche que llevas, con su imagen. Los relojes son fichas que puedes arrastrar a tu orden, y una insignia dice qué juego está abierto: FH6, FH5 o FH4.'),
+    ('Se arregla solo',
+     'Si lo arrancas después del juego, reinicia una vez el puerto USB del mando: el juego lo suelta y encuentra la asistencia. Un mando que se reconecta vuelve a ocultarse en segundos, y se te devuelve al cerrar la app.'),
     ("Nada que instalar a mano",
      "Un solo exe. Todo lo que necesita va dentro y se configura en el "
      "primer arranque, y te devuelve el mando tal y como lo encontró."),
     ("Se va cuando se lo pides",
      "Un botón quita los controladores, borra lo que se añadió "
      "a HidHide y elimina sus propios ajustes. No queda nada suyo."),
-    ("Seis idiomas, y se adapta a tu pantalla",
-     "Inglés, ruso, español, francés, alemán y "
-     "japonés en toda la app. Claro y oscuro, y escala del 90 al 150 "
-     "por ciento."),
+    ('Ocho idiomas, y se adapta a tu pantalla',
+     'Inglés, ruso, español, francés, alemán, polaco, japonés y chino simplificado en toda la app. Claro y oscuro, y escala del 90 al 150 por ciento.'),
 ],
 "fr": [
     ("Il rattrape le glissement, le drift reste à vous",
@@ -305,15 +297,12 @@ FEATURES = {
     ("Doux, pas nerveux",
      "Stable dans les transferts, et il ne lance pas de pendule à lui "
      "tout seul quand le glissement repasse par le droit."),
-    ("Cinq curseurs, un rôle chacun",
-     "Force, amortissement, courbe du stick, vitesse de réaction, et "
-     "l'allure sous laquelle il vous laisse entièrement tranquille."),
+    ('Cinq curseurs, un rôle chacun',
+     "Force, amortissement, courbe du stick, vitesse de réaction, et l'allure sous laquelle il vous laisse entièrement tranquille. Un (i) à côté de chacun dit dans quel sens le bouger, et jusqu'à trois préréglages à vous gardent ce que vous avez trouvé."),
     ("Il montre ce qu'il fait",
-     "Votre entrée et celle assistée côte à côte, et des cadrans en direct : l'angle du drift et la façon dont il a commencé, la vitesse face au régime, la réponse du jeu, un compteur de drift, et la voiture que vous conduisez, avec son image."),
-    ("Il marche même quand vos boutons non",
-     "Sur certaines machines, une manette masquée vous coûte les "
-     "vitesses et la caméra. Un seul réglage rend tous les "
-     "boutons, et la FAQ vous y emmène."),
+     "Votre entrée et celle assistée côte à côte, et des cadrans en direct : l'angle du drift et la façon dont il a commencé, la vitesse face au régime, la réponse du jeu, un compteur de drift, et la voiture que vous conduisez, avec son image. Les cadrans sont des tuiles à glisser dans l'ordre qui vous plaît, et un badge indique le jeu lancé : FH6, FH5 ou FH4."),
+    ("Il se remet d'aplomb tout seul",
+     "Lancé après le jeu, il redémarre une fois le port USB de la manette : le jeu la lâche et trouve l'assistance. Une manette qui se reconnecte est de nouveau masquée en quelques secondes, et vous est rendue à la fermeture de l'application."),
     ("Rien à installer à la main",
      "Un seul exe. Tout ce qu'il lui faut est dedans et se met en place au "
      "premier lancement, et il vous rend la manette exactement comme il "
@@ -322,10 +311,8 @@ FEATURES = {
      "Un bouton retire les pilotes, efface ce qui a été "
      "ajouté à HidHide et supprime ses propres réglages. Il "
      "ne reste rien de lui."),
-    ("Six langues, et il s'adapte à votre écran",
-     "Anglais, russe, espagnol, français, allemand et japonais "
-     "partout. Clair et sombre, et une échelle de 90 à 150 pour "
-     "cent."),
+    ("Huit langues, et il s'adapte à votre écran",
+     'Anglais, russe, espagnol, français, allemand, polonais, japonais et chinois simplifié partout. Clair et sombre, et une échelle de 90 à 150 pour cent.'),
 ],
 "de": [
     ("Fängt den Ausbruch, der Drift bleibt deiner",
@@ -338,16 +325,12 @@ FEATURES = {
     ("Weich, nicht zappelig",
      "Ruhig in den Lastwechseln, und er schaukelt das Auto nicht von "
      "selbst auf, wenn der Drift durch die Gerade schwingt."),
-    ("Fünf Regler, jeder für genau eine Sache",
-     "Stärke, Dämpfung, Kennlinie des Sticks, "
-     "Reaktionsgeschwindigkeit und das Tempo, unterhalb dessen er dich "
-     "völlig in Ruhe lässt."),
-    ("Er zeigt, was er tut",
-     'Deine Eingabe und die unterstützte nebeneinander, dazu Live-Anzeigen: Driftwinkel und wie der Drift begann, Tempo vor der Drehzahl, die Antwort des Spiels, ein Drift-Kilometerzähler - und das Auto, in dem du sitzt, mit seinem Bild.'),
-    ("Läuft auch, wenn deine Tasten es nicht tun",
-     "Auf manchen Rechnern kostet ein versteckter Controller Gänge und "
-     "Kamera. Ein Schalter gibt alle Tasten zurück, und die Fragen "
-     "führen dich hin."),
+    ('Fünf Regler, jeder für genau eine Sache',
+     'Stärke, Dämpfung, Kennlinie des Sticks, Reaktionsgeschwindigkeit und das Tempo, unterhalb dessen er dich völlig in Ruhe lässt. Ein (i) neben jedem sagt, in welche Richtung du ihn schieben solltest, und bis zu drei eigene Presets behalten, was du gefunden hast.'),
+    ('Er zeigt, was er tut',
+     'Deine Eingabe und die unterstützte nebeneinander, dazu Live-Anzeigen: Driftwinkel und wie der Drift begann, Tempo vor der Drehzahl, die Antwort des Spiels, ein Drift-Kilometerzähler - und das Auto, in dem du sitzt, mit seinem Bild. Die Anzeigen sind Kacheln, die du in deine eigene Reihenfolge ziehen kannst, und ein Abzeichen zeigt, welches Spiel läuft: FH6, FH5 oder FH4.'),
+    ('Bringt sich selbst in Ordnung',
+     'Nach dem Spiel gestartet, startet er den USB-Port deines Controllers einmal neu: Das Spiel lässt das Pad los und findet die Assistenz. Ein Controller, der sich neu verbindet, ist binnen Sekunden wieder versteckt und wird dir zurückgegeben, wenn du die App schließt.'),
     ("Nichts von Hand zu installieren",
      "Eine exe. Alles Nötige steckt darin und richtet sich beim ersten "
      "Start selbst ein, und deinen Controller gibt er genau so "
@@ -356,10 +339,8 @@ FEATURES = {
      "Ein Knopf entfernt die Treiber, räumt die Einträge in "
      "HidHide weg und löscht die eigenen Einstellungen. Von ihm "
      "bleibt nichts zurück."),
-    ("Sechs Sprachen, und er passt auf deinen Bildschirm",
-     "Englisch, Russisch, Spanisch, Französisch, Deutsch und Japanisch "
-     "durchgehend. Hell und dunkel, und eine Skalierung von 90 bis 150 "
-     "Prozent."),
+    ('Acht Sprachen, und er passt auf deinen Bildschirm',
+     'Englisch, Russisch, Spanisch, Französisch, Deutsch, Polnisch, Japanisch und vereinfachtes Chinesisch durchgehend. Hell und dunkel, und eine Skalierung von 90 bis 150 Prozent.'),
 ],
 "ja": [
     ("滑り出しを受け止め、ドリフトはあなたのもの",
@@ -368,18 +349,18 @@ FEATURES = {
      "逆に切ればステアリングはあなたのものです。取り合いにはならず、車が滑っていない間は何もしません。"),
     ("滑らかで、神経質にならない",
      "振り返しでも落ち着いていて、ドリフトが直進を通り抜けるときに自分から車を揺すり始めることはありません。"),
-    ("5つのスライダー、それぞれ役割はひとつ",
-     "効きの強さ、減衰、スティックのカーブ、反応の速さ、そしてこの速度以下では一切手を出さないという境目。"),
-    ("何をしているかが見える",
-     '自分の入力と補正後の入力を並べて表示。さらにライブのメーター：ドリフト角と入り方、回転数と並ぶ速度、ゲームの応答、ドリフト距離計。いま乗っている車も画像つきで。'),
-    ("ボタンが効かなくなっても動く",
-     "環境によっては、パッドを隠すとギアやカメラが使えなくなります。スイッチひとつで全ボタンが戻り、FAQがその場所まで案内します。"),
+    ('5つのスライダー、それぞれ役割はひとつ',
+     '効きの強さ、減衰、スティックのカーブ、反応の速さ、そしてこの速度以下では一切手を出さないという境目。それぞれの横の (i) がどちらに動かせばいいかを教え、見つけた設定は自分用プリセット（最大3つ）に残せます。'),
+    ('何をしているかが見える',
+     '自分の入力と補正後の入力を並べて表示。さらにライブのメーター：ドリフト角と入り方、回転数と並ぶ速度、ゲームの応答、ドリフト距離計。いま乗っている車も画像つきで。メーターはドラッグで好きな順に並べ替えられるタイルで、起動中のゲーム（FH6・FH5・FH4）はバッジで表示されます。'),
+    ('自分で立て直す',
+     'ゲームの後に起動しても、コントローラーのUSBポートを一度だけ再起動し、ゲームがパッドを手放してアシストを見つけます。つなぎ直したコントローラーは数秒で再び隠され、アプリを閉じればきちんと返されます。'),
     ("手作業のインストールはなし",
      "exeがひとつだけ。必要なものはすべて中に入っていて、初回起動で自分で準備します。コントローラーは元どおりの状態で返します。"),
     ("頼めば、ちゃんと出ていく",
      "ボタンひとつでドライバーを削除し、HidHideに追加した設定を戻し、自分の設定ファイルも消します。何も残りません。"),
-    ("6か国語、画面にも合わせられる",
-     "英語・ロシア語・スペイン語・フランス語・ドイツ語・日本語にすべて対応。ライトとダーク、表示倍率90〜150%。"),
+    ('8か国語、画面にも合わせられる',
+     '英語・ロシア語・スペイン語・フランス語・ドイツ語・ポーランド語・日本語・簡体字中国語にすべて対応。ライトとダーク、表示倍率90〜150%。'),
 ],
 }
 
@@ -408,11 +389,8 @@ STEPS = {
      "Difficulty &rarr; Steering</b>, which has to be on Simulation. On "
      "anything else the game steers on top of the assist and cancels most "
      "of what it does."),
-    ("Drive",
-     "Telemetry arrives, the readout comes alive, and the pad reads as "
-     "hidden - the game is seeing the assist rather than your controller. "
-     "Start the assist before the game: it looks for controllers when it "
-     "starts, and a virtual pad made afterwards is invisible to it."),
+    ('Drive',
+     "Telemetry arrives, the readout comes alive, and the pad reads as hidden - the game is seeing the assist rather than your controller. Starting the assist before the game is smoothest; started after, it restarts your controller's USB port once so the game finds the assist."),
 ],
 "ru": [
     ("Скачайте и запустите",
@@ -423,8 +401,8 @@ STEPS = {
      "Последний шаг установки — единственное, что ассист не может сделать за вас: игре нужно сказать, чтобы она отдавала телеметрию. Значения на экране — Data Out включён, IP 127.0.0.1, порт 20777 — и приложение ждёт здесь, пока данные не пойдут."),
     ("Выставьте в игре",
      "Forza держит это в <b>Settings &rarr; HUD and Gameplay</b>, в самом низу списка, раздел Telemetry. Есть ещё одна важная настройка, и лежит она совсем в другом месте: <b>Settings &rarr; Difficulty &rarr; Steering</b> — она должна стоять на Simulation. При любом другом значении игра подруливает поверх ассиста и гасит большую часть его работы."),
-    ("За руль",
-     "Телеметрия пошла, показания ожили, а пад числится скрытым — игра видит ассист, а не ваш геймпад. Запускайте ассист до игры: она ищет контроллеры при старте, и виртуальный пад, созданный позже, для неё не существует."),
+    ('За руль',
+     'Телеметрия пошла, показания ожили, а пад числится скрытым — игра видит ассист, а не ваш геймпад. Удобнее всего запускать ассист до игры; если запустить после, он один раз перезапустит USB-порт геймпада, и игра найдёт ассист.'),
 ],
 "es": [
     ("Descárgalo y ejecútalo",
@@ -449,12 +427,8 @@ STEPS = {
      "&rarr; Steering</b>, que tiene que estar en Simulation. Con "
      "cualquier otro valor el juego dirige por encima de la asistencia y "
      "anula casi todo lo que hace."),
-    ("Conduce",
-     "La telemetría llega, la lectura cobra vida y el mando figura "
-     "como oculto: el juego está viendo la asistencia y no tu "
-     "controlador. Arranca la asistencia antes que el juego: este busca "
-     "mandos al iniciarse, y un mando virtual creado después le "
-     "resulta invisible."),
+    ('Conduce',
+     'La telemetría llega, la lectura cobra vida y el mando figura como oculto: el juego está viendo la asistencia y no tu controlador. Lo más cómodo es arrancar la asistencia antes que el juego; si la arrancas después, reinicia una vez el puerto USB del mando para que el juego la encuentre.'),
 ],
 "fr": [
     ("Téléchargez et lancez",
@@ -480,12 +454,8 @@ STEPS = {
      "Steering</b>, qui doit être sur Simulation. Avec toute autre "
      "valeur, le jeu braque par-dessus l'assistance et annule l'essentiel "
      "de son travail."),
-    ("Roulez",
-     "La télémétrie arrive, l'affichage s'anime et la "
-     "manette est indiquée comme masquée : le jeu voit "
-     "l'assistance et non votre manette. Lancez l'assistance avant le "
-     "jeu : il cherche les manettes au démarrage, et une manette "
-     "virtuelle créée après lui est invisible."),
+    ('Roulez',
+     "La télémétrie arrive, l'affichage s'anime et la manette est indiquée comme masquée : le jeu voit l'assistance et non votre manette. Le plus simple est de lancer l'assistance avant le jeu ; lancée après, elle redémarre une fois le port USB de la manette pour que le jeu la trouve."),
 ],
 "de": [
     ("Herunterladen und starten",
@@ -510,12 +480,8 @@ STEPS = {
      "&rarr; Steering</b> muss auf Simulation stehen. Bei allem anderen "
      "lenkt das Spiel über die Assistenz hinweg und hebt das meiste "
      "davon auf."),
-    ("Fahr los",
-     "Die Telemetrie kommt an, die Anzeige lebt, und der Controller gilt "
-     "als versteckt - das Spiel sieht die Assistenz statt deines Pads. "
-     "Starte die Assistenz vor dem Spiel: Es sucht beim Start nach "
-     "Controllern, und ein danach erzeugtes virtuelles Pad ist für es "
-     "unsichtbar."),
+    ('Fahr los',
+     'Die Telemetrie kommt an, die Anzeige lebt, und der Controller gilt als versteckt - das Spiel sieht die Assistenz statt deines Pads. Am reibungslosesten startest du die Assistenz vor dem Spiel; danach gestartet, startet sie den USB-Port deines Controllers einmal neu, damit das Spiel sie findet.'),
 ],
 "ja": [
     ("ダウンロードして起動",
@@ -526,8 +492,8 @@ STEPS = {
      "セットアップ最後の手順だけは、アシストが代わりにできません。ゲーム側にテレメトリーを送るよう設定する必要があります。値は画面に出ています（Data Out をオン、IP 127.0.0.1、ポート 20777）。データが届くまでアプリはここで待ちます。"),
     ("ゲーム側で設定する",
      "Forzaでは <b>Settings &rarr; HUD and Gameplay</b> の一番下、Telemetry の項目にあります。もうひとつ大事な設定がまったく別の場所にあります。<b>Settings &rarr; Difficulty &rarr; Steering</b> を Simulation にしてください。それ以外だとゲームがアシストの上からステアリングを当て、効果のほとんどを打ち消します。"),
-    ("走る",
-     "テレメトリーが届いて表示が動き出し、パッドは「隠し済み」と表示されます。ゲームはあなたのコントローラーではなくアシストを見ています。アシストはゲームより先に起動してください。ゲームは起動時にコントローラーを探すので、後から作られた仮想パッドは見えません。"),
+    ('走る',
+     'テレメトリーが届いて表示が動き出し、パッドは「隠し済み」と表示されます。ゲームはあなたのコントローラーではなくアシストを見ています。アシストはゲームより先に起動するのがいちばんスムーズです。後から起動した場合は、コントローラーのUSBポートを一度だけ再起動して、ゲームにアシストを見つけさせます。'),
 ],
 }
 
@@ -539,11 +505,12 @@ KNOWN = {
     ("Setup does not go smoothly on every machine",
      "Two drivers, an installer that sometimes wants a restart, and an exe "
      "nobody has signed. Most of what has gone wrong so far happened here."),
-    ("Some wired controllers can freeze at the start of a race",
-     "Seen on a Flydigi: the pad stops sending and its buttons stay stuck. "
-     "The app now notices within a second, lets go of the stuck input and "
-     "restarts the pad by itself. If it still happens to you, send feedback "
-     "from the app."),
+    ('Some wired controllers could freeze at the start of a race',
+     'Seen on a Flydigi, and it turned out to be a loose cable. The app lets go of the stuck input within a second, and when the pad comes back it is hidden again by itself.'),
+    ('Started after the game, the assist went unseen',
+     "The game keeps the controller it found first, so the cable used to have to come out. Now the app restarts the controller's USB port once by itself, and the game picks up the assist."),
+    ('A controller that came back could be seen twice',
+     'A pad whose cable worked loose could return as a different device that nothing hid: the assist dropped out under every press and buttons arrived twice. Hiding is now checked every few seconds, and the pad is handed back when the app closes.'),
     ("The correction paused while you shifted",
      "Your controller is now hidden from the game completely, and every "
      "button goes through the assist's pad, so steering never falls back to "
@@ -557,8 +524,12 @@ KNOWN = {
      "DualShock и DualSense читаются иначе, чем пад Xbox, и пока не всё попадает туда, куда должно."),
     ("Установка проходит гладко не на каждой машине",
      "Два драйвера, установщик, который иногда просит перезагрузку, и exe без подписи. Почти всё, что до сих пор ломалось, ломалось именно здесь."),
-    ("Некоторые проводные геймпады могут зависать на старте заезда",
-     "Замечено на Flydigi: пад перестаёт слать данные, кнопки «залипают». Теперь приложение замечает это за секунду, отпускает залипший ввод и само перезапускает пад. Если у вас это всё ещё случается — отправьте отзыв из приложения."),
+    ('Некоторые проводные геймпады зависали на старте заезда',
+     'Замечено на Flydigi, и причиной оказался отходящий кабель. Приложение за секунду отпускает залипший ввод, а вернувшийся пад само снова скрывает.'),
+    ('Запущенный после игры ассист игра не видела',
+     'Игра держится за геймпад, который нашла первым, и раньше приходилось выдёргивать кабель. Теперь приложение само один раз перезапускает USB-порт геймпада, и игра подхватывает ассист.'),
+    ('Вернувшийся геймпад игра могла видеть дважды',
+     'Пад с отошедшим кабелем мог вернуться другим устройством, которое никто не скрыл: ассист пропадал при каждом нажатии, а кнопки срабатывали дважды. Теперь скрытие проверяется каждые несколько секунд, а при закрытии приложения пад возвращается вам.'),
     ("Коррекция замолкала, пока вы переключались",
      "Теперь ваш геймпад полностью скрыт от игры, и все кнопки идут через пад ассиста — руль больше не переходит к вам посреди заноса."),
     ("Несколько запусков подряд расшатывали работу",
@@ -572,11 +543,12 @@ KNOWN = {
      "Dos controladores, un instalador que a veces pide reiniciar y un exe "
      "que nadie ha firmado. Casi todo lo que ha salido mal hasta ahora ha "
      "pasado aquí."),
-    ("Algunos mandos con cable pueden congelarse al empezar una carrera",
-     "Visto en un Flydigi: el mando deja de enviar y sus botones se quedan "
-     "pulsados. Ahora la app lo detecta en un segundo, suelta la entrada "
-     "atascada y reinicia el mando por sí sola. Si aún te pasa, envía un "
-     "comentario desde la app."),
+    ('Algunos mandos con cable podían congelarse al empezar una carrera',
+     'Visto en un Flydigi, y resultó ser un cable flojo. La app suelta la entrada atascada en un segundo y, cuando el mando vuelve, lo oculta de nuevo por sí sola.'),
+    ('Arrancada después del juego, la asistencia pasaba inadvertida',
+     'El juego se queda con el primer mando que encuentra, así que había que desenchufar el cable. Ahora la app reinicia una vez el puerto USB del mando por su cuenta, y el juego toma la asistencia.'),
+    ('Un mando que volvía podía verse dos veces',
+     'Un mando con el cable flojo podía volver como otro dispositivo que nadie ocultaba: la asistencia se cortaba con cada pulsación y los botones llegaban dos veces. Ahora la ocultación se comprueba cada pocos segundos, y el mando se te devuelve al cerrar la app.'),
     ("La corrección se pausaba mientras cambiabas de marcha",
      "Ahora tu mando queda oculto del todo para el juego y cada botón pasa "
      "por el mando de la asistencia, así que la dirección ya no vuelve al "
@@ -594,11 +566,12 @@ KNOWN = {
      "Deux pilotes, un installeur qui réclame parfois un "
      "redémarrage, et un exe que personne n'a signé. L'essentiel "
      "de ce qui a raté jusqu'ici s'est produit là."),
-    ("Certaines manettes filaires peuvent se figer au départ d'une course",
-     "Constaté sur une Flydigi : la manette cesse d'envoyer et ses boutons "
-     "restent bloqués. L'application le remarque désormais en une seconde, "
-     "relâche l'entrée bloquée et redémarre la manette d'elle-même. Si cela "
-     "vous arrive encore, envoyez un retour depuis l'application."),
+    ("Certaines manettes filaires pouvaient se figer au départ d'une course",
+     "Constaté sur une Flydigi, et c'était un câble mal branché. L'application relâche l'entrée bloquée en une seconde et, quand la manette revient, la masque de nouveau d'elle-même."),
+    ("Lancée après le jeu, l'assistance passait inaperçue",
+     "Le jeu garde la première manette qu'il trouve, et il fallait débrancher le câble. Désormais l'application redémarre une fois d'elle-même le port USB de la manette, et le jeu prend l'assistance."),
+    ('Une manette revenue pouvait être vue deux fois',
+     "Une manette au câble desserré pouvait revenir comme un autre appareil que rien ne masquait : l'assistance décrochait à chaque appui et les boutons arrivaient deux fois. Le masquage est maintenant vérifié toutes les quelques secondes, et la manette vous est rendue à la fermeture de l'application."),
     ("La correction se mettait en pause pendant les changements de "
      "vitesse",
      "Votre manette est désormais entièrement cachée au jeu et chaque "
@@ -616,11 +589,12 @@ KNOWN = {
      "Zwei Treiber, ein Installer, der manchmal einen Neustart will, und "
      "eine exe, die niemand signiert hat. Das meiste, was bisher schiefging, "
      "ging hier schief."),
-    ("Manche kabelgebundene Controller können beim Rennstart einfrieren",
-     "Beobachtet bei einem Flydigi: Das Pad sendet nichts mehr, seine "
-     "Tasten bleiben hängen. Die App bemerkt das jetzt innerhalb einer "
-     "Sekunde, lässt die hängende Eingabe los und startet das Pad selbst "
-     "neu. Passiert es dir trotzdem, schick Feedback aus der App."),
+    ('Manche kabelgebundene Controller konnten beim Rennstart einfrieren',
+     'Beobachtet bei einem Flydigi - Ursache war ein lockeres Kabel. Die App lässt die hängende Eingabe binnen einer Sekunde los, und kommt das Pad zurück, versteckt sie es von selbst wieder.'),
+    ('Nach dem Spiel gestartet, wurde die Assistenz übersehen',
+     'Das Spiel hält an dem Controller fest, den es zuerst gefunden hat, also musste das Kabel raus. Jetzt startet die App den USB-Port des Controllers einmal selbst neu, und das Spiel nimmt die Assistenz.'),
+    ('Ein zurückgekehrter Controller konnte doppelt gesehen werden',
+     'Ein Pad mit gelockertem Kabel konnte als anderes Gerät zurückkommen, das niemand versteckte: Die Assistenz setzte bei jedem Druck aus, und Tasten kamen doppelt an. Das Verstecken wird jetzt alle paar Sekunden geprüft, und das Pad wird zurückgegeben, wenn die App schließt.'),
     ("Die Korrektur pausierte, während du geschaltet hast",
      "Dein Controller ist jetzt vollständig vor dem Spiel verborgen, und "
      "jede Taste läuft über das Pad der Assistenz - die Lenkung fällt mitten "
@@ -635,8 +609,12 @@ KNOWN = {
      "DualShockやDualSenseはXboxパッドとは読み取り方が違い、まだすべてが正しい場所に届いていません。"),
     ("すべての環境でセットアップがすんなり進むわけではない",
      "ドライバーが2つ、ときどき再起動を求めるインストーラー、そして署名のないexe。これまでに起きた不具合のほとんどはここで起きています。"),
-    ("一部の有線コントローラーがレース開始時に固まることがある",
-     "Flydigiで確認：パッドが送信をやめ、ボタンが押しっぱなしになります。アプリは1秒以内にこれを検知し、固まった入力を離してパッドを自動で再起動します。それでも起きる場合は、アプリからフィードバックを送ってください。"),
+    ('一部の有線コントローラーがレース開始時に固まることがあった',
+     'Flydigiで確認され、原因はケーブルの緩みでした。アプリは1秒以内に固まった入力を離し、パッドが戻ってくると自動で再び隠します。'),
+    ('ゲームの後に起動すると、アシストが認識されなかった',
+     'ゲームは最初に見つけたコントローラーを握ったままなので、以前はケーブルを抜く必要がありました。今はアプリが自分でコントローラーのUSBポートを一度だけ再起動し、ゲームがアシストを拾います。'),
+    ('戻ってきたコントローラーが二重に見えることがあった',
+     'ケーブルが緩んだパッドが、誰も隠していない別のデバイスとして戻ってくることがあり、押すたびにアシストが途切れ、ボタンが二重に届いていました。今は数秒ごとに隠し状態を確認し、アプリを閉じるとパッドを返します。'),
     ("シフト操作の間、補正が止まっていた",
      "コントローラーはゲームから完全に隠され、すべてのボタンがアシストのパッドを通るようになりました。ドリフト中にステアリングがあなたのパッドに戻ることはもうありません。"),
     ("同じセッションで何度も起動すると不安定になっていた",
@@ -646,7 +624,7 @@ KNOWN = {
 
 # Solved stays on the list, marked, for a release or two: somebody who
 # met the problem should be able to see that it is gone.
-KNOWN_SOLVED = {3, 4}
+KNOWN_SOLVED = {2, 3, 4, 5, 6}
 
 ROADMAP = {
 "en": [
@@ -656,6 +634,8 @@ ROADMAP = {
     ("Drift angle and more, as dials",
      "Angle, speed with the revs, callback and a drift odometer, live on "
      "the main page."),
+    ('Presets of your own, and the dials in your order',
+     'Up to three named presets beside Default, and dial tiles you drag where you want them.'),
     ("An oversteer assist",
      "Catching the car before it is sideways, not only after."),
     ("Statistics, on a screen of their own",
@@ -673,6 +653,8 @@ ROADMAP = {
      "Auto car adjust подбирает силу под тип машины, на которой вы едете, и запоминает вашу поправку для каждого типа."),
     ("Угол дрифта и не только — приборами",
      "Угол, скорость с оборотами, отклик и одометр дрифта — вживую на главной."),
+    ('Свои пресеты и приборы в своём порядке',
+     'До трёх именованных пресетов рядом с Default и плитки приборов, которые можно перетащить куда угодно.'),
     ("Ассистент против избыточной поворачиваемости",
      "Ловить машину до того, как её развернуло, а не только после."),
     ("Статистика на отдельной вкладке",
@@ -691,6 +673,8 @@ ROADMAP = {
     ("El ángulo del derrape y más, como relojes",
      "Ángulo, velocidad con las revoluciones, respuesta y cuentakilómetros "
      "de derrape, en directo en la pantalla principal."),
+    ('Ajustes propios, y los relojes en tu orden',
+     'Hasta tres ajustes con nombre junto a Default, y fichas de relojes que arrastras donde quieras.'),
     ("Un asistente contra el sobreviraje",
      "Atrapar el coche antes de que se cruce, no solo después."),
     ("Estadísticas en su propia pantalla",
@@ -712,6 +696,8 @@ ROADMAP = {
     ("L'angle du drift et plus, en cadrans",
      "Angle, vitesse avec le régime, réponse et compteur de drift, en "
      "direct sur l'écran principal."),
+    ('Vos propres préréglages, et les cadrans dans votre ordre',
+     "Jusqu'à trois préréglages nommés à côté de Default, et des tuiles de cadrans à glisser où vous voulez."),
     ("Une aide contre le survirage",
      "Rattraper la voiture avant qu'elle ne se mette en travers, pas "
      "seulement après."),
@@ -733,6 +719,8 @@ ROADMAP = {
     ("Driftwinkel und mehr als Anzeigen",
      "Winkel, Tempo mit Drehzahl, Antwortzeit und Drift-Kilometerzähler, "
      "live auf der Hauptseite."),
+    ('Eigene Presets, und die Anzeigen in deiner Reihenfolge',
+     'Bis zu drei benannte Presets neben Default, und Anzeige-Kacheln, die du hinziehst, wo du willst.'),
     ("Eine Hilfe gegen Übersteuern",
      "Das Auto fangen, bevor es quer steht, nicht erst danach."),
     ("Statistiken auf einem eigenen Bildschirm",
@@ -751,6 +739,8 @@ ROADMAP = {
      "Auto car adjust が乗っている車の種類に合わせて効きを決め、種類ごとに自分の調整を覚えます。"),
     ("ドリフト角などをメーターで",
      "角度、回転数つきの速度、応答、ドリフト距離計をメイン画面にライブ表示。"),
+    ('自分用プリセットと、好きな順のメーター',
+     'Default の横に名前つきプリセットを最大3つ。メーターのタイルは好きな場所へドラッグできます。'),
     ("オーバーステア対策のアシスト",
      "横を向いてからではなく、その前に止める。"),
     ("統計を専用の画面で",
@@ -765,7 +755,7 @@ ROADMAP = {
 }
 
 # what has shipped: green on the rail, and first, the way it happened
-ROADMAP_DONE = {0, 1}
+ROADMAP_DONE = {0, 1, 2}
 
 
 def _check():

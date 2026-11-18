@@ -6,10 +6,10 @@ when something turns out to matter more than it looked.
 
 ## Driving
 
-**Presets per car.** The reason the general preset row was taken out of
-Settings: saving a set of sliders under a name nobody remembers is far less
-useful than the assist recognising the car you just got into and loading
-what you last drove it with. The telemetry already names the car.
+**Presets per car.** ✅ Done in 2.2 as Auto car adjust: the assist
+recognises the kind of car you just got into, sets the strength for it, and
+keeps your own tweak for each kind. Named presets came back alongside it in
+2.3 - up to three of your own, beside Default.
 
 **Oversteer reduction.** A second assist alongside the countersteer one,
 for the half of the problem it does not address: catching the car before it
@@ -18,9 +18,9 @@ who wants only one of the two should be able to have only that one.
 
 ## Seeing what is happening
 
-**Drift angle and stability widgets.** The numbers exist already and are
-shown as bare figures. As dials they would say at a glance what a column of
-digits says only if you stare at it.
+**Drift angle and stability widgets.** ✅ Done in 2.2: the drift angle and
+how it began, speed against the revs, the game's callback and a drift
+odometer, as dials on the main page.
 
 **Statistics, and a tab for them.** Time spent sideways, longest drift, how
 often the assist had to save it — the things that make a session worth
@@ -44,7 +44,9 @@ off, without leaving the car. Most useful while tuning, which is when
 reaching for the window costs the most.
 
 **Interface customisation.** Beyond the theme and the scale: choosing what
-the main screen shows, and in what order.
+the main screen shows, and in what order. The order is done in 2.3 - the
+dials are tiles you drag where you want them; choosing which ones show is
+still to come.
 
 ## Further out
 

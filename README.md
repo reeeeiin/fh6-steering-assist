@@ -31,16 +31,18 @@ the app speaks.
   pendulum of its own when a slide swings back through straight.
 - **Five sliders, each doing one thing.** Strength, damping, the shape of the
   stick, how fast it answers, and the speed below which it leaves you alone
-  entirely — plus three preset slots of your own to keep them in.
+  entirely. An (i) by each says which way to move it, and up to three presets
+  of your own keep what you found.
 - **It shows you what it is doing.** Your own input and the assisted one side
   by side, and live dials: the drift angle and how it began, speed against the
   revs, the game's callback, a drift odometer - and the car you are in, with
   its picture. The dials are tiles you can drag into your own order.
 - **Knows which Forza it is.** FH6, FH5 or FH4, shown beside the version,
   with the car names of all three.
-- **Works when your buttons do not.** On some machines a hidden controller
-  costs you gears and camera. One switch hands every button back, and the FAQ
-  in the app takes you straight to it.
+- **Puts itself right.** Started after the game, it restarts your
+  controller's USB port once, so the game lets go of the pad and finds the
+  assist. A controller that reconnects is hidden again within seconds, and
+  handed back when you close the app.
 - **Nothing to install by hand.** One exe. Everything it needs is inside it and
   sets itself up on first run, and it hands your controller back exactly as it
   found it.
@@ -96,10 +98,13 @@ Everything here is real, and none of it is a surprise to us.
 - **Setup does not go smoothly on every machine.** Two drivers, an installer
   that sometimes wants a restart, and an exe nobody has signed. Most of what
   has gone wrong so far happened here.
-- **Some wired controllers can freeze at the start of a race.** Seen on a
-  Flydigi: the pad stops sending and its buttons stay stuck. The app now
-  notices within a second, lets go of the stuck input and restarts the pad by
-  itself. If it still happens to you, send feedback from the app.
+- ✅ **Solved: some wired controllers could freeze at the start of a race.**
+  Seen on a Flydigi, and it turned out to be a loose cable. The app lets go of
+  the stuck input within a second, and when the pad comes back it is hidden
+  again by itself.
+- ✅ **Solved in 2.3: started after the game, the assist went unseen.** The
+  game keeps the controller it found first, so the cable used to have to come
+  out. Now the app restarts the controller's USB port once by itself.
 - ✅ **Solved: the correction paused while you shifted.** Your controller is
   now hidden from the game completely, and every button goes through the
   assist's pad, so steering never falls back to yours mid-drift.
@@ -121,10 +126,10 @@ Everything here is real, and none of it is a surprise to us.
 - **The game doesn't react** — start the assist *before* the game. Started
   after, it restarts the controller by itself; if that did not help (a pad
   on Bluetooth has no USB port to restart), reconnect the controller.
-- **The assist works but your buttons do nothing** — gears, camera and menus
-  are read from your own pad, and on some machines hiding it takes them away.
-  Turn on **Release all buttons** in Settings. Turn it back off if a single
-  press then starts arriving twice.
+- **The assist works but your buttons do nothing** — with your pad hidden
+  from XInput, every button goes through the assist's pad by itself. If they
+  still do not reach the game, turn on **Release all buttons** in Settings,
+  and back off if a single press then starts arriving twice.
 - **Telemetry stays dead** — check the status line, and check both game
   settings above. If port 20777 is already taken by another telemetry tool it
   will say so, and the port can be changed in Settings.
@@ -196,6 +201,7 @@ date on it.
 - ✅ Presets that follow the car you are driving - done in 2.2 as Auto car
   adjust.
 - ✅ Drift angle and more, shown as dials - done in 2.2.
+- ✅ Presets of your own, and the dials in your order - done in 2.3.
 - An oversteer assist alongside the countersteer one.
 - Statistics, and a screen to keep them on.
 - PlayStation controllers, properly.
