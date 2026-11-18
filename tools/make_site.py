@@ -27,6 +27,12 @@ REPO = "https://github.com/reeeeiin/fh6-steering-assist"
 # Design units: the main page at its fullest, which is how tall the app's
 # own window is. Longer pages scroll inside it, as they do in the app.
 PREVIEW_H = 590
+# The car the preview drives - 461, the 1998 Toyota Supra RZ - and its
+# picture. In the app the picture comes from the game's own cache on the
+# player's machine; the page has none of that, so the one FH6 made of this
+# car is kept in assets/ and copied beside the page.
+PREVIEW_CAR = 461
+PREVIEW_CAR_IMG = "car.webp"
 
 # The stand-in for the Python side. It answers the same calls the app makes,
 # with a car that is permanently mid-drift so the readouts have something to
@@ -43,7 +49,7 @@ STUB = """<script>
       hz: 250, pad_hz: 250, age: 4, car: "Toyota Supra RZ",
       car_name: "Toyota Supra RZ", car_drive: "RWD", car_class: "S1",
       car_pi: 800, auto_strength: 54, auto_window: [48, 60],
-      car_type: "rwd", auto_kind: "rwd", car_ord: 0,
+      car_type: "rwd", auto_kind: "rwd", car_ord: __CAR__,
       angle: +(slip * 90).toFixed(1),
       drift: Math.abs(slip) > 0.15 ? "feint" : "driving",
       rpm_f: +(0.62 + Math.sin(t * 1.3) * 0.36).toFixed(4),
@@ -63,8 +69,8 @@ STUB = """<script>
   window.pywebview = {api: {
     state: async () => live(),
     set: async (k, v) => { cfg[k] = v; return true; },
-    // the page shows no game pictures: they live on the player's machine
-    car_thumb: async (c) => ({car: c, uri: ""}),
+    // the one car the preview drives has its picture beside the page
+    car_thumb: async (c) => ({car: c, uri: c === __CAR__ ? "__CAR_IMG__" : ""}),
     set_profile: async (name) => {
       const p = __PROFILES__[name] || slots[name] || {};
       const v = {}; __SLIDERS__.forEach(k => { if (k in p) v[k] = p[k]; });
@@ -124,6 +130,8 @@ def app_page() -> str:
     cfg["slots"] = {}
     stub = (STUB.replace("__CFG__", json.dumps(cfg))
                 .replace("__BTN__", json.dumps(fa.BUTTON_NAMES))
+                .replace("__CAR__", str(PREVIEW_CAR))
+                .replace("__CAR_IMG__", PREVIEW_CAR_IMG)
                 .replace("__PROFILES__", json.dumps(fa.PROFILES))
                 .replace("__SLIDERS__", json.dumps([k for k, *_ in fa.SLIDERS]))
                 .replace("__SLOTS__", json.dumps(list(fa.SLOT_KEYS)))
@@ -1100,12 +1108,17 @@ def main():
             newline="\n").write(index_page(app))
     write_icons()
     write_steps()
+    car = os.path.join(ROOT, "assets", "preview-car.webp")
+    if os.path.isfile(car):
+        shutil.copyfile(car, os.path.join(DOCS, PREVIEW_CAR_IMG))
+    else:
+        print("missing: %s" % car)
     # Pages runs Jekyll otherwise, which eats files starting with an
     # underscore and slows every build down for nothing.
     io.open(os.path.join(DOCS, ".nojekyll"), "w", encoding="utf-8").write("")
     for name in ([n + ".webp" for ns in STEP_SHOTS for n in ns]
                  + [n + ".webp" for n in BANNERS]
-                 + ["index.html", "app.html", "favicon.ico", "icon-32.png",
+                 + [PREVIEW_CAR_IMG, "index.html", "app.html", "favicon.ico", "icon-32.png",
                     "icon-180.png"]):
         p = os.path.join(DOCS, name)
         if os.path.isfile(p):
